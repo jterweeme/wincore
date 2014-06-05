@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <stdint.h>
 
 #ifdef _WIN32
@@ -7,25 +8,34 @@
 #include <fcntl.h>
 #endif
 
-class Hex
+class HexStream
 {
 public:
-    static void dump(std::istream &input);
+    void dump(std::istream *input);
 };
 
-void Hex::dump(std::istream &input)
+void HexStream::dump(std::istream *input)
 {
-    uint8_t arr[17] = { 0 };
+    uint8_t arr[16] = { 0 };
 
-    while (!input.eof())
+    while (*input)
     {
-        input.read((char *)arr, 16);
+        input->read((char *)arr, 16);
 
-        if (input.gcount() <= 0)
-            break;
+        for (size_t i = 0; i < input->gcount(); i++)
+            std::cout << std::hex << std::setw(2) << std::setfill('o') << (int)arr[i] << " ";
 
-        std::cout << std::hex;
-        std::cout << (int)arr << std::endl;
+        std::cout << " >";
+
+        for (size_t i = 0; i < input->gcount(); i++)
+        {
+            if (arr[i] < 0x20 || arr[i] == 0xff)
+                std::cout << ".";
+            else
+                std::cout << arr[i];
+        }
+
+        std::cout << "<" << std::endl;
     }
 }
 
@@ -34,7 +44,13 @@ int main(int argc, char **argv)
 #ifdef _WIN32
     _setmode(_fileno(stdin), O_BINARY);
 #endif
-    Hex::dump(std::cin);
+    HexStream hs;
+
+    if (argc < 2)
+        hs.dump(&std::cin);
+    else
+        hs.dump(new std::ifstream(argv[1], std::ifstream::in));
+
     return 0;
 }
 
