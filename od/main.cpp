@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     if (argc < 2)
         hs.dump(&std::cin);
     else
-        hs.dump(new std::ifstream(argv[1], std::ifstream::in));
+        hs.dump(new std::ifstream(argv[1], std::ifstream::in | std::ifstream::binary));
 
     return 0;
 }
