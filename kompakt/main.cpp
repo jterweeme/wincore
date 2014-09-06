@@ -22,24 +22,32 @@ struct SDirectory
 {
     uint8_t length;
     uint8_t extendedLength;
-    uint32_t extentLE;
-    uint32_t extentBE;
+    uint32_t lbaLE;
+    uint32_t lbaBE;
     uint32_t dataLengthLE;
     uint32_t dataLengthBE;
     uint8_t year;
     uint8_t month;
     uint8_t day;
+    uint8_t hour;
+    uint8_t min;
+    uint8_t sec;
+    uint8_t timezone;
+    uint8_t flags;
+    uint8_t interleaved;
+    uint16_t volSeqNumLE;
+    uint16_t volSeqNumBE;
 } __attribute__ ((packed));
 
 class CDirectory
 {
-    SDirectory dir;
 public:
+    SDirectory dir;
     int read(std::istream &s);
     std::string toString();
 };
 
-struct Test
+struct SVolumeDescriptor
 {
     uint8_t type;
     char identifier[5];
@@ -48,70 +56,51 @@ struct Test
     {
         struct
         {
-            //uint8_t dinges1;
-            //uint8_t dinges2;
-    uint8_t unused_1;
-    char sysident[32];
-    char volident[32];
-    uint8_t unused_2[8];
-    uint32_t volumeSpaceSizeLSB;
-    uint32_t volumeSpaceSizeMSB;
-    uint8_t unused_3[32];
-    uint16_t volumeSetSizeLSB;
-    uint16_t volumeSetSizeMSB;
-    uint8_t volumeSequenceSize[4];
-    uint16_t logicalBlockSizeLSB;
-    uint16_t logicalBlockSizeMSB;
-    uint32_t pathTableSizeLSB;
-    uint32_t pathTableSizeMSB;
-    uint8_t pathTable[4];
-    uint8_t optionalTable[4];
-    uint8_t pathMTable[4];
-    uint8_t optionalPathMTable[4];
-    uint8_t directoryEntry[34];
-    char volSetIdent[128];
-    char pubIdent[128];
-    char prepIdent[128];
-    uint8_t data[1474];
+            uint8_t unused_1;
+            char sysident[32];
+            char volident[32];
+            uint8_t unused_2[8];
+            uint32_t volumeSpaceSizeLSB;
+            uint32_t volumeSpaceSizeMSB;
+            uint8_t unused_3[32];
+            uint16_t volumeSetSizeLSB;
+            uint16_t volumeSetSizeMSB;
+            uint8_t volumeSequenceSize[4];
+            uint16_t logicalBlockSizeLSB;
+            uint16_t logicalBlockSizeMSB;
+            uint32_t pathTableSizeLSB;
+            uint32_t pathTableSizeMSB;
+            uint8_t pathTable[4];
+            uint8_t optionalTable[4];
+            uint8_t pathMTable[4];
+            uint8_t optionalPathMTable[4];
+            uint8_t directoryLength;
+            uint8_t extendedLength;
+            uint32_t lbaLSB;
+            uint32_t lbaMSB;
+            uint32_t dataLengthLSB;
+            uint32_t dataLengthMSB;
+            uint8_t year;
+            uint8_t month;
+            uint8_t day;
+            uint8_t hour;
+            uint8_t minute;
+            uint8_t second;
+            uint8_t timezone;
+            uint8_t directoryEntry[9];
+            char volSetIdent[128];
+            char pubIdent[128];
+            char prepIdent[128];
+            uint8_t data[1474];
         } __attribute__ ((packed));
-        //uint8_t onzin1;
-        //uint16_t onzin2;
+        uint8_t terminator[2041];
     };
-} __attribute__ ((packed));
-
-struct SVolumeDescriptor
-{
-    uint8_t type;
-    char identifier[5];
-    uint8_t version;
-    uint8_t unused_1;
-    char sysident[32];
-    char volident[32];
-    uint8_t unused_2[8];
-    uint32_t volumeSpaceSizeLSB;
-    uint32_t volumeSpaceSizeMSB;
-    uint8_t unused_3[32];
-    uint16_t volumeSetSizeLSB;
-    uint16_t volumeSetSizeMSB;
-    uint8_t volumeSequenceSize[4];
-    uint16_t logicalBlockSizeLSB;
-    uint16_t logicalBlockSizeMSB;
-    uint32_t pathTableSizeLSB;
-    uint32_t pathTableSizeMSB;
-    uint8_t pathTable[4];
-    uint8_t optionalTable[4];
-    uint8_t pathMTable[4];
-    uint8_t optionalPathMTable[4];
-    uint8_t directoryEntry[34];
-    char volSetIdent[128];
-    char pubIdent[128];
-    char prepIdent[128];
-    uint8_t data[1474];
 } __attribute__ ((packed));
 
 class CVolumeDescriptor
 {
     const char *typeString();
+    static const uint8_t PRIMARY_VOLUME_DESCRIPTOR = 1;
 public:
     SVolumeDescriptor desc;
 //public:
@@ -121,6 +110,10 @@ public:
 
 class ISO
 {
+    std::vector<CVolumeDescriptor> descriptions;
+    std::vector<CDirectory> directories;
+public:
+    int read(std::istream &s);
 };
 
 class App
@@ -140,7 +133,7 @@ const char *CVolumeDescriptor::typeString()
 {
     switch (desc.type)
     {
-    case 1:
+    case PRIMARY_VOLUME_DESCRIPTOR:
         return "Primary Volume Descriptor";
     case 2:
         return "Supplementary Volume Descriptor";
@@ -149,28 +142,77 @@ const char *CVolumeDescriptor::typeString()
     }
 }
 
+int ISO::read(std::istream &s)
+{
+    s.ignore(32768, 0x20);
+
+    
+    CVolumeDescriptor desc1;
+
+    do
+    {
+        desc1.read(s);
+        descriptions.push_back(desc1);
+        std::cout << desc1.toString() << std::endl << std::endl;
+    }
+    while (desc1.desc.type != 0xff);
+
+    CDirectory dir1;
+    s.ignore(descriptions[0].desc.lbaLSB *2048 - s.tellg());
+    dir1.read(s);
+    std::cout << dir1.toString() << std::endl;
+    return 0;
+}
+
 std::string CDirectory::toString()
 {
     std::ostringstream ss;
-    ss << "Length: " << (int)dir.length << std::endl;
-    ss << "Year: " << (int)dir.year << std::endl;
+    ss << "Length:              " << (int)dir.length << std::endl;
+    ss << "Extended Length:     " << (int)dir.extendedLength << std::endl;
+    ss << "LBA:                 " << (int)dir.lbaLE << std::endl;
+    ss << "Data length:         " << (int)dir.dataLengthLE << std::endl;
+    ss << "Year:                " << (int)dir.year + 1900 << std::endl;
+    ss << "Month:               " << (int)dir.month << std::endl;
+    ss << "Day:                 " << (int)dir.day << std::endl;
+    ss << "Hour:                " << (int)dir.hour << std::endl;
+    ss << "Minute:              " << (int)dir.min << std::endl;
+    ss << "Second:              " << (int)dir.sec << std::endl;
+    ss << "Timezone:            " << (int)dir.timezone << std::endl;
+    ss << "Volume Seq Number:   " << (int)dir.volSeqNumLE;
     return ss.str();
 }
 
 std::string CVolumeDescriptor::toString()
 {
     std::ostringstream ss;
-    ss << "Type:               " << typeString() << std::endl;
-    ss << "Identifier:         " << Util::foo(desc.identifier, 5) << std::endl;
-    ss << "Version:            " << (int)desc.version << std::endl;
-    ss << "System Identifier:  " << Util::foo(desc.sysident, 32) << std::endl;
-    ss << "Volume Identifier:  " << Util::foo(desc.volident, 32) << std::endl;
-    ss << "BlockSize:          " << desc.logicalBlockSizeLSB << std::endl;
-    ss << "Volume Space Size:  " << desc.volumeSpaceSizeLSB << std::endl;
-    ss << "Volume Set Size:    " << (int)desc.volumeSetSizeLSB << std::endl;
-    ss << "Volume Set Ident:   " << Util::foo(desc.volSetIdent, 128) << std::endl;
-    ss << "Publisher Ident:    " << Util::foo(desc.pubIdent, 128) << std::endl;
-    ss << "Data Prep. Ident:   " << Util::foo(desc.prepIdent, 128);
+    ss << "Type:                " << typeString() << std::endl;
+    ss << "Identifier:          " << Util::foo(desc.identifier, 5) << std::endl;
+    ss << "Version:             " << (int)desc.version << std::endl;
+
+    if (desc.type == PRIMARY_VOLUME_DESCRIPTOR)
+    {
+        ss << "System Identifier:   " << Util::foo(desc.sysident, 32) << std::endl;
+        ss << "Volume Identifier:   " << Util::foo(desc.volident, 32) << std::endl;
+        ss << "Volume Space Size:   " << desc.volumeSpaceSizeLSB << std::endl;
+        ss << "Volume Set Size:     " << (int)desc.volumeSetSizeLSB << std::endl;
+        ss << "BlockSize:           " << desc.logicalBlockSizeLSB << std::endl;
+        ss << "Path Table Size:     " << desc.pathTableSizeLSB << std::endl;
+        ss << "Volume Set Ident:    " << Util::foo(desc.volSetIdent, 128 - 60) << std::endl;
+        ss << "Publisher Ident:     " << Util::foo(desc.pubIdent, 128 - 60) << std::endl;
+        ss << "Data Prep. Ident:    " << Util::foo(desc.prepIdent, 128 - 60) << std::endl;
+
+        ss << "Directory Length:    " << (int)desc.directoryLength << std::endl;
+        ss << "LBA:                 " << (int)desc.lbaLSB << std::endl;
+        ss << "Data length:         " << (int)desc.dataLengthLSB << std::endl;
+        ss << "Year:                " << (int)desc.year + 1900 << std::endl;
+        ss << "Month:               " << (int)desc.month << std::endl;
+        ss << "Day:                 " << (int)desc.day << std::endl;
+        ss << "Hour:                " << (int)desc.hour << std::endl;
+        ss << "Minute:              " << (int)desc.minute << std::endl;
+        ss << "Second:              " << (int)desc.second << std::endl;
+        ss << "Timezone:            " << (int)desc.timezone;
+        
+    }
     return ss.str();
 }
 
@@ -210,20 +252,8 @@ int Options::parse(int argc, char **argv)
 int App::run(int argc, char **argv)
 {
     options.parse(argc, argv);
-    std::cin.ignore(32768, 0x20);
-    std::vector<CVolumeDescriptor> descriptions;
-    CVolumeDescriptor desc1, desc2, desc3;
-
-    do
-    {
-        desc1.read(std::cin);
-        std::cout << desc1.toString() << std::endl << std::endl;
-    }
-    while (desc1.desc.type != 0xff);
-
-    CDirectory dir1;
-    dir1.read(std::cin);
-    std::cout << dir1.toString() << std::endl;
+    ISO iso;
+    iso.read(std::cin);
     return 0;
 }
 
