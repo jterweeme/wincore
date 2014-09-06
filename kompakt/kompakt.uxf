@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><diagram program="umlet" version="11.3">
+  <zoom_level>10</zoom_level>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>280</x>
+      <y>200</y>
+      <w>190</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>
+*ISO*
+--
+- Descriptors descriptors
+- std::vector[CDirectory] directories
+--
++ read(std::istream s): int
+    </panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>590</x>
+      <y>210</y>
+      <w>330</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>
+*Util*
+--
+--
+_std::string foo(const char *s, int length)_
+    </panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>530</x>
+      <y>400</y>
+      <w>260</w>
+      <h>160</h>
+    </coordinates>
+    <panel_attributes>
+*App*
+--
+- options: Options
+--
++ run(argc: int, argv: char): int
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>1000</x>
+      <y>210</y>
+      <w>390</w>
+      <h>380</h>
+    </coordinates>
+    <panel_attributes>
+*SDirectory*
+--
+uint8_t length;
+uint8_t extendedLength;
+uint32_t lbaLE;
+uint32_t lbaBE;
+uint32_t dataLengthLE;
+uint32_t dataLengthBE;
+uint8_t year;
+uint8_t month;
+uint8_t day;
+uint8_t hour;
+uint8_t min;
+uint8_t sec;
+uint8_t timezone;
+uint8_t flags;
+uint8_t interleaved;
+uint16_t volSeqNumLE;
+uint16_t volSeqNumBE;
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>890</x>
+      <y>670</y>
+      <w>270</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>
+*CDirectory*
+--
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>910</x>
+      <y>60</y>
+      <w>250</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>
+*VolDescFactory*
+--
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>180</x>
+      <y>450</y>
+      <w>270</w>
+      <h>160</h>
+    </coordinates>
+    <panel_attributes>
+*CPrimaryVolumeDesc*
+--
++ static const uint8_t PRIMARY_VOLUME_DESCRIPTOR
+--
++ CPrimaryVolumeDesc();
++ CPrimaryVolumeDesc(const CVolumeDescriptor &vd);
++ std::string toString();
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>510</x>
+      <y>630</y>
+      <w>300</w>
+      <h>140</h>
+    </coordinates>
+    <panel_attributes>
+*Options*
+--
+- bool info
+- bool list
+- bool extract
+--
++ int parse(int argc, char **argv)
+    </panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>

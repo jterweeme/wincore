@@ -131,13 +131,18 @@ public:
 class VolDescFactory
 {
 public:
-    static CVolumeDescriptor *create(CVolumeDescriptor &vd);
+    CVolumeDescriptor *create(CVolumeDescriptor &vd);
+};
+
+class Descriptors : public std::vector<CVolumeDescriptor *>
+{
+public:
+    std::string toString();
 };
 
 class ISO
 {
-    std::vector<CVolumeDescriptor> descriptions;
-    std::vector<CVolumeDescriptor *> descriptors;
+    Descriptors descriptors;
     std::vector<CDirectory> directories;
 public:
     int read(std::istream &s);
@@ -192,6 +197,16 @@ CVolumeDescriptor *VolDescFactory::create(CVolumeDescriptor &vd)
     }
 }
 
+std::string Descriptors::toString()
+{
+    std::ostringstream oss;
+ 
+    for (iterator it = begin(); it != end(); it++)
+        oss << (*it)->toString() << std::endl << std::endl;
+   
+    return oss.str();
+}
+
 int ISO::read(std::istream &s)
 {
     s.ignore(32768, 0x20);
@@ -200,17 +215,12 @@ int ISO::read(std::istream &s)
     do
     {
         desc1.read(s);
-        descriptors.push_back(VolDescFactory::create(desc1));
+        VolDescFactory vdf;
+        descriptors.push_back(vdf.create(desc1));
     }
     while (desc1.desc.type != CVolumeDescriptor::VOLUME_DESCRIPTOR_SET_TERMINATOR);
 
-    for (std::vector<CVolumeDescriptor *>::iterator it = descriptors.begin();
-        it != descriptors.end();
-        it++)
-    {
-        std::cout << (*it)->toString() << std::endl << std::endl;
-    }
-
+    std::cout << descriptors.toString() << std::endl;
     CDirectory dir1;
     s.ignore(descriptors[0]->desc.lbaLSB *2048 - s.tellg());
     dir1.read(s);
