@@ -2,6 +2,9 @@
 #include <stdint.h>
 #include <sstream>
 #include <vector>
+#include <iterator>
+#include <string.h>
+#include <typeinfo>
 
 class Options
 {
@@ -99,18 +102,42 @@ struct SVolumeDescriptor
 
 class CVolumeDescriptor
 {
-    const char *typeString();
-    static const uint8_t PRIMARY_VOLUME_DESCRIPTOR = 1;
 public:
+    const char *typeString();
+    static const uint8_t SUPPLEMENTARY_VOLUME_DESCRIPTOR = 2;
+    static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
     SVolumeDescriptor desc;
-//public:
     int read(std::istream &s);
+    virtual std::string toString();
+};
+
+class CPrimaryVolumeDesc : public CVolumeDescriptor
+{
+public:
+    static const uint8_t PRIMARY_VOLUME_DESCRIPTOR = 1;
+    CPrimaryVolumeDesc();
+    CPrimaryVolumeDesc(const CVolumeDescriptor &vd);
     std::string toString();
+};
+
+class CVolumeDescriptorSetTerminator : public CVolumeDescriptor
+{
+public:
+    CVolumeDescriptorSetTerminator();
+    CVolumeDescriptorSetTerminator(const CVolumeDescriptor &vd);
+    std::string toString();
+};
+
+class VolDescFactory
+{
+public:
+    static CVolumeDescriptor *create(CVolumeDescriptor &vd);
 };
 
 class ISO
 {
     std::vector<CVolumeDescriptor> descriptions;
+    std::vector<CVolumeDescriptor *> descriptors;
     std::vector<CDirectory> directories;
 public:
     int read(std::istream &s);
@@ -123,6 +150,16 @@ public:
     int run(int argc, char **argv);
 };
 
+CPrimaryVolumeDesc::CPrimaryVolumeDesc(const CVolumeDescriptor &vd)
+{
+    ::memcpy(&desc, &vd.desc, sizeof(desc));
+}
+
+CVolumeDescriptorSetTerminator::CVolumeDescriptorSetTerminator(const CVolumeDescriptor &vd)
+{
+    ::memcpy(&desc, &vd.desc, sizeof(desc));
+}
+
 int CDirectory::read(std::istream &s)
 {
     s.read((char *)&dir, sizeof(dir));
@@ -133,32 +170,49 @@ const char *CVolumeDescriptor::typeString()
 {
     switch (desc.type)
     {
-    case PRIMARY_VOLUME_DESCRIPTOR:
+    case CPrimaryVolumeDesc::PRIMARY_VOLUME_DESCRIPTOR:
         return "Primary Volume Descriptor";
-    case 2:
+    case SUPPLEMENTARY_VOLUME_DESCRIPTOR:
         return "Supplementary Volume Descriptor";
-    case 255:
+    case VOLUME_DESCRIPTOR_SET_TERMINATOR:
         return "Volume Descriptor Set Terminator";
+    }
+}
+
+CVolumeDescriptor *VolDescFactory::create(CVolumeDescriptor &vd)
+{
+    switch (vd.desc.type)
+    {
+    case CPrimaryVolumeDesc::PRIMARY_VOLUME_DESCRIPTOR:
+        return new CPrimaryVolumeDesc(vd);
+    case CVolumeDescriptor::VOLUME_DESCRIPTOR_SET_TERMINATOR:
+        return new CVolumeDescriptorSetTerminator(vd);
+    default:
+        return new CVolumeDescriptor(vd);
     }
 }
 
 int ISO::read(std::istream &s)
 {
     s.ignore(32768, 0x20);
-
-    
     CVolumeDescriptor desc1;
 
     do
     {
         desc1.read(s);
-        descriptions.push_back(desc1);
-        std::cout << desc1.toString() << std::endl << std::endl;
+        descriptors.push_back(VolDescFactory::create(desc1));
     }
-    while (desc1.desc.type != 0xff);
+    while (desc1.desc.type != CVolumeDescriptor::VOLUME_DESCRIPTOR_SET_TERMINATOR);
+
+    for (std::vector<CVolumeDescriptor *>::iterator it = descriptors.begin();
+        it != descriptors.end();
+        it++)
+    {
+        std::cout << (*it)->toString() << std::endl << std::endl;
+    }
 
     CDirectory dir1;
-    s.ignore(descriptions[0].desc.lbaLSB *2048 - s.tellg());
+    s.ignore(descriptors[0]->desc.lbaLSB *2048 - s.tellg());
     dir1.read(s);
     std::cout << dir1.toString() << std::endl;
     return 0;
@@ -185,34 +239,49 @@ std::string CDirectory::toString()
 std::string CVolumeDescriptor::toString()
 {
     std::ostringstream ss;
+    ss << "[Volume Descriptor]" << std::endl;
     ss << "Type:                " << typeString() << std::endl;
     ss << "Identifier:          " << Util::foo(desc.identifier, 5) << std::endl;
     ss << "Version:             " << (int)desc.version << std::endl;
+    return ss.str();
+}
+std::string CPrimaryVolumeDesc::toString()
+{
+    std::ostringstream ss;
+    ss << "[Primary Volume Descriptor]" << std::endl;
+    ss << "Type:                " << typeString() << std::endl;
+    ss << "Identifier:          " << Util::foo(desc.identifier, 5) << std::endl;
+    ss << "Version:             " << (int)desc.version << std::endl;
+    ss << "System Identifier:   " << Util::foo(desc.sysident, 32) << std::endl;
+    ss << "Volume Identifier:   " << Util::foo(desc.volident, 32) << std::endl;
+    ss << "Volume Space Size:   " << desc.volumeSpaceSizeLSB << std::endl;
+    ss << "Volume Set Size:     " << (int)desc.volumeSetSizeLSB << std::endl;
+    ss << "BlockSize:           " << desc.logicalBlockSizeLSB << std::endl;
+    ss << "Path Table Size:     " << desc.pathTableSizeLSB << std::endl;
+    ss << "Volume Set Ident:    " << Util::foo(desc.volSetIdent, 128 - 60) << std::endl;
+    ss << "Publisher Ident:     " << Util::foo(desc.pubIdent, 128 - 60) << std::endl;
+    ss << "Data Prep. Ident:    " << Util::foo(desc.prepIdent, 128 - 60) << std::endl;
 
-    if (desc.type == PRIMARY_VOLUME_DESCRIPTOR)
-    {
-        ss << "System Identifier:   " << Util::foo(desc.sysident, 32) << std::endl;
-        ss << "Volume Identifier:   " << Util::foo(desc.volident, 32) << std::endl;
-        ss << "Volume Space Size:   " << desc.volumeSpaceSizeLSB << std::endl;
-        ss << "Volume Set Size:     " << (int)desc.volumeSetSizeLSB << std::endl;
-        ss << "BlockSize:           " << desc.logicalBlockSizeLSB << std::endl;
-        ss << "Path Table Size:     " << desc.pathTableSizeLSB << std::endl;
-        ss << "Volume Set Ident:    " << Util::foo(desc.volSetIdent, 128 - 60) << std::endl;
-        ss << "Publisher Ident:     " << Util::foo(desc.pubIdent, 128 - 60) << std::endl;
-        ss << "Data Prep. Ident:    " << Util::foo(desc.prepIdent, 128 - 60) << std::endl;
+    ss << "Directory Length:    " << (int)desc.directoryLength << std::endl;
+    ss << "LBA:                 " << (int)desc.lbaLSB << std::endl;
+    ss << "Data length:         " << (int)desc.dataLengthLSB << std::endl;
+    ss << "Year:                " << (int)desc.year + 1900 << std::endl;
+    ss << "Month:               " << (int)desc.month << std::endl;
+    ss << "Day:                 " << (int)desc.day << std::endl;
+    ss << "Hour:                " << (int)desc.hour << std::endl;
+    ss << "Minute:              " << (int)desc.minute << std::endl;
+    ss << "Second:              " << (int)desc.second << std::endl;
+    ss << "Timezone:            " << (int)desc.timezone;
+    return ss.str();
+}
 
-        ss << "Directory Length:    " << (int)desc.directoryLength << std::endl;
-        ss << "LBA:                 " << (int)desc.lbaLSB << std::endl;
-        ss << "Data length:         " << (int)desc.dataLengthLSB << std::endl;
-        ss << "Year:                " << (int)desc.year + 1900 << std::endl;
-        ss << "Month:               " << (int)desc.month << std::endl;
-        ss << "Day:                 " << (int)desc.day << std::endl;
-        ss << "Hour:                " << (int)desc.hour << std::endl;
-        ss << "Minute:              " << (int)desc.minute << std::endl;
-        ss << "Second:              " << (int)desc.second << std::endl;
-        ss << "Timezone:            " << (int)desc.timezone;
-        
-    }
+std::string CVolumeDescriptorSetTerminator::toString()
+{
+    std::ostringstream ss;
+    ss << "[Volume Descriptor Set Terminator]" << std::endl;
+    ss << "Type:                " << typeString() << std::endl;
+    ss << "Identifier:          " << Util::foo(desc.identifier, 5) << std::endl;
+    ss << "Version:             " << (int)desc.version << std::endl;
     return ss.str();
 }
 
