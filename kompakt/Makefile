@@ -1,4 +1,4 @@
 all:
-	g++ -o kompakt main.cpp
+	g++ -o kompakt -g -Wall main.cpp
 
 

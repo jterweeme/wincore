@@ -3,10 +3,10 @@
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>280</x>
-      <y>200</y>
-      <w>190</w>
-      <h>120</h>
+      <x>200</x>
+      <y>210</y>
+      <w>280</w>
+      <h>140</h>
     </coordinates>
     <panel_attributes>
 *ISO*
@@ -21,8 +21,8 @@
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>590</x>
-      <y>210</y>
+      <x>620</x>
+      <y>230</y>
       <w>330</w>
       <h>120</h>
     </coordinates>
@@ -37,8 +37,8 @@ _std::string foo(const char *s, int length)_
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>530</x>
-      <y>400</y>
+      <x>650</x>
+      <y>450</y>
       <w>260</w>
       <h>160</h>
     </coordinates>
@@ -54,15 +54,15 @@ _std::string foo(const char *s, int length)_
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>1000</x>
-      <y>210</y>
+      <x>1070</x>
+      <y>230</y>
       <w>390</w>
       <h>380</h>
     </coordinates>
     <panel_attributes>
 *SDirectory*
 --
-uint8_t length;
++ length: uint8_t
 uint8_t extendedLength;
 uint32_t lbaLE;
 uint32_t lbaBE;
@@ -86,8 +86,8 @@ uint16_t volSeqNumBE;
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>890</x>
-      <y>670</y>
+      <x>980</x>
+      <y>690</y>
       <w>270</w>
       <h>120</h>
     </coordinates>
@@ -101,54 +101,70 @@ uint16_t volSeqNumBE;
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>910</x>
-      <y>60</y>
-      <w>250</w>
+      <x>1000</x>
+      <y>80</y>
+      <w>430</w>
       <h>110</h>
     </coordinates>
     <panel_attributes>
 *VolDescFactory*
 --
 --
-</panel_attributes>
++ create(vd: CVolumeDescriptor): CVolumeDescriptor *</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>180</x>
+      <x>390</x>
+      <y>40</y>
+      <w>400</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>*CVolumeDescriptorSetTerminator*
+--
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>270</x>
       <y>450</y>
       <w>270</w>
-      <h>160</h>
+      <h>120</h>
     </coordinates>
-    <panel_attributes>
-*CPrimaryVolumeDesc*
+    <panel_attributes>*Options*
 --
-+ static const uint8_t PRIMARY_VOLUME_DESCRIPTOR
+- info: bool
+- list: bool
+- extract: bool
 --
-+ CPrimaryVolumeDesc();
-+ CPrimaryVolumeDesc(const CVolumeDescriptor &vd);
-+ std::string toString();
-</panel_attributes>
++ parse(argc: int, argv: char): int</panel_attributes>
     <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>510</x>
+      <y>480</y>
+      <w>160</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>140;30;30;30</additional_attributes>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>510</x>
-      <y>630</y>
-      <w>300</w>
-      <h>140</h>
+      <x>460</x>
+      <y>670</y>
+      <w>250</w>
+      <h>150</h>
     </coordinates>
-    <panel_attributes>
-*Options*
+    <panel_attributes>*Descriptors*
 --
-- bool info
-- bool list
-- bool extract
---
-+ int parse(int argc, char **argv)
-    </panel_attributes>
+--</panel_attributes>
     <additional_attributes/>
   </element>
 </diagram>

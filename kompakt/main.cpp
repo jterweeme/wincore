@@ -37,14 +37,17 @@ struct SDirectory
     uint8_t sec;
     uint8_t timezone;
     uint8_t flags;
-    uint8_t interleaved;
+    uint8_t interleavedFileUnit;
+    uint8_t interleavedGapSize;
     uint16_t volSeqNumLE;
     uint16_t volSeqNumBE;
+    uint8_t fnLength;
 } __attribute__ ((packed));
 
 class CDirectory
 {
 public:
+    std::string fn;
     SDirectory dir;
     int read(std::istream &s);
     std::string toString();
@@ -137,13 +140,21 @@ public:
 class Descriptors : public std::vector<CVolumeDescriptor *>
 {
 public:
+    int read(std::istream &s);
+    std::string toString();
+};
+
+class Directories : public std::vector<CDirectory>
+{
+public:
+    int read(std::istream &s, Descriptors &d);
     std::string toString();
 };
 
 class ISO
 {
     Descriptors descriptors;
-    std::vector<CDirectory> directories;
+    Directories directories;
 public:
     int read(std::istream &s);
 };
@@ -168,6 +179,9 @@ CVolumeDescriptorSetTerminator::CVolumeDescriptorSetTerminator(const CVolumeDesc
 int CDirectory::read(std::istream &s)
 {
     s.read((char *)&dir, sizeof(dir));
+    char filename[255] = {0};
+    s.read(filename, dir.fnLength);
+    fn = std::string(filename);
     return 0;
 }
 
@@ -207,30 +221,57 @@ std::string Descriptors::toString()
     return oss.str();
 }
 
-int ISO::read(std::istream &s)
+int Descriptors::read(std::istream &s)
 {
-    s.ignore(32768, 0x20);
     CVolumeDescriptor desc1;
 
     do
     {
         desc1.read(s);
         VolDescFactory vdf;
-        descriptors.push_back(vdf.create(desc1));
+        push_back(vdf.create(desc1));
     }
     while (desc1.desc.type != CVolumeDescriptor::VOLUME_DESCRIPTOR_SET_TERMINATOR);
+}
 
-    std::cout << descriptors.toString() << std::endl;
+int Directories::read(std::istream &s, Descriptors &d)
+{
     CDirectory dir1;
-    s.ignore(descriptors[0]->desc.lbaLSB *2048 - s.tellg());
-    dir1.read(s);
-    std::cout << dir1.toString() << std::endl;
+    s.ignore(d[0]->desc.lbaLSB * 2048 - s.tellg());
+
+    while (true)
+    {
+        dir1.read(s);
+        
+        if (dir1.dir.length > 0)
+        {
+            push_back(dir1);
+            std::cout << dir1.toString() << std::endl << std::endl;
+
+            if (s.tellg() % 2 > 0)
+                s.ignore(1);
+
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+int ISO::read(std::istream &s)
+{
+    s.ignore(32768, 0x20);
+    descriptors.read(s);
+    std::cout << descriptors.toString() << std::endl;
+    directories.read(s, descriptors);
     return 0;
 }
 
 std::string CDirectory::toString()
 {
     std::ostringstream ss;
+    ss << "[DIRECTORY]" << std::endl;
     ss << "Length:              " << (int)dir.length << std::endl;
     ss << "Extended Length:     " << (int)dir.extendedLength << std::endl;
     ss << "LBA:                 " << (int)dir.lbaLE << std::endl;
@@ -242,7 +283,9 @@ std::string CDirectory::toString()
     ss << "Minute:              " << (int)dir.min << std::endl;
     ss << "Second:              " << (int)dir.sec << std::endl;
     ss << "Timezone:            " << (int)dir.timezone << std::endl;
-    ss << "Volume Seq Number:   " << (int)dir.volSeqNumLE;
+    ss << "Volume Seq Number:   " << (int)dir.volSeqNumLE << std::endl;
+    ss << "Filename length:     " << (int)dir.fnLength << std::endl;
+    ss << "Name:                " << fn;
     return ss.str();
 }
 
