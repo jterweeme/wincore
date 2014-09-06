@@ -8,11 +8,13 @@
 
 class Options
 {
-    bool info;
-    bool list;
-    bool extract;
+    bool _info;
+    bool _list;
+    bool _extract;
 public:
     int parse(int argc, char **argv);
+    bool info() const { return _info; }
+    bool list() const { return _list; }
 };
 
 class Util
@@ -149,6 +151,7 @@ class Directories : public std::vector<CDirectory>
 public:
     int read(std::istream &s, Descriptors &d);
     std::string toString();
+    std::string list();
 };
 
 class ISO
@@ -157,6 +160,7 @@ class ISO
     Directories directories;
 public:
     int read(std::istream &s);
+    std::string list();
 };
 
 class App
@@ -165,6 +169,21 @@ class App
 public:
     int run(int argc, char **argv);
 };
+
+std::string Directories::list()
+{
+    std::ostringstream oss;
+
+    for (iterator it = begin(); it != end(); it++)
+        oss << it->fn << std::endl;
+
+    return oss.str();
+}
+
+std::string ISO::list()
+{
+    return directories.list();
+}
 
 CPrimaryVolumeDesc::CPrimaryVolumeDesc(const CVolumeDescriptor &vd)
 {
@@ -195,6 +214,8 @@ const char *CVolumeDescriptor::typeString()
         return "Supplementary Volume Descriptor";
     case VOLUME_DESCRIPTOR_SET_TERMINATOR:
         return "Volume Descriptor Set Terminator";
+    default:
+        return "Onbekend";
     }
 }
 
@@ -232,6 +253,8 @@ int Descriptors::read(std::istream &s)
         push_back(vdf.create(desc1));
     }
     while (desc1.desc.type != CVolumeDescriptor::VOLUME_DESCRIPTOR_SET_TERMINATOR);
+
+    return 0;
 }
 
 int Directories::read(std::istream &s, Descriptors &d)
@@ -246,7 +269,7 @@ int Directories::read(std::istream &s, Descriptors &d)
         if (dir1.dir.length > 0)
         {
             push_back(dir1);
-            std::cout << dir1.toString() << std::endl << std::endl;
+            //std::cout << dir1.toString() << std::endl << std::endl;
 
             if (s.tellg() % 2 > 0)
                 s.ignore(1);
@@ -257,13 +280,15 @@ int Directories::read(std::istream &s, Descriptors &d)
             break;
         }
     }
+
+    return 0;
 }
 
 int ISO::read(std::istream &s)
 {
     s.ignore(32768, 0x20);
     descriptors.read(s);
-    std::cout << descriptors.toString() << std::endl;
+    //std::cout << descriptors.toString() << std::endl;
     directories.read(s, descriptors);
     return 0;
 }
@@ -348,7 +373,7 @@ int Options::parse(int argc, char **argv)
 {
     if (argc <= 1)
     {
-        info = true;
+        _info = true;
         return 0;
     }
 
@@ -361,14 +386,16 @@ int Options::parse(int argc, char **argv)
             switch (opt[1])
             {
             case 'l':
-                list = true;
+                _list = true;
                 break;
             case 'i':
-                info = true;
+                _info = true;
                 break;
             }
         }
     }
+
+    return 0;
 }
 
 int App::run(int argc, char **argv)
@@ -376,6 +403,10 @@ int App::run(int argc, char **argv)
     options.parse(argc, argv);
     ISO iso;
     iso.read(std::cin);
+
+    if (options.list())
+        std::cout << iso.list() << std::endl;
+        
     return 0;
 }
 
