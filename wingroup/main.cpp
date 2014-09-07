@@ -11,11 +11,14 @@ public:
 struct GroupFile
 {
     uint8_t magic[4];
+    uint8_t unknown[18];
+    uint8_t stringPointer;
 } __attribute__ ((packed));
 
 class Group
 {
     GroupFile gf;
+    std::string description;
 public:
     int read(std::istream &s);
     std::string toString();
@@ -31,13 +34,27 @@ public:
 std::string Group::toString()
 {
     std::ostringstream oss;
-    oss << std::string(gf.magic, gf.magic + 4);
+    oss << "Magic:          " << std::string(gf.magic, gf.magic + 4) << std::endl;
+    oss << "Description:    " << description << std::endl;
     return oss.str();
 }
 
 int Group::read(std::istream &s)
 {
     s.read((char *)&gf, sizeof(gf));
+    s.ignore(gf.stringPointer - s.tellg());
+    char foo[255] = {0};
+
+    for (size_t i = 0; i < sizeof(foo); i++)
+    {
+        s.read(&foo[i], 1);
+        
+        if (foo[i] == 0)
+            break;
+    }
+
+    description = std::string(foo);
+
     return 0;
 }
 
