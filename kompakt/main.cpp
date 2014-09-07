@@ -60,10 +60,20 @@ class CDirectory
     SDirectory _dir;
 public:
     SDirectory dir() const { return _dir; }
-    std::string fn() const { return _fn; }
+    std::string fn(); //const { return _fn; }
     int read(std::istream &s);
     std::string toString();
 };
+
+std::string CDirectory::fn()
+{
+    if (_dir.fnLength == 1)
+    {
+        return std::string("..");
+    }
+
+    return Util::foo(_fn.c_str(), (int)_fn.length() - 2);
+}
 
 struct SVolumeDescriptor
 {
@@ -229,8 +239,7 @@ std::string Directories::list()
     std::ostringstream oss;
 
     for (iterator it = begin(); it != end(); it++)
-        if (it->fn().length() > 1)
-            oss << it->fn() << " " << it->dir().dataLengthLE << std::endl;
+        oss << it->fn() << " " << it->dir().dataLengthLE << std::endl;
 
     return oss.str();
 }
@@ -452,6 +461,9 @@ int Options::parse(int argc, char **argv)
                 break;
             case 'i':
                 _info = true;
+                break;
+            case 'x':
+                _extract = true;
                 break;
             }
         }
