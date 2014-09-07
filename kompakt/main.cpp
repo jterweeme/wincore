@@ -5,16 +5,23 @@
 #include <iterator>
 #include <string.h>
 #include <typeinfo>
+#include <fstream>
+#include <bitset>
 
 class Options
 {
     bool _info;
     bool _list;
     bool _extract;
+    std::string _fn;
 public:
+    std::string fn() const { return _fn; }
     int parse(int argc, char **argv);
     bool info() const { return _info; }
     bool list() const { return _list; }
+    bool extract() const { return _extract; }
+    bool stdinput() const { return (_fn.length() < 3); }
+    std::string toString();
 };
 
 class Util
@@ -48,9 +55,11 @@ struct SDirectory
 
 class CDirectory
 {
+    std::string _fn;
+    SDirectory _dir;
 public:
-    std::string fn;
-    SDirectory dir;
+    SDirectory dir() const { return _dir; }
+    std::string fn() const { return _fn; }
     int read(std::istream &s);
     std::string toString();
 };
@@ -160,7 +169,15 @@ class ISO
     Directories directories;
 public:
     int read(std::istream &s);
+    int extract(std::istream &s);
     std::string list();
+};
+
+class Flags : std::bitset<8>
+{
+public:
+    Flags(uint8_t flags) : std::bitset<8>(flags) { }
+    std::string toString();
 };
 
 class App
@@ -170,12 +187,57 @@ public:
     int run(int argc, char **argv);
 };
 
+std::string Flags::toString()
+{
+    std::ostringstream ss;
+
+    if (test(0))
+        ss << "Hidden ";
+    if (test(1))
+        ss << "Dir ";
+    if (test(2))
+        ss << "Associated ";
+    if (test(3))
+        ss << "Ex Attr ";
+    if (test(4))
+        ss << "Permissions ";
+    if (test(7))
+        ss << "Final Dir ";
+
+    return ss.str();
+}
+
+int ISO::extract(std::istream &s)
+{
+    for (Directories::iterator it = directories.begin(); it != directories.end(); it++)
+    {
+        if (it->fn().length() > 1);
+        {
+            //std::ofstream of;
+            //of.open(it->fn().c_str());
+            //std::cout << s.tellg();
+            s.ignore(it->dir().lbaLE * 2048 - s.tellg());
+            
+            for (size_t i = 0; i < it->dir().dataLengthLE; i++)
+                std::cout << (char)s.get();
+
+            std::cout << std::endl;
+            //uint8_t *buf = new uint8_t[it->dir().dataLengthLE];
+            //s.read((char *)buf, it->dir().dataLengthLE);
+            //of.write((const char *)buf, it->dir().dataLengthLE);
+            //of.close();
+        }
+    }
+    return 0;
+}
+
 std::string Directories::list()
 {
     std::ostringstream oss;
 
     for (iterator it = begin(); it != end(); it++)
-        oss << it->fn << std::endl;
+        if (it->fn().length() > 1)
+            oss << it->fn() << " " << it->dir().dataLengthLE << std::endl;
 
     return oss.str();
 }
@@ -197,11 +259,18 @@ CVolumeDescriptorSetTerminator::CVolumeDescriptorSetTerminator(const CVolumeDesc
 
 int CDirectory::read(std::istream &s)
 {
-    s.read((char *)&dir, sizeof(dir));
+    s.read((char *)&_dir, sizeof(_dir));
     char filename[255] = {0};
-    s.read(filename, dir.fnLength);
-    fn = std::string(filename);
+    s.read(filename, _dir.fnLength);
+    _fn = std::string(filename);
     return 0;
+}
+
+std::string Options::toString()
+{
+    std::ostringstream oss;
+    oss << "Filename: " << _fn << std::endl;
+    return oss.str();
 }
 
 const char *CVolumeDescriptor::typeString()
@@ -266,7 +335,7 @@ int Directories::read(std::istream &s, Descriptors &d)
     {
         dir1.read(s);
         
-        if (dir1.dir.length > 0)
+        if (dir1.dir().length > 0)
         {
             push_back(dir1);
             //std::cout << dir1.toString() << std::endl << std::endl;
@@ -288,7 +357,7 @@ int ISO::read(std::istream &s)
 {
     s.ignore(32768, 0x20);
     descriptors.read(s);
-    //std::cout << descriptors.toString() << std::endl;
+    std::cout << descriptors.toString() << std::endl;
     directories.read(s, descriptors);
     return 0;
 }
@@ -297,20 +366,22 @@ std::string CDirectory::toString()
 {
     std::ostringstream ss;
     ss << "[DIRECTORY]" << std::endl;
-    ss << "Length:              " << (int)dir.length << std::endl;
-    ss << "Extended Length:     " << (int)dir.extendedLength << std::endl;
-    ss << "LBA:                 " << (int)dir.lbaLE << std::endl;
-    ss << "Data length:         " << (int)dir.dataLengthLE << std::endl;
-    ss << "Year:                " << (int)dir.year + 1900 << std::endl;
-    ss << "Month:               " << (int)dir.month << std::endl;
-    ss << "Day:                 " << (int)dir.day << std::endl;
-    ss << "Hour:                " << (int)dir.hour << std::endl;
-    ss << "Minute:              " << (int)dir.min << std::endl;
-    ss << "Second:              " << (int)dir.sec << std::endl;
-    ss << "Timezone:            " << (int)dir.timezone << std::endl;
-    ss << "Volume Seq Number:   " << (int)dir.volSeqNumLE << std::endl;
-    ss << "Filename length:     " << (int)dir.fnLength << std::endl;
-    ss << "Name:                " << fn;
+    ss << "Length:              " << (int)_dir.length << std::endl;
+    ss << "Extended Length:     " << (int)_dir.extendedLength << std::endl;
+    ss << "LBA:                 " << (int)_dir.lbaLE << std::endl;
+    ss << "Filesize:            " << (int)_dir.dataLengthLE << std::endl;
+    ss << "Year:                " << (int)_dir.year + 1900 << std::endl;
+    ss << "Month:               " << (int)_dir.month << std::endl;
+    ss << "Day:                 " << (int)_dir.day << std::endl;
+    ss << "Hour:                " << (int)_dir.hour << std::endl;
+    ss << "Minute:              " << (int)_dir.min << std::endl;
+    ss << "Second:              " << (int)_dir.sec << std::endl;
+    ss << "Timezone:            " << (int)_dir.timezone << std::endl;
+    Flags flags(_dir.flags);
+    ss << "Flags:               " << flags.toString() << std::endl;
+    ss << "Volume Seq Number:   " << (int)_dir.volSeqNumLE << std::endl;
+    ss << "Filename length:     " << (int)_dir.fnLength << std::endl;
+    ss << "Name:                " << _fn;
     return ss.str();
 }
 
@@ -377,7 +448,7 @@ int Options::parse(int argc, char **argv)
         return 0;
     }
 
-    for (int i = 0; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         char *opt = argv[i];
 
@@ -393,6 +464,10 @@ int Options::parse(int argc, char **argv)
                 break;
             }
         }
+        else
+        {
+            _fn = std::string(opt);
+        }
     }
 
     return 0;
@@ -402,10 +477,31 @@ int App::run(int argc, char **argv)
 {
     options.parse(argc, argv);
     ISO iso;
-    iso.read(std::cin);
+    std::cout << options.toString() << std::endl;
+    std::ifstream fs;
+
+    if (options.stdinput())
+    {
+        iso.read(std::cin);
+        
+    }
+    else
+    {
+        fs.open(options.fn().c_str(), std::fstream::in);
+        iso.read(fs);
+        
+    }
 
     if (options.list())
         std::cout << iso.list() << std::endl;
+
+    if (options.extract())
+    {
+        if (options.stdinput())
+            iso.extract(std::cin);
+        else
+            iso.extract(fs);
+    }
         
     return 0;
 }
