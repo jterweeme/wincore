@@ -15,6 +15,7 @@ class Options
     bool _extract;
     std::string _fn;
 public:
+    Options() : _info(false), _list(false), _extract(false) { }
     std::string fn() const { return _fn; }
     int parse(int argc, char **argv);
     bool info() const { return _info; }
@@ -209,24 +210,16 @@ std::string Flags::toString()
 
 int ISO::extract(std::istream &s)
 {
-    for (Directories::iterator it = directories.begin(); it != directories.end(); it++)
+    for (Directories::iterator it = directories.begin() + 2; it != directories.end(); it++)
     {
-        if (it->fn().length() > 1);
-        {
-            //std::ofstream of;
-            //of.open(it->fn().c_str());
-            //std::cout << s.tellg();
-            s.ignore(it->dir().lbaLE * 2048 - s.tellg());
-            
-            for (size_t i = 0; i < it->dir().dataLengthLE; i++)
-                std::cout << (char)s.get();
-
-            std::cout << std::endl;
-            //uint8_t *buf = new uint8_t[it->dir().dataLengthLE];
-            //s.read((char *)buf, it->dir().dataLengthLE);
-            //of.write((const char *)buf, it->dir().dataLengthLE);
-            //of.close();
-        }
+        std::ofstream of;
+        of.open(it->fn().c_str());
+        s.ignore(it->dir().lbaLE * 2048 - s.tellg());
+        char *buf = new char[it->dir().dataLengthLE];
+        s.read(buf, it->dir().dataLengthLE);
+        of.write(buf, it->dir().dataLengthLE);
+        of.close();
+        delete buf;
     }
     return 0;
 }
@@ -338,7 +331,6 @@ int Directories::read(std::istream &s, Descriptors &d)
         if (dir1.dir().length > 0)
         {
             push_back(dir1);
-            //std::cout << dir1.toString() << std::endl << std::endl;
 
             if (s.tellg() % 2 > 0)
                 s.ignore(1);
@@ -357,7 +349,6 @@ int ISO::read(std::istream &s)
 {
     s.ignore(32768, 0x20);
     descriptors.read(s);
-    std::cout << descriptors.toString() << std::endl;
     directories.read(s, descriptors);
     return 0;
 }
@@ -477,7 +468,6 @@ int App::run(int argc, char **argv)
 {
     options.parse(argc, argv);
     ISO iso;
-    std::cout << options.toString() << std::endl;
     std::ifstream fs;
 
     if (options.stdinput())
