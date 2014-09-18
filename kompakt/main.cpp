@@ -13,12 +13,14 @@ class Options
     bool _info;
     bool _list;
     bool _extract;
+    bool _help;
     std::string _fn;
 public:
-    Options() : _info(false), _list(false), _extract(false) { }
+    Options() { _info = _list = _extract = _help = false; }
     std::string fn() const { return _fn; }
     int parse(int argc, char **argv);
     bool info() const { return _info; }
+    bool help() const { return _help; }
     bool list() const { return _list; }
     bool extract() const { return _extract; }
     bool stdinput() const { return (_fn.length() < 3); }
@@ -171,7 +173,7 @@ class Directories : public std::vector<CDirectory>
 public:
     int read(std::istream &s, Descriptors &d);
     std::string toString();
-    std::string list();
+    std::string list(int mode = 1);
 };
 
 class ISO
@@ -181,7 +183,7 @@ class ISO
 public:
     int read(std::istream &s);
     int extract(std::istream &s);
-    std::string list();
+    std::string list(int mode = 1);
 };
 
 class Flags : std::bitset<8>
@@ -195,8 +197,21 @@ class App
 {
     Options options;
 public:
+    std::string help();
     int run(int argc, char **argv);
 };
+
+std::string App::help()
+{
+    std::ostringstream oss;
+
+    oss << "kompakt: Usage: kompakt [options]" << std::endl;
+    oss << "Options:" << std::endl;
+    oss << "    -h  Print this help" << std::endl;
+    oss << "    -x  Extract";
+
+    return oss.str();
+}
 
 std::string Flags::toString()
 {
@@ -234,19 +249,24 @@ int ISO::extract(std::istream &s)
     return 0;
 }
 
-std::string Directories::list()
+std::string Directories::list(int mode)
 {
     std::ostringstream oss;
 
     for (iterator it = begin(); it != end(); it++)
-        oss << it->fn() << " " << it->dir().dataLengthLE << std::endl;
+    {
+        if (mode == 2)
+            oss << it->toString() << std::endl;
+        else
+            oss << it->fn() << " " << it->dir().dataLengthLE << std::endl;
+    }
 
     return oss.str();
 }
 
-std::string ISO::list()
+std::string ISO::list(int mode)
 {
-    return directories.list();
+    return directories.list(mode);
 }
 
 CPrimaryVolumeDesc::CPrimaryVolumeDesc(const CVolumeDescriptor &vd)
@@ -456,6 +476,9 @@ int Options::parse(int argc, char **argv)
         {
             switch (opt[1])
             {
+            case 'h':
+                _help = true;
+                return -1;
             case 'l':
                 _list = true;
                 break;
@@ -479,23 +502,30 @@ int Options::parse(int argc, char **argv)
 int App::run(int argc, char **argv)
 {
     options.parse(argc, argv);
+
+    if (options.help())
+        return 0;
+
     ISO iso;
     std::ifstream fs;
 
     if (options.stdinput())
     {
         iso.read(std::cin);
-        
     }
     else
     {
         fs.open(options.fn().c_str(), std::fstream::in);
         iso.read(fs);
-        
     }
 
     if (options.list())
-        std::cout << iso.list() << std::endl;
+    {
+        if (options.info())
+            std::cout << iso.list(2) << std::endl;
+        else
+            std::cout << iso.list() << std::endl;
+    }
 
     if (options.extract())
     {
