@@ -4,6 +4,7 @@
 #include <string.h>
 #include <typeinfo>
 #include <fstream>
+#include <iomanip>
 
 std::string CDirectory::fn()
 {
@@ -73,7 +74,8 @@ std::string Directories::list(int mode)
         if (mode == 2)
             oss << it->toString() << std::endl;
         else
-            oss << it->fn() << " " << it->dir().dataLengthLE << std::endl;
+            oss << it->fn() << std::string(20 - it->fn().length(), ' ')
+                << std::right << std::setw(10) << it->dir().dataLengthLE << std::endl;
     }
 
     return oss.str();
