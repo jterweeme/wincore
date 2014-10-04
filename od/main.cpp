@@ -8,10 +8,12 @@
 #include <fcntl.h>
 #endif
 
+using namespace std;
+
 class HexStream
 {
 public:
-    void dump(std::istream &input);
+    void dump(istream &input);
 };
 
 void HexStream::dump(std::istream &input)
@@ -20,10 +22,14 @@ void HexStream::dump(std::istream &input)
 
     while (input)
     {
+        std::cout << oct << setw(7) << setfill('0') << input.tellg() << " ";
         input.read((char *)arr, 16);
 
         for (size_t i = 0; i < input.gcount(); i++)
-            std::cout << std::hex << std::setw(2) << std::setfill('o') << (int)arr[i] << " ";
+            cout << hex << setw(2) << std::setfill('o') << (int)arr[i] << " ";
+        
+        for (size_t i = input.gcount(); i < 16; i++)
+            std::cout << "   ";
 
         std::cout << " >";
 
@@ -37,6 +43,7 @@ void HexStream::dump(std::istream &input)
 
         std::cout << "<" << std::endl;
     }
+
 }
 
 int main(int argc, char **argv)
