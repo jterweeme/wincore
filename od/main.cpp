@@ -11,23 +11,23 @@
 class HexStream
 {
 public:
-    void dump(std::istream *input);
+    void dump(std::istream &input);
 };
 
-void HexStream::dump(std::istream *input)
+void HexStream::dump(std::istream &input)
 {
     uint8_t arr[16] = { 0 };
 
-    while (*input)
+    while (input)
     {
-        input->read((char *)arr, 16);
+        input.read((char *)arr, 16);
 
-        for (size_t i = 0; i < input->gcount(); i++)
+        for (size_t i = 0; i < input.gcount(); i++)
             std::cout << std::hex << std::setw(2) << std::setfill('o') << (int)arr[i] << " ";
 
         std::cout << " >";
 
-        for (size_t i = 0; i < input->gcount(); i++)
+        for (size_t i = 0; i < input.gcount(); i++)
         {
             if (arr[i] < 0x20 || arr[i] == 0xff)
                 std::cout << ".";
@@ -47,9 +47,14 @@ int main(int argc, char **argv)
     HexStream hs;
 
     if (argc < 2)
-        hs.dump(&std::cin);
+    {
+        hs.dump(std::cin);
+    }
     else
-        hs.dump(new std::ifstream(argv[1], std::ifstream::in | std::ifstream::binary));
+    {
+        std::ifstream s(argv[1], std::ifstream::in | std::ifstream::binary);
+        hs.dump(s);
+    }
 
     return 0;
 }
