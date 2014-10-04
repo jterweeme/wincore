@@ -14,18 +14,15 @@ std::string CDirectory::fn()
     }
 
     return _fn;
-    //return Util::foo(_fn.c_str(), (int)_fn.length());
 }
 
 std::string App::help()
 {
     std::ostringstream oss;
-
     oss << "kompakt: Usage: kompakt [options]" << std::endl;
     oss << "Options:" << std::endl;
     oss << "    -h  Print this help" << std::endl;
     oss << "    -x  Extract";
-
     return oss.str();
 }
 
@@ -79,6 +76,12 @@ std::string Directories::list(int mode)
     }
 
     return oss.str();
+}
+
+bool CDirectory::isDir()
+{
+    Flags flags(_dir.flags);
+    return flags.test(1);
 }
 
 std::string ISO::list(int mode)
@@ -188,6 +191,31 @@ int Directories::read(std::istream &s, Descriptors &d)
         }
     }
 
+    for (iterator it = begin() + 2; it != end(); it++)
+    {
+        if (!it->isDir())
+            continue;
+
+        s.ignore(it->dir().lbaLE * 2048 - s.tellg());
+        
+        while (true)
+        {
+            dir1.read(s);
+            
+            if (dir1.dir().length > 0)
+            {
+                push_back(dir1);
+
+                if (s.tellg() % 2 > 0)
+                    s.ignore(1);
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -247,7 +275,6 @@ std::string CPrimaryVolumeDesc::toString()
     ss << "Volume Set Ident:    " << Util::foo(desc.volSetIdent, 128 - 60) << std::endl;
     ss << "Publisher Ident:     " << Util::foo(desc.pubIdent, 128 - 60) << std::endl;
     ss << "Data Prep. Ident:    " << Util::foo(desc.prepIdent, 128 - 60) << std::endl;
-
     ss << "Directory Length:    " << (int)desc.directoryLength << std::endl;
     ss << "LBA:                 " << (int)desc.lbaLSB << std::endl;
     ss << "Data length:         " << (int)desc.dataLengthLSB << std::endl;

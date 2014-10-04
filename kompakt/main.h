@@ -61,6 +61,7 @@ class CDirectory
 public:
     SDirectory dir() const { return _dir; }
     std::string fn(); //const { return _fn; }
+    bool isDir();
     int read(std::istream &s);
     std::string toString();
 };
@@ -174,7 +175,7 @@ public:
     std::string list(int mode = 1);
 };
 
-class Flags : std::bitset<8>
+class Flags : public std::bitset<8>
 {
 public:
     Flags(uint8_t flags) : std::bitset<8>(flags) { }

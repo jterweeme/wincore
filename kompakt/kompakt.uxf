@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?><diagram program="umlet" version="11.3">
-  <zoom_level>10</zoom_level>
+  <zoom_level>9</zoom_level>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>200</x>
-      <y>210</y>
-      <w>280</w>
-      <h>140</h>
+      <x>108</x>
+      <y>576</y>
+      <w>252</w>
+      <h>126</h>
     </coordinates>
     <panel_attributes>
 *ISO*
@@ -21,26 +21,26 @@
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>620</x>
-      <y>230</y>
-      <w>330</w>
-      <h>120</h>
+      <x>27</x>
+      <y>0</y>
+      <w>297</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>
 *Util*
 --
 --
-_std::string foo(const char *s, int length)_
+_foo(const char *s, int length): std::string_
     </panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>650</x>
-      <y>450</y>
-      <w>260</w>
-      <h>160</h>
+      <x>297</x>
+      <y>351</y>
+      <w>279</w>
+      <h>144</h>
     </coordinates>
     <panel_attributes>
 *App*
@@ -54,29 +54,29 @@ _std::string foo(const char *s, int length)_
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>1070</x>
-      <y>230</y>
-      <w>390</w>
-      <h>380</h>
+      <x>999</x>
+      <y>171</y>
+      <w>351</w>
+      <h>342</h>
     </coordinates>
     <panel_attributes>
 *SDirectory*
 --
 + length: uint8_t
-uint8_t extendedLength;
-uint32_t lbaLE;
-uint32_t lbaBE;
-uint32_t dataLengthLE;
-uint32_t dataLengthBE;
-uint8_t year;
-uint8_t month;
-uint8_t day;
-uint8_t hour;
-uint8_t min;
-uint8_t sec;
-uint8_t timezone;
-uint8_t flags;
-uint8_t interleaved;
+uint8_t extendedLength
+uint32_t lbaLE
+uint32_t lbaBE
+uint32_t dataLengthLE
+uint32_t dataLengthBE
+uint8_t year
+uint8_t month
+uint8_t day
+uint8_t hour
+uint8_t min
+uint8_t sec
+uint8_t timezone
+uint8_t flags
+uint8_t interleaved
 uint16_t volSeqNumLE;
 uint16_t volSeqNumBE;
 --
@@ -86,10 +86,10 @@ uint16_t volSeqNumBE;
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>980</x>
-      <y>690</y>
-      <w>270</w>
-      <h>120</h>
+      <x>999</x>
+      <y>738</y>
+      <w>243</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>
 *CDirectory*
@@ -101,10 +101,10 @@ uint16_t volSeqNumBE;
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>1000</x>
-      <y>80</y>
-      <w>430</w>
-      <h>110</h>
+      <x>936</x>
+      <y>36</y>
+      <w>387</w>
+      <h>99</h>
     </coordinates>
     <panel_attributes>
 *VolDescFactory*
@@ -116,10 +116,10 @@ uint16_t volSeqNumBE;
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>390</x>
-      <y>40</y>
-      <w>400</w>
-      <h>120</h>
+      <x>387</x>
+      <y>0</y>
+      <w>360</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>*CVolumeDescriptorSetTerminator*
 --
@@ -129,10 +129,10 @@ uint16_t volSeqNumBE;
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>270</x>
-      <y>450</y>
-      <w>270</w>
-      <h>120</h>
+      <x>477</x>
+      <y>144</y>
+      <w>243</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>*Options*
 --
@@ -146,25 +146,159 @@ uint16_t volSeqNumBE;
   <element>
     <type>com.umlet.element.Relation</type>
     <coordinates>
-      <x>510</x>
-      <y>480</y>
-      <w>160</w>
-      <h>50</h>
+      <x>513</x>
+      <y>225</y>
+      <w>44</w>
+      <h>143</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
-    <additional_attributes>140;30;30;30</additional_attributes>
+    <additional_attributes>27;126;27;27</additional_attributes>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>460</x>
-      <y>670</y>
-      <w>250</w>
-      <h>150</h>
+      <x>450</x>
+      <y>576</y>
+      <w>225</w>
+      <h>126</h>
     </coordinates>
     <panel_attributes>*Descriptors*
 --
 --</panel_attributes>
     <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>333</x>
+      <y>630</y>
+      <w>134</w>
+      <h>44</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>27;27;117;27</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>0</x>
+      <y>351</y>
+      <w>270</w>
+      <h>126</h>
+    </coordinates>
+    <panel_attributes>*Directories*
+--
+--
+int read(std::istream &amp;s, Descriptors &amp;d)
+std::string toString()
+std::string list(int mode = 1)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>144</x>
+      <y>450</y>
+      <w>44</w>
+      <h>143</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>27;126;27;27</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>639</x>
+      <y>783</y>
+      <w>252</w>
+      <h>126</h>
+    </coordinates>
+    <panel_attributes>*CVolumeDescriptor*
+--
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>261</x>
+      <y>783</y>
+      <w>261</w>
+      <h>144</h>
+    </coordinates>
+    <panel_attributes>*CPrimaryVolumeDesc*
+--
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>765</x>
+      <y>558</y>
+      <w>279</w>
+      <h>153</h>
+    </coordinates>
+    <panel_attributes>*SVolumeDescriptor*
+--
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>297</x>
+      <y>468</y>
+      <w>44</w>
+      <h>125</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>27;108;27;27</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>1143</x>
+      <y>531</y>
+      <w>207</w>
+      <h>126</h>
+    </coordinates>
+    <panel_attributes>*Flags*
+--
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>1152</x>
+      <y>630</y>
+      <w>44</w>
+      <h>125</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>27;27;27;108</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>765</x>
+      <y>684</y>
+      <w>44</w>
+      <h>116</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>27;99;27;27</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>495</x>
+      <y>810</y>
+      <w>161</w>
+      <h>44</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>144;27;27;27</additional_attributes>
   </element>
 </diagram>
