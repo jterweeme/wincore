@@ -19,14 +19,17 @@ public:
 void HexStream::dump(std::istream &input)
 {
     uint8_t arr[16] = { 0 };
+    uint16_t pos;
 
     while (input)
     {
-        std::cout << oct << setw(7) << setfill('0') << input.tellg() << " ";
+        pos = input.tellg();
+        std::cout << oct << setw(7) << setfill('0') << pos << " ";
         input.read((char *)arr, 16);
+        pos += input.gcount();
 
         for (size_t i = 0; i < input.gcount(); i++)
-            cout << hex << setw(2) << std::setfill('o') << (int)arr[i] << " ";
+            cout << hex << setw(2) << std::setfill('0') << (int)arr[i] << " ";
         
         for (size_t i = input.gcount(); i < 16; i++)
             std::cout << "   ";
@@ -44,6 +47,7 @@ void HexStream::dump(std::istream &input)
         std::cout << "<" << std::endl;
     }
 
+    std::cout << oct << setw(7) << setfill('0') << pos << "\n";
 }
 
 int main(int argc, char **argv)
