@@ -1,14 +1,5 @@
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-#include <stdint.h>
-
-#ifdef _WIN32
-#include <io.h>
-#include <fcntl.h>
-#endif
-
-using namespace std;
+#include "common.h"
+using namespace koe;
 
 class HexStream
 {
@@ -16,7 +7,7 @@ public:
     void dump(istream &input);
 };
 
-void HexStream::dump(std::istream &input)
+void HexStream::dump(istream &input)
 {
     uint8_t arr[16] = { 0 };
     uint16_t pos;
@@ -24,30 +15,30 @@ void HexStream::dump(std::istream &input)
     while (input)
     {
         pos = input.tellg();
-        std::cout << oct << setw(7) << setfill('0') << pos << " ";
+        cout << oct << setw(7) << setfill('0') << pos << " ";
         input.read((char *)arr, 16);
         pos += input.gcount();
 
         for (size_t i = 0; i < input.gcount(); i++)
-            cout << hex << setw(2) << std::setfill('0') << (int)arr[i] << " ";
+            cout << hex << setw(2) << setfill('0') << (int)arr[i] << " ";
         
         for (size_t i = input.gcount(); i < 16; i++)
-            std::cout << "   ";
+            cout << "   ";
 
-        std::cout << " >";
+        cout << " >";
 
         for (size_t i = 0; i < input.gcount(); i++)
         {
             if (arr[i] < 0x20 || arr[i] == 0xff)
-                std::cout << ".";
+                cout << ".";
             else
-                std::cout << arr[i];
+                cout << arr[i];
         }
 
-        std::cout << "<" << std::endl;
+        cout << "<\n";
     }
 
-    std::cout << oct << setw(7) << setfill('0') << pos << "\n";
+    cout << oct << setw(7) << setfill('0') << pos << "\n";
 }
 
 int main(int argc, char **argv)
@@ -59,11 +50,11 @@ int main(int argc, char **argv)
 
     if (argc < 2)
     {
-        hs.dump(std::cin);
+        hs.dump(cin);
     }
     else
     {
-        std::ifstream s(argv[1], std::ifstream::in | std::ifstream::binary);
+        ifstream s(argv[1], ifstream::in | ifstream::binary);
         hs.dump(s);
     }
 
