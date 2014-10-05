@@ -1,3 +1,10 @@
+/*
+Jasper ter Weeme
+
+TODO: bug: when last read equals 16, another read will be attempted
+and another empty line will be displayed.
+*/
+
 #include "common.h"
 using namespace koe;
 
@@ -9,8 +16,8 @@ public:
 
 void HexStream::dump(istream &input)
 {
-    uint8_t arr[16] = { 0 };
-    uint16_t pos;
+    char arr[16] = { 0 };
+    int pos;
 
     while (input)
     {
@@ -19,15 +26,15 @@ void HexStream::dump(istream &input)
         input.read((char *)arr, 16);
         pos += input.gcount();
 
-        for (size_t i = 0; i < input.gcount(); i++)
+        for (int i = 0; i < input.gcount(); i++)
             cout << hex << setw(2) << setfill('0') << (int)arr[i] << " ";
         
-        for (size_t i = input.gcount(); i < 16; i++)
+        for (int i = input.gcount(); i < 16; i++)
             cout << "   ";
 
         cout << " >";
 
-        for (size_t i = 0; i < input.gcount(); i++)
+        for (int i = 0; i < input.gcount(); i++)
         {
             if (arr[i] < 0x20 || arr[i] == 0xff)
                 cout << ".";

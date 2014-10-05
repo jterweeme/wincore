@@ -1,3 +1,7 @@
+/*
+Jasper ter Weeme
+*/
+
 #ifndef _COMMON_H_
 #define _COMMON_H_
 #include "mystl.h"
@@ -12,12 +16,12 @@ namespace koe
     using mystl::istream;
     using mystl::cin;
     using mystl::ifstream;
-    using std::ostream;
-    using std::cout;
-    using std::hex;
-    using std::oct;
-    using std::setw;
-    using std::setfill;
+    using mystl::ostream;
+    using mystl::cout;
+    using mystl::hex;
+    using mystl::oct;
+    using mystl::setw;
+    using mystl::setfill;
     using mystl::uint8_t;
     using mystl::uint16_t;
 };
