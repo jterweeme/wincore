@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+using namespace std;
 
 const uint32_t k[64] = {
 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee ,
@@ -43,39 +44,55 @@ public:
     static void itoa(int n, char *s);
 };
 
-
-void md5(const uint8_t *initial_msg, size_t initial_len, uint8_t *digest)
+class Hash
 {
-    uint32_t h0, h1, h2, h3;
+public:
+    uint32_t _h0, _h1, _h2, _h3;
+    Hash() : _h0(0x67452301), _h1(0xefcdab89), _h2(0x98badcfe), _h3(0x10325476) { }
+    uint32_t h0() const { return _h0; }
+    uint32_t h1() const { return _h1; }
+    uint32_t h2() const { return _h2; }
+    uint32_t h3() const { return _h3; }
+    void print();
+};
+
+class App
+{
+    Hash _hash;
+public:
+    int run(int argc, char **argv);
+    void md5(const uint8_t *initial_msg, size_t initial_len);
+};
+
+void App::md5(const uint8_t *initial_msg, size_t initial_len)
+{
     uint8_t *msg = NULL;
     size_t new_len, offset;
     uint32_t w[16];
     uint32_t a, b, c, d, i, f, g, temp;
-    h0 = 0x67452301;
-    h1 = 0xefcdab89;
-    h2 = 0x98badcfe;
-    h3 = 0x10325476;
     for (new_len = initial_len + 1; new_len % (512/8) != 448/8; new_len++);
     msg = new uint8_t[new_len + 8];
     memcpy(msg, initial_msg, initial_len);
-    msg[initial_len] = 0x80; // append the "1" bit; most significant bit is "first"
+    msg[initial_len] = 0x80;
+
     for (offset = initial_len + 1; offset < new_len; offset++)
-        msg[offset] = 0; // append "0" bits
+        msg[offset] = 0;
 
     Utility::to_bytes(initial_len*8, msg + new_len);
     Utility::to_bytes(initial_len>>29, msg + new_len + 4);
 
-    for(offset=0; offset<new_len; offset += (512/8)) {
+    for(offset=0; offset<new_len; offset += (512/8))
+    {
        for (i = 0; i < 16; i++)
             w[i] = Utility::to_int32(msg + offset + i*4);
 
-        a = h0;
-        b = h1;
-        c = h2;
-        d = h3;
+        a = _hash.h0();
+        b = _hash.h1();
+        c = _hash.h2();
+        d = _hash.h3();
 
-        // Main loop:
-        for(i = 0; i<64; i++) {
+        for(i = 0; i<64; i++)
+        {
 
             if (i < 16) {
                 f = (b & c) | ((~b) & d);
@@ -99,23 +116,29 @@ void md5(const uint8_t *initial_msg, size_t initial_len, uint8_t *digest)
 
         }
 
-        // Add this chunk's hash to result so far:
-        h0 += a;
-        h1 += b;
-        h2 += c;
-        h3 += d;
+        _hash._h0 += a;
+        _hash._h1 += b;
+        _hash._h2 += c;
+        _hash._h3 += d;
 
     }
 
-    // cleanup
     free(msg);
-    //var char digest[16] := h0 append h1 append h2 append h3 //(Output is in little-endian)
-    Utility::to_bytes(h0, digest);
-    Utility::to_bytes(h1, digest + 4);
-    Utility::to_bytes(h2, digest + 8);
-    Utility::to_bytes(h3, digest + 12);
 }
 
+void Hash::print()
+{
+    uint8_t result[16] = {0};
+    Utility::to_bytes(_h0, result);
+    Utility::to_bytes(_h1, result + 4);
+    Utility::to_bytes(_h2, result + 8);
+    Utility::to_bytes(_h3, result + 12);
+
+    for (int i = 0; i < 16; i++)
+        cout << hex << setw(2) << setfill('0') << (int)result[i];
+
+    cout << endl;
+}
 
 class Chunk
 {
@@ -126,11 +149,7 @@ public:
     const char *toString();
 };
 
-class App
-{
-public:
-    int run(int argc, char **argv);
-};
+
 
 void Utility::to_bytes(const uint32_t val, uint8_t *bytes)
 {
@@ -151,21 +170,20 @@ uint32_t Utility::to_int32(const uint8_t * const bytes)
 
 int App::run(int argc, char **argv)
 {
-    std::fstream foo;
-    foo.open(argv[1], std::fstream::in | std::ios::binary | std::ios::ate);
+    ifstream foo;
+    foo.open(argv[1], fstream::in | ios::binary | ios::ate);
     size_t fileSize = foo.tellg();
     foo.seekg(0, foo.beg);
     uint8_t *file = new uint8_t[fileSize];
     foo.readsome((char *)file, fileSize);
-    uint8_t result[16];
-    ::md5(file, fileSize, result);
+
+    md5(file, fileSize);
+    delete[] file;
     foo.close();
+    _hash.print();
 
-    for (int i = 0; i < 16; i++)
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)result[i];
 
-    std::cout << std::endl;
-    
+    return 0;
 }
 
 int main(int argc, char **argv)
