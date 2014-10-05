@@ -29,19 +29,11 @@ const uint32_t r[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22
                       4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
                       6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21};
 
-#define LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
-
-class Utility
+class Util
 {
 public:
-    static void toHex(uint8_t input, char *output);
     static void to_bytes(uint32_t val, uint8_t *bytes);
     static uint32_t to_int32(const uint8_t *bytes);
-    static uint16_t be_16_toh(uint16_t x);
-    static uint32_t be_32_toh(uint32_t x);
-    static const double PI = 3.1415926536;
-    static unsigned int bitReverse(unsigned int x, const int log2n);
-    static void itoa(int n, char *s);
 };
 
 class Hash
@@ -61,39 +53,29 @@ class App
     Hash _hash;
 public:
     int run(int argc, char **argv);
-    void md5(const uint8_t *initial_msg, size_t initial_len);
+    void md5(uint8_t *msg, size_t new_len);
+    uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
 };
 
-void App::md5(const uint8_t *initial_msg, size_t initial_len)
+
+
+void App::md5(uint8_t *msg, size_t new_len)
 {
-    uint8_t *msg = NULL;
-    size_t new_len, offset;
     uint32_t w[16];
-    uint32_t a, b, c, d, i, f, g, temp;
-    for (new_len = initial_len + 1; new_len % (512/8) != 448/8; new_len++);
-    msg = new uint8_t[new_len + 8];
-    memcpy(msg, initial_msg, initial_len);
-    msg[initial_len] = 0x80;
+    uint32_t a, b, c, d, f, g, temp;
 
-    for (offset = initial_len + 1; offset < new_len; offset++)
-        msg[offset] = 0;
-
-    Utility::to_bytes(initial_len*8, msg + new_len);
-    Utility::to_bytes(initial_len>>29, msg + new_len + 4);
-
-    for(offset=0; offset<new_len; offset += (512/8))
+    for(size_t offset=0; offset<new_len; offset += (512/8))
     {
-       for (i = 0; i < 16; i++)
-            w[i] = Utility::to_int32(msg + offset + i*4);
+       for (int i = 0; i < 16; i++)
+            w[i] = Util::to_int32(msg + offset + i*4);
 
         a = _hash.h0();
         b = _hash.h1();
         c = _hash.h2();
         d = _hash.h3();
 
-        for(i = 0; i<64; i++)
+        for(int i = 0; i<64; i++)
         {
-
             if (i < 16) {
                 f = (b & c) | ((~b) & d);
                 g = i;
@@ -126,13 +108,15 @@ void App::md5(const uint8_t *initial_msg, size_t initial_len)
     free(msg);
 }
 
+
+
 void Hash::print()
 {
     uint8_t result[16] = {0};
-    Utility::to_bytes(_h0, result);
-    Utility::to_bytes(_h1, result + 4);
-    Utility::to_bytes(_h2, result + 8);
-    Utility::to_bytes(_h3, result + 12);
+    Util::to_bytes(_h0, result);
+    Util::to_bytes(_h1, result + 4);
+    Util::to_bytes(_h2, result + 8);
+    Util::to_bytes(_h3, result + 12);
 
     for (int i = 0; i < 16; i++)
         cout << hex << setw(2) << setfill('0') << (int)result[i];
@@ -151,7 +135,7 @@ public:
 
 
 
-void Utility::to_bytes(const uint32_t val, uint8_t *bytes)
+void Util::to_bytes(const uint32_t val, uint8_t *bytes)
 {
     bytes[0] = (uint8_t) val;
     bytes[1] = (uint8_t) (val >> 8);
@@ -159,7 +143,7 @@ void Utility::to_bytes(const uint32_t val, uint8_t *bytes)
     bytes[3] = (uint8_t) (val >> 24);
 }
 
-uint32_t Utility::to_int32(const uint8_t * const bytes)
+uint32_t Util::to_int32(const uint8_t * const bytes)
 {
     return (uint32_t) bytes[0]
         | ((uint32_t) bytes[1] << 8)
@@ -176,8 +160,15 @@ int App::run(int argc, char **argv)
     foo.seekg(0, foo.beg);
     uint8_t *file = new uint8_t[fileSize];
     foo.readsome((char *)file, fileSize);
-
-    md5(file, fileSize);
+    size_t new_len;
+    for (new_len = fileSize + 1; new_len % (512/8) != 448/8; new_len++);
+    uint8_t *msg = new uint8_t[new_len + 8];
+    memset(msg, 0, new_len + 8);
+    memcpy(msg, file, fileSize);
+    msg[fileSize] = 0x80;
+    Util::to_bytes(fileSize *8, msg + new_len);
+    Util::to_bytes(fileSize>>29, msg + new_len + 4);
+    md5(msg, new_len);
     delete[] file;
     foo.close();
     _hash.print();
