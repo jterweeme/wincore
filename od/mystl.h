@@ -1,7 +1,6 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <stdio.h>
-#include <fstream>
 #include <iostream>
 #include <iomanip>
 
@@ -18,6 +17,7 @@ class iomanip
 public:
     static const uint8_t HEX = 1;
     static const uint8_t DEC = 2;
+    static const uint8_t OCT = 3;
     iomanip() { }
     iomanip(int type) : _type(type) { }
     int type() const { return _type; }
@@ -62,6 +62,11 @@ public:
 istream cin(stdin);
 ostream cout(stdout);
 ostream cerr(stderr);
+iomanip hex(iomanip::HEX);
+iomanip oct(iomanip::OCT);
+
+iomanip setw(int length) { return hex; }
+iomanip setfill(char c) { return hex; }
 
 }
 
