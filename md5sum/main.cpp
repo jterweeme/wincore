@@ -1,4 +1,5 @@
 #include "common.h"
+#include <stdlib.h>
 
 const uint32_t k[64] = {
 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee ,
@@ -109,13 +110,17 @@ void Paar::dump(ostream &os)
 void Hash::read(const char *hash)
 {
     string s0 = string(hash, hash + 8);
-    _h0 = be32toh(stoul(s0, 0, 16));
+    //_h0 = be32toh(stoul(s0, 0, 16));
+    _h0 = be32toh(strtol(s0.c_str(), 0, 16));
     string s1 = string(hash + 8, hash + 16);
-    _h1 = be32toh(stoul(s1, 0, 16));
+    //_h1 = be32toh(stoul(s1, 0, 16));
+    _h1 = be32toh(strtol(s1.c_str(), 0, 16));
     string s2 = string(hash + 16, hash + 24);
-    _h2 = be32toh(stoul(s2, 0, 16));
+    //_h2 = be32toh(stoul(s2, 0, 16));
+    _h2 = be32toh(strtol(s2.c_str(), 0, 16));
     string s3 = string(hash + 24, hash + 32);
-    _h3 = be32toh(stoul(s3, 0, 16));
+    //_h3 = be32toh(stoul(s3, 0, 16));
+    _h3 = be32toh(strtol(s3.c_str(), 0, 16));
 }
 
 void App::md5(uint8_t *msg, size_t new_len)

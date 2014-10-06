@@ -6,7 +6,7 @@ namespace mytypes
 {
     typedef unsigned int size_t;
     typedef unsigned char uint8_t;
-    typedef unsigned long int uint32_t;   
+    typedef unsigned uint32_t;
 }
 
 class MyUtil
