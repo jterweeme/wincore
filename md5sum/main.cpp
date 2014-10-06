@@ -57,20 +57,13 @@ void Chunk::read(const uint8_t *msg)
     
 }
 
-void App::md5(uint8_t *msg, size_t new_len)
+Hash Chunk::calc(Hash &hash)
 {
     uint32_t a, b, c, d, f, g, temp;
-
-    for(size_t offset=0; offset<new_len; offset += 64)
-    {
-
-        Chunk chunk;
-        chunk.read(msg + offset);
-
-        a = _hash.h0();
-        b = _hash.h1();
-        c = _hash.h2();
-        d = _hash.h3();
+     a = hash.h0();
+        b = hash.h1();
+        c = hash.h2();
+        d = hash.h3();
 
         for(int i = 0; i<64; i++)
         {
@@ -98,11 +91,22 @@ void App::md5(uint8_t *msg, size_t new_len)
             temp = d;
             d = c;
             c = b;
-            b = b + LEFTROTATE((a + f + k[i] + chunk.w(g)), r[i]);
+            b = b + App::LEFTROTATE((a + f + k[i] + w(g)), r[i]);
             a = temp;
         }
 
         Hash foo(a, b, c, d);
+        return foo;
+
+}
+
+void App::md5(uint8_t *msg, size_t new_len)
+{
+    for(size_t offset=0; offset<new_len; offset += 64)
+    {
+        Chunk chunk;
+        chunk.read(msg + offset);
+        Hash foo = chunk.calc(_hash);
         _hash.add(foo);
     }
 }

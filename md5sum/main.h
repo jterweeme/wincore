@@ -66,6 +66,7 @@ class Chunk
     uint32_t _w[16];
 public:
     void read(const uint8_t *msg);
+    Hash calc(Hash &hash);
     uint32_t w(uint32_t g) const { return _w[g]; }
 };
 
@@ -75,7 +76,8 @@ class App
     Options _options;
     Paars _paars;
     void md5(uint8_t *msg, size_t new_len);
-    uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
+public:
+    static uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
     void checkFile(const char *fn);
 public:
     int run(int argc, char **argv);
