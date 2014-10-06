@@ -1,16 +1,16 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 #include "mystl.h"
-#include <stdint.h>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
-#include <endian.h>
 #include <sstream>
 #include <vector>
 
 namespace koe
 {
+    //using mytypes::uint8_t;
+    //using mytypes::uint32_t;
     using std::fstream;
     using std::istream;
     using std::cout;
@@ -25,6 +25,7 @@ namespace koe
     using std::hex;
     using mystl::memcpy;
     using mystl::memset;
+    using std::stoul;
 }
 
 using namespace koe;

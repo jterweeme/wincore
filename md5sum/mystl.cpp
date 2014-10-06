@@ -1,4 +1,5 @@
 #include "mystl.h"
+#include <stdlib.h>
 
 void *MyUtil::memcpy(void *dest, const void *src, size_t n)
 {
@@ -21,6 +22,21 @@ void *MyUtil::memset(void *s, const int c, size_t n)
     return s;
 }
 
+int MyUtil::atoi(const char *str)
+{
+    int res = 0;
+
+    for (int i = 0; str[i] != '\0'; ++i)
+        res = res * 10 + str[i] - '0';
+
+    return res;
+}
+
+long int MyUtil::strtol(const char *s, char **end, int base)
+{
+    return 10;
+}
+
 namespace mystl
 {
     void *memcpy(void *dest, const void *src, size_t n)
@@ -33,6 +49,11 @@ namespace mystl
     {
         MyUtil util;
         return util.memset(s, c, n);
+    }
+
+    unsigned long stoul(const string &str, size_t *idx, int base)
+    {
+        return strtol(str.c_str(), 0, 16);
     }
 }
 
