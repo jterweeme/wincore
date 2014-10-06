@@ -14,6 +14,7 @@ namespace koe
     using std::fstream;
     using std::istream;
     using std::cout;
+    using std::cin;
     using std::cerr;
     using std::string;
     using std::ifstream;

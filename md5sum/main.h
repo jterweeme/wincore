@@ -36,11 +36,14 @@ class Options
 {
     bool _check;
     Files _files;
+    bool _cin;
 public:
-    Options() : _check(false) { }
+    Options() : _check(false), _cin(false) { }
     bool check() const { return _check; }
     Files &files() { return _files; }
     void parse(int argc, char **argv);
+    void dump(ostream &os);
+    bool cin() const { return _cin; }
 };
 
 class Paar
@@ -64,6 +67,7 @@ public:
 class Chunk
 {
     uint32_t _w[16];
+    uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
 public:
     void read(const uint8_t *msg);
     Hash calc(Hash &hash);
@@ -78,9 +82,7 @@ class App
     Hash _hash;
     Options _options;
     Paars _paars;
-    void md5(uint8_t *msg, size_t new_len);
-public:
-    static uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
+    void checkFile(istream &is);
     void checkFile2(const char *fn);
 public:
     int run(int argc, char **argv);

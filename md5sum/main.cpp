@@ -71,52 +71,39 @@ Hash Chunk::calc(Hash &hash)
     c = hash.h2();
     d = hash.h3();
 
-        for(int i = 0; i<64; i++)
+    for(int i = 0; i<64; i++)
+    {
+        if (i < 16)
         {
-            if (i < 16)
-            {
-                f = (b & c) | ((~b) & d);
-                g = i;
-            }
-            else if (i < 32)
-            {
-                f = (d & b) | ((~d) & c);
-                g = (5*i + 1) % 16;
-            }
-            else if (i < 48)
-            {
-                f = b ^ c ^ d;
-                g = (3*i + 5) % 16;
-            }
-            else
-            {
-                f = c ^ (b | (~d));
-                g = (7*i) % 16;
-            }
-
-            temp = d;
-            d = c;
-            c = b;
-            b = b + App::LEFTROTATE((a + f + k[i] + w(g)), r[i]);
-            a = temp;
+            f = (b & c) | ((~b) & d);
+            g = i;
+        }
+        else if (i < 32)
+        {
+            f = (d & b) | ((~d) & c);
+            g = (5*i + 1) % 16;
+        }
+        else if (i < 48)
+        {
+            f = b ^ c ^ d;
+            g = (3*i + 5) % 16;
+        }
+        else
+        {
+            f = c ^ (b | (~d));
+            g = (7*i) % 16;
         }
 
-        Hash foo(a, b, c, d);
-        return foo;
-
-}
-
-void App::md5(uint8_t *msg, size_t new_len)
-{
-    for(size_t offset=0; offset<new_len; offset += 64)
-    {
-        Chunk chunk;
-        chunk.read(msg + offset);
-        chunk.dump(cerr);
-        cerr << "\n\n";
-        Hash foo = chunk.calc(_hash);
-        _hash.add(foo);
+        temp = d;
+        d = c;
+        c = b;
+        b = b + LEFTROTATE((a + f + k[i] + w(g)), r[i]);
+        a = temp;
     }
+
+    Hash foo(a, b, c, d);
+    return foo;
+
 }
 
 void Hash::dump(ostream &os)
@@ -166,6 +153,9 @@ void Options::parse(int argc, char **argv)
             case 'c':
                 _check = true;
                 break;
+            case '\0':
+                _cin = true;
+                break;
             }
         }
         else
@@ -175,12 +165,16 @@ void Options::parse(int argc, char **argv)
     }
 }
 
-void App::checkFile2(const char *fn)
+void Options::dump(ostream &os)
+{
+    if (_cin)
+        os << "Standard Input\n";
+}
+
+void App::checkFile(istream &file)
 {
     _hash.reset();
-    ifstream file;
-    file.open(fn, fstream::in | ios::binary);
-    
+
     for (unsigned i = 0; file; i++)
     {
         uint8_t data[64] = {0};
@@ -210,7 +204,14 @@ void App::checkFile2(const char *fn)
         Hash foo = chunk.calc(_hash);
         _hash.add(foo);
     }
+}
 
+void App::checkFile2(const char *fn)
+{
+    _hash.reset();
+    ifstream file;
+    file.open(fn, fstream::in | ios::binary);
+    checkFile(file);
     file.close();
     cout << _hash.toString() << "  " << fn << "\n";
 
@@ -232,6 +233,12 @@ int App::run(int argc, char **argv)
 {
     _options.parse(argc, argv);
     Files files = _options.files();
+
+    if (_options.cin())
+    {
+        checkFile(cin);
+        cout << _hash.toString() << "  -\n";
+    }
 
     for (Files::iterator it = files.begin(); it != files.end() && !_options.check(); it++)
         checkFile2(it->c_str());
