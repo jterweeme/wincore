@@ -24,7 +24,7 @@ public:
     void add(Hash &h) { _h0 += h.h0(); _h1 += h.h1(); _h2 += h.h2(); _h3 += h.h3(); }
     string toString();
     void dump(ostream &os);
-    bool isEqual(Hash &h) { return _h0 == h._h0; }
+    bool isEqual(Hash &h) { return _h0 == h._h0 && _h1 == h._h1 && _h2 == h._h2 && _h3 == h._h3; }
 
     Hash(uint32_t h0, uint32_t h1, uint32_t h2, uint32_t h3)
       : _h0(h0), _h1(h1), _h2(h2), _h3(h3)

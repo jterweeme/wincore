@@ -9,15 +9,15 @@
 
 namespace koe
 {
-    using mytypes::uint8_t;
-    using mytypes::uint32_t;
+    using mystl::uint8_t;
+    using mystl::uint32_t;
     using std::fstream;
-    using std::istream;
+    using mystl::istream;
     using std::cout;
-    using std::cin;
+    using mystl::cin;
     using std::cerr;
     using std::string;
-    using std::ifstream;
+    using mystl::ifstream;
     using std::vector;
     using std::ostringstream;
     using std::ostream;
