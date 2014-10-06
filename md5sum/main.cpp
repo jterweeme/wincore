@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <endian.h>
 using namespace std;
 
 const uint32_t k[64] = {
@@ -112,16 +113,11 @@ void App::md5(uint8_t *msg, size_t new_len)
 
 void Hash::print()
 {
-    uint8_t result[16] = {0};
-    Util::to_bytes(_h0, result);
-    Util::to_bytes(_h1, result + 4);
-    Util::to_bytes(_h2, result + 8);
-    Util::to_bytes(_h3, result + 12);
-
-    for (int i = 0; i < 16; i++)
-        cout << hex << setw(2) << setfill('0') << (int)result[i];
-
-    cout << endl;
+    cout << hex << setfill('0')
+         << setw(8) << be32toh(_h0)
+         << setw(8) << be32toh(_h1)
+         << setw(8) << be32toh(_h2)
+         << setw(8) << be32toh(_h3) << endl;
 }
 
 class Chunk

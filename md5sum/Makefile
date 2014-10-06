@@ -1,2 +1,4 @@
 all:
-	g++ -Wall -Wno-parentheses -o md5s main.cpp
+	g++ -g -Wall -Wno-parentheses -o md5s main.cpp
+
+
