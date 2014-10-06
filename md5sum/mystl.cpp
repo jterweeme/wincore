@@ -37,6 +37,35 @@ long int MyUtil::strtol(const char *s, char **end, int base)
     return 10;
 }
 
+void istream2::read(char *s, size_t length)
+{
+    _lastRead = fread(s, 1, length, _fp);
+    _eof = _lastRead < length;
+}
+
+void istream2::getline(char *dest, size_t size)
+{
+    for (int pos = 0, c = 1; c != '\n'; pos++)
+    {
+        c = fgetc(_fp);
+
+        if (c == EOF)
+        {
+            _eof = true;
+            dest[pos] = '\0';
+            return;
+        }
+
+        if (c == '\n')
+        {
+            dest[pos] = '\0';
+            return;
+        }
+
+        dest[pos] = c;
+    }
+}
+
 namespace mystl
 {
     void *memcpy(void *dest, const void *src, size_t n)
