@@ -5,6 +5,8 @@
 #include <iostream>
 #include <iomanip>
 #include <endian.h>
+#include <sstream>
+#include <vector>
 using namespace std;
 
 const uint32_t k[64] = {
@@ -42,30 +44,54 @@ class Hash
 public:
     uint32_t _h0, _h1, _h2, _h3;
     Hash() : _h0(0x67452301), _h1(0xefcdab89), _h2(0x98badcfe), _h3(0x10325476) { }
+    void reset() { _h0 = 0x67452301; _h1 = 0xefcdab89; _h2 = 0x98badcfe; _h3 = 0x10325476; }
     uint32_t h0() const { return _h0; }
     uint32_t h1() const { return _h1; }
     uint32_t h2() const { return _h2; }
     uint32_t h3() const { return _h3; }
-    void print();
+    string print();
 };
+
+typedef vector<string> Files;
+
+class Options
+{
+    bool _check;
+    Files _files;
+public:
+    Options() : _check(false) { }
+    bool check() const { return _check; }
+    Files &files() { return _files; }
+    void parse(int argc, char **argv);
+};
+
+class Paar
+{
+public:
+    Paar() { }
+    void read(istream &is);
+};
+
+typedef vector<Paar> Paars;
 
 class App
 {
     Hash _hash;
-public:
-    int run(int argc, char **argv);
+    Options _options;
+    Paars _paars;
     void md5(uint8_t *msg, size_t new_len);
     uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
+    void checkFile(const char *fn);
+public:
+    int run(int argc, char **argv);
 };
-
-
 
 void App::md5(uint8_t *msg, size_t new_len)
 {
     uint32_t w[16];
     uint32_t a, b, c, d, f, g, temp;
 
-    for(size_t offset=0; offset<new_len; offset += (512/8))
+    for(size_t offset=0; offset<new_len; offset += 64)
     {
        for (int i = 0; i < 16; i++)
             w[i] = Util::to_int32(msg + offset + i*4);
@@ -105,19 +131,21 @@ void App::md5(uint8_t *msg, size_t new_len)
         _hash._h3 += d;
 
     }
-
-    free(msg);
 }
 
 
 
-void Hash::print()
+string Hash::print()
 {
-    cout << hex << setfill('0')
+    ostringstream oss;
+
+    oss << hex << setfill('0')
          << setw(8) << be32toh(_h0)
          << setw(8) << be32toh(_h1)
          << setw(8) << be32toh(_h2)
-         << setw(8) << be32toh(_h3) << endl;
+         << setw(8) << be32toh(_h3);
+
+    return oss.str();
 }
 
 class Chunk
@@ -148,16 +176,40 @@ uint32_t Util::to_int32(const uint8_t * const bytes)
 }
 
 
-int App::run(int argc, char **argv)
+
+void Options::parse(int argc, char **argv)
 {
+    for (int i = 1; i < argc; i++)
+    {
+        char *opt = argv[i];
+
+        if (opt[0] == '-')
+        {
+            switch (opt[1])
+            {
+            case 'c':
+                _check = true;
+                break;
+            }
+        }
+        else
+        {
+            _files.push_back(string(opt));
+        }
+    }
+}
+
+void App::checkFile(const char *fn)
+{
+    _hash.reset();
     ifstream foo;
-    foo.open(argv[1], fstream::in | ios::binary | ios::ate);
+    foo.open(fn, fstream::in | ios::binary | ios::ate);
     size_t fileSize = foo.tellg();
     foo.seekg(0, foo.beg);
     uint8_t *file = new uint8_t[fileSize];
     foo.readsome((char *)file, fileSize);
     size_t new_len;
-    for (new_len = fileSize + 1; new_len % (512/8) != 448/8; new_len++);
+    for (new_len = fileSize + 1; new_len % 64 != 56; new_len++);
     uint8_t *msg = new uint8_t[new_len + 8];
     memset(msg, 0, new_len + 8);
     memcpy(msg, file, fileSize);
@@ -165,10 +217,40 @@ int App::run(int argc, char **argv)
     Util::to_bytes(fileSize *8, msg + new_len);
     Util::to_bytes(fileSize>>29, msg + new_len + 4);
     md5(msg, new_len);
+    delete[] msg;
     delete[] file;
     foo.close();
-    _hash.print();
+    cout << _hash.print() << "  " << fn << "\n";
+}
 
+void Paar::read(istream &is)
+{
+    char line[255] = {0};
+    is.getline(line, sizeof(line));
+    
+}
+
+int App::run(int argc, char **argv)
+{
+    _options.parse(argc, argv);
+    Files files = _options.files();
+
+    for (Files::iterator it = files.begin(); it != files.end() && !_options.check(); it++)
+        checkFile(it->c_str());
+    
+    for (Files::iterator it = files.begin(); it != files.end() && _options.check(); it++)
+    {
+        ifstream foo;
+        char line[255] = {0};
+        foo.open(it->c_str(), fstream::in);
+        
+        while (foo)
+        {
+            foo.getline(line, sizeof(line));
+            cerr << line << "\n";
+        }
+        foo.close();
+    }
 
     return 0;
 }
