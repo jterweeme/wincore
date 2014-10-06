@@ -57,13 +57,19 @@ void Chunk::read(const uint8_t *msg)
     
 }
 
+void Chunk::dump(ostream &os)
+{
+    for (int i = 0; i < 16; i++)
+        os << hex << setw(8) << _w[i] << "\n";
+}
+
 Hash Chunk::calc(Hash &hash)
 {
     uint32_t a, b, c, d, f, g, temp;
-     a = hash.h0();
-        b = hash.h1();
-        c = hash.h2();
-        d = hash.h3();
+    a = hash.h0();
+    b = hash.h1();
+    c = hash.h2();
+    d = hash.h3();
 
         for(int i = 0; i<64; i++)
         {
@@ -106,6 +112,8 @@ void App::md5(uint8_t *msg, size_t new_len)
     {
         Chunk chunk;
         chunk.read(msg + offset);
+        chunk.dump(cerr);
+        cerr << "\n\n";
         Hash foo = chunk.calc(_hash);
         _hash.add(foo);
     }
@@ -176,7 +184,7 @@ void App::checkFile(const char *fn)
     size_t fileSize = foo.tellg();
     foo.seekg(0, foo.beg);
     char *file = new char[fileSize];
-    foo.readsome(file, fileSize);
+    foo.read(file, fileSize);
     size_t new_len;
     for (new_len = fileSize + 1; new_len % 64 != 56; new_len++);
     uint8_t *msg = new uint8_t[new_len + 8];
@@ -192,11 +200,57 @@ void App::checkFile(const char *fn)
     cout << _hash.toString() << "  " << fn << "\n";
 }
 
+void App::checkFile2(const char *fn)
+{
+    _hash.reset();
+    ifstream file;
+    file.open(fn, fstream::in | ios::binary);
+    
+    for (unsigned i = 0; file; i++)
+    {
+        uint8_t data[64] = {0};
+        file.read((char *)data, 64);
+        Chunk chunk;
+
+        if (file.gcount() < 56)
+        {
+            data[file.gcount()] = 0x80;
+            chunk.read(data);
+            chunk.fillTail(i * 64 + file.gcount());
+        }
+        else if (file.gcount() < 64)
+        {
+            data[file.gcount()] = 0x80;
+            chunk.read(data);
+            Hash foo = chunk.calc(_hash);
+            _hash.add(foo);
+            chunk.clear();
+            chunk.fillTail(i * 64 + file.gcount());
+        }
+        else
+        {
+            chunk.read(data);
+        }
+
+        Hash foo = chunk.calc(_hash);
+        _hash.add(foo);
+    }
+
+    file.close();
+    cout << _hash.toString() << "  " << fn << "\n";
+
+}
+
 void Paar::read(istream &is)
 {
     char line[255] = {0};
     is.getline(line, sizeof(line));
     
+}
+
+void Chunk::fillTail(uint32_t size)
+{
+    _w[14] = size * 8;
 }
 
 int App::run(int argc, char **argv)
@@ -205,7 +259,7 @@ int App::run(int argc, char **argv)
     Files files = _options.files();
 
     for (Files::iterator it = files.begin(); it != files.end() && !_options.check(); it++)
-        checkFile(it->c_str());
+        checkFile2(it->c_str());
     
     for (Files::iterator it = files.begin(); it != files.end() && _options.check(); it++)
     {
