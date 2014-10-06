@@ -175,31 +175,6 @@ void Options::parse(int argc, char **argv)
     }
 }
 
-void App::checkFile(const char *fn)
-{
-    Util util;
-    _hash.reset();
-    ifstream foo;
-    foo.open(fn, fstream::in | ios::binary | ios::ate);
-    size_t fileSize = foo.tellg();
-    foo.seekg(0, foo.beg);
-    char *file = new char[fileSize];
-    foo.read(file, fileSize);
-    size_t new_len;
-    for (new_len = fileSize + 1; new_len % 64 != 56; new_len++);
-    uint8_t *msg = new uint8_t[new_len + 8];
-    memset(msg, 0, new_len + 8);
-    memcpy(msg, file, fileSize);
-    msg[fileSize] = 0x80;
-    util.to_bytes(fileSize *8, msg + new_len);
-    util.to_bytes(fileSize>>29, msg + new_len + 4);
-    md5(msg, new_len);
-    delete[] msg;
-    delete[] file;
-    foo.close();
-    cout << _hash.toString() << "  " << fn << "\n";
-}
-
 void App::checkFile2(const char *fn)
 {
     _hash.reset();

@@ -81,7 +81,6 @@ class App
     void md5(uint8_t *msg, size_t new_len);
 public:
     static uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
-    void checkFile(const char *fn);
     void checkFile2(const char *fn);
 public:
     int run(int argc, char **argv);
