@@ -24,6 +24,7 @@ public:
     void add(Hash &h) { _h0 += h.h0(); _h1 += h.h1(); _h2 += h.h2(); _h3 += h.h3(); }
     string toString();
     void dump(ostream &os);
+    bool isEqual(Hash &h) { return _h0 == h._h0; }
 
     Hash(uint32_t h0, uint32_t h1, uint32_t h2, uint32_t h3)
       : _h0(h0), _h1(h1), _h2(h2), _h3(h3)
@@ -53,7 +54,10 @@ class Paar
 public:
     Paar() { }
     Paar(Hash &hash, string &fn) : _hash(hash), _fn(fn) { }
+    void check();
     void read(istream &is);
+    Hash hash() { return _hash; }
+    string fn() { return _fn; }
     void dump(ostream &os);
 };
 
@@ -61,7 +65,7 @@ class Paars : public vector<Paar>
 {
 public:
     void dump(ostream &os);
-    void check();
+    void check(ostream &os);
 };
 
 class Chunk

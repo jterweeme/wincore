@@ -264,7 +264,19 @@ int App::run(int argc, char **argv)
         foo.close();
     }
 
-    _paars.dump(cout);
+    for (Paars::iterator it = _paars.begin(); it != _paars.end(); it++)
+    {
+        ifstream file;
+        file.open(it->fn().c_str(), fstream::in | fstream::binary);
+        checkFile(file);
+        file.close();
+
+        if (it->hash().isEqual(_hash))
+            cout << it->fn() << ": OK\n";
+        else
+            cout << it->fn() << ": FAILED\n";
+    }
+
 
     return 0;
 }
