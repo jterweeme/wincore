@@ -10,46 +10,143 @@
     </coordinates>
     <panel_attributes>*App*
 --
---</panel_attributes>
+- _hash: Hash
+- _options: Options
+- _paars: Paars
+--
++ App(): App
++ run(argc: int, argv: char **): int
+- checkFile(fn: const char *): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>880</x>
+      <y>110</y>
+      <w>380</w>
+      <h>140</h>
+    </coordinates>
+    <panel_attributes>*Util*
+--
+--
++ to_bytes(val: uint32_t, bytes: uint8_t *): void
++ to_int32(bytes: uint8_t *): uint32_t</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>90</x>
+      <y>260</y>
+      <w>250</w>
+      <h>130</h>
+    </coordinates>
+    <panel_attributes>*Hash*
+--
+--
++ dump(os: ostream&amp;): void
++ toString(): string</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates>
+      <x>140</x>
+      <y>550</y>
+      <w>250</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>*Paar*
+--
+- _hash: Hash
+--
++ Paar(): Paar</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
       <x>890</x>
-      <y>170</y>
-      <w>250</w>
-      <h>120</h>
-    </coordinates>
-    <panel_attributes>*Util*
---
---</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <type>com.umlet.element.Class</type>
-    <coordinates>
-      <x>920</x>
-      <y>350</y>
-      <w>250</w>
+      <y>330</y>
+      <w>210</w>
       <h>130</h>
     </coordinates>
-    <panel_attributes>*Hash*
+    <panel_attributes>*Options*
 --
---</panel_attributes>
+- _check: bool
+- _files: Files
+--
++ Options(): Options</panel_attributes>
     <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>740</x>
+      <y>340</y>
+      <w>170</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>150;30;30;30</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>310</x>
+      <y>310</y>
+      <w>170</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>30;30;150;30</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>180</x>
+      <y>360</y>
+      <w>50</w>
+      <h>210</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>30;30;30;190</additional_attributes>
   </element>
   <element>
     <type>com.umlet.element.Class</type>
     <coordinates>
-      <x>400</x>
-      <y>500</y>
-      <w>250</w>
-      <h>120</h>
+      <x>570</x>
+      <y>550</y>
+      <w>280</w>
+      <h>130</h>
     </coordinates>
-    <panel_attributes>*Paar*
+    <panel_attributes>*Paars*
 --
---</panel_attributes>
+--
++ dump(os: ostream&amp;): void</panel_attributes>
     <additional_attributes/>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>360</x>
+      <y>590</y>
+      <w>230</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>30;30;210;30</additional_attributes>
+  </element>
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates>
+      <x>600</x>
+      <y>380</y>
+      <w>50</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>30;170;30;30</additional_attributes>
   </element>
 </diagram>

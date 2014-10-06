@@ -1,13 +1,4 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-#include <endian.h>
-#include <sstream>
-#include <vector>
-using namespace std;
+#include "common.h"
 
 const uint32_t k[64] = {
 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee ,
@@ -35,14 +26,14 @@ const uint32_t r[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22
 class Util
 {
 public:
-    static void to_bytes(uint32_t val, uint8_t *bytes);
-    static uint32_t to_int32(const uint8_t *bytes);
+    void to_bytes(uint32_t val, uint8_t *bytes);
+    uint32_t to_int32(const uint8_t *bytes);
 };
 
 class Hash
 {
-public:
     uint32_t _h0, _h1, _h2, _h3;
+public:
     void read(const char *hash);
     Hash(const char *hash) { read(hash); }
     void reset() { _h0 = 0x67452301; _h1 = 0xefcdab89; _h2 = 0x98badcfe; _h3 = 0x10325476; }
@@ -51,7 +42,13 @@ public:
     uint32_t h1() const { return _h1; }
     uint32_t h2() const { return _h2; }
     uint32_t h3() const { return _h3; }
-    string print();
+    void add(Hash &h) { _h0 += h.h0(); _h1 += h.h1(); _h2 += h.h2(); _h3 += h.h3(); }
+    string toString();
+    void dump(ostream &os);
+
+    Hash(uint32_t h0, uint32_t h1, uint32_t h2, uint32_t h3)
+      : _h0(h0), _h1(h1), _h2(h2), _h3(h3)
+    { }
 };
 
 typedef vector<string> Files;
@@ -69,12 +66,21 @@ public:
 
 class Paar
 {
+    Hash _hash;
+    string _fn;
 public:
     Paar() { }
+    Paar(Hash &hash, string &fn) : _hash(hash), _fn(fn) { }
     void read(istream &is);
+    void dump(ostream &os);
 };
 
-typedef vector<Paar> Paars;
+class Paars : public vector<Paar>
+{
+public:
+    void dump(ostream &os);
+    void check();
+};
 
 class App
 {
@@ -88,24 +94,41 @@ public:
     int run(int argc, char **argv);
 };
 
+void Paars::dump(ostream &os)
+{
+    for (iterator it = begin(); it != end(); it++)
+        it->dump(os);
+}
+
+void Paar::dump(ostream &os)
+{
+    _hash.dump(os);
+    os << "  " << _fn << "\n";
+}
+
 void Hash::read(const char *hash)
 {
-    Util util;
-    _h0 = util.to_int32((uint8_t *)hash);
-    _h1 = util.to_int32((uint8_t *)hash + 8);
-    _h2 = util.to_int32((uint8_t *)hash + 16);
-    _h3 = util.to_int32((uint8_t *)hash + 24);
+    string s0 = string(hash, hash + 8);
+    _h0 = be32toh(stoul(s0, 0, 16));
+    string s1 = string(hash + 8, hash + 16);
+    _h1 = be32toh(stoul(s1, 0, 16));
+    string s2 = string(hash + 16, hash + 24);
+    _h2 = be32toh(stoul(s2, 0, 16));
+    string s3 = string(hash + 24, hash + 32);
+    _h3 = be32toh(stoul(s3, 0, 16));
 }
 
 void App::md5(uint8_t *msg, size_t new_len)
 {
+    Util util;
+
     uint32_t w[16];
     uint32_t a, b, c, d, f, g, temp;
 
     for(size_t offset=0; offset<new_len; offset += 64)
     {
        for (int i = 0; i < 16; i++)
-            w[i] = Util::to_int32(msg + offset + i*4);
+            w[i] = util.to_int32(msg + offset + i*4);
 
         a = _hash.h0();
         b = _hash.h1();
@@ -114,16 +137,23 @@ void App::md5(uint8_t *msg, size_t new_len)
 
         for(int i = 0; i<64; i++)
         {
-            if (i < 16) {
+            if (i < 16)
+            {
                 f = (b & c) | ((~b) & d);
                 g = i;
-            } else if (i < 32) {
+            }
+            else if (i < 32)
+            {
                 f = (d & b) | ((~d) & c);
                 g = (5*i + 1) % 16;
-            } else if (i < 48) {
+            }
+            else if (i < 48)
+            {
                 f = b ^ c ^ d;
                 g = (3*i + 5) % 16;
-            } else {
+            }
+            else
+            {
                 f = c ^ (b | (~d));
                 g = (7*i) % 16;
             }
@@ -133,43 +163,28 @@ void App::md5(uint8_t *msg, size_t new_len)
             c = b;
             b = b + LEFTROTATE((a + f + k[i] + w[g]), r[i]);
             a = temp;
-
         }
 
-        _hash._h0 += a;
-        _hash._h1 += b;
-        _hash._h2 += c;
-        _hash._h3 += d;
-
+        Hash foo(a, b, c, d);
+        _hash.add(foo);
     }
 }
 
-
-
-string Hash::print()
+void Hash::dump(ostream &os)
 {
-
-    ostringstream oss;
-
-    oss << hex << setfill('0')
-         << setw(8) << be32toh(_h0)
-         << setw(8) << be32toh(_h1)
-         << setw(8) << be32toh(_h2)
-         << setw(8) << be32toh(_h3);
-
-    return oss.str();
+    os << hex << setfill('0')
+       << setw(8) << be32toh(_h0)
+       << setw(8) << be32toh(_h1)
+       << setw(8) << be32toh(_h2)
+       << setw(8) << be32toh(_h3);
 }
 
-class Chunk
+string Hash::toString()
 {
-public:
-    uint8_t c[512];
-    size_t size;
-    Chunk(char *src, size_t size);
-    const char *toString();
-};
-
-
+    ostringstream oss;
+    dump(oss);
+    return oss.str();
+}
 
 void Util::to_bytes(const uint32_t val, uint8_t *bytes)
 {
@@ -213,26 +228,27 @@ void Options::parse(int argc, char **argv)
 
 void App::checkFile(const char *fn)
 {
+    Util util;
     _hash.reset();
     ifstream foo;
     foo.open(fn, fstream::in | ios::binary | ios::ate);
     size_t fileSize = foo.tellg();
     foo.seekg(0, foo.beg);
-    uint8_t *file = new uint8_t[fileSize];
-    foo.readsome((char *)file, fileSize);
+    char *file = new char[fileSize];
+    foo.readsome(file, fileSize);
     size_t new_len;
     for (new_len = fileSize + 1; new_len % 64 != 56; new_len++);
     uint8_t *msg = new uint8_t[new_len + 8];
     memset(msg, 0, new_len + 8);
     memcpy(msg, file, fileSize);
     msg[fileSize] = 0x80;
-    Util::to_bytes(fileSize *8, msg + new_len);
-    Util::to_bytes(fileSize>>29, msg + new_len + 4);
+    util.to_bytes(fileSize *8, msg + new_len);
+    util.to_bytes(fileSize>>29, msg + new_len + 4);
     md5(msg, new_len);
     delete[] msg;
     delete[] file;
     foo.close();
-    cout << _hash.print() << "  " << fn << "\n";
+    cout << _hash.toString() << "  " << fn << "\n";
 }
 
 void Paar::read(istream &is)
@@ -259,11 +275,19 @@ int App::run(int argc, char **argv)
         while (foo)
         {
             foo.getline(line, sizeof(line));
-            Hash hash(line);
-            cerr << hash.print() << "\n";
+
+            if (foo)
+            {
+                Hash hash(line);
+                string fn = string(line + 34);
+                Paar paar(hash, fn);
+                _paars.push_back(paar);
+            }
         }
         foo.close();
     }
+
+    _paars.dump(cout);
 
     return 0;
 }
