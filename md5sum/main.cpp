@@ -43,8 +43,10 @@ class Hash
 {
 public:
     uint32_t _h0, _h1, _h2, _h3;
-    Hash() : _h0(0x67452301), _h1(0xefcdab89), _h2(0x98badcfe), _h3(0x10325476) { }
+    void read(const char *hash);
+    Hash(const char *hash) { read(hash); }
     void reset() { _h0 = 0x67452301; _h1 = 0xefcdab89; _h2 = 0x98badcfe; _h3 = 0x10325476; }
+    Hash() { reset(); }
     uint32_t h0() const { return _h0; }
     uint32_t h1() const { return _h1; }
     uint32_t h2() const { return _h2; }
@@ -85,6 +87,15 @@ class App
 public:
     int run(int argc, char **argv);
 };
+
+void Hash::read(const char *hash)
+{
+    Util util;
+    _h0 = util.to_int32((uint8_t *)hash);
+    _h1 = util.to_int32((uint8_t *)hash + 8);
+    _h2 = util.to_int32((uint8_t *)hash + 16);
+    _h3 = util.to_int32((uint8_t *)hash + 24);
+}
 
 void App::md5(uint8_t *msg, size_t new_len)
 {
@@ -137,6 +148,7 @@ void App::md5(uint8_t *msg, size_t new_len)
 
 string Hash::print()
 {
+
     ostringstream oss;
 
     oss << hex << setfill('0')
@@ -247,7 +259,8 @@ int App::run(int argc, char **argv)
         while (foo)
         {
             foo.getline(line, sizeof(line));
-            cerr << line << "\n";
+            Hash hash(line);
+            cerr << hash.print() << "\n";
         }
         foo.close();
     }
