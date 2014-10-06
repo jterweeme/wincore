@@ -25,6 +25,7 @@ namespace koe
     using std::hex;
     using mystl::memcpy;
     using mystl::memset;
+    using mystl::stoul;
 }
 
 using namespace koe;
