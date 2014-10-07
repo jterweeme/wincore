@@ -31,6 +31,24 @@ int MyUtil::atoi(const char *str)
     return res;
 }
 
+int MyUtil::xdigit(int c)
+{
+    if (!isxdigit(c))
+        return -1;
+
+    if (isdigit(c))
+        return c - '0';
+
+    if (isupper(c))
+        return c - 0x37;
+
+    if (islower(c))
+        return c - 0x57;
+
+    return -1;
+}
+
+
 long int MyUtil::strtol(const char *nptr, char **endptr, int base)
 {
     MyUtil util;

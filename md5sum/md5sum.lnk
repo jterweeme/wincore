@@ -1,0 +1,4 @@
+system dos
+file { main.obj mystl.obj }
+name md5sum.exe
+

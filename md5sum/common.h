@@ -18,7 +18,7 @@ namespace koe
     using std::cerr;
     using std::string;
     using mystl::ifstream;
-    using std::vector;
+    using mystl::vector;
     using std::ostringstream;
     using std::ostream;
     using std::ios;

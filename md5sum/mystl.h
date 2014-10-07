@@ -2,6 +2,7 @@
 #define _MYSTL_H_
 #include <string>
 #include <stdio.h>
+#include <cstdlib>
 
 class MyUtil
 {
@@ -20,23 +21,7 @@ public:
     int islower(int c) { return c >= 'a' && c <= 'z'; }
     int isalpha(int c) { return isupper(c) || islower(c); }
     int isxdigit(int c) { return isdigit(c) || c >=  'a' && c <= 'f' || c >= 'A' && c <= 'F'; }
-
-    int xdigit(int c)
-    {
-        if (!isxdigit(c))
-            return -1;
-
-        if (isdigit(c))
-            return c - '0';
-
-        if (isupper(c))
-            return c - 0x37;
-
-        if (islower(c))
-            return c - 0x57;
-
-        return -1;
-    }
+    int xdigit(int c);
 };
 
 class istream2
@@ -70,6 +55,21 @@ public:
     void close() { fclose(_fp); }
 };
 
+
+template <class T> class vector2
+{
+    T _buf[100];        // uiteraard moet dit anders
+    size_t _capacity;
+    size_t _size;
+public:
+    typedef T * iterator;
+    vector2() : _capacity(100), _size(0) {  }
+    void push_back(T a) { _buf[_size++] = a; }
+    iterator begin() { return _buf; }
+    iterator end() { return _buf + _size; }
+};
+
+
 namespace mystl
 {
     using std::string;
@@ -80,6 +80,7 @@ namespace mystl
     void *memcpy(void *dest, const void *src, size_t n);
     void *memset(void *s, const int c, const size_t n);
     unsigned long stoul(const string &str, size_t *idx = 0, int base = 10);
+    template <class T> class vector : public vector2<T> { };
     typedef istream2 istream;
     typedef ifstream2 ifstream;
     static istream cin(stdin);
