@@ -14,6 +14,29 @@ public:
     void *memset(void *s, const int c, const size_t n);
     int atoi(const char *str);
     long int strtol(const char *s, char **end, int base);
+    int isdigit(int c) { return c >= '0' && c <= '9'; }
+    int isspace(int c) { return c == ' '; }
+    int isupper(int c) { return c >= 'A' && c <= 'Z'; }
+    int islower(int c) { return c >= 'a' && c <= 'z'; }
+    int isalpha(int c) { return isupper(c) || islower(c); }
+    int isxdigit(int c) { return isdigit(c) || c >=  'a' && c <= 'f' || c >= 'A' && c <= 'F'; }
+
+    int xdigit(int c)
+    {
+        if (!isxdigit(c))
+            return -1;
+
+        if (isdigit(c))
+            return c - '0';
+
+        if (isupper(c))
+            return c - 0x37;
+
+        if (islower(c))
+            return c - 0x57;
+
+        return -1;
+    }
 };
 
 class istream2

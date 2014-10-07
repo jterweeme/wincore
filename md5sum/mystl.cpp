@@ -1,5 +1,4 @@
 #include "mystl.h"
-#include <stdlib.h>
 
 void *MyUtil::memcpy(void *dest, const void *src, size_t n)
 {
@@ -32,9 +31,18 @@ int MyUtil::atoi(const char *str)
     return res;
 }
 
-long int MyUtil::strtol(const char *s, char **end, int base)
+long int MyUtil::strtol(const char *nptr, char **endptr, int base)
 {
-    return 10;
+    MyUtil util;
+    long int result = xdigit(nptr[0]);
+    
+    for (int i = 1; util.isxdigit(nptr[i]); i++)
+    {
+        result <<= 4;
+        result += xdigit(nptr[i]);
+    }
+
+    return result;
 }
 
 void istream2::read(char *s, size_t length)
@@ -82,7 +90,8 @@ namespace mystl
 
     unsigned long stoul(const string &str, size_t *idx, int base)
     {
-        return strtol(str.c_str(), 0, 16);
+        MyUtil util;
+        return util.strtol(str.c_str(), 0, 16);
     }
 }
 
