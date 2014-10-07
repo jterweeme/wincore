@@ -8,21 +8,19 @@ Jasper ter Weeme
 
 /* tailored only for the od app */
 
-namespace mystl
-{
 
 typedef unsigned char uint8_t;
 typedef unsigned short int uint16_t;
 
-class iomanip
+class iomanip2
 {
     int _type;
 public:
     static const uint8_t HEX = 1;
     static const uint8_t DEC = 2;
     static const uint8_t OCT = 3;
-    iomanip() { }
-    iomanip(int type) : _type(type) { }
+    iomanip2() { }
+    iomanip2(int type) : _type(type) { }
     int type() const { return _type; }
 };
 
@@ -30,27 +28,27 @@ class dummy
 {
 };
 
-class ostream
+class ostream2
 {
     FILE *_fp;
-    iomanip _manip;
+    iomanip2 _manip;
 public:
-    ostream(FILE *fp) : _fp(fp) { }
-    ostream& operator << (iomanip &i) { _manip = i; return *this; }
-    ostream& operator << (const char *s) { fprintf(_fp, s); return *this; }
-    ostream& operator << (char c) { fputc(c, _fp);  return *this; }
-    ostream& operator << (dummy &i) { return *this; }
-    ostream& operator << (int s)
+    ostream2(FILE *fp) : _fp(fp) { }
+    ostream2& operator << (iomanip2 &i) { _manip = i; return *this; }
+    ostream2& operator << (const char *s) { fprintf(_fp, s); return *this; }
+    ostream2& operator << (char c) { fputc(c, _fp);  return *this; }
+    ostream2& operator << (dummy &i) { return *this; }
+    ostream2& operator << (int s)
     {
         switch (_manip.type())
         {
-        case iomanip::DEC:
+        case iomanip2::DEC:
             fprintf(_fp, "%d", s);
             break;
-        case iomanip::HEX:
+        case iomanip2::HEX:
             fprintf(_fp, "%.2x", s);
             break;
-        case iomanip::OCT:
+        case iomanip2::OCT:
             fprintf(_fp, "%07o", s);
             break;
         }
@@ -59,14 +57,14 @@ public:
 
 };
 
-class istream
+class istream2
 {
     FILE *_fp;
     size_t _lastRead;
     bool _eof;
 public:
-    istream(FILE *fp) : _fp(fp), _lastRead(0), _eof(false) { }
-    ~istream() { fclose(_fp); }
+    istream2(FILE *fp) : _fp(fp), _lastRead(0), _eof(false) { }
+    ~istream2() { fclose(_fp); }
     uint16_t tellg() { return ftell(_fp); }
     uint16_t gcount() { return _lastRead; }
     operator void * () const { return (void *)!_eof; }
@@ -77,22 +75,33 @@ public:
     }
 };
 
-class ifstream : public istream
+class ifstream2 : public istream2
 {
 public:
     static const uint8_t in = 1;
     static const uint8_t binary = 2;
-    ifstream(char *s, int m) : istream(fopen(s, "rb")) { }
+    ifstream2(char *s, int m) : istream2(fopen(s, "rb")) { }
 };
 
-istream cin(stdin);
-ostream cout(stdout);
-ostream cerr(stderr);
-iomanip hex(iomanip::HEX);
-iomanip oct(iomanip::OCT);
-dummy dummy1;
-dummy& setw(int length) { return dummy1; }
-dummy& setfill(char c) { return dummy1; }
+namespace mystl
+{
+
+
+
+    using ::uint8_t;
+    using ::uint16_t;
+    typedef iomanip2 iomanip;
+    typedef ostream2 ostream;
+    typedef istream2 istream;
+    typedef ifstream2 ifstream;
+    istream cin(stdin);
+    ostream cout(stdout);
+    ostream cerr(stderr);
+    iomanip hex(iomanip::HEX);
+    iomanip oct(iomanip::OCT);
+    dummy dummy1;
+    dummy& setw(int length) { return dummy1; }
+    dummy& setfill(char c) { return dummy1; }
 
 }
 

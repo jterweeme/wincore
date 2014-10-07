@@ -55,6 +55,13 @@ public:
     void close() { fclose(_fp); }
 };
 
+class string2
+{
+};
+
+class ostream2
+{
+};
 
 template <class T> class vector2
 {
