@@ -1,6 +1,7 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <string>
+#include <ios>
 #include <stdio.h>
 #include <cstdlib>
 
@@ -59,8 +60,28 @@ class string2
 {
 };
 
+class dummy
+{
+};
+
 class ostream2
 {
+protected:
+    FILE *_fp;
+public:
+    ostream2() { }
+    ostream2(FILE *fp) : _fp(fp) { }
+    ostream2& operator << (std::string s) { fprintf(_fp, s.c_str()); return *this; }
+    ostream2& operator << (const char *s) { fprintf(_fp, s); return *this; }
+    ostream2& operator << (std::ios_base &(*f)(std::ios_base &)) { return *this; }
+    ostream2& operator << (dummy &d) { return *this; }
+    ostream2& operator << (const MyUtil::uint32_t u) { return *this; }
+};
+
+class ostringstream2 : public ostream2
+{
+public:
+    std::string str() { return std::string("onzin"); }
 };
 
 template <class T> class vector2
@@ -90,7 +111,15 @@ namespace mystl
     template <class T> class vector : public vector2<T> { };
     typedef istream2 istream;
     typedef ifstream2 ifstream;
+    typedef ostream2 ostream;
+    typedef ostringstream2 ostringstream;
     static istream cin(stdin);
+    static ostream cout(stdout);
+    static ostream cerr(stderr);
+    extern dummy dummy1;
+    extern dummy hex;
+    extern dummy& setw(int length);
+    extern dummy& setfill(int length);
 }
 
 #endif

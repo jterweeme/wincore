@@ -111,6 +111,11 @@ namespace mystl
         MyUtil util;
         return util.strtol(str.c_str(), 0, 16);
     }
+
+    dummy dummy1;
+    dummy hex;
+    dummy& setw(int length) { return dummy1; }
+    dummy& setfill(int length) { return dummy1; }
 }
 
 
