@@ -8,7 +8,11 @@ public:
     typedef unsigned int size_t;
     typedef unsigned char uint8_t;
     typedef unsigned short int uint16_t;
-    typedef unsigned uint32_t;   
+#ifdef __WATCOMC__
+    typedef unsigned long uint32_t;
+#else
+    typedef unsigned uint32_t;
+#endif
     void *memcpy(void *dest, const void *src, size_t n);
     void *memset(void *s, const int c, const size_t n);
     char *strcpy(char *dest, const char *src);
@@ -24,9 +28,14 @@ public:
     int isxdigit(int c) { return isdigit(c) || c >=  'a' && c <= 'f' || c >= 'A' && c <= 'F'; }
     int xdigit(int c);
     template <typename T> T swap_endian(T u);
+#ifdef __WATCOMC__
+    uint32_t be32toh(uint32_t v) { return 0; }
+#else
     uint32_t be32toh(uint32_t v) { return swap_endian<uint32_t>(v); }
+#endif
 };
 
+#ifndef __WATCOMC__
 template <typename T> T MyUtil::swap_endian(T u)
 {
     union foo
@@ -43,6 +52,7 @@ template <typename T> T MyUtil::swap_endian(T u)
 
     return dest.u;
 }
+#endif
 
 class ios2
 {
@@ -114,9 +124,9 @@ public:
     ostream2(FILE *fp) : _mode(DEC), _fp(fp) { }
     ostream2& operator << (string2 s) { fprintf(_fp, s.c_str()); return *this; }
     ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
-    ostream2& operator << (dummy &d) { return *this; }
-    ostream2& operator << (Hex &hex) { return *this; }
-    ostream2& operator << (const uint32_t u);
+    virtual ostream2& operator << (dummy &d) { return *this; }
+    virtual ostream2& operator << (Hex &hex) { return *this; }
+    virtual ostream2& operator << (const uint32_t u);
     virtual ~ostream2() { }
 };
 
@@ -127,6 +137,7 @@ public:
     static const MyUtil::uint8_t binary = 2;
 };
 
+#ifndef __WATCOMC__
 class ostringstream2 : public ostream2
 {
     char *_buf;
@@ -135,6 +146,13 @@ public:
     ostringstream2() : ostream2(open_memstream(&_buf, &_size)) { }
     string2 str() { return string2(_buf); }
     ~ostringstream2() { }
+};
+#endif
+
+class ostringstream3 : public ostream2
+{
+public:
+    string2 str() { return string2("onzin"); }
 };
 
 template <class T> class vector2
@@ -167,7 +185,11 @@ namespace mystl
     typedef istream2 istream;
     typedef ifstream2 ifstream;
     typedef ostream2 ostream;
+#ifdef __WATCOMC__
+    typedef ostringstream3 ostringstream;
+#else
     typedef ostringstream2 ostringstream;
+#endif
     typedef fstream2 fstream;
     static istream cin(stdin);
     static ostream cout(stdout);
