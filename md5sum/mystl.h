@@ -1,9 +1,6 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
-#include <string>
-#include <ios>
 #include <stdio.h>
-#include <cstdlib>
 
 class MyUtil
 {
@@ -26,7 +23,26 @@ public:
     int isalpha(int c) { return isupper(c) || islower(c); }
     int isxdigit(int c) { return isdigit(c) || c >=  'a' && c <= 'f' || c >= 'A' && c <= 'F'; }
     int xdigit(int c);
+    template <typename T> T swap_endian(T u);
+    uint32_t be32toh(uint32_t v) { return swap_endian<uint32_t>(v); }
 };
+
+template <typename T> T MyUtil::swap_endian(T u)
+{
+    union foo
+    {
+        T u;
+        uint8_t u8[sizeof(T)];
+    };
+
+    foo source, dest;
+    source.u = u;
+
+    for (size_t k = 0; k < sizeof(T); k++)
+        dest.u8[k] = source.u8[sizeof(T) - k - 1];
+
+    return dest.u;
+}
 
 class ios2
 {
@@ -98,7 +114,6 @@ public:
     ostream2(FILE *fp) : _mode(DEC), _fp(fp) { }
     ostream2& operator << (string2 s) { fprintf(_fp, s.c_str()); return *this; }
     ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
-    ostream2& operator << (std::ios_base &(*f)(std::ios_base &)) { return *this; }
     ostream2& operator << (dummy &d) { return *this; }
     ostream2& operator << (Hex &hex) { return *this; }
     ostream2& operator << (const uint32_t u);

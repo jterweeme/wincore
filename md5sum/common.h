@@ -1,11 +1,6 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 #include "mystl.h"
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <vector>
 
 namespace koe
 {

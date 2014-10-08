@@ -37,14 +37,15 @@ void Paar::dump(ostream &os)
 
 void Hash::read(const char *hash)
 {
+    MyUtil util;
     string s0 = string(hash, hash + 8);
-    _h0 = be32toh(stoul(s0, 0, 16));
+    _h0 = util.be32toh(stoul(s0, 0, 16));
     string s1 = string(hash + 8, hash + 16);
-    _h1 = be32toh(stoul(s1, 0, 16));
+    _h1 = util.be32toh(stoul(s1, 0, 16));
     string s2 = string(hash + 16, hash + 24);
-    _h2 = be32toh(stoul(s2, 0, 16));
+    _h2 = util.be32toh(stoul(s2, 0, 16));
     string s3 = string(hash + 24, hash + 32);
-    _h3 = be32toh(stoul(s3, 0, 16));
+    _h3 = util.be32toh(stoul(s3, 0, 16));
 }
 
 void Chunk::read(const uint8_t *msg)
@@ -108,11 +109,13 @@ Hash Chunk::calc(Hash &hash)
 
 void Hash::dump(ostream &os)
 {
+    MyUtil util;
+
     os << hex << setfill('0')
-       << setw(8) << be32toh(_h0)
-       << setw(8) << be32toh(_h1)
-       << setw(8) << be32toh(_h2)
-       << setw(8) << be32toh(_h3);
+       << setw(8) << util.be32toh(_h0)
+       << setw(8) << util.be32toh(_h1)
+       << setw(8) << util.be32toh(_h2)
+       << setw(8) << util.be32toh(_h3);
 }
 
 string Hash::toString()
