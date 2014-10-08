@@ -14,6 +14,9 @@ public:
     typedef unsigned uint32_t;   
     void *memcpy(void *dest, const void *src, size_t n);
     void *memset(void *s, const int c, const size_t n);
+    char *strcpy(char *dest, const char *src);
+    char *strncpy(char *dest, const char *src, size_t n);
+    size_t strlen(const char *s);
     int atoi(const char *str);
     long int strtol(const char *s, char **end, int base);
     int isdigit(int c) { return c >= '0' && c <= '9'; }
@@ -23,6 +26,12 @@ public:
     int isalpha(int c) { return isupper(c) || islower(c); }
     int isxdigit(int c) { return isdigit(c) || c >=  'a' && c <= 'f' || c >= 'A' && c <= 'F'; }
     int xdigit(int c);
+};
+
+class ios2
+{
+public:
+    static const MyUtil::uint8_t binary = 1;
 };
 
 class istream2
@@ -58,6 +67,12 @@ public:
 
 class string2
 {
+    char _s[255];
+public:
+    string2() { }
+    string2(const char *s) { MyUtil util; util.strcpy(_s, s); }
+    string2(const char *s1, const char *s2) { MyUtil util; util.strncpy(_s, s1, s2 - s1); }
+    const char *c_str() const { return _s; }
 };
 
 class dummy
@@ -71,17 +86,24 @@ protected:
 public:
     ostream2() { }
     ostream2(FILE *fp) : _fp(fp) { }
-    ostream2& operator << (std::string s) { fprintf(_fp, s.c_str()); return *this; }
+    ostream2& operator << (string2 s) { fprintf(_fp, s.c_str()); return *this; }
     ostream2& operator << (const char *s) { fprintf(_fp, s); return *this; }
     ostream2& operator << (std::ios_base &(*f)(std::ios_base &)) { return *this; }
     ostream2& operator << (dummy &d) { return *this; }
     ostream2& operator << (const MyUtil::uint32_t u) { return *this; }
 };
 
+class fstream2
+{
+public:
+    static const MyUtil::uint8_t in = 1;
+    static const MyUtil::uint8_t binary = 2;
+};
+
 class ostringstream2 : public ostream2
 {
 public:
-    std::string str() { return std::string("onzin"); }
+    string2 str() { return string2("onzin"); }
 };
 
 template <class T> class vector2
@@ -100,19 +122,21 @@ public:
 
 namespace mystl
 {
-    using std::string;
     typedef MyUtil::size_t size_t;
     typedef MyUtil::uint8_t uint8_t;
     typedef MyUtil::uint16_t uint16_t;
     typedef MyUtil::uint32_t uint32_t;
     void *memcpy(void *dest, const void *src, size_t n);
     void *memset(void *s, const int c, const size_t n);
+    typedef string2 string;
     unsigned long stoul(const string &str, size_t *idx = 0, int base = 10);
     template <class T> class vector : public vector2<T> { };
+    typedef ios2 ios;
     typedef istream2 istream;
     typedef ifstream2 ifstream;
     typedef ostream2 ostream;
     typedef ostringstream2 ostringstream;
+    typedef fstream2 fstream;
     static istream cin(stdin);
     static ostream cout(stdout);
     static ostream cerr(stderr);

@@ -11,17 +11,17 @@ namespace koe
 {
     using mystl::uint8_t;
     using mystl::uint32_t;
-    using std::fstream;
+    using mystl::fstream;
     using mystl::istream;
     using mystl::cout;
     using mystl::cin;
     using mystl::cerr;
-    using std::string;
+    using mystl::string;
     using mystl::ifstream;
     using mystl::vector;
     using mystl::ostringstream;
     using mystl::ostream;
-    using std::ios;
+    using mystl::ios;
     using mystl::setw;
     using mystl::setfill;
     using mystl::hex;

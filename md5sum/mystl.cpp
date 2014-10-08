@@ -92,6 +92,32 @@ void istream2::getline(char *dest, size_t size)
     }
 }
 
+MyUtil::size_t MyUtil::strlen(const char *s)
+{
+    const char *t;
+    for (t = s; *t; ++t) { }
+    return (t - s);
+}
+
+char *MyUtil::strcpy(char *dest, const char *src)
+{
+    char *save = dest;
+    while ((*dest++ = *src++));
+    return save;
+}
+
+char *MyUtil::strncpy(char *dest, const char *src, const size_t n)
+{
+    size_t i;
+
+    for (i = 0; i < n && src[i] != '\0'; i++)
+        dest[i] = src[i];
+    for (; i < n; i++)
+        dest[i] = '\0';
+
+    return dest;
+}
+
 namespace mystl
 {
     void *memcpy(void *dest, const void *src, size_t n)
