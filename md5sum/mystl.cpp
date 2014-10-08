@@ -63,6 +63,13 @@ long int MyUtil::strtol(const char *nptr, char **endptr, int base)
     return result;
 }
 
+ostream2& ostream2::operator << (const uint32_t u)
+{
+    fprintf(_fp, "%08x", u);
+    fflush(_fp);
+    return *this;
+}
+
 void istream2::read(char *s, size_t length)
 {
     _lastRead = fread(s, 1, length, _fp);
@@ -139,7 +146,7 @@ namespace mystl
     }
 
     dummy dummy1;
-    dummy hex;
+    Hex hex;
     dummy& setw(int length) { return dummy1; }
     dummy& setfill(int length) { return dummy1; }
 }

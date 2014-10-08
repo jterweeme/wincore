@@ -79,18 +79,30 @@ class dummy
 {
 };
 
+class Hex
+{
+};
+
 class ostream2
 {
+    typedef MyUtil::uint8_t uint8_t;
+    typedef MyUtil::uint32_t uint32_t;
 protected:
+    uint8_t _mode;
     FILE *_fp;
 public:
-    ostream2() { }
-    ostream2(FILE *fp) : _fp(fp) { }
+    static const uint8_t DEC = 0;
+    static const uint8_t OCT = 1;
+    static const uint8_t HEX = 2;
+    ostream2() : _mode(DEC) { }
+    ostream2(FILE *fp) : _mode(DEC), _fp(fp) { }
     ostream2& operator << (string2 s) { fprintf(_fp, s.c_str()); return *this; }
-    ostream2& operator << (const char *s) { fprintf(_fp, s); return *this; }
+    ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
     ostream2& operator << (std::ios_base &(*f)(std::ios_base &)) { return *this; }
     ostream2& operator << (dummy &d) { return *this; }
-    ostream2& operator << (const MyUtil::uint32_t u) { return *this; }
+    ostream2& operator << (Hex &hex) { return *this; }
+    ostream2& operator << (const uint32_t u);
+    virtual ~ostream2() { }
 };
 
 class fstream2
@@ -102,8 +114,12 @@ public:
 
 class ostringstream2 : public ostream2
 {
+    char *_buf;
+    size_t _size;
 public:
-    string2 str() { return string2("onzin"); }
+    ostringstream2() : ostream2(open_memstream(&_buf, &_size)) { }
+    string2 str() { return string2(_buf); }
+    ~ostringstream2() { }
 };
 
 template <class T> class vector2
@@ -117,6 +133,7 @@ public:
     void push_back(T a) { _buf[_size++] = a; }
     iterator begin() { return _buf; }
     iterator end() { return _buf + _size; }
+    virtual ~vector2() { }
 };
 
 
@@ -141,7 +158,7 @@ namespace mystl
     static ostream cout(stdout);
     static ostream cerr(stderr);
     extern dummy dummy1;
-    extern dummy hex;
+    extern Hex hex;
     extern dummy& setw(int length);
     extern dummy& setfill(int length);
 }
