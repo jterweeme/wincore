@@ -216,7 +216,7 @@ void App::checkFile2(const char *fn)
     file.open(fn, fstream::in | ios::binary);
     checkFile(file);
     file.close();
-#ifdef __WATCOMC__
+#if 1
     _hash.dump(cout);
     cout << "  " << fn << "\n";
 #else

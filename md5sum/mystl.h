@@ -29,7 +29,8 @@ public:
     int xdigit(int c);
     template <typename T> T swap_endian(T u);
 #ifdef __WATCOMC__
-    uint32_t be32toh(uint32_t v) { return 0; }
+    uint32_t be32toh(uint32_t v)
+    { return (v >> 24) | ((v << 8) & 0x00ff0000) | ((v >> 8) & 0x0000ff00) | (v << 24); }
 #else
     uint32_t be32toh(uint32_t v) { return swap_endian<uint32_t>(v); }
 #endif
@@ -137,7 +138,7 @@ public:
     static const MyUtil::uint8_t binary = 2;
 };
 
-#ifndef __WATCOMC__
+#ifdef __USE_XOPEN2K8
 class ostringstream2 : public ostream2
 {
     char *_buf;
@@ -185,10 +186,10 @@ namespace mystl
     typedef istream2 istream;
     typedef ifstream2 ifstream;
     typedef ostream2 ostream;
-#ifdef __WATCOMC__
+#ifdef __USE_XOPEN2K8
     typedef ostringstream3 ostringstream;
 #else
-    typedef ostringstream2 ostringstream;
+    typedef ostringstream3 ostringstream;
 #endif
     typedef fstream2 fstream;
     static istream cin(stdin);
