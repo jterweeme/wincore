@@ -34,7 +34,7 @@ public:
     Hash calc(Hash &hash);
     uint32_t w(uint32_t g) const { return _w[g]; }
     void dump(ostream &os);
-    void fillTail(uint32_t size) { _w[14] = size * 8; }
+    void fillTail(uint32_t size) { _w[14] = size * 8; _w[15] = size >> 29; }
     void clear() { for (int i = 0; i < 16; i++) _w[i] = 0; }
 };
 
