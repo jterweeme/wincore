@@ -2,13 +2,6 @@
 #define _HASHER_H_
 #include "common.h"
 
-class Util
-{
-public:
-    void to_bytes(uint32_t val, uint8_t *bytes);
-    uint32_t to_int32(const uint8_t *bytes);
-};
-
 class Hash
 {
     uint32_t _h0, _h1, _h2, _h3;
@@ -35,8 +28,9 @@ class Chunk
 {
     uint32_t _w[16];
     uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
+    uint32_t to_int32(const uint8_t *bytes);
 public:
-    void read(const uint8_t *msg);
+    void read(const uint8_t *msg) { for (int i = 0; i < 16; i++) _w[i] = to_int32(msg + i * 4); }
     Hash calc(Hash &hash);
     uint32_t w(uint32_t g) const { return _w[g]; }
     void dump(ostream &os);
