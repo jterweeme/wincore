@@ -44,6 +44,7 @@ class Hasher
 public:
     void reset() { _hash.reset(); }
     void stream(istream &is);
+    void stream(const char *s, size_t size);
     Hash hash() const { return _hash; }
 };
 

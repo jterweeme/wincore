@@ -91,6 +91,15 @@ void Hasher::stream(istream &file)
     }
 }
 
+/*
+void Hasher::stream(const char *s, size_t size)
+{
+    _hash.reset();
+
+    for (
+}
+*/
+
 void Chunk::dump(ostream &os)
 {
     for (int i = 0; i < 16; i++)

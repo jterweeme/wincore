@@ -30,7 +30,9 @@ void Options::parse(int argc, char **argv)
         }
         else
         {
+#ifdef __GNUC__foo
             _files.push_back(string(argv[i]));
+#endif
         }
     }
 }
@@ -62,10 +64,12 @@ void Paar::read(istream &is)
     is.getline(line, sizeof(line));
 }
 
-int App::run(int argc, char **argv)
+int App::run()
 {
-    _options.parse(argc, argv);
+    _options.parse();
+#ifdef __GNUC__foo
     Files files = _options.files();
+#endif
 
     if (_options.cin())
     {
@@ -73,14 +77,20 @@ int App::run(int argc, char **argv)
         cout << _hasher.hash().toString() << "  -\n";
     }
 
+    while (_options.hasNextFileName() && !_options.check())
+        checkFile2(_options.nextFileName().c_str());
+
+/*
     for (Files::iterator it = files.begin(); it != files.end() && !_options.check(); it++)
         checkFile2(it->c_str());
+*/
     
-    for (Files::iterator it = files.begin(); it != files.end() && _options.check(); it++)
+//    for (Files::iterator it = files.begin(); it != files.end() && _options.check(); it++)
+    while (_options.hasNextFileName() && _options.check())
     {
         ifstream foo;
         char line[255] = {0};
-        foo.open(it->c_str(), fstream::in);
+        foo.open(_options.nextFileName().c_str(), fstream::in);
         
         while (foo)
         {
@@ -111,14 +121,13 @@ int App::run(int argc, char **argv)
             cout << it->fn() << ": FAILED\n";
     }
 
-
     return 0;
 }
 
 int main(int argc, char **argv)
 {
-    App app;
-    return app.run(argc, argv);
+    App app(argc, argv);
+    return app.run();
 }
 
 

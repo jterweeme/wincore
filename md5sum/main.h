@@ -7,15 +7,42 @@ typedef vector<string> Files;
 class Options
 {
     bool _check;
+#ifdef __GNUC__foo
     Files _files;
+#endif
     bool _cin;
+    int _argc;
+    char **_argv;
+    int _argp;
 public:
-    Options() : _check(false), _cin(false) { }
+    Options(int argc, char **argv)
+      : _check(false), _cin(false), _argc(argc), _argv(argv), _argp(0)
+    { }
+
     bool check() const { return _check; }
+#ifdef __GNUC__foo
     Files &files() { return _files; }
+#endif
     void parse(int argc, char **argv);
+    void parse() { parse(_argc, _argv); }
     void dump(ostream &os);
     bool cin() const { return _cin; }
+    bool isFile(char *arg) { return arg[0] != '-'; }
+
+    bool hasNextFileName()
+    {
+        for (int i = _argp + 1; i < _argc; i++)
+            if (isFile(_argv[i]))
+                return true;
+
+        return false;
+    }
+
+    string nextFileName()
+    {
+        while (!isFile(_argv[++_argp]));
+        return string(_argv[_argp]);
+    }
 };
 
 class Paar
@@ -44,10 +71,10 @@ class App
     Hasher _hasher;
     Options _options;
     Paars _paars;
-    void checkFile(istream &is);
     void checkFile2(const char *fn);
 public:
-    int run(int argc, char **argv);
+    App(int argc, char **argv) : _options(argc, argv) { }
+    int run();
 };
 
 
