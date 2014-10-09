@@ -147,11 +147,9 @@ void Options::parse(int argc, char **argv)
 {
     for (int i = 1; i < argc; i++)
     {
-        char *opt = argv[i];
-
-        if (opt[0] == '-')
+        if (argv[i][0] == '-')
         {
-            switch (opt[1])
+            switch (argv[i][1])
             {
             case 'c':
                 _check = true;
@@ -163,7 +161,7 @@ void Options::parse(int argc, char **argv)
         }
         else
         {
-            _files.push_back(string(opt));
+            _files.push_back(string(argv[i]));
         }
     }
 }

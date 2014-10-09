@@ -1,5 +1,5 @@
-#include <iostream>
-using namespace std;
+#include "mystl.h"
+using namespace mystl;
 
 int main(int argc, char **argv)
 {
@@ -10,6 +10,7 @@ int main(int argc, char **argv)
         if (c != '\r' && cin)
             cout.put(c);
     }
+
     return 0;
 }
 
