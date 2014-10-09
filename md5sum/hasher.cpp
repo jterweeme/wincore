@@ -91,14 +91,41 @@ void Hasher::stream(istream &file)
     }
 }
 
-/*
 void Hasher::stream(const char *s, size_t size)
 {
     _hash.reset();
 
-    for (
+    for (size_t i = 0; i < size; i+= 64)
+    {
+        size_t readSize = (size - i) % 64;
+        uint8_t data[64] = {0};
+        memcpy(data, s + i, readSize);
+        Chunk chunk;
+
+        if (readSize < 56)
+        {
+            data[readSize] = 0x80;
+            chunk.read(data);
+            chunk.fillTail(size);
+        }
+        else if (readSize < 64)
+        {
+            data[readSize] = 0x80;
+            chunk.read(data);
+            Hash foo = chunk.calc(_hash);
+            _hash.add(foo);
+            chunk.clear();
+            chunk.fillTail(size);
+        }
+        else
+        {
+            chunk.read(data);
+        }
+
+        Hash foo = chunk.calc(_hash);
+        _hash.add(foo);
+    }
 }
-*/
 
 void Chunk::dump(ostream &os)
 {

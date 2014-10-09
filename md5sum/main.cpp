@@ -96,7 +96,9 @@ int App::run()
                 string fn = string(line + 34);
                 Paar paar(hash, fn);
                 checkPaar(paar);
+#ifdef __GNUC__foo
                 _paars.push_back(paar);
+#endif
             }
         }
         foo.close();

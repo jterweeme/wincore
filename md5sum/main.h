@@ -70,7 +70,9 @@ class App
 {
     Hasher _hasher;
     Options _options;
+#ifdef __GNUC__foo
     Paars _paars;
+#endif
     void checkFile2(const char *fn);
     void checkPaar(Paar &paar);
 public:
