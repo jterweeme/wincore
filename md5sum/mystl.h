@@ -187,7 +187,7 @@ namespace mystl
     typedef ifstream2 ifstream;
     typedef ostream2 ostream;
 #ifdef __USE_XOPEN2K8
-    typedef ostringstream3 ostringstream;
+    typedef ostringstream2 ostringstream;
 #else
     typedef ostringstream3 ostringstream;
 #endif
