@@ -1,5 +1,5 @@
 system dos
-file { main.obj mystl.obj }
+file { main.obj mystl.obj hasher.obj }
 option stack=50000
 name md5sum.exe
 

@@ -79,13 +79,7 @@ int App::run()
 
     while (_options.hasNextFileName() && !_options.check())
         checkFile2(_options.nextFileName().c_str());
-
-/*
-    for (Files::iterator it = files.begin(); it != files.end() && !_options.check(); it++)
-        checkFile2(it->c_str());
-*/
     
-//    for (Files::iterator it = files.begin(); it != files.end() && _options.check(); it++)
     while (_options.hasNextFileName() && _options.check())
     {
         ifstream foo;
@@ -101,27 +95,28 @@ int App::run()
                 Hash hash(line);
                 string fn = string(line + 34);
                 Paar paar(hash, fn);
+                checkPaar(paar);
                 _paars.push_back(paar);
             }
         }
         foo.close();
     }
 
-    for (Paars::iterator it = _paars.begin(); it != _paars.end(); it++)
-    {
-        ifstream file;
-        file.open(it->fn().c_str(), fstream::in | fstream::binary);
-        _hasher.stream(file);
-        file.close();
-        Hash hash2 = _hasher.hash();
-
-        if (it->hash().isEqual(hash2))
-            cout << it->fn() << ": OK\n";
-        else
-            cout << it->fn() << ": FAILED\n";
-    }
-
     return 0;
+}
+
+void App::checkPaar(Paar &paar)
+{
+    ifstream file;
+    file.open(paar.fn().c_str(), fstream::in | fstream::binary);
+    _hasher.stream(file);
+    file.close();
+    Hash hash2 = _hasher.hash();
+
+    if (paar.hash().isEqual(hash2))
+        cout << paar.fn() << ": OK\n";
+    else
+        cout << paar.fn() << ": FAILED\n";
 }
 
 int main(int argc, char **argv)

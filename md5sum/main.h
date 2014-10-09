@@ -72,6 +72,7 @@ class App
     Options _options;
     Paars _paars;
     void checkFile2(const char *fn);
+    void checkPaar(Paar &paar);
 public:
     App(int argc, char **argv) : _options(argc, argv) { }
     int run();
