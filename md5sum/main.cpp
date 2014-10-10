@@ -12,7 +12,7 @@ void Paar::dump(ostream &os)
     os << "  " << _fn << "\n";
 }
 
-void Options::parse(int argc, char **argv)
+void Options::parse(const int argc, char **argv)
 {
     for (int i = 1; i < argc; i++)
     {
@@ -121,7 +121,7 @@ void App::checkPaar(Paar &paar)
         cout << paar.fn() << ": FAILED\n";
 }
 
-int main(int argc, char **argv)
+int main(const int argc, char **argv)
 {
     App app(argc, argv);
     return app.run();
