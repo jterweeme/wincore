@@ -113,6 +113,7 @@ public:
 class Keys
 {
 public:
+    static const uint8_t ENTER = 0x0d;
     static const uint8_t ESC = 0x1b;
     static const uint8_t K0 = 0x30;
     static const uint8_t K1 = 0x31;
@@ -153,6 +154,8 @@ int App::run()
             _display.setAttrLine(23, 0xf);
             _cmdLine.put(':');
             _display.putc(':');
+            break;
+        case Keys::ENTER:
             break;
         case Keys::ESC:
             _display.setMode(3);
