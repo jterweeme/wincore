@@ -63,6 +63,7 @@ public:
     std::string fn(); //const { return _fn; }
     bool isDir();
     int read(std::istream &s);
+    uint32_t size() const { return _dir.dataLengthLE; }
     std::string toString();
 };
 

@@ -1,5 +1,6 @@
 #include "kompakt.h"
 #include <string.h>
+#include <fstream>
 using namespace std;
 
 class TestArguments
@@ -38,6 +39,16 @@ void test1()
 
     if (options.help())
         throw "Help option";
+}
+
+void test2()
+{
+    ISO iso;
+    ifstream ifs;
+    ifs.open("cd.iso");
+    iso.read(ifs);
+    
+    ifs.close();
 }
 
 int main()
