@@ -5,6 +5,7 @@
 #include <typeinfo>
 #include <fstream>
 #include <iomanip>
+using namespace std;
 
 std::string CDirectory::fn()
 {
@@ -348,7 +349,10 @@ int App::run(int argc, char **argv)
     options.parse(argc, argv);
 
     if (options.help())
+    {
+        cout << help() << "\n";
         return 0;
+    }
 
     ISO iso;
     std::ifstream fs;
