@@ -47,7 +47,10 @@ void test2()
     ifstream ifs;
     ifs.open("cd.iso");
     iso.read(ifs);
-    
+
+    if (iso.directories()[2].dir().dataLengthLE != 1679)
+        throw "Bestand moet 1679 bytes groot zijn";
+
     ifs.close();
 }
 
@@ -56,6 +59,7 @@ int main()
     try
     {
         test1();
+        test2();
     }
     catch (const char *s)
     {

@@ -49,7 +49,7 @@ std::string Flags::toString()
 
 int ISO::extract(std::istream &s)
 {
-    for (Directories::iterator it = directories.begin() + 2; it != directories.end(); it++)
+    for (Directories::iterator it = _directories.begin() + 2; it != _directories.end(); it++)
     {
         std::ofstream of;
         of.open(it->fn().c_str());
@@ -58,7 +58,7 @@ int ISO::extract(std::istream &s)
         s.read(buf, it->dir().dataLengthLE);
         of.write(buf, it->dir().dataLengthLE);
         of.close();
-        delete buf;
+        delete[] buf;
     }
     return 0;
 }
@@ -87,7 +87,7 @@ bool CDirectory::isDir()
 
 std::string ISO::list(int mode)
 {
-    return directories.list(mode);
+    return _directories.list(mode);
 }
 
 CPrimaryVolumeDesc::CPrimaryVolumeDesc(const CVolumeDescriptor &vd)
@@ -223,8 +223,8 @@ int Directories::read(std::istream &s, Descriptors &d)
 int ISO::read(std::istream &s)
 {
     s.ignore(32768, 0x20);
-    descriptors.read(s);
-    directories.read(s, descriptors);
+    _descriptors.read(s);
+    _directories.read(s, _descriptors);
     return 0;
 }
 

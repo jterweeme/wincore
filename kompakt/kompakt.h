@@ -60,7 +60,7 @@ class CDirectory
     SDirectory _dir;
 public:
     SDirectory dir() const { return _dir; }
-    std::string fn(); //const { return _fn; }
+    std::string fn();
     bool isDir();
     int read(std::istream &s);
     uint32_t size() const { return _dir.dataLengthLE; }
@@ -120,6 +120,7 @@ struct SVolumeDescriptor
 class CVolumeDescriptor
 {
 public:
+    virtual ~CVolumeDescriptor() { }
     const char *typeString();
     static const uint8_t SUPPLEMENTARY_VOLUME_DESCRIPTOR = 2;
     static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
@@ -154,6 +155,11 @@ public:
 class Descriptors : public std::vector<CVolumeDescriptor *>
 {
 public:
+    ~Descriptors()
+    {
+        for (iterator it = begin(); it != end(); it++)
+            delete *it;
+    }
     int read(std::istream &s);
     std::string toString();
 };
@@ -168,12 +174,14 @@ public:
 
 class ISO
 {
-    Descriptors descriptors;
-    Directories directories;
+    Descriptors _descriptors;
+    Directories _directories;
 public:
     int read(std::istream &s);
     int extract(std::istream &s);
     std::string list(int mode = 1);
+    Descriptors descriptors() const { return _descriptors; }
+    Directories directories() const { return _directories; }
 };
 
 class Flags : public std::bitset<8>
