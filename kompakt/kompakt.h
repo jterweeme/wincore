@@ -1,7 +1,7 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
-#include <stdint.h>
+#include "common.h"
 #include <iostream>
 #include <vector>
 #include <bitset>
