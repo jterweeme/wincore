@@ -1,7 +1,7 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <stdio.h>
-
+#include <vector>
 
 class Util2
 {
@@ -11,6 +11,7 @@ public:
     typedef unsigned uint32_t;
     typedef long unsigned size_t;
     void *memcpy(void *dest, const void *src, size_t n);
+    void *memset(void *s, const int c, const size_t n);
     char *strcpy(char *dest, const char *src);
     char *strncpy(char *dest, const char *src, size_t n);
     size_t strlen(const char *s);
@@ -39,10 +40,10 @@ class string2
     char _s[255];
     typedef Util2::size_t size_t;
 public:
-    string2() { }
+    string2() { Util2 u; u.memset(_s, 0, sizeof(_s)); }
     string2(const char *s) { Util2 util; util.strcpy(_s, s); }
     string2(const char *s1, const char *s2) { Util2 util; util.strncpy(_s, s1, s2 - s1); }
-    string2(size_t n, char c) { while (n) _s[--n] = c; }
+    string2(size_t n, char c) { _s[n] = '\0'; while (n) _s[--n] = c; }
     const char *c_str() const { return _s; }
     size_t length() const { Util2 util; return util.strlen(_s); }
 };
@@ -81,10 +82,9 @@ public:
     static const uint8_t binary = 2;
     ifstream2() { }
     ifstream2(char *s, int m) : istream2(fopen(s, "rb")) { }
-    virtual ~ifstream2() { }
     void open(const char *fn, int mode = 1) { _fp = fopen(fn, "rb"); }
     void close() { fclose(_fp); }
-
+    virtual ~ifstream2() { close(); }
 };
 
 class align
@@ -95,24 +95,38 @@ class dummy
 {
 };
 
+class base2
+{
+    typedef Util2::uint8_t uint8_t;
+    uint8_t _type;
+public:
+    static const uint8_t DEC = 1;
+    static const uint8_t HEX = 2;
+    static const uint8_t OCT = 3;
+    base2(uint8_t type) : _type(type) { }
+    base2() : _type(DEC) { }
+    uint8_t type() const { return _type; }
+};
+
 class ostream2
 {
     typedef Util2::uint8_t uint8_t;
     typedef Util2::uint32_t uint32_t;
 protected:
     uint8_t _mode;
+    base2 _base;
     FILE *_fp;
 public:
     static const uint8_t DEC = 0;
     static const uint8_t OCT = 1;
     static const uint8_t HEX = 2;
-    ostream2() : _mode(DEC) { }
-    ostream2(FILE *fp) : _mode(DEC), _fp(fp) { }
+    ostream2() : _base(base2::DEC) { }
+    ostream2(FILE *fp) : _base(base2::DEC), _fp(fp) { }
     ostream2& operator << (string2 s) { fprintf(_fp, s.c_str()); return *this; }
     ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
     ostream2& operator << (align &a) { return *this; }
     ostream2& operator << (dummy &d) { return *this; }
-    //virtual ostream2& operator << (Hex &hex) { return *this; }
+    ostream2& operator << (base2 &base) { _base = base; return *this; }
     virtual ostream2& operator << (const uint32_t u);
     ostream2& write(const char *s, int n);
     virtual ~ostream2() { }
@@ -131,15 +145,9 @@ public:
     string2 str() const { return string2("hello"); }
 };
 
-//#include <iostream>
-#include <vector>
-//#include <sstream>
-//#include <fstream>
-//#include <iomanip>
-
 namespace mystl
 {
-    using namespace std;
+    using std::vector;
     typedef Util2::uint8_t uint8_t;
     typedef Util2::uint16_t uint16_t;
     typedef Util2::uint32_t uint32_t;

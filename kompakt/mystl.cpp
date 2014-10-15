@@ -18,6 +18,16 @@ Util2::size_t Util2::strlen(const char *s)
     return (t - s);
 }
 
+void *Util2::memset(void *s, int c, size_t n)
+{
+    uint8_t *p = (uint8_t *)s;
+
+    while (n--)
+        *p++ = (uint8_t)c;
+
+    return s;
+}
+
 void istream2::read(char *s, size_t length)
 {
     _lastRead = fread(s, 1, length, _fp);
@@ -57,7 +67,15 @@ ostream2& ostream2::write(const char *s, int n)
 
 ostream2& ostream2::operator << (const uint32_t u)
 {
-    fprintf(_fp, "%08x", u);
+    switch (_base.type())
+    {
+    case base2::HEX:
+        fprintf(_fp, "%08x", u);
+        break;
+    default:
+        fprintf(_fp, "%d", u);
+        break;
+    }
     fflush(_fp);
     return *this;
 }
