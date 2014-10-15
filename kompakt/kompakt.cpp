@@ -56,10 +56,15 @@ void Directories::list(ostream &os, int mode)
     for (iterator it = begin(); it != end(); it++)
     {
         if (mode == 2)
-            os << it->toString() << "\n";
+        {
+            it->dump(os);
+            os << "\n";
+        }
         else
+        {
             os << it->fn() << string(20 - it->fn().length(), ' ')
                 << right << setw(10) << it->dir().dataLengthLE << "\n";
+        }
     }
 }
 
@@ -205,7 +210,9 @@ void CDirectory::dump(ostream &os)
     os << "Second:              " << (int)_dir.sec << endl;
     os << "Timezone:            " << (int)_dir.timezone << endl;
     Flags flags(_dir.flags);
-    os << "Flags:               " << flags.toString() << endl;
+    os << "Flags:               ";
+    flags.dump(os);
+    os << endl;
     os << "Volume Seq Number:   " << (int)_dir.volSeqNumLE << endl;
     os << "Filename length:     " << (int)_dir.fnLength << endl;
     os << "Name:                " << _fn;
