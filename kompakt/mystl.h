@@ -58,7 +58,7 @@ public:
     istream2() : _lastRead(0), _eof(false) { }
     istream2(FILE *fp) : _fp(fp), _lastRead(0), _eof(false) { }
     virtual ~istream2() { }
-    istream2& ignore(int n = 1, int d = '\n') { return *this; }
+    istream2& ignore(int n = 1, int d = '\n') { fseek(_fp, n, SEEK_CUR); return *this; }
     uint16_t tellg() { return ftell(_fp); }
     uint16_t gcount() { return _lastRead; }
     operator void * () const { return (void *)!_eof; }
