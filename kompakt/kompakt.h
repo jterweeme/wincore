@@ -1,10 +1,6 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
-
 #include "common.h"
-#include <iostream>
-#include <vector>
-#include <bitset>
 
 class Options
 {
@@ -12,23 +8,23 @@ class Options
     bool _list;
     bool _extract;
     bool _help;
-    std::string _fn;
+    string _fn;
 public:
     Options() { _info = _list = _extract = _help = false; }
-    std::string fn() const { return _fn; }
+    string fn() const { return _fn; }
     int parse(int argc, char **argv);
     bool info() const { return _info; }
     bool help() const { return _help; }
     bool list() const { return _list; }
     bool extract() const { return _extract; }
     bool stdinput() const { return (_fn.length() < 3); }
-    std::string toString();
+    string toString();
 };
 
 class Util
 {
 public:
-    static std::string foo(const char *s, int length) { return std::string(s, s + length); }
+    static string foo(const char *s, int length) { return string(s, s + length); }
 };
 
 struct SDirectory
@@ -56,15 +52,15 @@ struct SDirectory
 
 class CDirectory
 {
-    std::string _fn;
+    string _fn;
     SDirectory _dir;
 public:
     SDirectory dir() const { return _dir; }
-    std::string fn();
+    string fn();
     bool isDir();
-    int read(std::istream &s);
+    int read(istream &s);
     uint32_t size() const { return _dir.dataLengthLE; }
-    std::string toString();
+    string toString();
 };
 
 struct SVolumeDescriptor
@@ -125,8 +121,8 @@ public:
     static const uint8_t SUPPLEMENTARY_VOLUME_DESCRIPTOR = 2;
     static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
     SVolumeDescriptor desc;
-    int read(std::istream &s);
-    virtual std::string toString();
+    int read(istream &s);
+    virtual string toString();
 };
 
 class CPrimaryVolumeDesc : public CVolumeDescriptor
@@ -135,7 +131,7 @@ public:
     static const uint8_t PRIMARY_VOLUME_DESCRIPTOR = 1;
     CPrimaryVolumeDesc();
     CPrimaryVolumeDesc(const CVolumeDescriptor &vd);
-    std::string toString();
+    string toString();
 };
 
 class CVolumeDescriptorSetTerminator : public CVolumeDescriptor
@@ -143,7 +139,7 @@ class CVolumeDescriptorSetTerminator : public CVolumeDescriptor
 public:
     CVolumeDescriptorSetTerminator();
     CVolumeDescriptorSetTerminator(const CVolumeDescriptor &vd);
-    std::string toString();
+    string toString();
 };
 
 class VolDescFactory
@@ -152,7 +148,7 @@ public:
     CVolumeDescriptor *create(CVolumeDescriptor &vd);
 };
 
-class Descriptors : public std::vector<CVolumeDescriptor *>
+class Descriptors : public vector<CVolumeDescriptor *>
 {
 public:
     ~Descriptors()
@@ -160,16 +156,16 @@ public:
         for (iterator it = begin(); it != end(); it++)
             delete *it;
     }
-    int read(std::istream &s);
-    std::string toString();
+    int read(istream &s);
+    string toString();
 };
 
-class Directories : public std::vector<CDirectory>
+class Directories : public vector<CDirectory>
 {
 public:
-    int read(std::istream &s, Descriptors &d);
-    std::string toString();
-    std::string list(int mode = 1);
+    int read(istream &s, Descriptors &d);
+    string toString();
+    string list(int mode = 1);
 };
 
 class ISO
@@ -177,25 +173,25 @@ class ISO
     Descriptors _descriptors;
     Directories _directories;
 public:
-    int read(std::istream &s);
-    int extract(std::istream &s);
-    std::string list(int mode = 1);
+    int read(istream &s);
+    int extract(istream &s);
+    string list(int mode = 1);
     Descriptors descriptors() const { return _descriptors; }
     Directories directories() const { return _directories; }
 };
 
-class Flags : public std::bitset<8>
+class Flags : public bitset<8>
 {
 public:
-    Flags(uint8_t flags) : std::bitset<8>(flags) { }
-    std::string toString();
+    Flags(uint8_t flags) : bitset<8>(flags) { }
+    string toString();
 };
 
 class App
 {
     Options options;
 public:
-    std::string help();
+    string help();
     int run(int argc, char **argv);
 };
 

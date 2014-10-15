@@ -1,35 +1,44 @@
-#include <iostream>
-#include <vector>
-using namespace std;
+#include "kompakt.h"
 
-template <class T> class vector2
+template <typename T> void myAssert(T a, T b)
 {
-    T *_buf;
-    size_t _capacity;
-    size_t _size;
-public:
-    typedef T * iterator;
-    vector2() : _capacity(100), _size(0) { _buf = new T[100]; }
-    void push_back(const T &a) { _buf[_size++] = a; }
-    iterator begin() { return _buf; }
-    iterator end() { return _buf + _size; }
-};
-
-class Nester
-{
-    vector2<std::string> foo;
-};
+    if (a != b)
+        throw "error";
+}
 
 void test()
 {
-    vector<Nester> bar;
-    Nester nester1;
-    bar.push_back(nester1);
+#if 0
+    ifstream ifs("cd.iso");
+    ISO iso;
+    iso.read(ifs);
+#endif
+}
+
+void testBitset()
+{
+    bitset<8> bitset1(8);
+    myAssert(bitset1.size(), (size_t)8);
+    myAssert(bitset1.test(3), true);
+    myAssert(bitset1.test(4), false);
+    myAssert(bitset1.any(), true);
+    myAssert(bitset1.count(), (size_t)1);
+    bitset1.set();
+    myAssert(bitset1.test(7), true);
+    myAssert(bitset1.count(), (size_t)8);
+    bitset1.reset(2);
+    myAssert(bitset1.test(2), false);
+    myAssert(bitset1.count(), (size_t)7);
+    bitset1.reset();
+    myAssert(bitset1.test(4), false);
+    myAssert(bitset1.any(), false);
+    myAssert(bitset1.count(), (size_t)0);
 }
 
 int main()
 {
     test();
+    testBitset();
     return 0;
 }
 

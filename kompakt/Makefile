@@ -1,8 +1,12 @@
+CXXFLAGS = -g -Wall -Wno-unused
+
 all:
-	g++ -o kompakt -g -Wall main.cpp kompakt.cpp
-	g++ -o test1 -g -Wall test1.cpp kompakt.cpp
-	g++ -o test2 -g -Wall test2.cpp
+	g++ -o kompakt $(CXXFLAGS) main.cpp kompakt.cpp mystl.cpp
+	g++ -o test1 $(CXXFLAGS) test1.cpp kompakt.cpp mystl.cpp
+	g++ -o test2 $(CXXFLAGS) test2.cpp mystl.cpp
 
 test:
 	./test1
+	./test2
+
 

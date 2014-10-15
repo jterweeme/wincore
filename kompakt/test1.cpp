@@ -1,6 +1,4 @@
 #include "kompakt.h"
-#include <string.h>
-#include <fstream>
 using namespace std;
 
 class TestArguments

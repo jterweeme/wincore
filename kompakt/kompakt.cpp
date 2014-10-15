@@ -1,35 +1,28 @@
 #include "kompakt.h"
-#include <sstream>
-#include <iterator>
-#include <string.h>
-#include <typeinfo>
-#include <fstream>
-#include <iomanip>
-using namespace std;
 
-std::string CDirectory::fn()
+string CDirectory::fn()
 {
     if (_dir.fnLength == 1)
     {
-        return std::string("..");
+        return string("..");
     }
 
     return _fn;
 }
 
-std::string App::help()
+string App::help()
 {
-    std::ostringstream oss;
-    oss << "kompakt: Usage: kompakt [options]" << std::endl;
-    oss << "Options:" << std::endl;
-    oss << "    -h  Print this help" << std::endl;
+    ostringstream oss;
+    oss << "kompakt: Usage: kompakt [options]\n";
+    oss << "Options:\n";
+    oss << "    -h  Print this help\n";
     oss << "    -x  Extract";
     return oss.str();
 }
 
-std::string Flags::toString()
+string Flags::toString()
 {
-    std::ostringstream ss;
+    ostringstream ss;
 
     if (test(0))
         ss << "Hidden ";
@@ -47,11 +40,11 @@ std::string Flags::toString()
     return ss.str();
 }
 
-int ISO::extract(std::istream &s)
+int ISO::extract(istream &s)
 {
     for (Directories::iterator it = _directories.begin() + 2; it != _directories.end(); it++)
     {
-        std::ofstream of;
+        ofstream of;
         of.open(it->fn().c_str());
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
         char *buf = new char[it->dir().dataLengthLE];
@@ -63,17 +56,17 @@ int ISO::extract(std::istream &s)
     return 0;
 }
 
-std::string Directories::list(int mode)
+string Directories::list(int mode)
 {
-    std::ostringstream oss;
+    ostringstream oss;
 
     for (iterator it = begin(); it != end(); it++)
     {
         if (mode == 2)
-            oss << it->toString() << std::endl;
+            oss << it->toString() << endl;
         else
-            oss << it->fn() << std::string(20 - it->fn().length(), ' ')
-                << std::right << std::setw(10) << it->dir().dataLengthLE << std::endl;
+            oss << it->fn() << string(20 - it->fn().length(), ' ')
+                << right << setw(10) << it->dir().dataLengthLE << endl;
     }
 
     return oss.str();
@@ -85,34 +78,34 @@ bool CDirectory::isDir()
     return flags.test(1);
 }
 
-std::string ISO::list(int mode)
+string ISO::list(int mode)
 {
     return _directories.list(mode);
 }
 
 CPrimaryVolumeDesc::CPrimaryVolumeDesc(const CVolumeDescriptor &vd)
 {
-    ::memcpy(&desc, &vd.desc, sizeof(desc));
+    memcpy(&desc, &vd.desc, sizeof(desc));
 }
 
 CVolumeDescriptorSetTerminator::CVolumeDescriptorSetTerminator(const CVolumeDescriptor &vd)
 {
-    ::memcpy(&desc, &vd.desc, sizeof(desc));
+    memcpy(&desc, &vd.desc, sizeof(desc));
 }
 
-int CDirectory::read(std::istream &s)
+int CDirectory::read(istream &s)
 {
     s.read((char *)&_dir, sizeof(_dir));
     char filename[255] = {0};
     s.read(filename, _dir.fnLength);
-    _fn = std::string(filename);
+    _fn = string(filename);
     return 0;
 }
 
-std::string Options::toString()
+string Options::toString()
 {
-    std::ostringstream oss;
-    oss << "Filename: " << _fn << std::endl;
+    ostringstream oss;
+    oss << "Filename: " << _fn << endl;
     return oss.str();
 }
 
@@ -144,17 +137,17 @@ CVolumeDescriptor *VolDescFactory::create(CVolumeDescriptor &vd)
     }
 }
 
-std::string Descriptors::toString()
+string Descriptors::toString()
 {
-    std::ostringstream oss;
+    ostringstream oss;
  
     for (iterator it = begin(); it != end(); it++)
-        oss << (*it)->toString() << std::endl << std::endl;
+        oss << (*it)->toString() << endl << endl;
    
     return oss.str();
 }
 
-int Descriptors::read(std::istream &s)
+int Descriptors::read(istream &s)
 {
     CVolumeDescriptor desc1;
 
@@ -169,7 +162,7 @@ int Descriptors::read(std::istream &s)
     return 0;
 }
 
-int Directories::read(std::istream &s, Descriptors &d)
+int Directories::read(istream &s, Descriptors &d)
 {
     CDirectory dir1;
     s.ignore(d[0]->desc.lbaLSB * 2048 - s.tellg());
@@ -220,7 +213,7 @@ int Directories::read(std::istream &s, Descriptors &d)
     return 0;
 }
 
-int ISO::read(std::istream &s)
+int ISO::read(istream &s)
 {
     s.ignore(32768, 0x20);
     _descriptors.read(s);
@@ -228,78 +221,78 @@ int ISO::read(std::istream &s)
     return 0;
 }
 
-std::string CDirectory::toString()
+string CDirectory::toString()
 {
-    std::ostringstream ss;
-    ss << "[DIRECTORY]" << std::endl;
-    ss << "Length:              " << (int)_dir.length << std::endl;
-    ss << "Extended Length:     " << (int)_dir.extendedLength << std::endl;
-    ss << "LBA:                 " << (int)_dir.lbaLE << std::endl;
-    ss << "Filesize:            " << (int)_dir.dataLengthLE << std::endl;
-    ss << "Year:                " << (int)_dir.year + 1900 << std::endl;
-    ss << "Month:               " << (int)_dir.month << std::endl;
-    ss << "Day:                 " << (int)_dir.day << std::endl;
-    ss << "Hour:                " << (int)_dir.hour << std::endl;
-    ss << "Minute:              " << (int)_dir.min << std::endl;
-    ss << "Second:              " << (int)_dir.sec << std::endl;
-    ss << "Timezone:            " << (int)_dir.timezone << std::endl;
+    ostringstream ss;
+    ss << "[DIRECTORY]\n";
+    ss << "Length:              " << (int)_dir.length << endl;
+    ss << "Extended Length:     " << (int)_dir.extendedLength << endl;
+    ss << "LBA:                 " << (int)_dir.lbaLE << endl;
+    ss << "Filesize:            " << (int)_dir.dataLengthLE << endl;
+    ss << "Year:                " << (int)_dir.year + 1900 << endl;
+    ss << "Month:               " << (int)_dir.month << endl;
+    ss << "Day:                 " << (int)_dir.day << endl;
+    ss << "Hour:                " << (int)_dir.hour << endl;
+    ss << "Minute:              " << (int)_dir.min << endl;
+    ss << "Second:              " << (int)_dir.sec << endl;
+    ss << "Timezone:            " << (int)_dir.timezone << endl;
     Flags flags(_dir.flags);
-    ss << "Flags:               " << flags.toString() << std::endl;
-    ss << "Volume Seq Number:   " << (int)_dir.volSeqNumLE << std::endl;
-    ss << "Filename length:     " << (int)_dir.fnLength << std::endl;
+    ss << "Flags:               " << flags.toString() << endl;
+    ss << "Volume Seq Number:   " << (int)_dir.volSeqNumLE << endl;
+    ss << "Filename length:     " << (int)_dir.fnLength << endl;
     ss << "Name:                " << _fn;
     return ss.str();
 }
 
-std::string CVolumeDescriptor::toString()
+string CVolumeDescriptor::toString()
 {
-    std::ostringstream ss;
-    ss << "[Volume Descriptor]" << std::endl;
-    ss << "Type:                " << typeString() << std::endl;
-    ss << "Identifier:          " << Util::foo(desc.identifier, 5) << std::endl;
-    ss << "Version:             " << (int)desc.version << std::endl;
+    ostringstream ss;
+    ss << "[Volume Descriptor]\n";
+    ss << "Type:                " << typeString() << endl;
+    ss << "Identifier:          " << Util::foo(desc.identifier, 5) << endl;
+    ss << "Version:             " << (int)desc.version << endl;
     return ss.str();
 }
-std::string CPrimaryVolumeDesc::toString()
+string CPrimaryVolumeDesc::toString()
 {
-    std::ostringstream ss;
-    ss << "[Primary Volume Descriptor]" << std::endl;
-    ss << "Type:                " << typeString() << std::endl;
-    ss << "Identifier:          " << Util::foo(desc.identifier, 5) << std::endl;
-    ss << "Version:             " << (int)desc.version << std::endl;
-    ss << "System Identifier:   " << Util::foo(desc.sysident, 32) << std::endl;
-    ss << "Volume Identifier:   " << Util::foo(desc.volident, 32) << std::endl;
-    ss << "Volume Space Size:   " << desc.volumeSpaceSizeLSB << std::endl;
-    ss << "Volume Set Size:     " << (int)desc.volumeSetSizeLSB << std::endl;
-    ss << "BlockSize:           " << desc.logicalBlockSizeLSB << std::endl;
-    ss << "Path Table Size:     " << desc.pathTableSizeLSB << std::endl;
-    ss << "Volume Set Ident:    " << Util::foo(desc.volSetIdent, 128 - 60) << std::endl;
-    ss << "Publisher Ident:     " << Util::foo(desc.pubIdent, 128 - 60) << std::endl;
-    ss << "Data Prep. Ident:    " << Util::foo(desc.prepIdent, 128 - 60) << std::endl;
-    ss << "Directory Length:    " << (int)desc.directoryLength << std::endl;
-    ss << "LBA:                 " << (int)desc.lbaLSB << std::endl;
-    ss << "Data length:         " << (int)desc.dataLengthLSB << std::endl;
-    ss << "Year:                " << (int)desc.year + 1900 << std::endl;
-    ss << "Month:               " << (int)desc.month << std::endl;
-    ss << "Day:                 " << (int)desc.day << std::endl;
-    ss << "Hour:                " << (int)desc.hour << std::endl;
-    ss << "Minute:              " << (int)desc.minute << std::endl;
-    ss << "Second:              " << (int)desc.second << std::endl;
+    ostringstream ss;
+    ss << "[Primary Volume Descriptor]\n";
+    ss << "Type:                " << typeString() << endl;
+    ss << "Identifier:          " << Util::foo(desc.identifier, 5) << endl;
+    ss << "Version:             " << (int)desc.version << endl;
+    ss << "System Identifier:   " << Util::foo(desc.sysident, 32) << endl;
+    ss << "Volume Identifier:   " << Util::foo(desc.volident, 32) << endl;
+    ss << "Volume Space Size:   " << desc.volumeSpaceSizeLSB << endl;
+    ss << "Volume Set Size:     " << (int)desc.volumeSetSizeLSB << endl;
+    ss << "BlockSize:           " << desc.logicalBlockSizeLSB << endl;
+    ss << "Path Table Size:     " << desc.pathTableSizeLSB << endl;
+    ss << "Volume Set Ident:    " << Util::foo(desc.volSetIdent, 128 - 60) << endl;
+    ss << "Publisher Ident:     " << Util::foo(desc.pubIdent, 128 - 60) << endl;
+    ss << "Data Prep. Ident:    " << Util::foo(desc.prepIdent, 128 - 60) << endl;
+    ss << "Directory Length:    " << (int)desc.directoryLength << endl;
+    ss << "LBA:                 " << (int)desc.lbaLSB << endl;
+    ss << "Data length:         " << (int)desc.dataLengthLSB << endl;
+    ss << "Year:                " << (int)desc.year + 1900 << endl;
+    ss << "Month:               " << (int)desc.month << endl;
+    ss << "Day:                 " << (int)desc.day << endl;
+    ss << "Hour:                " << (int)desc.hour << endl;
+    ss << "Minute:              " << (int)desc.minute << endl;
+    ss << "Second:              " << (int)desc.second << endl;
     ss << "Timezone:            " << (int)desc.timezone;
     return ss.str();
 }
 
-std::string CVolumeDescriptorSetTerminator::toString()
+string CVolumeDescriptorSetTerminator::toString()
 {
-    std::ostringstream ss;
-    ss << "[Volume Descriptor Set Terminator]" << std::endl;
-    ss << "Type:                " << typeString() << std::endl;
-    ss << "Identifier:          " << Util::foo(desc.identifier, 5) << std::endl;
-    ss << "Version:             " << (int)desc.version << std::endl;
+    ostringstream ss;
+    ss << "[Volume Descriptor Set Terminator]\n";
+    ss << "Type:                " << typeString() << endl;
+    ss << "Identifier:          " << Util::foo(desc.identifier, 5) << endl;
+    ss << "Version:             " << (int)desc.version << endl;
     return ss.str();
 }
 
-int CVolumeDescriptor::read(std::istream &s)
+int CVolumeDescriptor::read(istream &s)
 {
     s.read((char *)&desc, sizeof(desc));
     return 0;
@@ -337,7 +330,7 @@ int Options::parse(int argc, char **argv)
         }
         else
         {
-            _fn = std::string(opt);
+            _fn = string(opt);
         }
     }
 
@@ -355,30 +348,30 @@ int App::run(int argc, char **argv)
     }
 
     ISO iso;
-    std::ifstream fs;
+    ifstream fs;
 
     if (options.stdinput())
     {
-        iso.read(std::cin);
+        iso.read(cin);
     }
     else
     {
-        fs.open(options.fn().c_str(), std::fstream::in);
+        fs.open(options.fn().c_str(), fstream::in);
         iso.read(fs);
     }
 
     if (options.list())
     {
         if (options.info())
-            std::cout << iso.list(2) << std::endl;
+            cout << iso.list(2) << endl;
         else
-            std::cout << iso.list() << std::endl;
+            cout << iso.list() << endl;
     }
 
     if (options.extract())
     {
         if (options.stdinput())
-            iso.extract(std::cin);
+            iso.extract(cin);
         else
             iso.extract(fs);
     }
