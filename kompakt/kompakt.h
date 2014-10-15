@@ -18,7 +18,8 @@ public:
     bool list() const { return _list; }
     bool extract() const { return _extract; }
     bool stdinput() const { return (_fn.length() < 3); }
-    string toString();
+    void dump(ostream &os) { os << "Filename: " << _fn << "\n"; }
+    string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
 class Util
@@ -50,6 +51,14 @@ struct SDirectory
     uint8_t fnLength;
 } __attribute__ ((packed));
 
+class Flags : public bitset<8>
+{
+public:
+    Flags(uint8_t flags) : bitset<8>(flags) { }
+    void dump(ostream &os);
+    string toString() { ostringstream oss; dump(oss); return oss.str(); }
+};
+
 class CDirectory
 {
     string _fn;
@@ -57,10 +66,11 @@ class CDirectory
 public:
     SDirectory dir() const { return _dir; }
     string fn();
-    bool isDir();
+    bool isDir() { Flags flags(_dir.flags); return flags.test(1); }
     int read(istream &s);
     uint32_t size() const { return _dir.dataLengthLE; }
-    string toString();
+    void dump(ostream &os);
+    string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
 struct SVolumeDescriptor
@@ -122,7 +132,8 @@ public:
     static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
     SVolumeDescriptor desc;
     int read(istream &s);
-    virtual string toString();
+    void dump(ostream &os);
+    virtual string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
 class CPrimaryVolumeDesc : public CVolumeDescriptor
@@ -131,7 +142,8 @@ public:
     static const uint8_t PRIMARY_VOLUME_DESCRIPTOR = 1;
     CPrimaryVolumeDesc();
     CPrimaryVolumeDesc(const CVolumeDescriptor &vd);
-    string toString();
+    void dump(ostream &os);
+    string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
 class CVolumeDescriptorSetTerminator : public CVolumeDescriptor
@@ -139,7 +151,8 @@ class CVolumeDescriptorSetTerminator : public CVolumeDescriptor
 public:
     CVolumeDescriptorSetTerminator();
     CVolumeDescriptorSetTerminator(const CVolumeDescriptor &vd);
-    string toString();
+    void dump(ostream &os);
+    string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
 class VolDescFactory
@@ -157,7 +170,8 @@ public:
             delete *it;
     }
     int read(istream &s);
-    string toString();
+    void dump(ostream &os);
+    string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
 class Directories : public vector<CDirectory>
@@ -165,7 +179,9 @@ class Directories : public vector<CDirectory>
 public:
     int read(istream &s, Descriptors &d);
     string toString();
-    string list(int mode = 1);
+    void list(ostream &os, int mode);
+    string list(int mode = 1) { ostringstream oss; list(oss, mode); return oss.str(); }
+    
 };
 
 class ISO
@@ -175,23 +191,18 @@ class ISO
 public:
     int read(istream &s);
     int extract(istream &s);
-    string list(int mode = 1);
+    void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
+    string list(int mode = 1) { return _directories.list(mode); }
     Descriptors descriptors() const { return _descriptors; }
     Directories directories() const { return _directories; }
-};
-
-class Flags : public bitset<8>
-{
-public:
-    Flags(uint8_t flags) : bitset<8>(flags) { }
-    string toString();
 };
 
 class App
 {
     Options options;
 public:
-    string help();
+    void help(ostream &os);
+    string help() { ostringstream oss; help(oss); return oss.str(); }
     int run(int argc, char **argv);
 };
 
