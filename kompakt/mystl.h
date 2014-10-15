@@ -77,13 +77,15 @@ public:
 class ifstream2 : public istream2
 {
     typedef Util2::uint8_t uint8_t;
+    bool _open;
 public:
+    bool is_open() const { return _open; }
     static const uint8_t in = 1;
     static const uint8_t binary = 2;
-    ifstream2() { }
-    ifstream2(char *s, int m) : istream2(fopen(s, "rb")) { }
-    void open(const char *fn, int mode = 1) { _fp = fopen(fn, "rb"); }
-    void close() { fclose(_fp); }
+    ifstream2() : _open(false) { }
+    ifstream2(char *s, int m) : istream2(fopen(s, "rb")), _open(true) { }
+    void open(const char *fn, int mode = 1) { _fp = fopen(fn, "rb"); _open = true; }
+    void close() { if (_open) fclose(_fp); }
     virtual ~ifstream2() { close(); }
 };
 

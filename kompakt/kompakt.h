@@ -8,16 +8,19 @@ class Options
     bool _list;
     bool _extract;
     bool _help;
+    bool _cin;
+    bool _file;
     string _fn;
 public:
-    Options() { _info = _list = _extract = _help = false; }
+    Options() { _info = _list = _extract = _cin = _file = _help = false; }
     string fn() const { return _fn; }
+    bool file() const { return _file; }
     int parse(int argc, char **argv);
     bool info() const { return _info; }
     bool help() const { return _help; }
     bool list() const { return _list; }
     bool extract() const { return _extract; }
-    bool stdinput() const { return (_fn.length() < 3); }
+    bool stdinput() const { return _cin; }
     void dump(ostream &os) { os << "Filename: " << _fn << "\n"; }
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
@@ -200,6 +203,7 @@ public:
 class App
 {
     Options options;
+    ISO _iso;
 public:
     void help(ostream &os);
     string help() { ostringstream oss; help(oss); return oss.str(); }

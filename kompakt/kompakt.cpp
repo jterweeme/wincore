@@ -58,7 +58,7 @@ void Directories::list(ostream &os, int mode)
         if (mode == 2)
         {
             it->dump(os);
-            os << "\n";
+            os << "\n\n";
         }
         else
         {
@@ -151,7 +151,6 @@ int Directories::read(istream &s, Descriptors &d)
 
             if (s.tellg() % 2 > 0)
                 s.ignore(1);
-
         }
         else
         {
@@ -269,12 +268,6 @@ int CVolumeDescriptor::read(istream &s)
 
 int Options::parse(int argc, char **argv)
 {
-    if (argc <= 1)
-    {
-        _info = true;
-        return 0;
-    }
-
     for (int i = 1; i < argc; i++)
     {
         char *opt = argv[i];
@@ -289,17 +282,20 @@ int Options::parse(int argc, char **argv)
             case 'l':
                 _list = true;
                 break;
+            case 'f':
+                _file = true;
+                _fn = string(argv[++i]);
+                break;
             case 'i':
                 _info = true;
+                break;
+            case 's':
+                _cin = true;
                 break;
             case 'x':
                 _extract = true;
                 break;
             }
-        }
-        else
-        {
-            _fn = string(opt);
         }
     }
 
@@ -317,25 +313,31 @@ int App::run(int argc, char **argv)
         return 0;
     }
 
-    ISO iso;
     ifstream fs;
 
     if (options.stdinput())
     {
-        iso.read(cin);
+        _iso.read(cin);
+    }
+    else if (options.file())
+    {
+
+        fs.open(options.fn().c_str(), fstream::in);
+        _iso.read(fs);
     }
     else
     {
-        fs.open(options.fn().c_str(), fstream::in);
-        iso.read(fs);
+        help(cout);
+        cout << "\n";
+        return 0;
     }
 
     if (options.list())
     {
         if (options.info())
-            iso.list(cout, 2);
+            _iso.list(cout, 2);
         else
-            iso.list(cout);
+            _iso.list(cout);
 
         cout << "\n";
     }
@@ -343,9 +345,9 @@ int App::run(int argc, char **argv)
     if (options.extract())
     {
         if (options.stdinput())
-            iso.extract(cin);
+            _iso.extract(cin);
         else
-            iso.extract(fs);
+            _iso.extract(fs);
     }
         
     return 0;
