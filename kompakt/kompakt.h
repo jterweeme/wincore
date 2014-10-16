@@ -10,9 +10,10 @@ class Options
     bool _help;
     bool _cin;
     bool _file;
+    bool _desc;
     string _fn;
 public:
-    Options() { _verbose = _list = _extract = _cin = _file = _help = false; }
+    Options() { _verbose = _desc = _list = _extract = _cin = _file = _help = false; }
     string fn() const { return _fn; }
     bool file() const { return _file; }
     int parse(int argc, char **argv);
@@ -21,6 +22,7 @@ public:
     bool list() const { return _list; }
     bool extract() const { return _extract; }
     bool stdinput() const { return _cin; }
+    bool desc() const { return _desc; }
     void dump(ostream &os) { os << "Filename: " << _fn << "\n"; }
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
@@ -135,7 +137,7 @@ public:
     static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
     SVolumeDescriptor desc;
     int read(istream &s);
-    void dump(ostream &os);
+    virtual void dump(ostream &os);
     virtual string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
@@ -167,11 +169,7 @@ public:
 class Descriptors : public vector<CVolumeDescriptor *>
 {
 public:
-    ~Descriptors()
-    {
-        for (iterator it = begin(); it != end(); it++)
-            delete *it;
-    }
+    virtual ~Descriptors() { for (iterator it = begin(); it != end(); it++) delete *it; }
     int read(istream &s);
     void dump(ostream &os);
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
@@ -184,7 +182,6 @@ public:
     string toString();
     void list(ostream &os, int mode);
     string list(int mode = 1) { ostringstream oss; list(oss, mode); return oss.str(); }
-    
 };
 
 class ISO
@@ -196,7 +193,8 @@ public:
     int extract(istream &s);
     void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
     string list(int mode = 1) { return _directories.list(mode); }
-    Descriptors descriptors() const { return _descriptors; }
+    //Descriptors descriptors() const { return _descriptors; }
+    void dumpDescriptors(ostream &os);
     Directories directories() const { return _directories; }
 };
 

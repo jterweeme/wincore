@@ -1,7 +1,7 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-#if 1
+#if 0
 #include "mystl.h"
 using namespace mystl;
 #else

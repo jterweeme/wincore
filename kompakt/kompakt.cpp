@@ -118,7 +118,10 @@ CVolumeDescriptor *VolDescFactory::create(CVolumeDescriptor &vd)
 void Descriptors::dump(ostream &os)
 {
     for (iterator it = begin(); it != end(); it++)
-        os << (*it)->toString() << endl << endl;
+    {
+        (*it)->dump(os);
+        os << "\n\n";
+    }
 }
 
 int Descriptors::read(istream &s)
@@ -290,6 +293,9 @@ int Options::parse(int argc, char **argv)
             case 's':
                 _cin = true;
                 break;
+            case 'd':
+                _desc = true;
+                break;
             case 'x':
                 _extract = true;
                 break;
@@ -298,6 +304,11 @@ int Options::parse(int argc, char **argv)
     }
 
     return 0;
+}
+
+void ISO::dumpDescriptors(ostream &os)
+{
+    _descriptors.dump(os);
 }
 
 int App::run(int argc, char **argv)
@@ -328,6 +339,13 @@ int App::run(int argc, char **argv)
         help(cout);
         cout << "\n";
         return 0;
+    }
+
+    if (options.desc())
+    {
+        _iso.dumpDescriptors(cout);
+        //_iso.descriptors().dump(cout);
+        cout << "\n";
     }
 
     if (options.list())
