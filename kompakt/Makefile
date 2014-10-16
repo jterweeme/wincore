@@ -1,4 +1,5 @@
 CXXFLAGS = -g -Wall -Wno-unused
+VALGRIND = -q --error-exitcode=1 --leak-check=full
 
 all:
 	g++ -o kompakt $(CXXFLAGS) main.cpp kompakt.cpp mystl.cpp
@@ -7,9 +8,9 @@ all:
 	g++ -o test3 $(CXXFLAGS) test3.cpp mystl.cpp
 
 test: force
-	./test1
-	valgrind -q --error-exitcode=1 --leak-check=full ./test1
-	./test2
+	valgrind $(VALGRIND) ./test1
+	valgrind $(VALGRIND) ./test2
+	valgrind $(VALGRIND) ./test3
 
 force:
 
