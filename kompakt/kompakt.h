@@ -193,14 +193,13 @@ public:
     int extract(istream &s);
     void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
     string list(int mode = 1) { return _directories.list(mode); }
-    //Descriptors descriptors() const { return _descriptors; }
     void dumpDescriptors(ostream &os);
     Directories directories() const { return _directories; }
 };
 
 class App
 {
-    Options options;
+    Options _options;
     ISO _iso;
 public:
     void help(ostream &os);

@@ -1,5 +1,9 @@
 #include "kompakt.h"
 
+#ifndef DEBUG
+#define DEBUG2
+#endif
+
 string CDirectory::fn()
 {
     if (_dir.fnLength == 1)
@@ -154,12 +158,19 @@ int Directories::read(istream &s, Descriptors &d)
 
             if (s.tellg() % 2 > 0)
                 s.ignore(1);
+
+#ifdef DEBUG
+            dir1.dump(cerr);
+            cerr << "\n";
+#endif
         }
         else
         {
             break;
         }
     }
+
+    
 
     for (iterator it = begin() + 2; it != end(); it++)
     {
@@ -193,6 +204,10 @@ int ISO::read(istream &s)
 {
     s.ignore(32768, 0x20);
     _descriptors.read(s);
+#ifdef DEBUG
+    _descriptors.dump(cerr);
+    cerr << "\n";
+#endif
     _directories.read(s, _descriptors);
     return 0;
 }
@@ -313,9 +328,9 @@ void ISO::dumpDescriptors(ostream &os)
 
 int App::run(int argc, char **argv)
 {
-    options.parse(argc, argv);
+    _options.parse(argc, argv);
 
-    if (options.help())
+    if (_options.help())
     {
         help(cout);
         cout << "\n";
@@ -324,14 +339,14 @@ int App::run(int argc, char **argv)
 
     ifstream fs;
 
-    if (options.stdinput())
+    if (_options.stdinput())
     {
         _iso.read(cin);
     }
-    else if (options.file())
+    else if (_options.file())
     {
 
-        fs.open(options.fn().c_str(), fstream::in);
+        fs.open(_options.fn().c_str(), fstream::in);
         _iso.read(fs);
     }
     else
@@ -341,16 +356,15 @@ int App::run(int argc, char **argv)
         return 0;
     }
 
-    if (options.desc())
+    if (_options.desc())
     {
         _iso.dumpDescriptors(cout);
-        //_iso.descriptors().dump(cout);
         cout << "\n";
     }
 
-    if (options.list())
+    if (_options.list())
     {
-        if (options.verbose())
+        if (_options.verbose())
             _iso.list(cout, 2);
         else
             _iso.list(cout);
@@ -358,9 +372,9 @@ int App::run(int argc, char **argv)
         cout << "\n";
     }
 
-    if (options.extract())
+    if (_options.extract())
     {
-        if (options.stdinput())
+        if (_options.stdinput())
             _iso.extract(cin);
         else
             _iso.extract(fs);
