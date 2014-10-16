@@ -4,7 +4,7 @@
 
 class Options
 {
-    bool _info;
+    bool _verbose;
     bool _list;
     bool _extract;
     bool _help;
@@ -12,11 +12,11 @@ class Options
     bool _file;
     string _fn;
 public:
-    Options() { _info = _list = _extract = _cin = _file = _help = false; }
+    Options() { _verbose = _list = _extract = _cin = _file = _help = false; }
     string fn() const { return _fn; }
     bool file() const { return _file; }
     int parse(int argc, char **argv);
-    bool info() const { return _info; }
+    bool verbose() const { return _verbose; }
     bool help() const { return _help; }
     bool list() const { return _list; }
     bool extract() const { return _extract; }

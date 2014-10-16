@@ -85,7 +85,7 @@ public:
     ifstream2() : _open(false) { }
     ifstream2(char *s, int m) : istream2(fopen(s, "rb")), _open(true) { }
     void open(const char *fn, int mode = 1) { _fp = fopen(fn, "rb"); _open = true; }
-    void close() { if (_open) fclose(_fp); }
+    void close() { if (_open) { fclose(_fp); _open = false; } }
     virtual ~ifstream2() { close(); }
 };
 

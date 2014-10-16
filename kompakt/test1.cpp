@@ -26,11 +26,12 @@ void test1()
     Options options;
     TestArguments ta;
     ta.push("kompakt");
-    ta.push("-i");
+    ta.push("-s");
+    ta.push("-v");
     options.parse(ta.argc(), ta.argv());
-    
-    if (!options.info())
-        throw "Info option";
+ 
+    if (!options.verbose())
+        throw "Verbose";   
 
     if (!options.stdinput())
         throw "Standard input option";

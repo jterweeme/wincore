@@ -270,11 +270,9 @@ int Options::parse(int argc, char **argv)
 {
     for (int i = 1; i < argc; i++)
     {
-        char *opt = argv[i];
-
-        if (opt[0] == '-')
+        if (argv[i][0] == '-')
         {
-            switch (opt[1])
+            switch (argv[i][1])
             {
             case 'h':
                 _help = true;
@@ -286,8 +284,8 @@ int Options::parse(int argc, char **argv)
                 _file = true;
                 _fn = string(argv[++i]);
                 break;
-            case 'i':
-                _info = true;
+            case 'v':
+                _verbose = true;
                 break;
             case 's':
                 _cin = true;
@@ -334,7 +332,7 @@ int App::run(int argc, char **argv)
 
     if (options.list())
     {
-        if (options.info())
+        if (options.verbose())
             _iso.list(cout, 2);
         else
             _iso.list(cout);
