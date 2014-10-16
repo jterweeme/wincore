@@ -44,7 +44,7 @@ void test2()
 {
     ISO iso;
     ifstream ifs;
-    ifs.open("cd.iso");
+    ifs.open("cd1.iso");
     iso.read(ifs);
 
     if (iso.directories()[2].dir().dataLengthLE != 1679)

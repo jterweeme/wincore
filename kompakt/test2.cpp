@@ -1,9 +1,9 @@
 #include "kompakt.h"
 
-template <typename T> void myAssert(T a, T b)
+template <typename T> void myAssert(T a, T b, const char *err = "error")
 {
     if (a != b)
-        throw "error";
+        throw err;
 }
 
 void test()
@@ -24,7 +24,7 @@ void testBitset()
     myAssert(bitset1.any(), true);
     myAssert(bitset1.count(), (size_t)1);
     bitset1.set();
-    myAssert(bitset1.test(7), true);
+    myAssert(bitset1.test(7), true, "Test 7");
     myAssert(bitset1.count(), (size_t)8);
     bitset1.reset(2);
     myAssert(bitset1.test(2), false);
@@ -37,8 +37,17 @@ void testBitset()
 
 int main()
 {
-    test();
-    testBitset();
+    try
+    {
+        test();
+        testBitset();
+    }
+    catch (const char *e)
+    {
+        cerr << e << "\n";
+        return -1;
+    }
+
     return 0;
 }
 

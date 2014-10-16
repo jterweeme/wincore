@@ -131,11 +131,12 @@ struct SVolumeDescriptor
 class CVolumeDescriptor
 {
 public:
+    SVolumeDescriptor _desc;
+public:
     virtual ~CVolumeDescriptor() { }
     const char *typeString();
     static const uint8_t SUPPLEMENTARY_VOLUME_DESCRIPTOR = 2;
     static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
-    SVolumeDescriptor desc;
     int read(istream &s);
     virtual void dump(ostream &os);
     virtual string toString() { ostringstream oss; dump(oss); return oss.str(); }
