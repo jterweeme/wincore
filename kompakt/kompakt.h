@@ -153,6 +153,8 @@ class PathEntry
     char _name[255];
 public:
     PathEntry() { memset(_name, 0, sizeof(_name)); }
+    uint32_t offsetLBA() const { return _pe.lba; }
+    uint32_t offset() const { return offsetLBA() * 2048; }
     void read(istream &is);
     void dump(ostream &os);
 };
@@ -233,8 +235,7 @@ public:
 class Directories : public vector<Directory>
 {
 public:
-    void read(istream &is, uint32_t offset);
-    void read(istream &is, Descriptors &d) { read(is, d[0]->_desc.lbaLSB); }
+    void read(istream &is, PathTable &pt);
     void list(ostream &os, int mode = 1);
 };
 
