@@ -64,7 +64,7 @@ public:
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
-class CDirectory
+class DirEntry
 {
     string _fn;
     SDirectory _dir;
@@ -218,27 +218,35 @@ public:
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
-class Directories : public vector<CDirectory>
+class Directory : public vector<DirEntry>
 {
 public:
-    int read(istream &s, Descriptors &d);
+    void read(istream &s, uint32_t offset);
+    void read(istream &s, Descriptors &d) { read(s, d[0]->_desc.lbaLSB); }
     string toString();
     void list(ostream &os, int mode);
     string list(int mode = 1) { ostringstream oss; list(oss, mode); return oss.str(); }
+};
+
+class Directories : public vector<Directory>
+{
+public:
+    void read(istream &is);
 };
 
 class ISO
 {
     Descriptors _descriptors;
     PathTable _pathTable;
+    Directory _directory;
     Directories _directories;
 public:
     int read(istream &s);
     int extract(istream &s);
-    void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
-    string list(int mode = 1) { return _directories.list(mode); }
+    void list(ostream &os, int mode = 1) { _directory.list(os, mode); }
+    string list(int mode = 1) { return _directory.list(mode); }
     void dumpDescriptors(ostream &os) { _descriptors.dump(os); }
-    Directories directories() const { return _directories; }
+    Directory directory() const { return _directory; }
 };
 
 class App

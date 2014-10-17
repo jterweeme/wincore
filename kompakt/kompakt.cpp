@@ -4,7 +4,7 @@
 #define DEBUG2
 #endif
 
-string CDirectory::fn()
+string DirEntry::fn()
 {
     if (_dir.fnLength == 1)
     {
@@ -41,7 +41,7 @@ void Flags::dump(ostream &os)
 
 int ISO::extract(istream &s)
 {
-    for (Directories::iterator it = _directories.begin() + 2; it != _directories.end(); it++)
+    for (Directory::iterator it = _directory.begin() + 2; it != _directory.end(); it++)
     {
         ofstream of;
         of.open(it->fn().c_str());
@@ -55,7 +55,13 @@ int ISO::extract(istream &s)
     return 0;
 }
 
-void Directories::list(ostream &os, int mode)
+void Directories::read(istream &is)
+{
+    Directory _dir;
+    //_dir.read(s, _descriptors);   
+}
+
+void Directory::list(ostream &os, int mode)
 {
     for (iterator it = begin(); it != end(); it++)
     {
@@ -106,7 +112,7 @@ CVolumeDescriptorSetTerminator::CVolumeDescriptorSetTerminator(const CVolumeDesc
     memcpy(&_desc, &vd._desc, sizeof(_desc));
 }
 
-int CDirectory::read(istream &s)
+int DirEntry::read(istream &s)
 {
     _offset = s.tellg();
     s.read((char *)&_dir, sizeof(_dir));
@@ -187,56 +193,16 @@ int Descriptors::read(istream &s)
     return 0;
 }
 
-int Directories::read(istream &s, Descriptors &d)
+void Directory::read(istream &s, uint32_t offset)
 {
-    CDirectory dir1;
-    s.ignore(d[0]->_desc.lbaLSB * 2048 - s.tellg());
+    DirEntry dir1;
+    s.ignore(offset * 2048 - s.tellg());
 
-    while (true)
+    for (dir1.read(s); dir1.dir().length > 0; dir1.read(s))
     {
-        dir1.read(s);
-        
-        if (dir1.dir().length > 0)
-        {
-            push_back(dir1);
-            s.ignore(s.tellg() % 2);
-#ifdef DEBUG
-            dir1.dump(cerr);
-            cerr << "\n";
-#endif
-        }
-        else
-        {
-            break;
-        }
+        push_back(dir1);
+        s.ignore(s.tellg() % 2);
     }
-
-    
-
-    for (iterator it = begin() + 2; it != end(); it++)
-    {
-        if (!it->isDir())
-            continue;
-
-        s.ignore(it->dir().lbaLE * 2048 - s.tellg());
-        
-        while (true)
-        {
-            dir1.read(s);
-            
-            if (dir1.dir().length > 0)
-            {
-                push_back(dir1);
-                s.ignore(s.tellg() % 2);
-            }
-            else
-            {
-                break;
-            }
-        }
-    }
-
-    return 0;
 }
 
 int ISO::read(istream &s)
@@ -248,7 +214,7 @@ int ISO::read(istream &s)
     cerr << "\n\n";
 #endif
     _pathTable.read(s, _descriptors.pathTableOffset(), _descriptors.pathTableSize());
-    _directories.read(s, _descriptors);
+    _directory.read(s, _descriptors);
     return 0;
 }
 
@@ -261,7 +227,7 @@ void PathEntry::dump(ostream &os)
     os << "Name:                " << _name;
 }
 
-void CDirectory::dump(ostream &os)
+void DirEntry::dump(ostream &os)
 {
     os << "[DIRECTORY]\n";
     os << "Length:              " << (int)_dir.length << "\n";
