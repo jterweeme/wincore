@@ -1,14 +1,32 @@
-CXXFLAGS = -g -Wall -Wno-unused
+CXXFLAGS = -g -Wall -Wno-unused -Wno-sign-compare
 VALGRIND = -q --error-exitcode=1 --leak-check=full
 
-all: kompakt.o
-	g++ -o kompakt $(CXXFLAGS) main.cpp kompakt.o mystl.cpp
-	g++ -o test1 $(CXXFLAGS) test1.cpp kompakt.o mystl.cpp
-	g++ -o test2 $(CXXFLAGS) test2.cpp mystl.cpp
+all: kompakt test1 test2 kompakt.o main.o mystl.o
 	g++ -o test3 $(CXXFLAGS) test3.cpp mystl.cpp
 	g++ -o test4 $(CXXFLAGS) test4.cpp kompakt.o
 
-kompakt.o: kompakt.cpp
+kompakt: main.o kompakt.o mystl.o
+	g++ -o kompakt $(CXXFLAGS) $^
+
+test1: test1.o kompakt.o mystl.o
+	g++ -o $@ $(CXXFLAGS) $^
+
+test2: test2.o kompakt.o mystl.o
+	g++ -o $@ $(CXXFLAGS) $^
+
+kompakt.o: kompakt.cpp kompakt.h common.h mystl.h
+	g++ -c $(CXXFLAGS) $<
+
+main.o: main.cpp kompakt.h common.h mystl.h
+	g++ -c $(CXXFLAGS) $<
+
+mystl.o: mystl.cpp mystl.h
+	g++ -c $(CXXFLAGS) $<
+
+test1.o: test1.cpp kompakt.h common.h mystl.h
+	g++ -c $(CXXFLAGS) $<
+
+test2.o: test2.cpp kompakt.h common.h mystl.h
 	g++ -c $(CXXFLAGS) $<
 
 test: force

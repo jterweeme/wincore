@@ -68,6 +68,7 @@ class CDirectory
 {
     string _fn;
     SDirectory _dir;
+    uint32_t _offset;
 public:
     SDirectory dir() const { return _dir; }
     string fn();
@@ -101,10 +102,10 @@ struct SVolumeDescriptor
             uint16_t logicalBlockSizeMSB;
             uint32_t pathTableSizeLSB;
             uint32_t pathTableSizeMSB;
-            uint8_t pathTable[4];
-            uint8_t optionalTable[4];
-            uint8_t pathMTable[4];
-            uint8_t optionalPathMTable[4];
+            uint32_t pathTable;
+            uint32_t optionalTable;
+            uint32_t pathMTable;
+            uint32_t optionalPathMTable;
             uint8_t directoryLength;
             uint8_t extendedLength;
             uint32_t lbaLSB;
@@ -122,11 +123,46 @@ struct SVolumeDescriptor
             char volSetIdent[128];
             char pubIdent[128];
             char prepIdent[128];
-            uint8_t data[1474];
+            char appIdent[128];
+            char copyrightIdent[38];
+            char abstractIdent[36];
+            char bibIdent[37];
+            char creationTime[17];
+            char modTime[17];
+            char expTime[17];
+            char effectTime[17];
+            uint8_t fsv;
+            uint8_t unused;
+            uint8_t data[1165];
         } __attribute__ ((packed));
         uint8_t terminator[2041];
     };
 } __attribute__ ((packed));
+
+struct SPathEntry
+{
+    uint8_t length;
+    uint8_t extLength;
+    uint32_t lba;
+    uint16_t parent;
+} __attribute ((packed));
+
+class PathEntry
+{
+    SPathEntry _pe;
+    char _name[255];
+public:
+    PathEntry() { memset(_name, 0, sizeof(_name)); }
+    void read(istream &is);
+    void dump(ostream &os);
+};
+
+class PathTable : public vector<PathEntry>
+{
+public:
+    void read(istream &is, uint32_t offset, size_t n);
+    void dump(ostream &os);
+};
 
 class CVolumeDescriptor
 {
@@ -137,7 +173,8 @@ public:
     const char *typeString();
     static const uint8_t SUPPLEMENTARY_VOLUME_DESCRIPTOR = 2;
     static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
-    int read(istream &s);
+    int read(istream &s) { s.read((char *)&_desc, sizeof(_desc)); return 0; }
+    void erase() { memset((void *)&_desc, 0, sizeof(_desc)); }
     virtual void dump(ostream &os);
     virtual string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
@@ -149,6 +186,9 @@ public:
     CPrimaryVolumeDesc();
     CPrimaryVolumeDesc(const CVolumeDescriptor &vd);
     void dump(ostream &os);
+    uint32_t pathTableOffset() const { return _desc.pathTable; }
+    size_t pathTableSize() const { return _desc.pathTableSizeLSB; }
+    void test();
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
@@ -173,6 +213,8 @@ public:
     virtual ~Descriptors() { for (iterator it = begin(); it != end(); it++) delete *it; }
     int read(istream &s);
     void dump(ostream &os);
+    uint32_t pathTableOffset();
+    size_t pathTableSize();
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
@@ -188,13 +230,14 @@ public:
 class ISO
 {
     Descriptors _descriptors;
+    PathTable _pathTable;
     Directories _directories;
 public:
     int read(istream &s);
     int extract(istream &s);
     void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
     string list(int mode = 1) { return _directories.list(mode); }
-    void dumpDescriptors(ostream &os);
+    void dumpDescriptors(ostream &os) { _descriptors.dump(os); }
     Directories directories() const { return _directories; }
 };
 
