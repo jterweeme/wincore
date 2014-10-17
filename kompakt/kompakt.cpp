@@ -41,6 +41,9 @@ void Flags::dump(ostream &os)
 
 int ISO::extract(istream &s)
 {
+    Directories::iterator it2 = _directories.begin();
+    Directory _directory = *it2;
+
     for (Directory::iterator it = _directory.begin() + 2; it != _directory.end(); it++)
     {
         ofstream of;
@@ -55,10 +58,23 @@ int ISO::extract(istream &s)
     return 0;
 }
 
-void Directories::read(istream &is)
+void Directories::read(istream &is, Descriptors &d)
+{
+    read(is, d[0]->_desc.lbaLSB);
+}
+
+void Directories::read(istream &is, uint32_t offset)
 {
     Directory _dir;
-    //_dir.read(s, _descriptors);   
+    _dir.read(is, offset);
+    push_back(_dir);
+    
+}
+
+void Directories::list(ostream &os, int mode)
+{
+    for (iterator it = begin(); it != end(); it++)
+        it->list(os, mode);
 }
 
 void Directory::list(ostream &os, int mode)
@@ -214,7 +230,7 @@ int ISO::read(istream &s)
     cerr << "\n\n";
 #endif
     _pathTable.read(s, _descriptors.pathTableOffset(), _descriptors.pathTableSize());
-    _directory.read(s, _descriptors);
+    _directories.read(s, _descriptors);
     return 0;
 }
 

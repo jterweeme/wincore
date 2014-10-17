@@ -189,6 +189,7 @@ public:
     uint32_t pathTableOffset() const { return _desc.pathTable; }
     size_t pathTableSize() const { return _desc.pathTableSizeLSB; }
     void test();
+    uint32_t offsetRootDir() const { return _desc.lbaLSB; }
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
@@ -215,6 +216,7 @@ public:
     void dump(ostream &os);
     uint32_t pathTableOffset();
     size_t pathTableSize();
+    uint32_t offsetRootDir() { return 0; }
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
@@ -231,22 +233,21 @@ public:
 class Directories : public vector<Directory>
 {
 public:
-    void read(istream &is);
+    void read(istream &is, uint32_t offset);
+    void read(istream &is, Descriptors &d);
+    void list(ostream &os, int mode = 1);
 };
 
 class ISO
 {
     Descriptors _descriptors;
     PathTable _pathTable;
-    Directory _directory;
     Directories _directories;
 public:
     int read(istream &s);
     int extract(istream &s);
-    void list(ostream &os, int mode = 1) { _directory.list(os, mode); }
-    string list(int mode = 1) { return _directory.list(mode); }
+    void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
     void dumpDescriptors(ostream &os) { _descriptors.dump(os); }
-    Directory directory() const { return _directory; }
 };
 
 class App
