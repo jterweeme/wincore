@@ -11,9 +11,10 @@ class Options
     bool _cin;
     bool _file;
     bool _desc;
+    bool _pathTable;
     string _fn;
 public:
-    Options() { _verbose = _desc = _list = _extract = _cin = _file = _help = false; }
+    Options() { _verbose = _pathTable = _desc = _list = _extract = _cin = _file = _help = false; }
     string fn() const { return _fn; }
     bool file() const { return _file; }
     int parse(int argc, char **argv);
@@ -22,6 +23,7 @@ public:
     bool list() const { return _list; }
     bool extract() const { return _extract; }
     bool stdinput() const { return _cin; }
+    bool pathTable() const { return _pathTable; }
     bool desc() const { return _desc; }
     void dump(ostream &os) { os << "Filename: " << _fn << "\n"; }
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
@@ -226,7 +228,6 @@ class Directory : public vector<DirEntry>
 {
 public:
     void read(istream &s, uint32_t offset);
-    void read(istream &s, Descriptors &d) { read(s, d[0]->_desc.lbaLSB); }
     string toString();
     void list(ostream &os, int mode);
     string list(int mode = 1) { ostringstream oss; list(oss, mode); return oss.str(); }
@@ -249,6 +250,7 @@ public:
     int extract(istream &s);
     void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
     void dumpDescriptors(ostream &os) { _descriptors.dump(os); }
+    void dumpPathTable(ostream &os) { _pathTable.dump(os); }
     Directories directories() const { return _directories; }
 };
 

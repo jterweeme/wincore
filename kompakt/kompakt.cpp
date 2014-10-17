@@ -207,14 +207,16 @@ int Descriptors::read(istream &s)
 
 void Directory::read(istream &s, uint32_t offset)
 {
-    DirEntry dir1;
     s.ignore(offset * 2048 - s.tellg());
 
-    for (dir1.read(s); dir1.dir().length > 0; dir1.read(s))
+    do
     {
+        DirEntry dir1;
+        dir1.read(s);
         push_back(dir1);
         s.ignore(s.tellg() % 2);
     }
+    while (s.peek() != 0);
 }
 
 int ISO::read(istream &s)
@@ -318,6 +320,15 @@ void CPrimaryVolumeDesc::dump(ostream &os)
     os << "Timezone:            " << (int)_desc.timezone;   
 }
 
+void PathTable::dump(ostream &os)
+{
+    for (iterator it = begin(); it != end(); it++)
+    {
+        it->dump(os);
+        os << "\n\n";
+    }
+}
+
 void CVolumeDescriptorSetTerminator::dump(ostream &os)
 {
     os << "[Volume Descriptor Set Terminator]\n";
@@ -343,6 +354,9 @@ int Options::parse(int argc, char **argv)
             case 'f':
                 _file = true;
                 _fn = string(argv[++i]);
+                break;
+            case 'p':
+                _pathTable = true;
                 break;
             case 'v':
                 _verbose = true;
@@ -396,6 +410,12 @@ int App::run(int argc, char **argv)
     if (_options.desc())
     {
         _iso.dumpDescriptors(cout);
+        cout << "\n";
+    }
+
+    if (_options.pathTable())
+    {
+        _iso.dumpPathTable(cout);
         cout << "\n";
     }
 
