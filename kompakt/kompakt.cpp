@@ -58,17 +58,11 @@ int ISO::extract(istream &s)
     return 0;
 }
 
-void Directories::read(istream &is, Descriptors &d)
-{
-    read(is, d[0]->_desc.lbaLSB);
-}
-
 void Directories::read(istream &is, uint32_t offset)
 {
     Directory _dir;
     _dir.read(is, offset);
     push_back(_dir);
-    
 }
 
 void Directories::list(ostream &os, int mode)

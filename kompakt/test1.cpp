@@ -47,10 +47,10 @@ void test2()
     ifs.open("cd1.iso");
     iso.read(ifs);
 
-/*
-    if (iso.directory()[2].dir().dataLengthLE != 1679)
+
+    if (iso.directories()[0][2].dir().dataLengthLE != 1679)
         throw "Bestand moet 1679 bytes groot zijn";
-*/
+
 
     ifs.close();
 }

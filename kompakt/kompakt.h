@@ -234,7 +234,7 @@ class Directories : public vector<Directory>
 {
 public:
     void read(istream &is, uint32_t offset);
-    void read(istream &is, Descriptors &d);
+    void read(istream &is, Descriptors &d) { read(is, d[0]->_desc.lbaLSB); }
     void list(ostream &os, int mode = 1);
 };
 
@@ -248,6 +248,7 @@ public:
     int extract(istream &s);
     void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
     void dumpDescriptors(ostream &os) { _descriptors.dump(os); }
+    Directories directories() const { return _directories; }
 };
 
 class App
