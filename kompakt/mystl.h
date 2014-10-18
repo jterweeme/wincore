@@ -35,6 +35,10 @@ public:
     size_t count() const { size_t x = 0; for (size_t i = 0; i < T; i++) x += test(i); return x; }
 };
 
+class vector2
+{
+};
+
 class string2
 {
     char _s[255];

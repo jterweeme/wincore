@@ -131,6 +131,7 @@ int DirEntry::read(istream &s)
     char filename[255] = {0};
     s.read(filename, _dir.fnLength);
     _fn = string(filename);
+    s.ignore(_offset + _dir.length - s.tellg());
     return 0;
 }
 

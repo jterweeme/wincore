@@ -1,0 +1,4 @@
+system dos
+file { kompakt.obj main.obj mystl.obj }
+name kompakt.exe
+
