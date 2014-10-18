@@ -5,6 +5,7 @@ Jasper ter Weeme
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <stdio.h>
+#include <stdlib.h>
 
 /* tailored only for the od app */
 
@@ -89,16 +90,41 @@ public:
 
 template <class T> class vector2
 {
-    T _buf[100];
+    T *_buf;
     size_t _capacity;
     size_t _size;
+    int _busy;
 public:
     typedef T *iterator;
-    vector2() : _capacity(100), _size(0) { }
-    void push_back(T a) { _buf[_size++] = a; }
-    iterator begin() { return _buf; }
-    iterator end() { return _buf + _size; }
-    virtual ~vector2() { }
+
+    vector2() : _capacity(100), _size(0)
+    {
+        printf("c");
+        _buf = (T *)calloc(sizeof(T), 100);
+        _busy = 45;
+    }
+
+    void push_back(T &a) { _buf[_size++] = a; }
+    iterator begin()
+    {
+        return _buf;
+    }
+
+    iterator end()
+    {
+        return _buf + _size;
+    }
+
+    virtual ~vector2()
+    {
+        if (_busy == 45)
+        {
+            printf("d");
+            if (_buf)
+                free(_buf);
+            _busy = 90;
+        }
+    }
 };
 
 namespace mystl

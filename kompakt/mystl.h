@@ -1,6 +1,7 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <stdio.h>
+#include <stdlib.h>
 #include <vector>
 
 class Util2
@@ -33,10 +34,6 @@ public:
     bool any() const { return _set != 0; }
     bool none() const { return _set == 0; }
     size_t count() const { size_t x = 0; for (size_t i = 0; i < T; i++) x += test(i); return x; }
-};
-
-class vector2
-{
 };
 
 class string2
@@ -152,9 +149,26 @@ public:
     string2 str() const { return string2("hello"); }
 };
 
+template <class T> class vector2
+{
+    T *_buf;
+    size_t _capacity;
+    size_t _size;
+    int _busy;
+public:
+    typedef T *iterator;
+    vector2() : _capacity(100), _size(0) {        _buf = (T *)calloc(sizeof(T), 100);    }
+    void push_back(T &a) { _buf[_size++] = a; }
+    iterator begin()    {        return _buf;    }
+    iterator end()   {        return _buf + _size;    }
+    virtual ~vector2()    {           free(_buf);    }
+};
+
+
 namespace mystl
 {
-    using std::vector;
+    //using std::vector;
+    template <class T> class vector : public vector2<T> { };
     typedef Util2::uint8_t uint8_t;
     typedef Util2::uint16_t uint16_t;
     typedef Util2::uint32_t uint32_t;
