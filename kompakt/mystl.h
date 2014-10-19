@@ -11,11 +11,23 @@ public:
     typedef unsigned short uint16_t;
     typedef unsigned uint32_t;
     typedef long unsigned size_t;
+    int isdigit(int c) { return c >= '0' && c <= '9'; }
+    int isspace(int c) { return c == ' '; }
+    int isupper(int c) { return c >= 'A' && c <= 'Z'; }
+    int islower(int c) { return c >= 'a' && c <= 'z'; }
+    int isalpha(int c) { return isupper(c) || islower(c); }
+    int isxdigit(int c) { return isdigit(c) || c >=  'a' && c <= 'f' || c >= 'A' && c <= 'F'; }
+    int toupper(int c) { return islower(c) ? c - 32 : c; }
+    void toupper(const char *src, char *dest) { while (*src) *dest++ = toupper(*src++); }
+    void toupper(char *s) { toupper(s, s); }
+    char tocupper(int c) { return toupper(c); }
     void *memcpy(void *dest, const void *src, size_t n);
     void *memset(void *s, const int c, const size_t n);
     char *strcpy(char *dest, const char *src);
     char *strncpy(char *dest, const char *src, size_t n);
     size_t strlen(const char *s);
+    int strcmp(const char* s1, const char *s2);
+    int strncmp(const char *s1, const char *s2, size_t n);
 };
 
 template <Util2::size_t T> class bitset
@@ -43,7 +55,8 @@ class string2
 public:
     string2() { Util2 u; u.memset(_s, 0, sizeof(_s)); }
     string2(const char *s) { Util2 util; util.strcpy(_s, s); }
-    string2(const char *s1, const char *s2) { Util2 util; util.strncpy(_s, s1, s2 - s1); }
+    string2(const char *s1, const char *s2);
+    string2(const char *s1, size_t n);
     string2(size_t n, char c) { _s[n] = '\0'; while (n) _s[--n] = c; }
     const char *c_str() const { return _s; }
     size_t length() const { Util2 util; return util.strlen(_s); }
@@ -157,23 +170,28 @@ template <class T> class vector2
     int _busy;
 public:
     typedef T *iterator;
-    vector2() : _capacity(100), _size(0) {        _buf = (T *)calloc(sizeof(T), 100);    }
-    void push_back(T &a) { _buf[_size++] = a; }
-    iterator begin()    {        return _buf;    }
-    iterator end()   {        return _buf + _size;    }
-    virtual ~vector2()    {           free(_buf);    }
+    vector2() : _capacity(100), _size(0) { _buf = (T *)calloc(sizeof(T), 100); }
+    void push_back(const T &a) { _buf[_size++] = a; }
+    iterator begin() { return _buf; }
+    iterator end() { return _buf + _size; }
+    virtual ~vector2() { free(_buf); }
+    T operator[](Util2::size_t n) { return _buf[n]; }
 };
 
 
 namespace mystl
 {
-    //using std::vector;
-    template <class T> class vector : public vector2<T> { };
+    template <class T> class vector : public std::vector<T> { };
     typedef Util2::uint8_t uint8_t;
     typedef Util2::uint16_t uint16_t;
     typedef Util2::uint32_t uint32_t;
     void *memcpy(void *dest, const void *src, size_t n);
     char *strcpy(char *dest, const char *src);
+    void *memset(void *s, const int c, const size_t n);
+    char *strncpy(char *dest, const char *src, size_t n);
+    size_t strlen(const char *s);
+    int strcmp(const char* s1, const char *s2);
+    int strncmp(const char *s1, const char *s2, size_t n);
     typedef string2 string;
     typedef istream2 istream;
     typedef ostream2 ostream;

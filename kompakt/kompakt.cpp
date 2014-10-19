@@ -269,8 +269,8 @@ void CVolumeDescriptor::dump(ostream &os)
 {
     os << "[Volume Descriptor]\n";
     os << "Type:                " << typeString() << endl;
-    os << "Identifier:          " << Util::foo(_desc.identifier, 5) << endl;
-    os << "Version:             " << (int)_desc.version << endl;
+    os << "Identifier:          " << string(_desc.identifier, 5) << "\n";
+    os << "Version:             " << (int)_desc.version << "\n";
 }
 
 void CPrimaryVolumeDesc::test()
@@ -285,28 +285,28 @@ void CPrimaryVolumeDesc::test()
 void CPrimaryVolumeDesc::dump(ostream &os)
 {
     os << "[Primary Volume Descriptor]\n";
-    os << "Type:                " << typeString() << endl;
-    os << "Identifier:          " << Util::foo(_desc.identifier, 5) << endl;
-    os << "Version:             " << (int)_desc.version << endl;
-    os << "System Identifier:   " << Util::foo(_desc.sysident, 32) << endl;
-    os << "Volume Identifier:   " << Util::foo(_desc.volident, 32) << endl;
-    os << "Volume Space Size:   " << _desc.volumeSpaceSizeLSB << endl;
-    os << "Volume Set Size:     " << (int)_desc.volumeSetSizeLSB << endl;
+    os << "Type:                " << typeString() << "\n";
+    os << "Identifier:          " << string(_desc.identifier, 5) << "\n";
+    os << "Version:             " << (int)_desc.version << "\n";
+    os << "System Identifier:   " << string(_desc.sysident, 32) << "\n";
+    os << "Volume Identifier:   " << string(_desc.volident, 32) << "\n";
+    os << "Volume Space Size:   " << _desc.volumeSpaceSizeLSB << "\n";
+    os << "Volume Set Size:     " << (int)_desc.volumeSetSizeLSB << "\n";
     os << "BlockSize:           " << _desc.logicalBlockSizeLSB << "\n";
     os << "Path Table Size:     " << _desc.pathTableSizeLSB << "\n";
     os << "L-Path:              " << _desc.pathTable << "\n";
     os << "M-Path:              " << _desc.pathMTable << "\n";
-    os << "Volume Set Ident:    " << Util::foo(_desc.volSetIdent, 128 - 60) << "\n";
-    os << "Publisher Ident:     " << Util::foo(_desc.pubIdent, 128 - 60) << "\n";
-    os << "Data Prep. Ident:    " << Util::foo(_desc.prepIdent, 128 - 60) << "\n";
-    os << "Application Ident:   " << Util::foo(_desc.appIdent, 128 - 60) << "\n";
-    os << "Copyright Ident:     " << Util::foo(_desc.copyrightIdent, 38) << "\n";
-    os << "Abstract File Ident: " << Util::foo(_desc.abstractIdent, 36) << "\n";
-    os << "Bibliographic Ident: " << Util::foo(_desc.bibIdent, 37) << "\n";
-    os << "Creation Time:       " << Util::foo(_desc.creationTime, 17) << "\n";
-    os << "Modification Time:   " << Util::foo(_desc.modTime, 17) << "\n";
-    os << "Expiration Time:     " << Util::foo(_desc.expTime, 17) << "\n";
-    os << "Effective Time:      " << Util::foo(_desc.effectTime, 17) << "\n";
+    os << "Volume Set Ident:    " << string(_desc.volSetIdent, 128 - 60) << "\n";
+    os << "Publisher Ident:     " << string(_desc.pubIdent, 128 - 60) << "\n";
+    os << "Data Prep. Ident:    " << string(_desc.prepIdent, 128 - 60) << "\n";
+    os << "Application Ident:   " << string(_desc.appIdent, 128 - 60) << "\n";
+    os << "Copyright Ident:     " << string(_desc.copyrightIdent, 38) << "\n";
+    os << "Abstract File Ident: " << string(_desc.abstractIdent, 36) << "\n";
+    os << "Bibliographic Ident: " << string(_desc.bibIdent, 37) << "\n";
+    os << "Creation Time:       " << string(_desc.creationTime, 17) << "\n";
+    os << "Modification Time:   " << string(_desc.modTime, 17) << "\n";
+    os << "Expiration Time:     " << string(_desc.expTime, 17) << "\n";
+    os << "Effective Time:      " << string(_desc.effectTime, 17) << "\n";
     os << "File Struct Version: " << (int)_desc.fsv << "\n";
     os << "Unused:              " << (int)_desc.unused << "\n";
     os << "Directory Length:    " << (int)_desc.directoryLength << "\n";
@@ -334,7 +334,7 @@ void CVolumeDescriptorSetTerminator::dump(ostream &os)
 {
     os << "[Volume Descriptor Set Terminator]\n";
     os << "Type:                " << typeString() << endl;
-    os << "Identifier:          " << Util::foo(_desc.identifier, 5) << endl;
+    os << "Identifier:          " << string(_desc.identifier, 5) << endl;
     os << "Version:             " << (int)_desc.version << endl;
 }
 

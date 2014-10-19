@@ -1,4 +1,4 @@
 system dos
-file { kompakt.obj main.obj mystl.obj }
+file { kompakt.obj main.obj mystl.obj routine.obj }
 name kompakt.exe
 

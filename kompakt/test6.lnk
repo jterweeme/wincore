@@ -1,0 +1,4 @@
+system dos
+file { test6.obj routine.obj }
+name test6.exe
+

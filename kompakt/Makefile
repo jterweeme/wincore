@@ -1,9 +1,8 @@
-CXXFLAGS = -g -Wall -Wno-unused -Wno-sign-compare
+CXXFLAGS = -g -Wall -Wno-unused -Wno-sign-compare -Wno-parentheses
 VALGRIND = -q --error-exitcode=1 --leak-check=full
 
-all: kompakt test1 test2 kompakt.o main.o mystl.o
+all: kompakt test1 test2 test4 kompakt.o main.o mystl.o
 	g++ -o test3 $(CXXFLAGS) test3.cpp mystl.cpp
-	g++ -o test4 $(CXXFLAGS) test4.cpp kompakt.o
 
 kompakt: main.o kompakt.o mystl.o
 	g++ -o kompakt $(CXXFLAGS) $^
@@ -12,6 +11,9 @@ test1: test1.o kompakt.o mystl.o
 	g++ -o $@ $(CXXFLAGS) $^
 
 test2: test2.o kompakt.o mystl.o
+	g++ -o $@ $(CXXFLAGS) $^
+
+test4: test4.o kompakt.o mystl.o test4.o
 	g++ -o $@ $(CXXFLAGS) $^
 
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h
@@ -27,6 +29,9 @@ test1.o: test1.cpp kompakt.h common.h mystl.h
 	g++ -c $(CXXFLAGS) $<
 
 test2.o: test2.cpp kompakt.h common.h mystl.h
+	g++ -c $(CXXFLAGS) $<
+
+test4.o: test4.cpp kompakt.h common.h mystl.h
 	g++ -c $(CXXFLAGS) $<
 
 test: force

@@ -28,6 +28,20 @@ void *Util2::memset(void *s, int c, size_t n)
     return s;
 }
 
+string2::string2(const char *s1, size_t n)
+{
+    Util2 util;
+    util.memset(_s, 0, sizeof(_s));
+    util.strncpy(_s, s1, n);
+}
+
+string2::string2(const char *s1, const char *s2)
+{
+    Util2 util;
+    util.memset(_s, 0, sizeof(_s));
+    util.strncpy(_s, s1, s2 - s1);
+}
+
 void istream2::read(char *s, size_t length)
 {
     _lastRead = fread(s, 1, length, _fp);
@@ -80,6 +94,24 @@ ostream2& ostream2::operator << (const uint32_t u)
     return *this;
 }
 
+int Util2::strcmp(const char *s1, const char *s2)
+{
+    while (*s1 == *s2++)
+        if (*s1++ == 0)
+            return (0);
+    return (*(const unsigned char *)s1 - *(const unsigned char *)(s2 - 1));
+}
+
+int Util2::strncmp(const char *s1, const char *s2, size_t n)
+{
+    for ( ; n > 0; s1++, s2++, --n)
+        if (*s1 != *s2)
+            return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
+        else if (*s1 == '\0')
+            return 0;
+    return 0;
+}
+
 char *Util2::strncpy(char *dest, const char *src, size_t n)
 {
     size_t i;
@@ -99,10 +131,11 @@ char *Util2::strcpy(char *dest, const char *src)
     return save;
 }
 
-
 namespace mystl
 {
     void *memcpy(void *dest, const void *src, size_t n) { Util2 u; return u.memcpy(dest, src, n); }
     char *strcpy(char *dest, const char *src) { Util2 util; return util.strcpy(dest, src); }
+    int strncmp(const char *s1, const char *s2, size_t n) { Util2 u; return u.strncmp(s1, s2, n); }
+    int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }
 }
 

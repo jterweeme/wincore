@@ -29,12 +29,6 @@ public:
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
-class Util
-{
-public:
-    static string foo(const char *s, int length) { return string(s, s + length); }
-};
-
 struct SDirectory
 {
     uint8_t length;
@@ -56,7 +50,7 @@ struct SDirectory
     uint16_t volSeqNumLE;
     uint16_t volSeqNumBE;
     uint8_t fnLength;
-} __attribute__ ((packed));
+} PACKED;
 
 class Flags : public bitset<8>
 {
@@ -136,10 +130,10 @@ struct SVolumeDescriptor
             uint8_t fsv;
             uint8_t unused;
             uint8_t data[1165];
-        } __attribute__ ((packed));
+        } PACKED;
         uint8_t terminator[2041];
     };
-} __attribute__ ((packed));
+} PACKED;
 
 struct SPathEntry
 {
@@ -147,14 +141,14 @@ struct SPathEntry
     uint8_t extLength;
     uint32_t lba;
     uint16_t parent;
-} __attribute ((packed));
+} PACKED;
 
 class PathEntry
 {
     SPathEntry _pe;
     char _name[255];
 public:
-    PathEntry() { memset(_name, 0, sizeof(_name)); }
+    PathEntry() { Util2 util; util.memset(_name, 0, sizeof(_name)); }
     uint32_t offsetLBA() const { return _pe.lba; }
     uint32_t offset() const { return offsetLBA() * 2048; }
     void read(istream &is);
@@ -178,7 +172,7 @@ public:
     static const uint8_t SUPPLEMENTARY_VOLUME_DESCRIPTOR = 2;
     static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
     int read(istream &s) { s.read((char *)&_desc, sizeof(_desc)); return 0; }
-    void erase() { memset((void *)&_desc, 0, sizeof(_desc)); }
+    void erase() { Util2 util; util.memset((void *)&_desc, 0, sizeof(_desc)); }
     virtual void dump(ostream &os);
     virtual string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
