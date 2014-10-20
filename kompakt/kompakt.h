@@ -162,7 +162,18 @@ class PathTable : public vector<PathEntry>
 public:
     
     void read(istream &is, uint32_t offset, size_t n);
-    void snort() { /*sort(begin(), end(), wayToSort);*/ }
+#if 1
+    void snort() { sort(begin(), end(), wayToSort); }
+#else
+    void snort()
+    {
+        for (iterator it = begin(); it != end(); it++)
+        {
+            if (wayToSort(it[1], it[0]))
+                swap(*it[1], *it[0]);
+        }
+    }
+#endif
     void dump(ostream &os);
 };
 

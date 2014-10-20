@@ -1,3 +1,4 @@
+set path=c:\kikker;c:\tools\djgpp\bin
 gpp -c main.cpp
 gpp -c kompakt.cpp
 gpp -c mystl.cpp

@@ -1,11 +1,14 @@
-CXXFLAGS = -g -Wall -Wno-unused -Wno-sign-compare -Wno-parentheses
 VALGRIND = -q --error-exitcode=1 --leak-check=full
 
-all: kompakt test1 test2 test4 kompakt.o main.o mystl.o
-	g++ -o test3 $(CXXFLAGS) test3.cpp mystl.cpp
+%.o: %.cpp
+	g++ -g -Wall -Wno-unused -Wno-sign-compare -Wno-parentheses -c -o $@ $<
+
+.PHONY: all
+
+all: kompakt test1 test2 test3 test4 test5
 
 kompakt: main.o kompakt.o mystl.o
-	g++ -o kompakt $(CXXFLAGS) $^
+	g++ -o $@ $(CXXFLAGS) $^
 
 test1: test1.o kompakt.o mystl.o
 	g++ -o $@ $(CXXFLAGS) $^
@@ -13,26 +16,23 @@ test1: test1.o kompakt.o mystl.o
 test2: test2.o kompakt.o mystl.o
 	g++ -o $@ $(CXXFLAGS) $^
 
+test3: test3.o kompakt.o mystl.o
+	g++ -o $@ $(CXXFLAGS) $^
+
 test4: test4.o kompakt.o mystl.o test4.o
 	g++ -o $@ $(CXXFLAGS) $^
 
+test5: test5.o mystl.o
+	g++ -o $@ $(CXXFLAGS) $^
+
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h
-	g++ -c $(CXXFLAGS) $<
-
 main.o: main.cpp kompakt.h common.h mystl.h
-	g++ -c $(CXXFLAGS) $<
-
 mystl.o: mystl.cpp mystl.h
-	g++ -c $(CXXFLAGS) $<
-
 test1.o: test1.cpp kompakt.h common.h mystl.h
-	g++ -c $(CXXFLAGS) $<
-
 test2.o: test2.cpp kompakt.h common.h mystl.h
-	g++ -c $(CXXFLAGS) $<
-
+test3.o: test3.cpp kompakt.h common.h mystl.h
 test4.o: test4.cpp kompakt.h common.h mystl.h
-	g++ -c $(CXXFLAGS) $<
+test5.o: test5.cpp kompakt.h common.h mystl.h
 
 test: force
 	bunzip2 -kf *.iso.bz2
@@ -43,6 +43,10 @@ test: force
 	valgrind $(VALGRIND) ./test2
 	valgrind $(VALGRIND) ./test3 > /dev/null
 	valgrind $(VALGRIND) ./test4 > /dev/null
+	valgrind $(VALGRIND) ./test5 > /dev/null
+
+ttest5:
+	valgrind $(VALGRIND) ./test5 > /dev/null
 
 force:
 
