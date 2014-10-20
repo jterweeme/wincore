@@ -19,6 +19,7 @@ using namespace mystl;
 #include <vector>
 #include <bitset>
 #include <string.h>
+#include <algorithm>
 using namespace std;
 #endif
 

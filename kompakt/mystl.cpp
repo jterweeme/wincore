@@ -71,6 +71,19 @@ void istream2::getline(char *dest, size_t size)
     }
 }
 
+void ofstream2::open(const char *fn, openmode om)
+{
+    switch (om)
+    {
+    case out:
+        _fp = fopen(fn, "w+");
+        break;
+    default:
+        _fp = fopen(fn, "rb");
+        break;
+    }
+}
+
 ostream2& ostream2::write(const char *s, int n)
 {
     for (int i = 0; i < n; i++)
@@ -134,6 +147,7 @@ char *Util2::strcpy(char *dest, const char *src)
 namespace mystl
 {
     void *memcpy(void *dest, const void *src, size_t n) { Util2 u; return u.memcpy(dest, src, n); }
+    void *memset(void *s, const int c, const size_t n) { Util2 u; return u.memset(s, c, n); }
     char *strcpy(char *dest, const char *src) { Util2 util; return util.strcpy(dest, src); }
     int strncmp(const char *s1, const char *s2, size_t n) { Util2 u; return u.strncmp(s1, s2, n); }
     int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }

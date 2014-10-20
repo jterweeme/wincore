@@ -1,4 +1,5 @@
 #include "kompakt.h"
+#include <sys/stat.h>
 
 template <typename T> void myAssert(T a, T b, const char *err = "error")
 {
@@ -35,12 +36,19 @@ void testBitset()
     myAssert(bitset1.count(), (size_t)0);
 }
 
+void test2()
+{
+    FileSystem fs;
+    fs.mkdir("data");
+}
+
 int main()
 {
     try
     {
         test();
         testBitset();
+        test2();
     }
     catch (const char *e)
     {

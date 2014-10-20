@@ -1,4 +1,5 @@
 #include "kompakt.h"
+#include <sys/stat.h>
 
 #ifndef DEBUG
 #define DEBUG2
@@ -41,6 +42,27 @@ void Flags::dump(ostream &os)
 
 int ISO::extract(istream &s)
 {
+
+    for (Directories::iterator directory = _directories.begin();
+            directory != _directories.end();
+            directory++)
+    {
+        for (Directory::iterator file = directory->begin() + 2;
+                file != directory->end();
+                file++)
+        {
+            ofstream of;
+            of.open(file->fn().c_str());
+            s.ignore(file->dir().lbaLE * 2048 - s.tellg());
+            char *buf = new char[file->dir().dataLengthLE];
+            s.read(buf, file->dir().dataLengthLE);
+            of.write(buf, file->dir().dataLengthLE);
+            of.close();
+            delete[] buf;
+        }
+    }
+
+#if 0
     for (Directory::iterator it = _directories[0].begin() + 2; it != _directories[0].end(); it++)
     {
         ofstream of;
@@ -52,6 +74,8 @@ int ISO::extract(istream &s)
         of.close();
         delete[] buf;
     }
+#endif
+
     return 0;
 }
 
@@ -210,14 +234,14 @@ void Directory::read(istream &s, uint32_t offset)
 {
     s.ignore(offset * 2048 - s.tellg());
 
-    do
+    while (s.peek() != 0)
     {
         DirEntry dir1;
         dir1.read(s);
         push_back(dir1);
         s.ignore(s.tellg() % 2);
     }
-    while (s.peek() != 0);
+    //while (s.peek() != 0);
 }
 
 int ISO::read(istream &s)
@@ -229,12 +253,14 @@ int ISO::read(istream &s)
     cerr << "\n\n";
 #endif
     _pathTable.read(s, _descriptors.pathTableOffset(), _descriptors.pathTableSize());
+    _pathTable.snort();
     _directories.read(s, _pathTable);
     return 0;
 }
 
 void PathEntry::dump(ostream &os)
 {
+    os << "[DIRECTORY]\n";
     os << "Name Length:         " << (int)_pe.length << "\n";
     os << "Ext. Attr. Length:   " << (int)_pe.extLength << "\n";
     os << "LBA:                 " << _pe.lba << "\n";
@@ -244,7 +270,7 @@ void PathEntry::dump(ostream &os)
 
 void DirEntry::dump(ostream &os)
 {
-    os << "[DIRECTORY]\n";
+    os << "[FILE]\n";
     os << "Length:              " << (int)_dir.length << "\n";
     os << "Extended Length:     " << (int)_dir.extendedLength << "\n";
     os << "LBA:                 " << (int)_dir.lbaLE << "\n";
@@ -376,6 +402,11 @@ int Options::parse(int argc, char **argv)
     }
 
     return 0;
+}
+
+void FileSystem::mkdir(const char *name)
+{
+    ::mkdir(name, 112);
 }
 
 int App::run(int argc, char **argv)

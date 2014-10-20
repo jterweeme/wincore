@@ -148,7 +148,7 @@ class PathEntry
     SPathEntry _pe;
     char _name[255];
 public:
-    PathEntry() { Util2 util; util.memset(_name, 0, sizeof(_name)); }
+    PathEntry() { memset(_name, 0, sizeof(_name)); }
     uint32_t offsetLBA() const { return _pe.lba; }
     uint32_t offset() const { return offsetLBA() * 2048; }
     void read(istream &is);
@@ -157,8 +157,12 @@ public:
 
 class PathTable : public vector<PathEntry>
 {
+    static bool wayToSort(const PathEntry &p1, const PathEntry &p2)
+    { return p1.offsetLBA() < p2.offsetLBA(); }
 public:
+    
     void read(istream &is, uint32_t offset, size_t n);
+    void snort() { /*sort(begin(), end(), wayToSort);*/ }
     void dump(ostream &os);
 };
 
@@ -172,7 +176,7 @@ public:
     static const uint8_t SUPPLEMENTARY_VOLUME_DESCRIPTOR = 2;
     static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
     int read(istream &s) { s.read((char *)&_desc, sizeof(_desc)); return 0; }
-    void erase() { Util2 util; util.memset((void *)&_desc, 0, sizeof(_desc)); }
+    void erase() { memset((void *)&_desc, 0, sizeof(_desc)); }
     virtual void dump(ostream &os);
     virtual string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
@@ -258,6 +262,12 @@ public:
     int run(int argc, char **argv);
 };
 
+class FileSystem
+{
+public:
+    FileSystem() { }
+    void mkdir(const char *name);
+};
 
 #endif
 
