@@ -164,7 +164,7 @@ class PathTable : public vector<PathEntry>
 public:
     
     void read(istream &is, uint32_t offset, size_t n);
-#if 0
+#if 1
     void snort() { sort(begin(), end(), wayToSort); }
 #else
     void snort()
@@ -237,11 +237,14 @@ public:
 
 class Directory : public vector<DirEntry>
 {
+    static bool sortLBA(const DirEntry &p1, const DirEntry &p2)
+    { return p1.dir().lbaLE < p2.dir().lbaLE; }
 public:
     void read(istream &s, uint32_t offset);
     string toString();
     void list(ostream &os, int mode);
     string list(int mode = 1) { ostringstream oss; list(oss, mode); return oss.str(); }
+    void snort() { sort(begin(), end(), sortLBA); }
 };
 
 class Directories : public vector<Directory>
@@ -251,11 +254,14 @@ public:
     void list(ostream &os, int mode = 1);
 };
 
+
+
 class ISO
 {
     Descriptors _descriptors;
     PathTable _pathTable;
     Directories _directories;
+    Directory _fileList;
 public:
     int read(istream &s);
     int extract(istream &s);

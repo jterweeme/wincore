@@ -51,6 +51,9 @@ int ISO::extract(istream &s)
                 file != directory->end();
                 file++)
         {
+            _fileList.push_back(*file);
+
+#if 0
             ofstream of;
             of.open(file->fn().c_str());
             s.ignore(file->dir().lbaLE * 2048 - s.tellg());
@@ -59,9 +62,27 @@ int ISO::extract(istream &s)
             of.write(buf, file->dir().dataLengthLE);
             of.close();
             delete[] buf;
+#endif
         }
     }
+ 
+    _fileList.snort();
+    _fileList.list(cout, 1);
+    
+    for (Directory::iterator it = _fileList.begin(); it!= _fileList.end(); it++)
+    {
+        if (it->isDir())
+            continue;
 
+        ofstream of;
+        of.open(it->fn().c_str());
+        s.ignore(it->dir().lbaLE * 2048 - s.tellg());
+        char *buf = new char[it->dir().dataLengthLE];
+        s.read(buf, it->dir().dataLengthLE);
+        of.write(buf, it->dir().dataLengthLE);
+        of.close();
+        delete[] buf;
+    }
 #if 0
     for (Directory::iterator it = _directories[0].begin() + 2; it != _directories[0].end(); it++)
     {
@@ -81,7 +102,7 @@ int ISO::extract(istream &s)
 
 void Directories::read(istream &is, PathTable &pt)
 {
-#if 0
+#if 1
     for (PathTable::iterator it = pt.begin(); it != pt.end(); it++)
     {
         Directory dir;
@@ -123,7 +144,8 @@ void Directory::list(ostream &os, int mode)
         else
         {
             os << it->fn() << string(20 - it->fn().length(), ' ')
-                << right << setw(9) << it->dir().dataLengthLE << "\n";
+                << right << setw(9) << it->dir().dataLengthLE << setw(7)
+                << it->dir().lbaLE << "\n";
         }
     }
 
@@ -170,6 +192,10 @@ int DirEntry::read(istream &s)
     s.read((char *)&_dir, sizeof(_dir));
     char filename[255] = {0};
     s.read(filename, _dir.fnLength);
+
+    if (filename[_dir.fnLength - 2] == ';')
+        filename[_dir.fnLength - 2] = '\0';
+
     _fn = string(filename);
     s.ignore(_offset + _dir.length - s.tellg());
     return 0;
@@ -257,7 +283,6 @@ void Directory::read(istream &s, uint32_t offset)
         push_back(dir1);
         s.ignore(s.tellg() % 2);
     }
-    //while (s.peek() != 0);
 }
 
 int ISO::read(istream &s)
@@ -269,7 +294,7 @@ int ISO::read(istream &s)
     cerr << "\n\n";
 #endif
     _pathTable.read(s, _descriptors.pathTableOffset(), _descriptors.pathTableSize());
-    //_pathTable.snort();
+    _pathTable.snort();
     _directories.read(s, _pathTable);
     return 0;
 }
