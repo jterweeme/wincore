@@ -94,16 +94,22 @@ ostream2& ostream2::write(const char *s, int n)
 
 ostream2& ostream2::operator << (const uint32_t u)
 {
+    char a[] = "%08x";
+    char d[] = "%8d";
+    a[2] = _width.size() + '0';
+    d[1] = _width.size() + '0';
+
     switch (_base.type())
     {
     case base2::HEX:
-        fprintf(_fp, "%08x", u);
+        fprintf(_fp, a, u);
         break;
     default:
-        fprintf(_fp, "%d", u);
+        fprintf(_fp, d, u);
         break;
     }
     fflush(_fp);
+    _width.size(1);
     return *this;
 }
 
@@ -151,5 +157,13 @@ namespace mystl
     char *strcpy(char *dest, const char *src) { Util2 util; return util.strcpy(dest, src); }
     int strncmp(const char *s1, const char *s2, size_t n) { Util2 u; return u.strncmp(s1, s2, n); }
     int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }
+    dummy dummy1;
+    base2 hex(base2::HEX);
+    base2 dec(base2::DEC);
+    istream cin(stdin);
+    ostream cout(stdout);
+    ostream cerr(stderr);
+    align right;
+    width2 setw(int length) { return width2(length); }
 }
 

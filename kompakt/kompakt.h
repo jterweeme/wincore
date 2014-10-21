@@ -147,12 +147,14 @@ class PathEntry
 {
     SPathEntry _pe;
     char _name[255];
+    int _index;
 public:
     PathEntry() { memset(_name, 0, sizeof(_name)); }
     uint32_t offsetLBA() const { return _pe.lba; }
     uint32_t offset() const { return offsetLBA() * 2048; }
     void read(istream &is);
     void dump(ostream &os);
+    void index(int i) { _index = i; }
 };
 
 class PathTable : public vector<PathEntry>
@@ -162,15 +164,15 @@ class PathTable : public vector<PathEntry>
 public:
     
     void read(istream &is, uint32_t offset, size_t n);
-#if 1
+#if 0
     void snort() { sort(begin(), end(), wayToSort); }
 #else
     void snort()
     {
         for (iterator it = begin(); it != end(); it++)
         {
-            if (wayToSort(it[1], it[0]))
-                swap(*it[1], *it[0]);
+            if (wayToSort(*it, *(it + 1)))
+                ::swap(*it, *(it + 1));
         }
     }
 #endif

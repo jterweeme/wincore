@@ -35,6 +35,7 @@ void testReverse()
     v1.push_back(2);
     v1.push_back(4);
     v1.push_back(99);
+    myAssert(v1.size(), (size_t)6);
     myAssert(v1[0], 20);
     myAssert(v1[1], 5);
     myAssert(v1[2], 6);
@@ -123,6 +124,18 @@ void testIntersect()
     cout << '\n';
 }
 
+void testSwap()
+{
+    vector<int> v1;
+    v1.push_back(1);
+    v1.push_back(2);
+    myAssert(v1[0], 1);
+    myAssert(v1[1], 2);
+    swap(v1[0], v1[1]);
+    myAssert(v1[0], 2);
+    myAssert(v1[1], 1);   
+}
+
 int main()
 {
     try
@@ -130,16 +143,20 @@ int main()
         testReverse();
         testCount();
         testEqual();
-        testIntersect();
+        //testIntersect();
+        testSwap();
     }
     catch (const char *e)
     {
         cerr << "\033[1;31mTest5: " << e << "\033[0m\n";
+        return 0;
     }
     catch (...)
     {
         return -1;
     }
+
+    cerr << "\033[1;32mTest5: OK\033[0m\n";
     return 0;
 }
 

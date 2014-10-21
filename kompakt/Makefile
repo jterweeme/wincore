@@ -1,29 +1,29 @@
 VALGRIND = -q --error-exitcode=1 --leak-check=full
 
 %.o: %.cpp
-	g++ -g -Wall -Wno-unused -Wno-sign-compare -Wno-parentheses -c -o $@ $<
+	@g++ -g -Wall -Wno-unused -Wno-sign-compare -Wno-parentheses -c -o $@ $<
 
 .PHONY: all
 
 all: kompakt test1 test2 test3 test4 test5
 
 kompakt: main.o kompakt.o mystl.o
-	g++ -o $@ $(CXXFLAGS) $^
+	@g++ -o $@ $(CXXFLAGS) $^
 
 test1: test1.o kompakt.o mystl.o
-	g++ -o $@ $(CXXFLAGS) $^
+	@g++ -o $@ $(CXXFLAGS) $^
 
 test2: test2.o kompakt.o mystl.o
-	g++ -o $@ $(CXXFLAGS) $^
+	@g++ -o $@ $(CXXFLAGS) $^
 
 test3: test3.o kompakt.o mystl.o
-	g++ -o $@ $(CXXFLAGS) $^
+	@g++ -o $@ $(CXXFLAGS) $^
 
 test4: test4.o kompakt.o mystl.o test4.o
-	g++ -o $@ $(CXXFLAGS) $^
+	@g++ -o $@ $(CXXFLAGS) $^
 
 test5: test5.o mystl.o
-	g++ -o $@ $(CXXFLAGS) $^
+	@g++ -o $@ $(CXXFLAGS) $^
 
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h
 main.o: main.cpp kompakt.h common.h mystl.h

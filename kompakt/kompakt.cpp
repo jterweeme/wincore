@@ -125,11 +125,11 @@ void PathTable::read(istream &is, uint32_t offset, size_t n)
 {
     is.ignore(offset * 2048 - is.tellg());
 
-
-    while (is.tellg() < offset * 2048 + n)
+    for (int i = 1; is.tellg() < offset * 2048 + n; i++)
     {
         PathEntry pe;
         pe.read(is);
+        pe.index(i);
 #ifdef DEBUG
         pe.dump(cerr);
         cerr << "\n";
@@ -253,19 +253,24 @@ int ISO::read(istream &s)
     cerr << "\n\n";
 #endif
     _pathTable.read(s, _descriptors.pathTableOffset(), _descriptors.pathTableSize());
-    _pathTable.snort();
+    //_pathTable.snort();
     _directories.read(s, _pathTable);
     return 0;
 }
 
 void PathEntry::dump(ostream &os)
 {
+#if 0
     os << "[DIRECTORY]\n";
     os << "Name Length:         " << (int)_pe.length << "\n";
     os << "Ext. Attr. Length:   " << (int)_pe.extLength << "\n";
     os << "LBA:                 " << _pe.lba << "\n";
     os << "Parent:              " << _pe.parent << "\n";
     os << "Name:                " << _name;
+#else
+    os << dec << setw(4) << _index << ":" << setw(5) << (int)_pe.parent << hex << " "
+       << (int)_pe.lba << " " << _name;
+#endif
 }
 
 void DirEntry::dump(ostream &os)
@@ -349,10 +354,12 @@ void CPrimaryVolumeDesc::dump(ostream &os)
 
 void PathTable::dump(ostream &os)
 {
+    os << "Path table starts at block x, size x\n";
+
     for (iterator it = begin(); it != end(); it++)
     {
         it->dump(os);
-        os << "\n\n";
+        os << "\n";
     }
 }
 

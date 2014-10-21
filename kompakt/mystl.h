@@ -3134,6 +3134,16 @@ class dummy
 {
 };
 
+class width2
+{
+    int _size;
+public:
+    width2() : _size(1) { }
+    width2(int n) : _size(n) { }
+    int size() const { return _size; }
+    void size(int n) { _size = n; }
+};
+
 class base2
 {
     typedef Util2::uint8_t uint8_t;
@@ -3154,18 +3164,20 @@ protected:
     typedef Util2::uint32_t uint32_t;
     uint8_t _mode;
     base2 _base;
+    width2 _width;
     FILE *_fp;
 public:
     static const uint8_t DEC = 0;
     static const uint8_t OCT = 1;
     static const uint8_t HEX = 2;
-    ostream2() : _base(base2::DEC) { }
-    ostream2(FILE *fp) : _base(base2::DEC), _fp(fp) { }
-    ostream2& operator << (string2 s) { fprintf(_fp, s.c_str()); return *this; }
+    ostream2() : _base(base2::DEC), _width(1) { }
+    ostream2(FILE *fp) : _base(base2::DEC), _width(1), _fp(fp) { }
+    ostream2& operator << (const string2 s) { fprintf(_fp, s.c_str()); return *this; }
     ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
-    ostream2& operator << (align &a) { return *this; }
-    ostream2& operator << (dummy &d) { return *this; }
-    ostream2& operator << (base2 &base) { _base = base; return *this; }
+    ostream2& operator << (const align &a) { return *this; }
+    ostream2& operator << (const dummy &d) { return *this; }
+    ostream2& operator << (const width2 &w) { _width = w; return *this; }
+    ostream2& operator << (const base2 &base) { _base = base; return *this; }
     virtual ostream2& operator << (const uint32_t u);
     ostream2& write(const char *s, int n);
     virtual ~ostream2() { }
@@ -3233,13 +3245,15 @@ namespace mystl
     typedef ofstream2 ofstream;
     typedef ifstream2 ifstream;
     typedef ostringstream2 ostringstream;
-    static istream cin(stdin);
-    static ostream cout(stdout);
-    static ostream cerr(stderr);
+    extern istream cin;
+    extern ostream cout;
+    extern ostream cerr;
     static const char endl[] = "\n";
-    static align right;
-    static dummy dummy1;
-    static dummy& setw(int length) { return dummy1; }
+    extern align right;
+    extern dummy dummy1;
+    extern base2 hex;
+    extern base2 dec;
+    width2 setw(int length);
 };
 
 #endif
