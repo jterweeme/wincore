@@ -49,6 +49,7 @@ int main()
     dir4.read(ifs);
     dir4.dump(cout);
     ifs.close();
+    cerr << "\033[1;32mTest4: OK\033[0m\n";
     return 0;
 }
 

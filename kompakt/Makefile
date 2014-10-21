@@ -39,14 +39,14 @@ test: force
 	valgrind $(VALGRIND) ./kompakt -l -v -f cd1.iso > /dev/null
 	valgrind $(VALGRIND) ./kompakt -l -v -s < cd1.iso > /dev/null
 	valgrind $(VALGRIND) ./kompakt -d -f cd1.iso > /dev/null
-	valgrind $(VALGRIND) ./test1
-	valgrind $(VALGRIND) ./test2
-	valgrind $(VALGRIND) ./test3 > /dev/null
-	valgrind $(VALGRIND) ./test4 > /dev/null
-	valgrind $(VALGRIND) ./test5 > /dev/null
+	@valgrind $(VALGRIND) ./test1
+	@valgrind $(VALGRIND) ./test2
+	@valgrind $(VALGRIND) ./test3 > /dev/null
+	@valgrind $(VALGRIND) ./test4 > /dev/null
+	@valgrind $(VALGRIND) ./test5 > /dev/null
 
 ttest5:
-	valgrind $(VALGRIND) ./test5 > /dev/null
+	@valgrind $(VALGRIND) ./test5 > /dev/null
 
 force:
 

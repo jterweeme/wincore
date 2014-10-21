@@ -56,6 +56,7 @@ int main()
         return -1;
     }
 
+    cerr << "\033[1;32mTest2: OK\033[0m\n";
     return 0;
 }
 
