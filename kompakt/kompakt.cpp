@@ -81,12 +81,28 @@ int ISO::extract(istream &s)
 
 void Directories::read(istream &is, PathTable &pt)
 {
+#if 0
     for (PathTable::iterator it = pt.begin(); it != pt.end(); it++)
     {
         Directory dir;
         dir.read(is, it->offsetLBA());
         push_back(dir);
     }
+#else   // nasty hack
+    for (int i = 0; i < 500; i++)
+    {
+        for (PathTable::iterator it = pt.begin(); it != pt.end(); it++)
+        {
+            if (i == it->offsetLBA())
+            {
+                Directory dir;
+                dir.read(is, it->offsetLBA());
+                push_back(dir);
+                break;
+            }
+        }
+    }
+#endif
 }
 
 void Directories::list(ostream &os, int mode)
@@ -107,7 +123,7 @@ void Directory::list(ostream &os, int mode)
         else
         {
             os << it->fn() << string(20 - it->fn().length(), ' ')
-                << right << setw(10) << it->dir().dataLengthLE << "\n";
+                << right << setw(9) << it->dir().dataLengthLE << "\n";
         }
     }
 
