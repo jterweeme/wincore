@@ -276,12 +276,37 @@ void Directory::read(istream &s, uint32_t offset)
 {
     s.ignore(offset * 2048 - s.tellg());
 
+#if 0
     while (s.peek() != 0)
     {
         DirEntry dir1;
         dir1.read(s);
         push_back(dir1);
         s.ignore(s.tellg() % 2);
+    }
+#endif
+    while (true)
+    {
+        if (s.peek() != 0)
+        {
+            cerr << oct << s.tellg() << "\n";
+            DirEntry dir1;
+            dir1.read(s);
+            push_back(dir1);
+            s.ignore(s.tellg() % 2);
+        }
+        else if (s.tellg() % 2048 > 1900)
+        {
+            size_t nextLBA = s.tellg() / 2048 + 1;
+            s.ignore(nextLBA * 2048 - s.tellg());
+
+            if (s.peek() == 0)
+                break;
+        }
+        else
+        {
+            break;
+        }
     }
 }
 
