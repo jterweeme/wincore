@@ -413,11 +413,8 @@ public:
     reference operator[](difference_type __n) const { return *(*this + __n); }
 };
 
-  template<typename _Iterator>
-    inline bool
-    operator==(const reverse_iterator<_Iterator>& __x,
-           const reverse_iterator<_Iterator>& __y)
-    { return __x.base() == __y.base(); }
+template<typename T> inline bool operator==(const reverse_iterator<T> &x,
+           const reverse_iterator<T> &y);
 
   template<typename _Iterator>
     inline bool
@@ -1858,10 +1855,6 @@ protected:
     using _Base::_M_impl;
     using _Base::_M_get_Tp_allocator;
 public:
-
-
-
-
     typedef V value_type;
     typedef typename _Base::pointer pointer;
     typedef typename _Alloc_traits::const_pointer const_pointer;
@@ -3053,13 +3046,8 @@ template <typename T, typename _InputIterator2, typename _OutputIterator>
 
 template<typename _InputIterator, typename _OutputIterator, typename _UnaryOperation>
     _OutputIterator transform(_InputIterator __first, _InputIterator __last,
-    _OutputIterator __result, _UnaryOperation __unary_op)
-{
-    for (; __first != __last; ++__first, ++__result)
-        *__result = __unary_op(*__first);
+    _OutputIterator __result, _UnaryOperation __unary_op);
 
-    return __result;
-}
 
 
 template <Util2::size_t T> class bitset
@@ -3275,6 +3263,8 @@ namespace mystl
     void toupper(char *s);
 
 };
+
+#include "mystl.tcc"
 
 #endif
 
