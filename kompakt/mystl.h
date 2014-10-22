@@ -3042,8 +3042,7 @@ template<typename T, typename U, typename V, typename W>
         return __result;
 }
 
-template <typename T, typename _InputIterator2,
-       typename _OutputIterator>
+template <typename T, typename _InputIterator2, typename _OutputIterator>
     inline _OutputIterator
     set_intersection(T __first1, T __last1,
              _InputIterator2 __first2, _InputIterator2 __last2,
@@ -3051,6 +3050,17 @@ template <typename T, typename _InputIterator2,
 {
     return __set_intersection(__first1, __last1, __first2, __last2, __result, __iter_less_iter());
 }
+
+template<typename _InputIterator, typename _OutputIterator, typename _UnaryOperation>
+    _OutputIterator transform(_InputIterator __first, _InputIterator __last,
+    _OutputIterator __result, _UnaryOperation __unary_op)
+{
+    for (; __first != __last; ++__first, ++__result)
+        *__result = __unary_op(*__first);
+
+    return __result;
+}
+
 
 template <Util2::size_t T> class bitset
 {
@@ -3254,6 +3264,16 @@ namespace mystl
     extern base2 hex;
     extern base2 dec;
     width2 setw(int length);
+    int isdigit(int c);
+    int isspace(int c);
+    int isupper(int c);
+    int islower(int c);
+    int isalpha(int c);
+    int isxdigit(int c);
+    int toupper(int c);
+    void toupper(const char *src, char *dest);
+    void toupper(char *s);
+
 };
 
 #endif

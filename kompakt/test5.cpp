@@ -14,6 +14,12 @@ template <typename T> void myAssert(T a, T b, const char *err = "error")
         throw err;
 }
 
+template <> void myAssert(const char *a, const char *b, const char *err)
+{
+    if (strcmp(a, b) != 0)
+        throw err;
+}
+
 class Intor : public vector<int>
 {
 public:
@@ -124,6 +130,19 @@ void testIntersect()
     cout << '\n';
 }
 
+char tocupper(int c)
+{
+    return toupper(c);
+}
+
+void testTransform()
+{
+    char lower[] = "alpha@city1_f.xyz";
+    char upper[sizeof(lower)];
+    transform(lower, lower + sizeof(lower), upper, tocupper);
+    myAssert((const char *)upper, "ALPHA@CITY1_F.XYZ");
+}
+
 void testSwap()
 {
     vector<int> v1;
@@ -145,6 +164,7 @@ int main()
         testEqual();
         //testIntersect();
         testSwap();
+        testTransform();
     }
     catch (const char *e)
     {

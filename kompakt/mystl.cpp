@@ -165,5 +165,6 @@ namespace mystl
     ostream cerr(stderr);
     align right;
     width2 setw(int length) { return width2(length); }
+    int toupper(int c) { Util2 u; return u.toupper(c); }
 }
 
