@@ -52,30 +52,28 @@ int ISO::extract(istream &s)
                 file++)
         {
             _fileList.push_back(*file);
-
-#if 0
-            ofstream of;
-            of.open(file->fn().c_str());
-            s.ignore(file->dir().lbaLE * 2048 - s.tellg());
-            char *buf = new char[file->dir().dataLengthLE];
-            s.read(buf, file->dir().dataLengthLE);
-            of.write(buf, file->dir().dataLengthLE);
-            of.close();
-            delete[] buf;
-#endif
         }
     }
  
     _fileList.snort();
-    _fileList.list(cout, 1);
-    
+#ifdef DEBUG
+    _fileList.list(cerr, 1);
+#endif
+ 
+    FileSystem fs;
+
     for (Directory::iterator it = _fileList.begin(); it!= _fileList.end(); it++)
     {
         if (it->isDir())
             continue;
 
+
         ofstream of;
         of.open(it->fn().c_str());
+        FSPath path = _pathTable.recurse(it->parentLBA());
+        
+        path.dump(cout);
+        cout << "/" << it->fn() << "\n";
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
         char *buf = new char[it->dir().dataLengthLE];
         s.read(buf, it->dir().dataLengthLE);
@@ -83,47 +81,18 @@ int ISO::extract(istream &s)
         of.close();
         delete[] buf;
     }
-#if 0
-    for (Directory::iterator it = _directories[0].begin() + 2; it != _directories[0].end(); it++)
-    {
-        ofstream of;
-        of.open(it->fn().c_str());
-        s.ignore(it->dir().lbaLE * 2048 - s.tellg());
-        char *buf = new char[it->dir().dataLengthLE];
-        s.read(buf, it->dir().dataLengthLE);
-        of.write(buf, it->dir().dataLengthLE);
-        of.close();
-        delete[] buf;
-    }
-#endif
 
     return 0;
 }
 
 void Directories::read(istream &is, PathTable &pt)
 {
-#if 1
     for (PathTable::iterator it = pt.begin(); it != pt.end(); it++)
     {
         Directory dir;
         dir.read(is, it->offsetLBA());
         push_back(dir);
     }
-#else   // nasty hack
-    for (int i = 0; i < 500; i++)
-    {
-        for (PathTable::iterator it = pt.begin(); it != pt.end(); it++)
-        {
-            if (i == it->offsetLBA())
-            {
-                Directory dir;
-                dir.read(is, it->offsetLBA());
-                push_back(dir);
-                break;
-            }
-        }
-    }
-#endif
 }
 
 void Directories::list(ostream &os, int mode)
@@ -145,7 +114,7 @@ void Directory::list(ostream &os, int mode)
         {
             os << it->fn() << string(20 - it->fn().length(), ' ')
                 << right << setw(9) << it->dir().dataLengthLE << setw(7)
-                << it->dir().lbaLE << "\n";
+                << it->dir().lbaLE << setw(6) << it->parentLBA() << "\n";
         }
     }
 
@@ -159,11 +128,38 @@ void PathEntry::read(istream &is)
     is.ignore(is.tellg() % 2);
 }
 
-void PathTable::read(istream &is, uint32_t offset, size_t n)
+void PathTable::snort()
 {
-    is.ignore(offset * 2048 - is.tellg());
+    make_heap(begin(), end(), wayToSort);
+    sort_heap(begin(), end(), wayToSort);
+}
 
-    for (int i = 1; is.tellg() < offset * 2048 + n; i++)
+PathEntry &PathTable::getByLBA(uint32_t lba)
+{
+    for (iterator it = begin(); it != end(); it++)
+        if (it->offsetLBA() == lba)
+            return *it;
+
+    throw "onzin";
+}
+
+PathEntry &PathTable::getByIndex(int i)
+{
+    for (iterator it = begin(); it != end(); it++)
+        if (it->index() == i)
+            return *it;
+
+    throw "onzin";
+
+}
+
+void PathTable::read(istream &is, uint32_t lba, size_t n)
+{
+    _offsetLBA = lba;
+    _size = n;
+    is.ignore(lba * 2048 - is.tellg());
+
+    for (int i = 1; is.tellg() < lba * 2048 + n; i++)
     {
         PathEntry pe;
         pe.read(is);
@@ -276,15 +272,6 @@ void Directory::read(istream &s, uint32_t offset)
 {
     s.ignore(offset * 2048 - s.tellg());
 
-#if 0
-    while (s.peek() != 0)
-    {
-        DirEntry dir1;
-        dir1.read(s);
-        push_back(dir1);
-        s.ignore(s.tellg() % 2);
-    }
-#endif
     while (true)
     {
         if (s.peek() != 0)
@@ -294,6 +281,7 @@ void Directory::read(istream &s, uint32_t offset)
 #endif
             DirEntry dir1;
             dir1.read(s);
+            dir1.parentLBA(offset);
             push_back(dir1);
             s.ignore(s.tellg() % 2);
         }
@@ -328,17 +316,8 @@ int ISO::read(istream &s)
 
 void PathEntry::dump(ostream &os)
 {
-#if 0
-    os << "[DIRECTORY]\n";
-    os << "Name Length:         " << (int)_pe.length << "\n";
-    os << "Ext. Attr. Length:   " << (int)_pe.extLength << "\n";
-    os << "LBA:                 " << _pe.lba << "\n";
-    os << "Parent:              " << _pe.parent << "\n";
-    os << "Name:                " << _name;
-#else
     os << dec << setw(4) << _index << ":" << setw(5) << (int)_pe.parent << hex << " "
        << (int)_pe.lba << " " << _name;
-#endif
 }
 
 void DirEntry::dump(ostream &os)
@@ -420,9 +399,14 @@ void CPrimaryVolumeDesc::dump(ostream &os)
     os << "Timezone:            " << (int)_desc.timezone;   
 }
 
+bool PathTable::wayToSort(const PathEntry &p1, const PathEntry &p2)
+{
+    return p1.offsetLBA() < p2.offsetLBA();
+}
+
 void PathTable::dump(ostream &os)
 {
-    os << "Path table starts at block x, size x\n";
+    os << "Path table starts at block " << _offsetLBA << ", size " << _size << "\n";
 
     for (iterator it = begin(); it != end(); it++)
     {
@@ -482,6 +466,12 @@ int Options::parse(int argc, char **argv)
 void FileSystem::mkdir(const char *name)
 {
     ::mkdir(name, 112);
+}
+
+void FSPath::dump(ostream &os)
+{
+    for (iterator it = begin(); it != end(); it++)
+        os << "/" << *it;
 }
 
 int App::run(int argc, char **argv)

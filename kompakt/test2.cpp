@@ -9,11 +9,17 @@ template <typename T> void myAssert(T a, T b, const char *err = "error")
 
 void test()
 {
-#if 0
-    ifstream ifs("cd.iso");
+    ifstream ifs("cd6.iso");
     ISO iso;
     iso.read(ifs);
-#endif
+    PathTable pt = iso.pathTable();
+    myAssert(pt.offsetLBA(), (uint32_t)19);
+    myAssert(pt.size(), (size_t)54);
+    PathEntry root = pt.root();
+    myAssert(root.offsetLBA(), (uint32_t)23);
+    FSPath fsp = pt.recurse(26);
+    fsp.dump(cout);
+    cout << "\n";
 }
 
 void testBitset()
@@ -42,6 +48,16 @@ void test2()
     fs.mkdir("data");
 }
 
+void testFS()
+{
+    FileSystem fs;
+    fs.root().dump(cout);
+    cout << "\n";
+    FSPath pwd = fs.pwdir();
+    pwd.dump(cout);
+    cout << "\n";
+}
+
 int main()
 {
     try
@@ -49,6 +65,7 @@ int main()
         test();
         testBitset();
         //test2();
+        testFS();
     }
     catch (const char *e)
     {

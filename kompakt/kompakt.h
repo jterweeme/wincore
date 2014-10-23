@@ -1,6 +1,7 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 #include "common.h"
+#include <unistd.h>
 
 class Options
 {
@@ -29,7 +30,7 @@ public:
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
-struct SDirectory
+struct SFile
 {
     uint8_t length;
     uint8_t extendedLength;
@@ -63,13 +64,16 @@ public:
 class DirEntry
 {
     string _fn;
-    SDirectory _dir;
+    SFile _dir;
     uint32_t _offset;
+    uint32_t _parentLBA;
 public:
-    SDirectory dir() const { return _dir; }
+    SFile dir() const { return _dir; }
     string fn();
     bool isDir() { Flags flags(_dir.flags); return flags.test(1); }
     int read(istream &s);
+    void parentLBA(uint32_t n) { _parentLBA = n; }
+    uint32_t parentLBA() { return _parentLBA; }
     uint32_t size() const { return _dir.dataLengthLE; }
     void dump(ostream &os);
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
@@ -143,6 +147,12 @@ struct SPathEntry
     uint16_t parent;
 } PACKED;
 
+class FSPath : public vector<string>
+{
+public:
+    void dump(ostream &os);
+};
+
 class PathEntry
 {
     SPathEntry _pe;
@@ -154,29 +164,53 @@ public:
     uint32_t offset() const { return offsetLBA() * 2048; }
     void read(istream &is);
     void dump(ostream &os);
+    char *name() { return _name; }
     void index(int i) { _index = i; }
+    int index() const { return _index; }
+    uint16_t parent() const { return _pe.parent; }
+    bool compare(PathEntry &p) { return offsetLBA() == p.offsetLBA(); }
 };
 
 class PathTable : public vector<PathEntry>
 {
-    static bool wayToSort(const PathEntry &p1, const PathEntry &p2)
-    { return p1.offsetLBA() < p2.offsetLBA(); }
+    static bool wayToSort(const PathEntry &p1, const PathEntry &p2);
+    uint32_t _offsetLBA;
+    size_t _size;
 public:
-    
-    void read(istream &is, uint32_t offset, size_t n);
-#if 1
-    void snort() { sort(begin(), end(), wayToSort); }
-#else
-    void snort()
-    {
-        for (iterator it = begin(); it != end(); it++)
-        {
-            if (wayToSort(*it, *(it + 1)))
-                ::swap(*it, *(it + 1));
-        }
-    }
-#endif
+    void read(istream &is, uint32_t lba, size_t n);
+    void snort();
     void dump(ostream &os);
+    PathEntry &getByLBA(uint32_t lba);
+    PathEntry &getByIndex(int i);
+    bool isRoot(PathEntry &pe) { return pe.compare(root()); }
+    PathEntry &root() { iterator it = begin(); return *it; }
+    uint32_t offsetLBA() const { return _offsetLBA; }
+    size_t size() const { return _size; }
+
+    FSPath recurse(uint32_t lba)
+    {
+        FSPath path;
+        PathEntry pe;
+        pe = getByLBA(lba);
+
+        if (isRoot(pe))
+            return path;
+
+        path.push_back(pe.name());
+
+        while (true)
+        {
+            cout << "debug\n";
+            pe = getByIndex(pe.parent());
+            
+            if (isRoot(pe))
+                break;
+            
+            path.push_back(pe.name());
+        }
+        reverse(path.begin(), path.end());
+        return path;
+    }
 };
 
 class CVolumeDescriptor
@@ -240,11 +274,16 @@ class Directory : public vector<DirEntry>
     static bool sortLBA(const DirEntry &p1, const DirEntry &p2)
     { return p1.dir().lbaLE < p2.dir().lbaLE; }
 public:
+    //Directory() { }
     void read(istream &s, uint32_t offset);
     string toString();
     void list(ostream &os, int mode);
     string list(int mode = 1) { ostringstream oss; list(oss, mode); return oss.str(); }
-    void snort() { sort(begin(), end(), sortLBA); }
+    void snort()
+    {
+        make_heap(begin(), end(), sortLBA);
+        sort_heap(begin(), end(), sortLBA);
+    }
 };
 
 class Directories : public vector<Directory>
@@ -253,8 +292,6 @@ public:
     void read(istream &is, PathTable &pt);
     void list(ostream &os, int mode = 1);
 };
-
-
 
 class ISO
 {
@@ -268,7 +305,9 @@ public:
     void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
     void dumpDescriptors(ostream &os) { _descriptors.dump(os); }
     void dumpPathTable(ostream &os) { _pathTable.dump(os); }
+    Descriptors descriptors() const { return _descriptors; }
     Directories directories() const { return _directories; }
+    PathTable pathTable() const { return _pathTable; }
 };
 
 class App
@@ -283,9 +322,33 @@ public:
 
 class FileSystem
 {
+    FSPath _root;
 public:
-    FileSystem() { }
+
     void mkdir(const char *name);
+
+    void chmkdir(uint32_t lba, PathTable *pt)
+    {
+        
+    }
+    
+    FSPath pwdir()
+    {
+        FSPath pwd;
+        char path[255] = {0};
+        getcwd(path, sizeof(path));
+
+        for (char *token = strtok(path, "/"); token != NULL; )
+        {
+            pwd.push_back(token);
+            token = strtok(NULL, "/");
+        }
+
+        return pwd;
+    }
+
+    FileSystem() : _root(pwdir()) { }
+    FSPath root() const { return _root; }
 };
 
 #endif
