@@ -74,13 +74,6 @@ void testEqual()
 {
     int myints[] = {20,40,60,80,100};
     vector<int> myvector(myints, myints + 5);
-#if 0
-    myvector.push_back(20);
-    myvector.push_back(40);
-    myvector.push_back(60);
-    myvector.push_back(80);
-    myvector.push_back(100);
-#endif
     myAssert(equal(myvector.begin(), myvector.end(), myints), true);
     myvector[3] = 81;
     myAssert(equal(myvector.begin(), myvector.end(), myints, mypredicate), false);

@@ -5,7 +5,7 @@ VALGRIND = -q --error-exitcode=1 --leak-check=full
 
 .PHONY: all
 
-all: kompakt test1 test2 test3 test4 test5
+all: kompakt test1 test2 test3 test4 test5 test6
 
 kompakt: main.o kompakt.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
@@ -25,6 +25,9 @@ test4: test4.o kompakt.o mystl.o test4.o
 test5: test5.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
 
+test6: test6.o mystl.o
+	@g++ -o $@ $(CXXFLAGS) $^
+
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h
 main.o: main.cpp kompakt.h common.h mystl.h
 mystl.o: mystl.cpp mystl.h
@@ -33,6 +36,7 @@ test2.o: test2.cpp kompakt.h common.h mystl.h
 test3.o: test3.cpp kompakt.h common.h mystl.h
 test4.o: test4.cpp kompakt.h common.h mystl.h
 test5.o: test5.cpp kompakt.h common.h mystl.h
+test6.o: test6.cpp common.h
 
 test: force
 	bunzip2 -kf *.iso.bz2
@@ -44,12 +48,16 @@ test: force
 	@valgrind $(VALGRIND) ./test3 > /dev/null
 	@valgrind $(VALGRIND) ./test4 > /dev/null
 	@valgrind $(VALGRIND) ./test5 > /dev/null
+	@valgrind $(VALGRIND) ./test6 > /dev/null
 
 ttest5:
 	@valgrind $(VALGRIND) ./test5 > /dev/null
 
+ttest6:
+	@valgrind $(VALGRIND) ./test6
+
 force:
 
 clean:
-	rm -Rvf *.o test1 test2 test3 kompakt
+	rm -Rvf *.o test1 test2 test3 test4 test5 test6 kompakt
 

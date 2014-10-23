@@ -289,7 +289,9 @@ void Directory::read(istream &s, uint32_t offset)
     {
         if (s.peek() != 0)
         {
+#ifdef DEBUG
             cerr << oct << s.tellg() << "\n";
+#endif
             DirEntry dir1;
             dir1.read(s);
             push_back(dir1);

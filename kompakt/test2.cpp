@@ -48,7 +48,7 @@ int main()
     {
         test();
         testBitset();
-        test2();
+        //test2();
     }
     catch (const char *e)
     {
