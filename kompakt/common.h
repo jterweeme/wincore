@@ -7,7 +7,7 @@
 #define PACKED
 #endif
 
-#if 0
+#if 1
 #include "mystl.h"
 using namespace mystl;
 #else

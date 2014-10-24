@@ -76,7 +76,7 @@ int main()
     cout << options.info() << options.list() << "\n";
 */
 
-    cout << "\033[1;32mTest1: OK\033[0m\n";
+    cerr << "\033[1;32mTest1: OK\033[0m\n";
     return 0;
 }
 

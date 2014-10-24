@@ -2,7 +2,6 @@
 #define _MYSTL_H_
 #include <stdio.h>
 #include <stdlib.h>
-//#include <vector>
 
 class Util2
 {
@@ -33,6 +32,7 @@ public:
     size_t strlen(const char *s);
     int strcmp(const char* s1, const char *s2);
     int strncmp(const char *s1, const char *s2, size_t n);
+    char *strtok(char *str, const char *delimiters);
 };
 
 typedef class Util2 Util;
@@ -3002,7 +3002,7 @@ public:
     static const uint8_t in = 1;
     static const uint8_t binary = 2;
     ifstream2() : _open(false) { }
-    ifstream2(char *s, int m) : istream2(fopen(s, "rb")), _open(true) { }
+    ifstream2(const char *s, int m = 1) : istream2(fopen(s, "rb")), _open(true) { }
     void open(const char *fn, int mode = 1) { _fp = fopen(fn, "rb"); _open = true; }
     void close() { if (_open) { fclose(_fp); _open = false; } }
     virtual ~ifstream2() { close(); }
@@ -3145,7 +3145,7 @@ namespace mystl
     int toupper(int c);
     void toupper(const char *src, char *dest);
     void toupper(char *s);
-
+    char *strtok(char *s, const char *delim);
 };
 
 #include "mystl.tcc"

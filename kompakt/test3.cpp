@@ -34,11 +34,47 @@ void testVector()
     cout << "\n";
 }
 
+void testBitset()
+{
+    bitset<8> bitset1(8);
+    myAssert(bitset1.size(), (size_t)8);
+    myAssert(bitset1.test(3), true);
+    myAssert(bitset1.test(4), false);
+    myAssert(bitset1.any(), true);
+    myAssert(bitset1.count(), (size_t)1);
+    bitset1.set();
+    myAssert(bitset1.test(7), true, "Test 7");
+    myAssert(bitset1.count(), (size_t)8);
+    bitset1.reset(2);
+    myAssert(bitset1.test(2), false);
+    myAssert(bitset1.count(), (size_t)7);
+    bitset1.reset();
+    myAssert(bitset1.test(4), false);
+    myAssert(bitset1.any(), false);
+    myAssert(bitset1.count(), (size_t)0);
+}
+
+void testStrtok()
+{
+    char str[] ="- This, a sample string.";
+    char *pch;
+    printf ("Splitting string \"%s\" into tokens:\n", str);
+    pch = strtok(str," ,.-");
+
+    while (pch != NULL)
+    {
+        printf ("%s\n",pch);
+        pch = strtok (NULL, " ,.-");
+    }
+}
+
 int main()
 {
     try
     {
         testVector();
+        testBitset();
+        testStrtok();
     }
     catch (const char *e)
     {

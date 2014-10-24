@@ -11,6 +11,65 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
     return dest;
 }
 
+char *Util2::strtok(char *str, const char *delimiters)
+{
+    static char *sp = NULL;
+    int i = 0;
+    int len = strlen(delimiters);
+ 
+    if(len == 0)
+        printf("delimiters are empty\n");
+ 
+    if(!str && !sp)
+        return NULL;
+ 
+    if(str && !sp)
+        sp = str;
+ 
+    char* p_start = sp;
+
+    while(true)
+    {
+        for(i = 0; i < len; i ++)
+        {
+            if(*p_start == delimiters[i])
+            {
+                p_start ++;
+                break;
+            }
+        }
+ 
+        if (i == len)
+        {
+            sp = p_start;
+            break;
+        }
+    }
+ 
+    if(*sp == '\0')
+    {
+        sp = NULL;
+        return sp;
+    }
+ 
+    while(*sp != '\0')
+    {
+        for(i = 0; i < len; i ++)
+        {
+            if(*sp == delimiters[i])
+            {
+                *sp = '\0';
+                break;
+            }
+        }
+ 
+        sp ++;
+        if (i < len)
+            break;
+    }
+    return p_start;
+}
+
 Util2::size_t Util2::strlen(const char *s)
 {
     const char *t;
@@ -157,6 +216,7 @@ namespace mystl
     char *strcpy(char *dest, const char *src) { Util2 util; return util.strcpy(dest, src); }
     int strncmp(const char *s1, const char *s2, size_t n) { Util2 u; return u.strncmp(s1, s2, n); }
     int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }
+    size_t strlen(const char *s) { Util2 u; return u.strlen(s); }
     dummy dummy1;
     base2 hex(base2::HEX);
     base2 dec(base2::DEC);
@@ -166,5 +226,6 @@ namespace mystl
     align right;
     width2 setw(int length) { return width2(length); }
     int toupper(int c) { Util2 u; return u.toupper(c); }
+    char *strtok(char *s, const char *delim) { Util2 u; return u.strtok(s, delim); }
 }
 
