@@ -3002,8 +3002,8 @@ public:
     static const uint8_t in = 1;
     static const uint8_t binary = 2;
     ifstream2() : _open(false) { }
-    ifstream2(const char *s, int m = 1) : istream2(fopen(s, "rb")), _open(true) { }
-    void open(const char *fn, int mode = 1) { _fp = fopen(fn, "rb"); _open = true; }
+    ifstream2(const char *s, int m = 1) : istream2(fopen(s, "rb")) { _open = _fp; }
+    void open(const char *fn, int mode = 1) { _open = _fp = fopen(fn, "rb"); }
     void close() { if (_open) { fclose(_fp); _open = false; } }
     virtual ~ifstream2() { close(); }
 };

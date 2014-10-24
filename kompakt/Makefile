@@ -49,7 +49,10 @@ testisos:
 
 ttests: ttest1 ttest2 ttest3 ttest4 ttest5 ttest6
 
-ttest1:
+cd1.iso: cd1.iso.bz2
+	bunzip2 -kf $<
+
+ttest1: cd1.iso
 	@valgrind $(VALGRIND) ./test1 > /dev/null
 
 ttest2:
