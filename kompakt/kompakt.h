@@ -12,9 +12,23 @@ class Options
     bool _file;
     bool _desc;
     bool _pathTable;
+    bool _outputDir;
     string _fn;
+    string _outputDirName;
 public:
-    Options() { _verbose = _pathTable = _desc = _list = _extract = _cin = _file = _help = false; }
+    Options()
+      :
+        _verbose(false),
+        _list(false),
+        _extract(false),
+        _help(false),
+        _cin(false),
+        _file(false),
+        _desc(false),
+        _pathTable(false),
+        _outputDir(false)
+    { }
+
     string fn() const { return _fn; }
     bool file() const { return _file; }
     int parse(int argc, char **argv);
@@ -25,6 +39,8 @@ public:
     bool stdinput() const { return _cin; }
     bool pathTable() const { return _pathTable; }
     bool desc() const { return _desc; }
+    bool outputDir() const { return _outputDir; }
+    string outputDirName() const { return _outputDirName; }
     void dump(ostream &os) { os << "Filename: " << _fn << "\n"; }
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
@@ -294,6 +310,7 @@ class ISO
 public:
     int read(istream &s);
     int extract(istream &s);
+    int extract(istream &s, const char *outputDir);
     void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
     void dumpDescriptors(ostream &os) { _descriptors.dump(os); }
     void dumpPathTable(ostream &os) { _pathTable.dump(os); }
@@ -306,6 +323,7 @@ class App
 {
     Options _options;
     ISO _iso;
+    ifstream _ifs;
 public:
     void help(ostream &os);
     string help() { ostringstream oss; help(oss); return oss.str(); }

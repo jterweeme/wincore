@@ -40,6 +40,14 @@ void Flags::dump(ostream &os)
 
 }
 
+int ISO::extract(istream &s, const char *outputDir)
+{
+    FileSystem fs;
+    fs.chmkdir(outputDir);
+    extract(s);
+    return 0;
+}
+
 int ISO::extract(istream &s)
 {
 
@@ -455,6 +463,10 @@ int Options::parse(int argc, char **argv)
             case 'x':
                 _extract = true;
                 break;
+            case 'o':
+                _outputDir = true;
+                _outputDirName = string(argv[++i]);
+                break;
             }
         }
     }
@@ -473,17 +485,16 @@ int App::run(int argc, char **argv)
         return 0;
     }
 
-    ifstream fs;
+    istream *is;
 
     if (_options.stdinput())
     {
-        _iso.read(cin);
+        is = &cin;
     }
     else if (_options.file())
     {
-
-        fs.open(_options.fn().c_str(), fstream::in);
-        _iso.read(fs);
+        _ifs.open(_options.fn().c_str(), fstream::in);
+        is = &_ifs;
     }
     else
     {
@@ -491,6 +502,8 @@ int App::run(int argc, char **argv)
         cout << "\n";
         return 0;
     }
+
+    _iso.read(*is);
 
     if (_options.desc())
     {
@@ -516,10 +529,10 @@ int App::run(int argc, char **argv)
 
     if (_options.extract())
     {
-        if (_options.stdinput())
-            _iso.extract(cin);
+        if (_options.outputDir())
+            _iso.extract(*is, _options.outputDirName().c_str());
         else
-            _iso.extract(fs);
+            _iso.extract(*is);
     }
         
     return 0;

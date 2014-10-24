@@ -39,7 +39,7 @@ test4.o: test4.cpp kompakt.h common.h mystl.h
 test5.o: test5.cpp kompakt.h common.h mystl.h
 test6.o: test6.cpp common.h
 
-test: force
+test: force ttest5 ttest6 testbattery
 	bunzip2 -kf *.iso.bz2
 	valgrind $(VALGRIND) ./kompakt -l -v -f cd1.iso > /dev/null
 	valgrind $(VALGRIND) ./kompakt -l -v -s < cd1.iso > /dev/null
@@ -48,14 +48,17 @@ test: force
 	@valgrind $(VALGRIND) ./test2
 	@valgrind $(VALGRIND) ./test3 > /dev/null
 	@valgrind $(VALGRIND) ./test4 > /dev/null
-	@valgrind $(VALGRIND) ./test5 > /dev/null
-	@valgrind $(VALGRIND) ./test6 > /dev/null
 
 ttest5:
 	@valgrind $(VALGRIND) ./test5 > /dev/null
 
 ttest6:
-	@valgrind $(VALGRIND) ./test6
+	@valgrind $(VALGRIND) ./test6 > /dev/null
+
+testbattery:
+	valgrind $(VALGRIND) ./kompakt -x -f battery.iso -o battery > /dev/null
+	md5sum -c battery.md5
+	rm -Rvf battery
 
 force:
 
