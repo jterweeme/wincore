@@ -73,5 +73,5 @@ testbattery:
 	rm -Rvf battery
 
 clean:
-	rm -Rvf *.o test1 test2 test3 test4 test5 test6 kompakt
+	rm -Rvf *.o test? cd?.iso kompakt
 
