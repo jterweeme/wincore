@@ -1,7 +1,6 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
-#include "common.h"
-#include <unistd.h>
+#include "filesys.h"
 
 class Options
 {
@@ -147,12 +146,6 @@ struct SPathEntry
     uint16_t parent;
 } PACKED;
 
-class FSPath : public vector<string>
-{
-public:
-    void dump(ostream &os);
-};
-
 class PathEntry
 {
     SPathEntry _pe;
@@ -200,7 +193,6 @@ public:
 
         while (true)
         {
-            cout << "debug\n";
             pe = getByIndex(pe.parent());
             
             if (isRoot(pe))
@@ -318,37 +310,6 @@ public:
     void help(ostream &os);
     string help() { ostringstream oss; help(oss); return oss.str(); }
     int run(int argc, char **argv);
-};
-
-class FileSystem
-{
-    FSPath _root;
-public:
-
-    void mkdir(const char *name);
-
-    void chmkdir(uint32_t lba, PathTable *pt)
-    {
-        
-    }
-    
-    FSPath pwdir()
-    {
-        FSPath pwd;
-        char path[255] = {0};
-        getcwd(path, sizeof(path));
-
-        for (char *token = strtok(path, "/"); token != NULL; )
-        {
-            pwd.push_back(token);
-            token = strtok(NULL, "/");
-        }
-
-        return pwd;
-    }
-
-    FileSystem() : _root(pwdir()) { }
-    FSPath root() const { return _root; }
 };
 
 #endif

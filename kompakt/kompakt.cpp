@@ -1,5 +1,5 @@
 #include "kompakt.h"
-#include <sys/stat.h>
+#include "filesys.h"
 
 #ifndef DEBUG
 #define DEBUG2
@@ -461,17 +461,6 @@ int Options::parse(int argc, char **argv)
     }
 
     return 0;
-}
-
-void FileSystem::mkdir(const char *name)
-{
-    ::mkdir(name, 112);
-}
-
-void FSPath::dump(ostream &os)
-{
-    for (iterator it = begin(); it != end(); it++)
-        os << "/" << *it;
 }
 
 int App::run(int argc, char **argv)

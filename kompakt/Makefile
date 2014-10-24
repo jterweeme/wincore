@@ -7,19 +7,19 @@ VALGRIND = -q --error-exitcode=1 --leak-check=full
 
 all: kompakt test1 test2 test3 test4 test5 test6
 
-kompakt: main.o kompakt.o mystl.o
+kompakt: main.o kompakt.o filesys.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
 
-test1: test1.o kompakt.o mystl.o
+test1: test1.o kompakt.o filesys.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
 
-test2: test2.o kompakt.o mystl.o
+test2: test2.o kompakt.o filesys.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
 
-test3: test3.o kompakt.o mystl.o
+test3: test3.o kompakt.o filesys.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
 
-test4: test4.o kompakt.o mystl.o test4.o
+test4: test4.o kompakt.o filesys.o mystl.o test4.o
 	@g++ -o $@ $(CXXFLAGS) $^
 
 test5: test5.o mystl.o
@@ -29,6 +29,7 @@ test6: test6.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
 
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h
+filesys.o: filesys.cpp filesys.h common.h mystl.h
 main.o: main.cpp kompakt.h common.h mystl.h
 mystl.o: mystl.cpp mystl.h
 test1.o: test1.cpp kompakt.h common.h mystl.h
