@@ -1,5 +1,4 @@
 #include "kompakt.h"
-#include "color.h"
 #include <sys/stat.h>
 
 template <typename T> void myAssert(T a, T b, const char *err = "error")
@@ -66,7 +65,6 @@ void testCHMkdir()
 
 int main()
 {
-    Color ccerr;
 
     try
     {
@@ -77,13 +75,11 @@ int main()
     }
     catch (const char *e)
     {
-        ccerr.color(2);
-        ccerr << "Test2: " << e << "\n";
+        cerr << "\033[1;31mTest2: " << e << "\033[0m\n";
         return 0;
     }
 
-    ccerr.color(1);
-    ccerr << "Test2: OK\n";
+    cerr << "\033[1;32mTest2: OK\033[0m\n";
     return 0;
 }
 

@@ -1,5 +1,4 @@
 #include "kompakt.h"
-#include "color.h"
 using namespace std;
 
 class TestArguments
@@ -58,7 +57,6 @@ void test2()
 
 int main()
 {
-    Color ccerr;
 
     try
     {
@@ -67,8 +65,7 @@ int main()
     }
     catch (const char *s)
     {
-        ccerr.color(2);
-        ccerr << "Test1: Failed! " << s << "\n";
+        cerr << "\033[1;31mTest1: Failed! " << s << "\033[0m\n";
         return 0;
     }
 /*
@@ -80,8 +77,7 @@ int main()
     cout << options.info() << options.list() << "\n";
 */
 
-    ccerr.color(1);
-    ccerr << "Test1: OK\n";
+    cerr << "\033[1;32mTest1: OK\033[0m\n";
     return 0;
 }
 

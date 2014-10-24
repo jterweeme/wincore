@@ -1,5 +1,4 @@
 #include "kompakt.h"
-#include "color.h"
 
 template <typename T> void myAssert(T a, T b, const char *err = "Error")
 {
@@ -24,7 +23,6 @@ template <> void myAssert(const char *a, const char *b, const char *err)
 
 int main()
 {
-    Color ccerr;
     ifstream ifs;
     ifs.open("cd5.iso");
     ifs.ignore(32768);
@@ -51,8 +49,7 @@ int main()
     dir4.read(ifs);
     dir4.dump(cout);
     ifs.close();
-    ccerr.color(1);
-    ccerr << "Test4: OK\n";
+    cerr << "\033[1;32mTest4: OK\033[0m\n";
     return 0;
 }
 

@@ -1,6 +1,5 @@
 #if 1
 #include "mystl.h"
-#include "color.h"
 using namespace mystl;
 #else
 #include <iostream>
@@ -71,8 +70,6 @@ void testStrtok()
 
 int main()
 {
-    Color ccerr;
-
     try
     {
         testVector();
@@ -81,14 +78,12 @@ int main()
     }
     catch (const char *e)
     {
-        ccerr.color(2);
-        ccerr << "Test3: " << e << "\n";
+        cerr << "\033[1;31mTest3: " << e << "\033[0m\n";
         return 0;
     }
     //string s(9, ' ');
     //cout << s;
-    ccerr.color(1);
-    ccerr << "Test3: OK\n";
+    cerr << "\033[1;32mTest3: OK\033[0m\n";
     return 0;
 }
 
