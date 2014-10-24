@@ -67,13 +67,12 @@ int ISO::extract(istream &s)
         if (it->isDir())
             continue;
 
-
-        ofstream of;
-        of.open(it->fn().c_str());
         FSPath path = _pathTable.recurse(it->parentLBA());
-        
         path.dump(cout);
         cout << "/" << it->fn() << "\n";
+        fs.chmkdir(path);
+        ofstream of;
+        of.open(it->fn().c_str());
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
         char *buf = new char[it->dir().dataLengthLE];
         s.read(buf, it->dir().dataLengthLE);
