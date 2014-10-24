@@ -10,6 +10,10 @@ template <typename T> void myAssert(T a, T b, const char *err = "error")
 void test()
 {
     ifstream ifs("cd6.iso");
+
+    if (!ifs.is_open())
+        throw "File does not exist";
+
     ISO iso;
     iso.read(ifs);
     PathTable pt = iso.pathTable();

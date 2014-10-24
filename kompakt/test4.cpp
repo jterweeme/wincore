@@ -25,6 +25,10 @@ int main()
 {
     ifstream ifs;
     ifs.open("cd5.iso");
+
+    if (!ifs.is_open())
+        throw "File does not exist";
+
     ifs.ignore(32768);
     Descriptors descriptors;
     descriptors.read(ifs);

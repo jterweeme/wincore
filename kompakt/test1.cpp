@@ -45,6 +45,10 @@ void test2()
     ISO iso;
     ifstream ifs;
     ifs.open("cd1.iso");
+    
+    if (!ifs.is_open())
+        throw "File does not exist";
+
     iso.read(ifs);
 
 

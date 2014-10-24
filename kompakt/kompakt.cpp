@@ -494,6 +494,10 @@ int App::run(int argc, char **argv)
     else if (_options.file())
     {
         _ifs.open(_options.fn().c_str(), fstream::in);
+
+        if (!_ifs.is_open())
+            throw "File not open";
+
         is = &_ifs;
     }
     else
