@@ -1,8 +1,4 @@
-#include <iostream>
-#include <cstring>
-#include <vector>
-#include <unistd.h>
-using namespace std;
+#include "filesys.h"
 
 typedef vector<string> Files;
 
@@ -27,6 +23,7 @@ public:
 class App
 {
     Options _options;
+    FileSystem _fs;
 public:
     App(int argc, char **argv) : _options(argc, argv) { }
     int run();
