@@ -21,6 +21,8 @@ public:
     void up();
     void up(int n) { while (n--) up(); }
     void goRoot() { up(_pwd.size() - _root.size()); }
+    void unlink(const char *pathname);
+    void destroy(const char *pathname);
     FSPath pwdir();
     FileSystem() : _root(pwdir()), _pwd(pwdir()) { }
     FSPath root() const { return _root; }

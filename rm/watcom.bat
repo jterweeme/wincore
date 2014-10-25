@@ -1,2 +1,3 @@
-wpp -I\tools\watcom\h rm.cpp
+wpp -xs -I\tools\watcom\h main.cpp
+wlink file { main.obj } name rm.exe
 

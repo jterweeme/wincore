@@ -38,13 +38,7 @@ test4.o: test4.cpp kompakt.h common.h mystl.h
 test5.o: test5.cpp kompakt.h common.h mystl.h
 test6.o: test6.cpp common.h
 
-test: ttests
-
-testisos:
-	bunzip2 -kf *.iso.bz2
-	valgrind $(VALGRIND) ./kompakt -l -v -f cd1.iso > /dev/null
-	valgrind $(VALGRIND) ./kompakt -l -v -s < cd1.iso > /dev/null
-	valgrind $(VALGRIND) ./kompakt -d -f cd1.iso > /dev/null
+test: ttests testbattery
 
 ttests: ttest1 ttest2 ttest3 ttest4 ttest5 ttest6
 
@@ -58,22 +52,22 @@ cd6.iso: cd6~1.bz2
 	bzcat $< > $@
 
 ttest1: cd1.iso cd6.iso
-	test1
+	@test1 > NUL
 
 ttest2:
-	test2
+	@test2 > NUL
 
 ttest3:
-	test3
+	@test3 > NUL
 
 ttest4: cd5.iso
-	test4
+	@test4 > NUL
 
 ttest5:
-	test5
+	@test5 > NUL
 
 ttest6:
-	test6
+	@test6 > NUL
 
 testbattery:
 	kompakt -x -f battery.iso -o battery
@@ -81,5 +75,5 @@ testbattery:
 	rm -Rvf battery
 
 clean:
-	rm -Rvf *.o test1 test2 test3 test4 test5 test6 kompakt
+	deltree /y *.o *.obj *.exe cd?.iso
 

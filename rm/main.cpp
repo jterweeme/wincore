@@ -1,4 +1,6 @@
-#include "filesys.h"
+//#include "filesys.h"
+#include "common.h"
+#include <stdlib.h>
 
 typedef vector<string> Files;
 
@@ -23,7 +25,7 @@ public:
 class App
 {
     Options _options;
-    FileSystem _fs;
+    //FileSystem _fs;
 public:
     App(int argc, char **argv) : _options(argc, argv) { }
     int run();
@@ -84,7 +86,10 @@ int App::run()
     Files f = _options.files();
 
     for (Files::iterator it = f.begin(); it != f.end(); it++)
-        unlink(it->c_str());
+    {
+        char cmd[255] = {0};
+        sprintf(cmd, "deltree /y %s", it->c_str());
+    }
 
     return 0;
 }

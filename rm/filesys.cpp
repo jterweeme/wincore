@@ -1,6 +1,8 @@
 #include "filesys.h"
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 void FileSystem::chdir(const char *path)
 {
@@ -10,10 +12,48 @@ void FileSystem::chdir(const char *path)
     _pwd.push_back(path);
 }
 
+void FileSystem::unlink(const char *pathname)
+{
+    cout << pathname << "\n";
+
+    if (::unlink(pathname) != 0)
+        throw "Cannot unlink file";
+}
+
 void FileSystem::mkdir(const char *name)
 {
     if (::mkdir(name, 500) != 0)
         throw "Cannot create directory";
+}
+
+void FileSystem::destroy(const char *pathname)
+{
+    cout << pathname << "\n";
+    struct stat buf;
+    stat(pathname, &buf);
+
+    if (buf.st_mode == S_IFREG)
+    {
+        cout << "debug bericht\n";
+        unlink(pathname);
+    }
+    else if (buf.st_mode == S_IFDIR)
+    {
+        chdir(pathname);
+
+        DIR *dir;
+        struct dirent *ent;
+        
+        if ((dir = opendir(".")) != NULL)
+        {
+            while ((ent = readdir(dir)) != NULL)
+                unlink(ent->d_name);
+            
+            closedir(dir);
+        }
+        
+        up();
+    }
 }
 
 void FileSystem::chmkdir(FSPath &path)
