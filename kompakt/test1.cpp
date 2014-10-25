@@ -1,6 +1,12 @@
 #include "kompakt.h"
 using namespace std;
 
+template <typename T> void myAssert(T a, T b, const char *err = "error")
+{
+    if (a != b)
+        throw err;
+}
+
 class TestArguments
 {
     int _argc;
@@ -59,6 +65,25 @@ void test2()
     ifs.close();
 }
 
+void testCD6()
+{
+    ifstream ifs("cd6.iso");
+
+    if (!ifs.is_open())
+        throw "File does not exist";
+
+    ISO iso;
+    iso.read(ifs);
+    PathTable pt = iso.pathTable();
+    myAssert(pt.offsetLBA(), (uint32_t)19);
+    myAssert(pt.size(), (size_t)54);
+    PathEntry root = pt.root();
+    myAssert(root.offsetLBA(), (uint32_t)23);
+    FSPath fsp = pt.recurse(26);
+    fsp.dump(cout);
+    cout << "\n";
+}
+
 int main()
 {
 
@@ -66,6 +91,7 @@ int main()
     {
         test1();
         test2();
+        testCD6();
     }
     catch (const char *s)
     {

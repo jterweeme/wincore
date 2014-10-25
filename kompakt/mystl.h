@@ -792,33 +792,29 @@ template<typename T> inline _Iter_comp_iter<T> __iter_comp_iter(T __comp)
     return _Iter_comp_iter<T>(__comp);
 }
 
-template<typename _Compare> struct _Iter_comp_val
+template<typename T> struct _Iter_comp_val
 {
-      _Compare _M_comp;
+    T _M_comp;
+    _Iter_comp_val(T __comp) : _M_comp(__comp) { }
 
-      _Iter_comp_val(_Compare __comp)
-    : _M_comp(__comp)
-      { }
-
-      template<typename _Iterator, typename _Value>
-    bool
-    operator()(_Iterator __it, _Value& __val)
-    { return bool(_M_comp(*__it, __val)); }
+    template <typename U, typename V> bool operator()(U it, V& val)
+    {
+        return bool(_M_comp(*it, val));
+    }
 };
 
-  template<typename _Compare>
-   inline _Iter_comp_val<_Compare>
-    __iter_comp_val(_Compare __comp)
-    { return _Iter_comp_val<_Compare>(__comp); }
+template<typename Compare> inline _Iter_comp_val<Compare> __iter_comp_val(Compare __comp)
+{
+    return _Iter_comp_val<Compare>(__comp);
+}
 
-  template<typename _Compare>
+template<typename _Compare>
     inline _Iter_comp_val<_Compare>
     __iter_comp_val(_Iter_comp_iter<_Compare> __comp)
-    { return _Iter_comp_val<_Compare>(__comp._M_comp); }
+{ return _Iter_comp_val<_Compare>(__comp._M_comp); }
 
-  template<typename _Compare>
-    struct _Val_comp_iter
-    {
+template <typename _Compare> struct _Val_comp_iter
+{
       _Compare _M_comp;
 
       _Val_comp_iter(_Compare __comp)
@@ -2979,8 +2975,9 @@ public:
     virtual ~istream2() { }
     int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
     istream2& ignore(int n = 1, int d = '\n') { fseek(_fp, n, SEEK_CUR); return *this; }
-    uint16_t tellg() { return ftell(_fp); }
-    uint16_t gcount() { return _lastRead; }
+    int get() { return fgetc(_fp); }
+    size_t tellg() { return ftell(_fp); }
+    size_t gcount() { return _lastRead; }
     operator void * () const { return (void *)!_eof; }
     void getline(char *dest, size_t size);
     virtual void read(char *s, size_t length);
@@ -3063,6 +3060,7 @@ public:
     virtual ostream2& operator << (const uint32_t u);
     ostream2& write(const char *s, int n);
     virtual ~ostream2() { }
+    void put(int c) { fputc(c, _fp); }
 };
 
 class ofstream2 : public ostream2

@@ -39,10 +39,9 @@ test4.o: test4.cpp kompakt.h common.h mystl.h
 test5.o: test5.cpp kompakt.h common.h mystl.h
 test6.o: test6.cpp common.h
 
-test: ttests
+test: ttests testisos testbattery
 
-testisos:
-	bunzip2 -kf *.iso.bz2
+testisos: cd1.iso
 	valgrind $(VALGRIND) ./kompakt -l -v -f cd1.iso > /dev/null
 	valgrind $(VALGRIND) ./kompakt -l -v -s < cd1.iso > /dev/null
 	valgrind $(VALGRIND) ./kompakt -d -f cd1.iso > /dev/null
@@ -52,7 +51,16 @@ ttests: ttest1 ttest2 ttest3 ttest4 ttest5 ttest6
 cd1.iso: cd1.iso.bz2
 	bunzip2 -kf $<
 
-ttest1: cd1.iso
+cd2.iso: cd2.iso.bz2
+	bunzip2 -kf $<
+
+cd5.iso: cd5.iso.bz2
+	bunzip2 -kf $<
+
+cd6.iso: cd6.iso.bz2
+	bunzip2 -kf $<
+
+ttest1: cd1.iso cd6.iso
 	@valgrind $(VALGRIND) ./test1 > /dev/null
 
 ttest2:
@@ -61,7 +69,7 @@ ttest2:
 ttest3:
 	@valgrind $(VALGRIND) ./test3 > /dev/null
 
-ttest4:
+ttest4: cd5.iso
 	@valgrind $(VALGRIND) ./test4 > /dev/null
 
 ttest5:

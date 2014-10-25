@@ -68,6 +68,19 @@ void testStrtok()
     }
 }
 
+void testFileRead()
+{
+    ifstream ifs("battery.iso");
+    
+    if (!ifs.is_open())
+        throw "File does not exist";
+
+    char buf[2048] = {0};
+    ifs.read(buf, 2048);
+    myAssert(ifs.tellg(), (size_t)2048);
+    ifs.close();
+}
+
 int main()
 {
     try

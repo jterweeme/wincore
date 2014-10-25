@@ -1,29 +1,9 @@
-#include "kompakt.h"
-#include <sys/stat.h>
+#include "filesys.h"
 
 template <typename T> void myAssert(T a, T b, const char *err = "error")
 {
     if (a != b)
         throw err;
-}
-
-void test()
-{
-    ifstream ifs("cd6.iso");
-
-    if (!ifs.is_open())
-        throw "File does not exist";
-
-    ISO iso;
-    iso.read(ifs);
-    PathTable pt = iso.pathTable();
-    myAssert(pt.offsetLBA(), (uint32_t)19);
-    myAssert(pt.size(), (size_t)54);
-    PathEntry root = pt.root();
-    myAssert(root.offsetLBA(), (uint32_t)23);
-    FSPath fsp = pt.recurse(26);
-    fsp.dump(cout);
-    cout << "\n";
 }
 
 void test2()
@@ -69,10 +49,8 @@ void testCHMkdir()
 
 int main()
 {
-
     try
     {
-        test();
         test2();
         testFS();
         testCHMkdir();

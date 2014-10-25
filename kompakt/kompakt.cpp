@@ -82,11 +82,22 @@ int ISO::extract(istream &s)
         ofstream of;
         of.open(it->fn().c_str());
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
-        char *buf = new char[it->dir().dataLengthLE];
-        s.read(buf, it->dir().dataLengthLE);
-        of.write(buf, it->dir().dataLengthLE);
+        uint32_t length = it->dir().dataLengthLE;
+
+        cerr << s.tellg() << "\n";
+#if 0
+        char *buf = new char[length];
+        s.read(buf, length);
+        of.write(buf, length);
+#else
+        while (length--)
+        {
+            int c = s.get();
+            of.put(c);
+        }
+#endif
         of.close();
-        delete[] buf;
+        //delete[] buf;
     }
 
     return 0;
