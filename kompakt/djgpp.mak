@@ -48,26 +48,35 @@ testisos:
 
 ttests: ttest1 ttest2 ttest3 ttest4 ttest5 ttest6
 
-ttest1:
-	@valgrind $(VALGRIND) ./test1 > /dev/null
+cd1.iso: cd1~1.bz2
+	bzcat $< > $@
+
+cd5.iso: cd5~1.bz2
+	bzcat $< > $@
+
+cd6.iso: cd6~1.bz2
+	bzcat $< > $@
+
+ttest1: cd1.iso cd6.iso
+	test1
 
 ttest2:
-	@valgrind $(VALGRIND) ./test2 > /dev/null
+	test2
 
 ttest3:
-	@valgrind $(VALGRIND) ./test3 > /dev/null
+	test3
 
-ttest4:
-	@valgrind $(VALGRIND) ./test4 > /dev/null
+ttest4: cd5.iso
+	test4
 
 ttest5:
-	@valgrind $(VALGRIND) ./test5 > /dev/null
+	test5
 
 ttest6:
-	@valgrind $(VALGRIND) ./test6 > /dev/null
+	test6
 
 testbattery:
-	valgrind $(VALGRIND) ./kompakt -x -f battery.iso -o battery > /dev/null
+	kompakt -x -f battery.iso -o battery
 	md5sum -c battery.md5
 	rm -Rvf battery
 

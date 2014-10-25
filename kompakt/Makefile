@@ -39,7 +39,7 @@ test4.o: test4.cpp kompakt.h common.h mystl.h
 test5.o: test5.cpp kompakt.h common.h mystl.h
 test6.o: test6.cpp common.h
 
-test: ttests testisos testbattery
+test: ttests testisos testbattery testfdfullcd
 
 testisos: cd1.iso
 	valgrind $(VALGRIND) ./kompakt -l -v -f cd1.iso > /dev/null
@@ -79,9 +79,17 @@ ttest6:
 	@valgrind $(VALGRIND) ./test6 > /dev/null
 
 testbattery:
+	@rm -Rvf battery
 	valgrind $(VALGRIND) ./kompakt -x -f battery.iso -o battery > /dev/null
 	md5sum -c battery.md5
-	rm -Rvf battery
+	@rm -Rvf battery
+
+testfdfullcd:
+	@rm -Rvf fdfullcd
+	valgrind $(VALGRIND) ./kompakt -x -f fdfullcd.iso -o fdfullcd > /dev/null
+	md5sum -c fdfullcd.md5
+	@rm -Rvf fdfullcd
+
 
 clean:
 	rm -Rvf *.o test? cd?.iso kompakt
