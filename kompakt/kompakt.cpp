@@ -64,10 +64,6 @@ int ISO::extract(istream &s)
     }
  
     _fileList.snort();
-#ifdef DEBUG
-    _fileList.list(cerr, 1);
-#endif
- 
     FileSystem fs;
 
     for (Directory::iterator it = _fileList.begin(); it!= _fileList.end(); it++)
@@ -83,12 +79,11 @@ int ISO::extract(istream &s)
         of.open(it->fn().c_str());
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
         uint32_t length = it->dir().dataLengthLE;
-
-        cerr << s.tellg() << "\n";
-#if 0
+#if 1
         char *buf = new char[length];
         s.read(buf, length);
         of.write(buf, length);
+        delete[] buf;
 #else
         while (length--)
         {
@@ -97,7 +92,6 @@ int ISO::extract(istream &s)
         }
 #endif
         of.close();
-        //delete[] buf;
     }
 
     return 0;
