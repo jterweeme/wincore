@@ -3058,7 +3058,7 @@ public:
     ostream2& operator << (const width2 &w) { _width = w; return *this; }
     ostream2& operator << (const base2 &base) { _base = base; return *this; }
     virtual ostream2& operator << (const uint32_t u);
-    ostream2& write(const char *s, int n);
+    ostream2& write(const char *s, int n) { fwrite(s, n, 1, _fp); return *this; }
     virtual ~ostream2() { }
     void put(int c) { fputc(c, _fp); }
 };

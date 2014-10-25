@@ -85,11 +85,18 @@ int ISO::extract(istream &s)
         of.write(buf, length);
         delete[] buf;
 #else
-        while (length--)
+        char buf[2048] = {0};
+        
+        while (length >= sizeof(buf))
         {
-            int c = s.get();
-            of.put(c);
+            s.read(buf, sizeof(buf));
+            of.write(buf, sizeof(buf));
+            length -= sizeof(buf);
         }
+
+        memset(buf, 0, sizeof(buf));
+        s.read(buf, length);
+        of.write(buf, length);
 #endif
         of.close();
     }

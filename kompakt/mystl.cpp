@@ -135,14 +135,15 @@ void ofstream2::open(const char *fn, openmode om)
     switch (om)
     {
     case out:
-        _fp = fopen(fn, "w+");
+        _fp = fopen(fn, "wb+");
         break;
     default:
-        _fp = fopen(fn, "rb");
+        _fp = fopen(fn, "wb+");
         break;
     }
 }
 
+#if 0
 ostream2& ostream2::write(const char *s, int n)
 {
     for (int i = 0; i < n; i++)
@@ -150,6 +151,7 @@ ostream2& ostream2::write(const char *s, int n)
         
     return *this;
 }
+#endif
 
 ostream2& ostream2::operator << (const uint32_t u)
 {
