@@ -1,7 +1,10 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <unistd.h>
 using namespace std;
+
+typedef vector<string> Files;
 
 class Options
 {
@@ -10,9 +13,13 @@ class Options
     bool _recursive;
     int _argc;
     char **_argv;
-    vector<string> _files;
+    Files _files;
 public:
     Options(int argc, char **argv);
+    bool verbose() const { return _verbose; }
+    bool force() const { return _force; }
+    bool recursive() const { return _recursive; }
+    Files files() const { return _files; }
     void dump(ostream &os);
     void parse();
 };
@@ -72,8 +79,16 @@ void Options::parse()
 int App::run()
 {
     _options.parse();
-    _options.dump(cout);
-    cout << "\n";
+#ifdef DEBUG
+    _options.dump(cerr);
+    cerr << "\n";
+#endif
+    
+    Files f = _options.files();
+
+    for (Files::iterator it = f.begin(); it != f.end(); it++)
+        unlink(it->c_str());
+
     return 0;
 }
 
