@@ -127,16 +127,31 @@ char *MyUtil::strncpy(char *dest, const char *src, const size_t n)
 
 namespace mystl
 {
+
+    char *strncpy(char *dest, const char *src, size_t n)
+    {
+        MyUtil u;
+        return u.strncpy(dest, src, n);
+    }
+
     void *memcpy(void *dest, const void *src, size_t n)
     {
-        MyUtil util;
-        return util.memcpy(dest, src, n);
+        MyUtil u;
+        return u.memcpy(dest, src, n);
     }
 
     void *memset(void *s, const int c, const size_t n)
     {
         MyUtil util;
         return util.memset(s, c, n);
+    }
+
+    uint32_t be32toh(uint32_t v) { MyUtil u; return u.be32toh(v); }
+
+    long int strtol(const char *s, char **end, int base)
+    {
+        MyUtil u;
+        return u.strtol(s, end, base);
     }
 
     unsigned long stoul(const string &str, size_t *idx, int base)

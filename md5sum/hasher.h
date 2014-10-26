@@ -15,7 +15,7 @@ public:
     uint32_t h2() const { return _h2; }
     uint32_t h3() const { return _h3; }
     void add(Hash &h) { _h0 += h.h0(); _h1 += h.h1(); _h2 += h.h2(); _h3 += h.h3(); }
-    string toString() { ostringstream oss; dump(oss); return oss.str(); }
+    //string toString() { ostringstream oss; dump(oss); return oss.str(); }
     void dump(ostream &os);
 
     bool isEqual(const Hash &h)

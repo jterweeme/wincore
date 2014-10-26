@@ -2,14 +2,9 @@
 #define _MAIN_H_
 #include "hasher.h"
 
-typedef vector<string> Files;
-
 class Options
 {
     bool _check;
-#ifdef __GNUC__foo
-    Files _files;
-#endif
     bool _cin;
     int _argc;
     char **_argv;
@@ -20,9 +15,6 @@ public:
     { }
 
     bool check() const { return _check; }
-#ifdef __GNUC__foo
-    Files &files() { return _files; }
-#endif
     void parse(int argc, char **argv);
     void parse() { parse(_argc, _argv); }
     void dump(ostream &os);
@@ -59,20 +51,10 @@ public:
     void dump(ostream &os);
 };
 
-class Paars : public vector<Paar>
-{
-public:
-    void dump(ostream &os);
-    void check(ostream &os);
-};
-
 class App
 {
     Hasher _hasher;
     Options _options;
-#ifdef __GNUC__foo
-    Paars _paars;
-#endif
     void checkFile2(const char *fn);
     void checkPaar(Paar &paar);
 public:

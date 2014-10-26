@@ -34,26 +34,39 @@ uint32_t Chunk::to_int32(const uint8_t * const bytes)
 
 void Hash::read(const char *hash)
 {
-    MyUtil util;
+#if 0
     string s0 = string(hash, hash + 8);
-    _h0 = util.be32toh(stoul(s0, 0, 16));
+    _h0 = be32toh(strtol(s0.c_str(), 0, 16));
     string s1 = string(hash + 8, hash + 16);
-    _h1 = util.be32toh(stoul(s1, 0, 16));
+    _h1 = be32toh(strtol(s1.c_str(), 0, 16));
     string s2 = string(hash + 16, hash + 24);
-    _h2 = util.be32toh(stoul(s2, 0, 16));
+    _h2 = be32toh(strtol(s2.c_str(), 0, 16));
     string s3 = string(hash + 24, hash + 32);
-    _h3 = util.be32toh(stoul(s3, 0, 16));
+    _h3 = be32toh(strtol(s3.c_str(), 0, 16));
+#else
+    char s0[255] = {0};
+    char s1[255] = {0};
+    char s2[255] = {0};
+    char s3[255] = {0};
+    strncpy(s0, hash, 8);
+    strncpy(s1, hash + 8, 8);
+    strncpy(s2, hash + 16, 8);
+    strncpy(s3, hash + 24, 8);
+    _h0 = be32toh(strtol(s0, 0, 16));
+    _h1 = be32toh(strtol(s1, 0, 16));
+    _h2 = be32toh(strtol(s2, 0, 16));
+    _h3 = be32toh(strtol(s3, 0, 16));
+
+#endif
 }
 
 void Hash::dump(ostream &os)
 {
-    MyUtil util;
-
     os << hex << setfill('0')
-       << setw(8) << util.be32toh(_h0)
-       << setw(8) << util.be32toh(_h1)
-       << setw(8) << util.be32toh(_h2)
-       << setw(8) << util.be32toh(_h3);
+       << setw(8) << be32toh(_h0)
+       << setw(8) << be32toh(_h1)
+       << setw(8) << be32toh(_h2)
+       << setw(8) << be32toh(_h3);
 }
 
 void Hasher::stream(istream &file)

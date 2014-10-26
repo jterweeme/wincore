@@ -1,6 +1,7 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <stdio.h>
+#include <stdlib.h>
 
 class MyUtil
 {
@@ -139,18 +140,6 @@ public:
     static const MyUtil::uint8_t binary = 2;
 };
 
-#ifdef __USE_XOPEN2K8
-class ostringstream2 : public ostream2
-{
-    char *_buf;
-    size_t _size;
-public:
-    ostringstream2() : ostream2(open_memstream(&_buf, &_size)) { }
-    string2 str() { return string2(_buf); }
-    ~ostringstream2() { }
-};
-#endif
-
 class ostringstream3 : public ostream2
 {
 public:
@@ -174,7 +163,6 @@ public:
 
 namespace mystl
 {
-    typedef MyUtil::size_t size_t;
     typedef MyUtil::uint8_t uint8_t;
     typedef MyUtil::uint16_t uint16_t;
     typedef MyUtil::uint32_t uint32_t;
@@ -182,17 +170,18 @@ namespace mystl
     void *memset(void *s, const int c, const size_t n);
     typedef string2 string;
     unsigned long stoul(const string &str, size_t *idx = 0, int base = 10);
+#if 0
+    extern long int strtol(const char *s, char **end, int base);
+    extern uint32_t be32toh(uint32_t v);
+#endif
     template <class T> class vector : public vector2<T> { };
     typedef ios2 ios;
     typedef istream2 istream;
     typedef ifstream2 ifstream;
     typedef ostream2 ostream;
-#ifdef __USE_XOPEN2K8
-    typedef ostringstream2 ostringstream;
-#else
     typedef ostringstream3 ostringstream;
-#endif
     typedef fstream2 fstream;
+    extern char *strncpy(char *dest, const char *src, size_t n);
     static istream cin(stdin);
     static ostream cout(stdout);
     static ostream cerr(stderr);

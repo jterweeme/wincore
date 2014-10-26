@@ -1,11 +1,5 @@
 #include "main.h"
 
-void Paars::dump(ostream &os)
-{
-    for (iterator it = begin(); it != end(); it++)
-        it->dump(os);
-}
-
 void Paar::dump(ostream &os)
 {
     _hash.dump(os);
@@ -65,7 +59,8 @@ int App::run()
     if (_options.cin())
     {
         _hasher.stream(cin);
-        cout << _hasher.hash().toString() << "  -\n";
+        _hasher.hash().dump(cout);
+        cout << "  -\n";
     }
 
     while (_options.hasNextFileName() && !_options.check())
