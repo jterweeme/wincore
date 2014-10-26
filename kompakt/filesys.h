@@ -20,7 +20,7 @@ public:
     void rmdir(const char *path);
     void up();
     void up(int n) { while (n--) up(); }
-    void goRoot() { up(_pwd.size() - _root.size()); }
+    void goRoot() { up(pwdir().size() - _root.size()); }
     FSPath pwdir();
     FileSystem() : _root(pwdir()), _pwd(pwdir()) { }
     FSPath root() const { return _root; }

@@ -90,6 +90,7 @@ public:
     virtual ~ifstream2() { }
     void open(const char *fn, int mode) { _fp = fopen(fn, "rb"); }
     void close() { fclose(_fp); }
+    bool is_open() const { return _fp != NULL; }
 };
 
 class string2

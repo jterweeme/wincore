@@ -79,18 +79,18 @@ ttest6:
 	@valgrind $(VALGRIND) ./test6 > /dev/null
 
 testbattery:
-	@rm -Rvf battery
+	@rm -Rf battery
 	valgrind $(VALGRIND) ./kompakt -x -f battery.iso -o battery > /dev/null
 	md5sum -c battery.md5
-	@rm -Rvf battery
+	@rm -Rf battery
 
 testfdfullcd:
-	@rm -Rvf fdfullcd
+	@rm -Rf fdfullcd
 	valgrind $(VALGRIND) ./kompakt -x -f fdfullcd.iso -o fdfullcd > /dev/null
 	md5sum -c fdfullcd.md5
-	@rm -Rvf fdfullcd
+	@rm -Rf fdfullcd
 
 
 clean:
-	rm -Rvf *.o test? cd?.iso kompakt fdfullcd
+	rm -Rvf *.o test? cd?.iso kompakt fdfullcd battery
 

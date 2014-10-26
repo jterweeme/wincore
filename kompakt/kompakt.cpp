@@ -5,6 +5,10 @@
 #define DEBUG2
 #endif
 
+/*
+TODO: directory moet weer terug na einde
+*/
+
 string DirEntry::fn()
 {
     if (_dir.fnLength == 1)
@@ -45,6 +49,7 @@ int ISO::extract(istream &s, const char *outputDir)
     FileSystem fs;
     fs.chmkdir(outputDir);
     extract(s);
+    fs.goRoot();
     return 0;
 }
 
@@ -79,7 +84,7 @@ int ISO::extract(istream &s)
         of.open(it->fn().c_str());
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
         uint32_t length = it->dir().dataLengthLE;
-#if 1
+#if 0
         char *buf = new char[length];
         s.read(buf, length);
         of.write(buf, length);

@@ -1777,8 +1777,8 @@ public:
     allocator_type get_allocator() const { return allocator_type(_M_get_Tp_allocator()); }
     Vector_base() : _M_impl() { }
     Vector_base(const allocator_type& __a) : _M_impl(__a) { }
-    Vector_base(size_t __n) : _M_impl() { _M_create_storage(__n); }
-    Vector_base(size_t __n, const allocator_type& __a) : _M_impl(__a) { _M_create_storage(__n); }
+    Vector_base(size_t n) : _M_impl() { _M_create_storage(n); }
+    Vector_base(size_t n, const allocator_type &a) : _M_impl(a) { _M_create_storage(n); }
 
     ~Vector_base()
     {

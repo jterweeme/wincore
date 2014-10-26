@@ -89,6 +89,7 @@ int App::run()
     {
         char cmd[255] = {0};
         sprintf(cmd, "deltree /y %s", it->c_str());
+        system(cmd);            // temporary solution
     }
 
     return 0;

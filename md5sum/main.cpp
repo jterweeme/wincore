@@ -28,12 +28,6 @@ void Options::parse(const int argc, char **argv)
                 break;
             }
         }
-        else
-        {
-#ifdef __GNUC__foo
-            _files.push_back(string(argv[i]));
-#endif
-        }
     }
 }
 
@@ -48,14 +42,14 @@ void App::checkFile2(const char *fn)
     _hasher.reset();
     ifstream file;
     file.open(fn, fstream::in | ios::binary);
+
+    if (!file.is_open())
+        throw "Cannot open file";
+
     _hasher.stream(file);
     file.close();
-#ifdef __USE_XOPEN2K8
-    cout << _hasher.hash().toString() << "  " << fn << "\n";
-#else
     _hasher.hash().dump(cout);
     cout << "  " << fn << "\n";
-#endif
 }
 
 void Paar::read(istream &is)
@@ -67,9 +61,6 @@ void Paar::read(istream &is)
 int App::run()
 {
     _options.parse();
-#ifdef __GNUC__foo
-    Files files = _options.files();
-#endif
 
     if (_options.cin())
     {
@@ -96,9 +87,6 @@ int App::run()
                 string fn = string(line + 34);
                 Paar paar(hash, fn);
                 checkPaar(paar);
-#ifdef __GNUC__foo
-                _paars.push_back(paar);
-#endif
             }
         }
         foo.close();

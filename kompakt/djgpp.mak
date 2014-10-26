@@ -70,10 +70,11 @@ ttest6:
 	@test6 > NUL
 
 testbattery:
+	deltree /y battery
 	kompakt -x -f battery.iso -o battery
 	md5sum -c battery.md5
-	rm -Rvf battery
+	deltree /y battery
 
 clean:
-	deltree /y *.o *.obj *.exe cd?.iso
+	rm -Rvf *.o *.obj *.exe cd?.iso battery fdfullcd
 
