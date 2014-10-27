@@ -125,7 +125,7 @@ void Directory::list(ostream &os, int mode)
         }
         else
         {
-            os << it->fn() << string(20 - it->fn().length(), ' ')
+            os << it->fn() << string(40 - it->fn().length(), ' ')
                 << right << setw(9) << it->dir().dataLengthLE << setw(7)
                 << it->dir().lbaLE << setw(6) << it->parentLBA() << "\n";
         }
@@ -214,7 +214,8 @@ uint8_t DirEntry::read(istream &s)
         filename[_dir.fnLength - 2] = '\0';
 
     _fn = string(filename);
-    s.ignore(_offset + _dir.length - s.tellg());
+    s.ignore(_offset + _dir.length - s.tellg());    // extra attributen overslaan?
+    s.ignore(s.tellg() % 2);        // volgende entry begint op even byte
     return lengte;
 }
 
@@ -302,7 +303,7 @@ void Directory::read(istream &s, uint32_t offset)
         {
             dir1.parentLBA(offset);
             push_back(dir1);
-            s.ignore(s.tellg() % 2);
+            //s.ignore(s.tellg() % 2);
         }
         else if (s.tellg() % 2048 > 1900)       // semi random number...
         {
@@ -315,7 +316,7 @@ void Directory::read(istream &s, uint32_t offset)
 
             dir1.parentLBA(offset);
             push_back(dir1);
-            s.ignore(s.tellg() % 2);
+            //s.ignore(s.tellg() % 2);
         }
         else
         {

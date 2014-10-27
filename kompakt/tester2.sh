@@ -9,7 +9,9 @@ exit 0
 fi
 
 rm -Rf $2
-valgrind -q --error-exitcode=1 --leak-check=full ./kompakt -x -f $1 -o $2 > /dev/null
+bzcat $1 | valgrind -q --error-exitcode=1 --leak-check=full ./kompakt -l -s > /dev/null
+bzcat $1 | valgrind -q --error-exitcode=1 --leak-check=full ./kompakt -p -s > /dev/null
+bzcat $1 | valgrind -q --error-exitcode=1 --leak-check=full ./kompakt -x -s -o $2 > /dev/null
 md5sum -c $3 > /dev/null
 
 if [ $? != 0 ]

@@ -759,10 +759,10 @@ inline _Iter_equal_to_iter __iter_equal_to_iter() { return _Iter_equal_to_iter()
 
 struct _Iter_equal_to_val
 {
-template<typename _Iterator, typename _Value>
-  bool
-  operator()(_Iterator __it, _Value& __val) const
-  { return *__it == __val; }
+    template<typename T, typename U> bool operator()(T it, U &val) const
+    {
+        return *it == val;
+    }
 };
 
 inline _Iter_equal_to_val __iter_equal_to_val() { return _Iter_equal_to_val(); }
@@ -813,33 +813,22 @@ template <typename _Compare> struct _Val_comp_iter
 
     template<typename _Value, typename _Iterator> bool operator()(_Value& __val, _Iterator __it)
     {
-        return bool(_M_comp(__val, *__it)); }
-    };
+        return bool(_M_comp(__val, *__it));
+    }
+};
 
-  template<typename _Compare>
-    inline _Val_comp_iter<_Compare>
-    __val_comp_iter(_Compare __comp)
-    { return _Val_comp_iter<_Compare>(__comp); }
+template<typename T> inline _Val_comp_iter<T> __val_comp_iter(T comp)
+{ return _Val_comp_iter<T>(comp); }
 
-  template<typename _Compare>
-    inline _Val_comp_iter<_Compare>
-    __val_comp_iter(_Iter_comp_iter<_Compare> __comp)
-    { return _Val_comp_iter<_Compare>(__comp._M_comp); }
+template<typename T> inline _Val_comp_iter<T> __val_comp_iter(_Iter_comp_iter<T> __comp)
+{ return _Val_comp_iter<T>(__comp._M_comp); }
 
-  template<typename _Value>
-    struct _Iter_equals_val
-    {
-      _Value& _M_value;
-
-      _Iter_equals_val(_Value& __value)
-    : _M_value(__value)
-      { }
-
-      template<typename _Iterator>
-    bool
-    operator()(_Iterator __it)
-    { return *__it == _M_value; }
-    };
+template<typename _Value> struct _Iter_equals_val
+{
+    _Value& _M_value;
+    _Iter_equals_val(_Value& __value) : _M_value(__value) { }
+    template<typename _Iterator> bool operator()(_Iterator __it) { return *__it == _M_value; }
+};
 
 template<typename _Value> inline _Iter_equals_val<_Value> __iter_equals_val(_Value& __val)
 {
@@ -853,55 +842,37 @@ template<typename _Iterator1> struct _Iter_equals_iter
     template<typename _Iterator2> bool operator()(_Iterator2 __it2) { return *__it2 == _M_ref; }
 };
 
-template<typename _Iterator>
-    inline _Iter_equals_iter<_Iterator>
+template<typename _Iterator> inline _Iter_equals_iter<_Iterator>
     __iter_comp_iter(_Iter_equal_to_iter, _Iterator __it)
-    { return _Iter_equals_iter<_Iterator>(__it); }
+{ return _Iter_equals_iter<_Iterator>(__it); }
 
-template<typename _Predicate> struct _Iter_pred
+template<typename T> struct _Iter_pred
 {
-      _Predicate _M_pred;
-
-      _Iter_pred(_Predicate __pred)
-    : _M_pred(__pred)
-      { }
-
-      template<typename _Iterator>
-    bool
-    operator()(_Iterator __it)
-    { return bool(_M_pred(*__it)); }
+    T _M_pred;
+    _Iter_pred(T __pred) : _M_pred(__pred) { }
+    template<typename _Iterator> bool operator()(_Iterator __it) { return bool(_M_pred(*__it)); }
 };
 
-template<typename _Predicate> inline _Iter_pred<_Predicate> __pred_iter(_Predicate __pred)
-{ return _Iter_pred<_Predicate>(__pred); }
+template<typename T> inline _Iter_pred<T> __pred_iter(T __pred) { return _Iter_pred<T>(__pred); }
 
-template<typename _Compare, typename _Value> struct _Iter_comp_to_val
+template<typename T, typename U> struct _Iter_comp_to_val
 {
-      _Compare _M_comp;
-      _Value& _M_value;
-
-      _Iter_comp_to_val(_Compare __comp, _Value& __value)
-    : _M_comp(__comp), _M_value(__value)
-      { }
-
-      template<typename _Iterator>
-    bool
-    operator()(_Iterator __it)
-    { return bool(_M_comp(*__it, _M_value)); }
+    T _M_comp;
+    U &_M_value;
+    _Iter_comp_to_val(T __comp, U &__value) : _M_comp(__comp), _M_value(__value) { }
+    template<typename V> bool operator()(V __it) { return bool(_M_comp(*__it, _M_value)); }
 };
 
-template<typename _Compare, typename _Value>
-    _Iter_comp_to_val<_Compare, _Value>
-    __iter_comp_val(_Compare __comp, _Value &__val)
-{ return _Iter_comp_to_val<_Compare, _Value>(__comp, __val); }
+template<typename T, typename U> _Iter_comp_to_val<T, U> __iter_comp_val(T __comp, U &__val)
+{
+    return _Iter_comp_to_val<T, U>(__comp, __val);
+}
 
 template<typename _Compare, typename _Iterator1> struct _Iter_comp_to_iter
 {
     _Compare _M_comp;
     typename iterator_traits<_Iterator1>::reference _M_ref;
-
-    _Iter_comp_to_iter(_Compare __comp, _Iterator1 __it1) : _M_comp(__comp), _M_ref(*__it1)
-    { }
+    _Iter_comp_to_iter(_Compare __comp, _Iterator1 __it1) : _M_comp(__comp), _M_ref(*__it1) { }
 
     template<typename _Iterator2> bool operator()(_Iterator2 __it2)
     {
@@ -1130,8 +1101,7 @@ template<bool _IsMove, typename _BI1, typename _BI2>
 }
 
 template<typename _BI1, typename _BI2>
-    inline _BI2
-    copy_backward(_BI1 __first, _BI1 __last, _BI2 __result)
+    inline _BI2 copy_backward(_BI1 __first, _BI1 __last, _BI2 __result)
 {
     return (__copy_move_backward_a2<__is_move_iterator<_BI1>::__value>
           (__miter_base(__first), __miter_base(__last),  __result));
@@ -1146,22 +1116,20 @@ template<typename _ForwardIterator, typename T> inline typename
         *__first = __value;
 }
 
-template<typename T, typename _Tp> inline typename
-    __enable_if<__is_scalar<_Tp>::__value, void>::__type
-    __fill_a(T __first, T __last, const _Tp& __value)
+template<typename T, typename U> inline typename
+    __enable_if<__is_scalar<U>::__value, void>::__type __fill_a(T first, T last, const U &__value)
 {
-    const _Tp __tmp = __value;
+    const U __tmp = __value;
 
-    for (; __first != __last; ++__first)
-        *__first = __tmp;
+    for (; first != last; ++first)
+        *first = __tmp;
 }
 
 template<typename _Tp> inline typename __enable_if<__is_byte<_Tp>::__value, void>::__type
     __fill_a(_Tp* __first, _Tp* __last, const _Tp& __c)
 {
-      const _Tp __tmp = __c;
-      __builtin_memset(__first, static_cast<unsigned char>(__tmp),
-               __last - __first);
+    const _Tp __tmp = __c;
+    __builtin_memset(__first, static_cast<unsigned char>(__tmp), __last - __first);
 }
 
 template<typename _ForwardIterator, typename _Tp>
@@ -1171,20 +1139,17 @@ template<typename _ForwardIterator, typename _Tp>
 }
 
 template<typename _OutputIterator, typename _Size, typename _Tp>
-    inline typename
-    __enable_if<!__is_scalar<_Tp>::__value, _OutputIterator>::__type
+    inline typename __enable_if<!__is_scalar<_Tp>::__value, _OutputIterator>::__type
     __fill_n_a(_OutputIterator __first, _Size __n, const _Tp& __value)
 {
-      for (__decltype(__n + 0) __niter = __n;
-       __niter > 0; --__niter, ++__first)
-    *__first = __value;
-      return __first;
+    for (__decltype(__n + 0) __niter = __n; __niter > 0; --__niter, ++__first)
+        *__first = __value;
+    return __first;
 }
 
 template<bool> struct __equal
 {
-    template<typename _II1, typename _II2> static bool
-        equal(_II1 __first1, _II1 __last1, _II2 __first2)
+    template<typename T, typename _II2> static bool equal(T __first1, T __last1, _II2 __first2)
     {
         for (; __first1 != __last1; ++__first1, ++__first2)
             if (!(*__first1 == *__first2))
@@ -1973,25 +1938,24 @@ template <typename T, typename U> typename vector2<T, U>::iterator
 }
 
 template<typename _Iterator, typename _Compare>
-    void
-    __move_median_to_first(_Iterator __result,_Iterator __a, _Iterator __b,
+    void __move_median_to_first(_Iterator __result,_Iterator __a, _Iterator __b,
                _Iterator __c, _Compare __comp)
 {
-      if (__comp(__a, __b))
+    if (__comp(__a, __b))
     {
-      if (__comp(__b, __c))
-        iter_swap(__result, __b);
-      else if (__comp(__a, __c))
-        iter_swap(__result, __c);
-      else
-        iter_swap(__result, __a);
+        if (__comp(__b, __c))
+            iter_swap(__result, __b);
+        else if (__comp(__a, __c))
+            iter_swap(__result, __c);
+        else
+            iter_swap(__result, __a);
     }
-      else if (__comp(__a, __c))
-    iter_swap(__result, __a);
-      else if (__comp(__b, __c))
-    iter_swap(__result, __c);
-      else
-    iter_swap(__result, __b);
+    else if (__comp(__a, __c))
+        iter_swap(__result, __a);
+    else if (__comp(__b, __c))
+        iter_swap(__result, __c);
+    else
+        iter_swap(__result, __b);
 }
 
 
@@ -2003,46 +1967,46 @@ template<typename T, typename U> inline T __find_if(T first, T last, U pred, inp
     return first;
 }
 
-template<typename T, typename _Predicate>
-    T __find_if(T __first, T __last, _Predicate __pred, random_access_iterator_tag)
+template<typename T, typename U> T __find_if(T first, T last, U pred, random_access_iterator_tag)
 {
-    typename iterator_traits<T>::difference_type __trip_count = (__last - __first) >> 2;
+    typename iterator_traits<T>::difference_type __trip_count = (last - first) >> 2;
 
     for (; __trip_count > 0; --__trip_count)
     {
-      if (__pred(__first))
-        return __first;
-      ++__first;
+        if (pred(first))
+            return first;
+        ++first;
 
-      if (__pred(__first))
-        return __first;
-      ++__first;
+        if (pred(first))
+            return first;
+        ++first;
 
-      if (__pred(__first))
-        return __first;
-      ++__first;
+        if (pred(first))
+            return first;
+        ++first;
 
-      if (__pred(__first))
-        return __first;
-      ++__first;
+        if (pred(first))
+            return first;
+        ++first;
     }
-      switch (__last - __first)
+
+    switch (last - first)
     {
     case 3:
-      if (__pred(__first))
-        return __first;
-      ++__first;
+        if (pred(first))
+            return first;
+        ++first;
     case 2:
-      if (__pred(__first))
-        return __first;
-      ++__first;
+        if (pred(first))
+            return first;
+        ++first;
     case 1:
-      if (__pred(__first))
-        return __first;
-      ++__first;
+        if (pred(first))
+            return first;
+        ++first;
     case 0:
     default:
-      return __last;
+        return last;
     }
 }
 
@@ -2602,7 +2566,11 @@ public:
     string2(const char *s) { Util2 util; util.strcpy(_s, s); }
     string2(const char *s1, const char *s2);
     string2(const char *s1, size_t n);
-    string2(size_t n, char c) { _s[n] = '\0'; while (n) _s[--n] = c; }
+    string2(size_t n, char c)
+    {
+        fprintf(stderr, "%lu\n", n);
+        _s[n] = '\0'; while (n) _s[--n] = c;
+    }
     const char *c_str() const { return _s; }
     size_t length() const { Util2 util; return util.strlen(_s); }
 };
@@ -2610,8 +2578,8 @@ public:
 class istream2
 {
     typedef Util2::uint16_t uint16_t;
-    size_t _pos;
 protected:
+    size_t _pos;
     FILE *_fp;
     size_t _lastRead;
     bool _eof;
@@ -2620,13 +2588,50 @@ public:
     istream2(FILE *fp) : _pos(0), _fp(fp), _lastRead(0), _eof(false) { }
     virtual ~istream2() { }
     int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
-    istream2& ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
-    int get() { _pos++; return fgetc(_fp); }
+    virtual istream2& ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
+    virtual int get() { _pos++; return fgetc(_fp); }
     size_t tellg() { return _pos; }
     size_t gcount() { return _lastRead; }
     operator void * () const { return (void *)!_eof; }
-    void getline(char *dest, size_t size);
+    virtual void getline(char *dest, size_t size);
     virtual void read(char *s, size_t length);
+};
+
+class istreamDebug : public istream2
+{
+public:
+    istreamDebug() : istream2() { }
+    istreamDebug(FILE *fp) : istream2(fp) { }
+    virtual int get()
+    {
+        _pos++;
+        int c = fgetc(_fp);
+        fprintf(stderr, "Get:\n%x\n\n", c);
+        return c;
+    }
+
+    virtual istreamDebug& ignore(size_t n = 1, int d = '\n')
+    {
+        while (n--)
+            istream2::get();
+        return *this;
+    }
+
+    virtual void read(char *s, size_t length)
+    {
+        char *buf = new char[length];
+        Util2 u;
+        _lastRead = fread(buf, 1, length, _fp);
+        fprintf(stderr, "Read:\n");
+
+        for (int i = 0; i < length; i++)
+            fprintf(stderr, "%x ", buf[i]);
+
+        _pos += _lastRead;
+        _eof = _lastRead < length;
+        u.memcpy(s, buf, length);
+        delete[] buf;
+    }
 };
 
 class fstream
