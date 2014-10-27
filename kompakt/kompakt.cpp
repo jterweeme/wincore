@@ -5,10 +5,6 @@
 #define DEBUG2
 #endif
 
-/*
-TODO: directory moet weer terug na einde
-*/
-
 string DirEntry::fn()
 {
     if (_dir.fnLength == 1)
@@ -82,15 +78,8 @@ int ISO::extract(istream &s)
         fs.chmkdir(path);
         ofstream of;
         of.open(it->fn().c_str());
-        //fprintf(stderr, "%lu\n", it->dir().lbaLE * 2048 - s.tellg());
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
         uint32_t length = it->dir().dataLengthLE;
-#if 0
-        char *buf = new char[length];
-        s.read(buf, length);
-        of.write(buf, length);
-        delete[] buf;
-#else
         char buf[2048] = {0};
         
         while (length >= sizeof(buf))
@@ -103,7 +92,6 @@ int ISO::extract(istream &s)
         memset(buf, 0, sizeof(buf));
         s.read(buf, length);
         of.write(buf, length);
-#endif
         of.close();
     }
 
@@ -212,7 +200,9 @@ CVolumeDescriptorSetTerminator::CVolumeDescriptorSetTerminator(const CVolumeDesc
 int DirEntry::read(istream &s)
 {
     _offset = s.tellg();
-    s.read((char *)&_dir, sizeof(_dir));
+    uint8_t lengte = s.get();
+    length(lengte);
+    s.read((char *)&_dir + 1, sizeof(_dir) -1);
     char filename[255] = {0};
     s.read(filename, _dir.fnLength);
 
@@ -220,7 +210,6 @@ int DirEntry::read(istream &s)
         filename[_dir.fnLength - 2] = '\0';
 
     _fn = string(filename);
-    //fprintf(stderr, "%lu\n", _offset + _dir.length - s.tellg());
     s.ignore(_offset + _dir.length - s.tellg());
     return 0;
 }
@@ -304,9 +293,6 @@ void Directory::read(istream &s, uint32_t offset)
     {
         if (s.peek() != 0)
         {
-#ifdef DEBUG
-            cerr << oct << s.tellg() << "\n";
-#endif
             DirEntry dir1;
             dir1.read(s);
             dir1.parentLBA(offset);
@@ -332,10 +318,6 @@ int ISO::read(istream &s)
 {
     s.ignore(32768);
     _descriptors.read(s);
-#ifdef DEBUG
-    _descriptors.dump(cerr);
-    cerr << "\n\n";
-#endif
     _pathTable.read(s, _descriptors.pathTableOffset(), _descriptors.pathTableSize());
     _pathTable.snort();
     _directories.read(s, _pathTable);

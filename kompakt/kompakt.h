@@ -83,6 +83,8 @@ class DirEntry
     uint32_t _offset;
     uint32_t _parentLBA;
 public:
+    void length(uint8_t l) { _dir.length = l; }
+    uint8_t length() const { return _dir.length; }
     SFile dir() const { return _dir; }
     string fn();
     bool isDir() { Flags flags(_dir.flags); return flags.test(1); }
