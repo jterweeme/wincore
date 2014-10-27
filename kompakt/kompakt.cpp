@@ -197,11 +197,15 @@ CVolumeDescriptorSetTerminator::CVolumeDescriptorSetTerminator(const CVolumeDesc
     memcpy(&_desc, &vd._desc, sizeof(_desc));
 }
 
-int DirEntry::read(istream &s)
+uint8_t DirEntry::read(istream &s)
 {
     _offset = s.tellg();
     uint8_t lengte = s.get();
     length(lengte);
+
+    if (lengte == 0)
+        return 0;
+
     s.read((char *)&_dir + 1, sizeof(_dir) -1);
     char filename[255] = {0};
     s.read(filename, _dir.fnLength);
@@ -211,7 +215,7 @@ int DirEntry::read(istream &s)
 
     _fn = string(filename);
     s.ignore(_offset + _dir.length - s.tellg());
-    return 0;
+    return lengte;
 }
 
 const char *CVolumeDescriptor::typeString()
@@ -291,21 +295,27 @@ void Directory::read(istream &s, uint32_t offset)
 
     while (true)
     {
-        if (s.peek() != 0)
+        DirEntry dir1;
+        uint8_t lengte = dir1.read(s);
+
+        if (lengte > 0)
         {
-            DirEntry dir1;
-            dir1.read(s);
             dir1.parentLBA(offset);
             push_back(dir1);
             s.ignore(s.tellg() % 2);
         }
-        else if (s.tellg() % 2048 > 1900)
+        else if (s.tellg() % 2048 > 1900)       // semi random number...
         {
             size_t nextLBA = s.tellg() / 2048 + 1;
             s.ignore(nextLBA * 2048 - s.tellg());
+            lengte = dir1.read(s);
 
-            if (s.peek() == 0)
+            if (lengte == 0)
                 break;
+
+            dir1.parentLBA(offset);
+            push_back(dir1);
+            s.ignore(s.tellg() % 2);
         }
         else
         {

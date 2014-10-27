@@ -88,7 +88,7 @@ public:
     SFile dir() const { return _dir; }
     string fn();
     bool isDir() { Flags flags(_dir.flags); return flags.test(1); }
-    int read(istream &s);
+    uint8_t read(istream &s);
     void parentLBA(uint32_t n) { _parentLBA = n; }
     uint32_t parentLBA() { return _parentLBA; }
     uint32_t size() const { return _dir.dataLengthLE; }
