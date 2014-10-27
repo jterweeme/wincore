@@ -143,16 +143,6 @@ void ofstream2::open(const char *fn, openmode om)
     }
 }
 
-#if 0
-ostream2& ostream2::write(const char *s, int n)
-{
-    for (int i = 0; i < n; i++)
-        fputc(s[i], _fp);
-        
-    return *this;
-}
-#endif
-
 ostream2& ostream2::operator << (const uint32_t u)
 {
     char a[] = "%08x";
@@ -219,7 +209,6 @@ namespace mystl
     int strncmp(const char *s1, const char *s2, size_t n) { Util2 u; return u.strncmp(s1, s2, n); }
     int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }
     size_t strlen(const char *s) { Util2 u; return u.strlen(s); }
-    dummy dummy1;
     base2 hex(base2::HEX);
     base2 dec(base2::DEC);
     istream cin(stdin);

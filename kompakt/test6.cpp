@@ -65,6 +65,7 @@ void testIterSwap()
     cout << "\n";
 }
 
+#if 0
 void testSortHeap()
 {
     int myints[] = {8, 50, 4, 45, 22, 99, 2000, 144, 38};
@@ -105,14 +106,15 @@ void testHeapPush()
     v.dump(cout);
     cout << "\n";
 }
+#endif
 
 int main()
 {
     try
     {
         testIterSwap();
-        testHeapPush();
-        testSortHeap();
+        //testHeapPush();
+        //testSortHeap();
     }
     catch (const char *e)
     {

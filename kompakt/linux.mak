@@ -5,7 +5,7 @@ VALGRIND = -q --error-exitcode=1 --leak-check=full
 
 .PHONY: all
 
-all: kompakt test1 test2 test3 test4 test5 test6
+all: kompakt test1 test2 test3 test4 test5 test6 tester
 
 kompakt: main.o kompakt.o filesys.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
@@ -28,6 +28,9 @@ test5: test5.o mystl.o
 test6: test6.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
 
+tester: tester.o
+	@g++ -o $@ $(CXXFLAGS) $^
+
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h mystl.tcc
 filesys.o: filesys.cpp filesys.h common.h mystl.h mystl.tcc
 main.o: main.cpp kompakt.h common.h mystl.h mystl.tcc
@@ -38,15 +41,16 @@ test3.o: test3.cpp kompakt.h common.h mystl.h mystl.tcc
 test4.o: test4.cpp kompakt.h common.h mystl.h mystl.tcc
 test5.o: test5.cpp kompakt.h common.h mystl.h mystl.tcc
 test6.o: test6.cpp common.h
+tester.o: tester.cpp
+test: ttests testisos
 
-test: ttests testisos testbattery testfdfullcd
-
-testisos: cd1.iso
+testisos: tester cd1.iso
 	valgrind $(VALGRIND) ./kompakt -l -v -f cd1.iso > /dev/null
 	valgrind $(VALGRIND) ./kompakt -l -v -s < cd1.iso > /dev/null
 	valgrind $(VALGRIND) ./kompakt -d -f cd1.iso > /dev/null
+	@./tester2.sh battery.iso battery battery.md5
 
-ttests: ttest1 ttest2 ttest3 ttest4 ttest5 ttest6
+ttests: ttest1 ttest2 ttest3 ttest5 ttest6
 
 cd1.iso: cd1.iso.bz2
 	bunzip2 -kf $<
@@ -78,19 +82,6 @@ ttest5:
 ttest6:
 	@valgrind $(VALGRIND) ./test6 > /dev/null
 
-testbattery:
-	@rm -Rf battery
-	valgrind $(VALGRIND) ./kompakt -x -f battery.iso -o battery > /dev/null
-	md5sum -c battery.md5
-	@rm -Rf battery
-
-testfdfullcd:
-	@rm -Rf fdfullcd
-	valgrind $(VALGRIND) ./kompakt -x -f fdfullcd.iso -o fdfullcd > /dev/null
-	md5sum -c fdfullcd.md5
-	@rm -Rf fdfullcd
-
-
 clean:
-	rm -Rvf *.o test? cd?.iso kompakt fdfullcd battery
+	rm -Rvf *.o test? cd?.iso kompakt fdfullcd battery tester
 

@@ -82,6 +82,7 @@ int ISO::extract(istream &s)
         fs.chmkdir(path);
         ofstream of;
         of.open(it->fn().c_str());
+        //fprintf(stderr, "%lu\n", it->dir().lbaLE * 2048 - s.tellg());
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
         uint32_t length = it->dir().dataLengthLE;
 #if 0
@@ -149,6 +150,7 @@ void PathEntry::read(istream &is)
 {
     is.read((char *)&_pe, sizeof(_pe));
     is.read(_name, _pe.length);
+    //fprintf(stderr, "%lu\n", is.tellg() % 2);
     is.ignore(is.tellg() % 2);
 }
 
@@ -181,6 +183,7 @@ void PathTable::read(istream &is, uint32_t lba, size_t n)
 {
     _offsetLBA = lba;
     _size = n;
+    //fprintf(stderr, "%lu\n", lba * 2048 - is.tellg());
     is.ignore(lba * 2048 - is.tellg());
 
     for (int i = 1; is.tellg() < lba * 2048 + n; i++)
@@ -217,6 +220,7 @@ int DirEntry::read(istream &s)
         filename[_dir.fnLength - 2] = '\0';
 
     _fn = string(filename);
+    //fprintf(stderr, "%lu\n", _offset + _dir.length - s.tellg());
     s.ignore(_offset + _dir.length - s.tellg());
     return 0;
 }

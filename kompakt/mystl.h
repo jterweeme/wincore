@@ -350,13 +350,6 @@ template<typename T> inline typename iterator_traits<T>::difference_type
     return __distance(__first, __last, __iterator_category(__first));
 }
 
-template<typename _InputIterator, typename _Distance>
-    inline void __advance(_InputIterator& __i, _Distance __n, input_iterator_tag)
-{
-    while (__n--)
-        ++__i;
-}
-
 template<typename _BidirectionalIterator, typename _Distance> inline void
     __advance(_BidirectionalIterator& __i, _Distance __n, bidirectional_iterator_tag)
 {
@@ -482,17 +475,16 @@ template<typename _IteratorL, typename _IteratorR>
           const reverse_iterator<_IteratorR>& __y)
 { return __y < __x; }
 
-template<typename _IteratorL, typename _IteratorR>
-    inline bool
-    operator<=(const reverse_iterator<_IteratorL>& __x,
-           const reverse_iterator<_IteratorR>& __y)
-{ return !(__y < __x); }
+template<typename _IteratorL, typename _IteratorR> inline bool
+    operator<=(const reverse_iterator<_IteratorL> &x, const reverse_iterator<_IteratorR> &y)
+{
+    return !(y < x);
+}
 
-  template<typename _IteratorL, typename _IteratorR>
-    inline bool
+template<typename _IteratorL, typename _IteratorR> inline bool
     operator>=(const reverse_iterator<_IteratorL>& __x,
            const reverse_iterator<_IteratorR>& __y)
-    { return !(__x < __y); }
+{ return !(__x < __y); }
 
   template<typename _IteratorL, typename _IteratorR>
 
@@ -816,16 +808,12 @@ template <typename Compare> inline _Iter_comp_val<Compare>
 
 template <typename _Compare> struct _Val_comp_iter
 {
-      _Compare _M_comp;
+    _Compare _M_comp;
+    _Val_comp_iter(_Compare __comp) : _M_comp(__comp) { }
 
-      _Val_comp_iter(_Compare __comp)
-    : _M_comp(__comp)
-      { }
-
-      template<typename _Value, typename _Iterator>
-    bool
-    operator()(_Value& __val, _Iterator __it)
-    { return bool(_M_comp(__val, *__it)); }
+    template<typename _Value, typename _Iterator> bool operator()(_Value& __val, _Iterator __it)
+    {
+        return bool(_M_comp(__val, *__it)); }
     };
 
   template<typename _Compare>
@@ -860,26 +848,18 @@ template<typename _Value> inline _Iter_equals_val<_Value> __iter_equals_val(_Val
 
 template<typename _Iterator1> struct _Iter_equals_iter
 {
-      typename iterator_traits<_Iterator1>::reference _M_ref;
-
-      _Iter_equals_iter(_Iterator1 __it1)
-    : _M_ref(*__it1)
-      { }
-
-      template<typename _Iterator2>
-    bool
-    operator()(_Iterator2 __it2)
-    { return *__it2 == _M_ref; }
+    typename iterator_traits<_Iterator1>::reference _M_ref;
+    _Iter_equals_iter(_Iterator1 __it1) : _M_ref(*__it1) { }
+    template<typename _Iterator2> bool operator()(_Iterator2 __it2) { return *__it2 == _M_ref; }
 };
 
-  template<typename _Iterator>
+template<typename _Iterator>
     inline _Iter_equals_iter<_Iterator>
     __iter_comp_iter(_Iter_equal_to_iter, _Iterator __it)
     { return _Iter_equals_iter<_Iterator>(__it); }
 
-  template<typename _Predicate>
-    struct _Iter_pred
-    {
+template<typename _Predicate> struct _Iter_pred
+{
       _Predicate _M_pred;
 
       _Iter_pred(_Predicate __pred)
@@ -890,16 +870,13 @@ template<typename _Iterator1> struct _Iter_equals_iter
     bool
     operator()(_Iterator __it)
     { return bool(_M_pred(*__it)); }
-    };
+};
 
-  template<typename _Predicate>
-    inline _Iter_pred<_Predicate>
-    __pred_iter(_Predicate __pred)
-    { return _Iter_pred<_Predicate>(__pred); }
+template<typename _Predicate> inline _Iter_pred<_Predicate> __pred_iter(_Predicate __pred)
+{ return _Iter_pred<_Predicate>(__pred); }
 
-  template<typename _Compare, typename _Value>
-    struct _Iter_comp_to_val
-    {
+template<typename _Compare, typename _Value> struct _Iter_comp_to_val
+{
       _Compare _M_comp;
       _Value& _M_value;
 
@@ -911,7 +888,7 @@ template<typename _Iterator1> struct _Iter_equals_iter
     bool
     operator()(_Iterator __it)
     { return bool(_M_comp(*__it, _M_value)); }
-    };
+};
 
 template<typename _Compare, typename _Value>
     _Iter_comp_to_val<_Compare, _Value>
@@ -932,8 +909,7 @@ template<typename _Compare, typename _Iterator1> struct _Iter_comp_to_iter
     }
 };
 
-template<typename _Compare, typename _Iterator>
-    inline _Iter_comp_to_iter<_Compare, _Iterator>
+template<typename _Compare, typename _Iterator> inline _Iter_comp_to_iter<_Compare, _Iterator>
     __iter_comp_iter(_Iter_comp_iter<_Compare> __comp, _Iterator __it)
 {
     return _Iter_comp_to_iter<_Compare, _Iterator>(__comp._M_comp, __it);
@@ -1000,16 +976,6 @@ template<typename _ForwardIterator1, typename _ForwardIterator2>
 template <typename T> inline const T &min(const T &a, const T &b) { return b < a ? b : a; }
 template <typename T> inline const T &max(const T &a, const T &b) { return a < b ? b : a; }
 
-template<typename T, typename U> inline const T &min(const T &a, const T &b, U comp)
-{
-    return comp(b, a) ? b : a;
-}
-
-template<typename T, typename U> inline const T &max(const T &a, const T &b, U comp)
-{
-    return comp(a, b) ? b : a;
-}
-
 template <typename _Iterator> struct _Niter_base
   : _Iter_base<_Iterator, __is_normal_iterator<_Iterator>::__value>
 { };
@@ -1057,15 +1023,13 @@ template<> struct __copy_move<false, false, random_access_iterator_tag>
 
 template<bool _IsMove> struct __copy_move<_IsMove, true, random_access_iterator_tag>
 {
-      template<typename _Tp>
-        static _Tp*
+    template<typename _Tp> static _Tp*
         __copy_m(const _Tp* __first, const _Tp* __last, _Tp* __result)
-        {
-
-      const Util::ptrdiff_t _Num = __last - __first;
-      if (_Num)
-        __builtin_memmove(__result, __first, sizeof(_Tp) * _Num);
-      return __result + _Num;
+    {
+        const Util::ptrdiff_t _Num = __last - __first;
+        if (_Num)
+            __builtin_memmove(__result, __first, sizeof(_Tp) * _Num);
+        return __result + _Num;
     }
 };
 
@@ -1105,65 +1069,43 @@ template<bool _IsMove, typename _CharT>
            istreambuf_iterator<_CharT, char_traits<_CharT> >, _CharT*);
 
 template<bool _IsMove, typename _II, typename _OI>
-    inline _OI
-    __copy_move_a2(_II __first, _II __last, _OI __result)
+    inline _OI __copy_move_a2(_II __first, _II __last, _OI __result)
 {
     return _OI(__copy_move_a<_IsMove>(__niter_base(__first),
-                         __niter_base(__last),
-                         __niter_base(__result)));
+                         __niter_base(__last), __niter_base(__result)));
 }
 
-template<typename _II, typename _OI>
-    inline _OI
-    copy(_II __first, _II __last, _OI __result)
+template<typename _II, typename _OI> inline _OI copy(_II __first, _II __last, _OI __result)
 {
-
-      return (__copy_move_a2<__is_move_iterator<_II>::__value>
-          (__miter_base(__first), __miter_base(__last),
-           __result));
+    return (__copy_move_a2<__is_move_iterator<_II>::__value>
+          (__miter_base(__first), __miter_base(__last), __result));
 }
 
 template<bool, bool, typename> struct __copy_move_backward
 {
-      template<typename _BI1, typename _BI2>
-        static _BI2
+    template<typename _BI1, typename _BI2> static _BI2
         __copy_move_b(_BI1 __first, _BI1 __last, _BI2 __result)
-        {
-      while (__first != __last)
-        *--__result = *--__last;
-      return __result;
-    }
-};
-
-template<> struct __copy_move_backward<false, false, random_access_iterator_tag>
-{
-      template<typename _BI1, typename _BI2>
-        static _BI2
-        __copy_move_b(_BI1 __first, _BI1 __last, _BI2 __result)
-        {
-      typename iterator_traits<_BI1>::difference_type __n;
-      for (__n = __last - __first; __n > 0; --__n)
-        *--__result = *--__last;
-      return __result;
+    {
+        while (__first != __last)
+            *--__result = *--__last;
+        return __result;
     }
 };
 
 template<bool _IsMove> struct __copy_move_backward<_IsMove, true, random_access_iterator_tag>
 {
-    template<typename _Tp> static _Tp*
-        __copy_move_b(const _Tp* __first, const _Tp* __last, _Tp* __result)
+    template<typename T> static T* __copy_move_b(const T* first, const T* last, T* result)
     {
-        const Util::ptrdiff_t _Num = __last - __first;
+        const Util::ptrdiff_t num = last - first;
 
-        if (_Num)
-            __builtin_memmove(__result - _Num, __first, sizeof(_Tp) * _Num);
+        if (num)
+            __builtin_memmove(result - num, first, sizeof(T) * num);
 
-        return __result - _Num;
+        return result - num;
     }
 };
 
-template<bool _IsMove, typename _BI1, typename _BI2>
-    inline _BI2
+template<bool _IsMove, typename _BI1, typename _BI2> inline _BI2
     __copy_move_backward_a(_BI1 __first, _BI1 __last, _BI2 __result)
 {
       typedef typename iterator_traits<_BI1>::value_type _ValueType1;
@@ -1175,61 +1117,52 @@ template<bool _IsMove, typename _BI1, typename _BI2>
                  && __are_same<_ValueType1, _ValueType2>::__value);
 
       return __copy_move_backward<_IsMove, __simple,
-                                   _Category>::__copy_move_b(__first,
-                                 __last,
-                                 __result);
+                                   _Category>::__copy_move_b(__first, __last, __result);
 }
 
-  template<bool _IsMove, typename _BI1, typename _BI2>
+template<bool _IsMove, typename _BI1, typename _BI2>
     inline _BI2
     __copy_move_backward_a2(_BI1 __first, _BI1 __last, _BI2 __result)
-    {
+{
       return _BI2(__copy_move_backward_a<_IsMove>
           (__niter_base(__first), __niter_base(__last),
            __niter_base(__result)));
-    }
+}
 
-  template<typename _BI1, typename _BI2>
+template<typename _BI1, typename _BI2>
     inline _BI2
     copy_backward(_BI1 __first, _BI1 __last, _BI2 __result)
-    {
-
-      return (__copy_move_backward_a2<__is_move_iterator<_BI1>::__value>
-          (__miter_base(__first), __miter_base(__last),
-           __result));
-    }
+{
+    return (__copy_move_backward_a2<__is_move_iterator<_BI1>::__value>
+          (__miter_base(__first), __miter_base(__last),  __result));
+}
 
 
-  template<typename _ForwardIterator, typename _Tp>
-    inline typename
-    __enable_if<!__is_scalar<_Tp>::__value, void>::__type
-    __fill_a(_ForwardIterator __first, _ForwardIterator __last,
-         const _Tp& __value)
-    {
-      for (; __first != __last; ++__first)
-    *__first = __value;
-    }
+template<typename _ForwardIterator, typename T> inline typename
+    __enable_if<!__is_scalar<T>::__value, void>::__type
+    __fill_a(_ForwardIterator __first, _ForwardIterator __last, const T& __value)
+{
+    for (; __first != __last; ++__first)
+        *__first = __value;
+}
 
-  template<typename _ForwardIterator, typename _Tp>
-    inline typename
+template<typename T, typename _Tp> inline typename
     __enable_if<__is_scalar<_Tp>::__value, void>::__type
-    __fill_a(_ForwardIterator __first, _ForwardIterator __last,
-         const _Tp& __value)
-    {
-      const _Tp __tmp = __value;
-      for (; __first != __last; ++__first)
-    *__first = __tmp;
-    }
+    __fill_a(T __first, T __last, const _Tp& __value)
+{
+    const _Tp __tmp = __value;
 
-  template<typename _Tp>
-    inline typename
-    __enable_if<__is_byte<_Tp>::__value, void>::__type
+    for (; __first != __last; ++__first)
+        *__first = __tmp;
+}
+
+template<typename _Tp> inline typename __enable_if<__is_byte<_Tp>::__value, void>::__type
     __fill_a(_Tp* __first, _Tp* __last, const _Tp& __c)
-    {
+{
       const _Tp __tmp = __c;
       __builtin_memset(__first, static_cast<unsigned char>(__tmp),
                __last - __first);
-    }
+}
 
 template<typename _ForwardIterator, typename _Tp>
     inline void fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
@@ -1237,68 +1170,36 @@ template<typename _ForwardIterator, typename _Tp>
     __fill_a(__niter_base(__first), __niter_base(__last), __value);
 }
 
-  template<typename _OutputIterator, typename _Size, typename _Tp>
+template<typename _OutputIterator, typename _Size, typename _Tp>
     inline typename
     __enable_if<!__is_scalar<_Tp>::__value, _OutputIterator>::__type
     __fill_n_a(_OutputIterator __first, _Size __n, const _Tp& __value)
-    {
+{
       for (__decltype(__n + 0) __niter = __n;
        __niter > 0; --__niter, ++__first)
     *__first = __value;
       return __first;
-    }
+}
 
-    template<typename _OutputIterator, typename _Size, typename _Tp> inline typename
-        __enable_if<__is_scalar<_Tp>::__value, _OutputIterator>::__type
-        __fill_n_a(_OutputIterator __first, _Size __n, const _Tp& __value)
-    {
-        const _Tp __tmp = __value;
-        for (__decltype(__n + 0) __niter = __n;
-        __niter > 0; --__niter, ++__first)
-        *__first = __tmp;
-        return __first;
-    }
-
-  template<typename _Size, typename _Tp>
-    inline typename
-    __enable_if<__is_byte<_Tp>::__value, _Tp*>::__type
-    __fill_n_a(_Tp* __first, _Size __n, const _Tp& __c)
-    {
-      __fill_a(__first, __first + __n, __c);
-      return __first + __n;
-    }
-
-  template<typename _OI, typename _Size, typename _Tp>
-    inline _OI
-    fill_n(_OI __first, _Size __n, const _Tp& __value)
-    {
-
-      return _OI(__fill_n_a(__niter_base(__first), __n, __value));
-    }
-
-template<bool _BoolType> struct __equal
+template<bool> struct __equal
 {
-      template<typename _II1, typename _II2>
-        static bool
+    template<typename _II1, typename _II2> static bool
         equal(_II1 __first1, _II1 __last1, _II2 __first2)
-        {
-      for (; __first1 != __last1; ++__first1, ++__first2)
-        if (!(*__first1 == *__first2))
-          return false;
-      return true;
+    {
+        for (; __first1 != __last1; ++__first1, ++__first2)
+            if (!(*__first1 == *__first2))
+                return false;
+        return true;
     }
 };
 
-    template<> struct __equal<true>
+template<> struct __equal<true>
+{
+    template<typename T> static bool equal(const T* first1, const T* last1, const T* first2)
     {
-      template<typename _Tp>
-        static bool
-        equal(const _Tp* __first1, const _Tp* __last1, const _Tp* __first2)
-        {
-            return !__builtin_memcmp(__first1, __first2, sizeof(_Tp)
-                   * (__last1 - __first1));
-        }
-    };
+        return !__builtin_memcmp(first1, first2, sizeof(T) * (last1 - first1));
+    }
+};
 
 template<typename _II1, typename _II2>
     inline bool
@@ -1317,15 +1218,11 @@ template<typename _II1, typename _II2>
 
 template<typename, typename> struct __lc_rai
 {
-    template<typename _II1, typename _II2>
-        static _II1
-        __newlast1(_II1, _II1 __last1, _II2, _II2)
-        { return __last1; }
+    template<typename _II1, typename _II2> static _II1 __newlast1(_II1, _II1 __last1, _II2, _II2)
+    { return __last1; }
 
-    template<typename _II>
-        static bool
-        __cnd2(_II __first, _II __last)
-        { return __first != __last; }
+    template<typename _II> static bool __cnd2(_II __first, _II __last)
+    { return __first != __last; }
 };
 
 template<> struct __lc_rai<random_access_iterator_tag, random_access_iterator_tag>
@@ -1343,33 +1240,6 @@ template<> struct __lc_rai<random_access_iterator_tag, random_access_iterator_ta
         return true;
     }
 };
-
-template<typename _ForwardIterator, typename _Tp, typename _Compare>
-    _ForwardIterator
-    __lower_bound(_ForwardIterator __first, _ForwardIterator __last,
-          const _Tp& __val, _Compare __comp)
-{
-    typedef typename iterator_traits<_ForwardIterator>::difference_type
-    _DistanceType;
-    _DistanceType __len = distance(__first, __last);
-
-    while (__len > 0)
-    {
-        _DistanceType __half = __len >> 1;
-        _ForwardIterator __middle = __first;
-        advance(__middle, __half);
-
-        if (__comp(__middle, __val))
-        {
-            __first = __middle;
-            ++__first;
-            __len = __len - __half - 1;
-        }
-        else
-            __len = __half;
-    }
-    return __first;
-}
 
 template<typename _ForwardIterator, typename _Tp>
     inline _ForwardIterator
@@ -1681,25 +1551,18 @@ template<typename _InputIterator1, typename _InputIterator2, typename _ForwardIt
     }
 }
 
-template<typename _InputIterator1, typename _InputIterator2,
-   typename _ForwardIterator, typename _Allocator>
-    inline _ForwardIterator
-    __uninitialized_move_copy(_InputIterator1 __first1,
-              _InputIterator1 __last1,
-              _InputIterator2 __first2,
-              _InputIterator2 __last2,
-              _ForwardIterator __result,
-              _Allocator& __alloc)
+template<typename T, typename U, typename V, typename W>
+    inline V __uninitialized_move_copy(T first1, T last1, U first2, U last2, V result, W &alloc)
 {
-    _ForwardIterator __mid = __uninitialized_move_a(__first1, __last1, __result, __alloc);
+    V mid = __uninitialized_move_a(first1, last1, result, alloc);
 
     try
     {
-        return __uninitialized_copy_a(__first2, __last2, __mid, __alloc);
+        return __uninitialized_copy_a(first2, last2, mid, alloc);
     }
     catch(...)
     {
-        _Destroy(__result, __mid, __alloc);
+        _Destroy(result, mid, alloc);
         throw;
     }
 }
@@ -1809,13 +1672,10 @@ private:
     }
 };
 
-template<typename _ForwardIterator, typename _Size, typename _Tp,
-       typename _Allocator>
-    void
-    __uninitialized_fill_n_a(_ForwardIterator __first, _Size __n,
-                 const _Tp& __x, _Allocator& __alloc)
+template<typename T, typename _Size, typename _Tp, typename _Allocator> void
+    __uninitialized_fill_n_a(T __first, _Size __n, const _Tp& __x, _Allocator& __alloc)
 {
-    _ForwardIterator __cur = __first;
+    T __cur = __first;
     try
     {
         typedef alloc_traits<_Allocator> __traits;
@@ -1903,11 +1763,7 @@ public:
     reference operator[](size_type __n) { return *(this->_M_impl._M_start + __n); }
     const_reference operator[](size_type __n) const { return *(this->_M_impl._M_start + __n); }
 protected:
-    void _M_range_check(size_type __n) const
-    {
-        if (__n >= this->size())
-            throw;
-    }
+    void _M_range_check(size_type __n) const { if (__n >= this->size()) throw; }
 public:
     void push_back(const value_type& __x);
 
@@ -1922,11 +1778,10 @@ public:
     void insert(iterator __position, size_type __n, const value_type& __x)
     { _M_fill_insert(__position, __n, __x); }
 
-    template<typename _InputIterator>
-        void insert(iterator __position, _InputIterator __first, _InputIterator __last)
+    template<typename T> void insert(iterator position, T first, T last)
     {
-        typedef typename __is_integer<_InputIterator>::__type _Integral;
-        _M_insert_dispatch(__position, __first, __last, _Integral());
+        typedef typename __is_integer<T>::__type _Integral;
+        _M_insert_dispatch(position, first, last, _Integral());
     }
 
     iterator erase(iterator __position) { return _M_erase(__position); }
@@ -2117,98 +1972,6 @@ template <typename T, typename U> typename vector2<T, U>::iterator
     return iterator(this->_M_impl._M_start + __n);
 }
 
-template<typename T, typename U>
-    vector2<T, U> &vector2<T, U>::operator=(const vector2<T, U>& __x)
-{
-    if (&__x != this)
-    {
-        const size_type __xlen = __x.size();
-        if (__xlen > capacity())
-        {
-            pointer __tmp = _M_allocate_and_copy(__xlen, __x.begin(), __x.end());
-            _Destroy(this->_M_impl._M_start, this->_M_impl._M_finish, _M_get_Tp_allocator());
-
-            _M_deallocate(this->_M_impl._M_start, this->_M_impl._M_end_of_storage
-                        - this->_M_impl._M_start);
-
-            this->_M_impl._M_start = __tmp;
-            this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __xlen;
-        }
-        else if (size() >= __xlen)
-        {
-            _Destroy(copy(__x.begin(), __x.end(), begin()), end(), _M_get_Tp_allocator());
-        }
-        else
-        {
-            copy(__x._M_impl._M_start, __x._M_impl._M_start + size(), this->_M_impl._M_start);
-
-            __uninitialized_copy_a(__x._M_impl._M_start + size(), __x._M_impl._M_finish,
-                      this->_M_impl._M_finish, _M_get_Tp_allocator());
-        }
-        this->_M_impl._M_finish = this->_M_impl._M_start + __xlen;
-    }
-    return *this;
-}
-
-template<typename T, typename U> void
-        vector2<T, U>::_M_insert_aux(iterator __position, const T &x)
-{
-    if (this->_M_impl._M_finish != this->_M_impl._M_end_of_storage)
-    {
-        _Alloc_traits::construct(this->_M_impl, this->_M_impl._M_finish,
-                   (*(this->_M_impl._M_finish  - 1)));
-
-        ++this->_M_impl._M_finish;
-        T __x_copy = x;
-
-        copy_backward(__position.base(),
-              this->_M_impl._M_finish - 2, this->_M_impl._M_finish - 1);
-
-        *__position = __x_copy;
-    }
-    else
-    {
-        const size_type __len = _M_check_len(size_type(1), "vector::_M_insert_aux");
-        const size_type __elems_before = __position - begin();
-        pointer __new_start(this->_M_allocate(__len));
-        pointer __new_finish(__new_start);
-
-        try
-        {
-            _Alloc_traits::construct(this->_M_impl, __new_start + __elems_before, x);
-            __new_finish = 0;
-
-            __new_finish = __uninitialized_move_if_noexcept_a(this->_M_impl._M_start,
-                    __position.base(), __new_start, _M_get_Tp_allocator());
-
-            ++__new_finish;
-
-            __new_finish = __uninitialized_move_if_noexcept_a(__position.base(),
-                    this->_M_impl._M_finish, __new_finish, _M_get_Tp_allocator());
-        }
-
-        catch(...)
-        {
-            if (!__new_finish)
-                _Alloc_traits::destroy(this->_M_impl,        __new_start + __elems_before);
-            else
-                _Destroy(__new_start, __new_finish, _M_get_Tp_allocator());
-
-            _M_deallocate(__new_start, __len);
-            throw;
-        }
-
-        _Destroy(this->_M_impl._M_start, this->_M_impl._M_finish, _M_get_Tp_allocator());
-
-        _M_deallocate(this->_M_impl._M_start, this->_M_impl._M_end_of_storage
-             - this->_M_impl._M_start);
-
-        this->_M_impl._M_start = __new_start;
-        this->_M_impl._M_finish = __new_finish;
-        this->_M_impl._M_end_of_storage = __new_start + __len;
-    }
-}
-
 template<typename _Iterator, typename _Compare>
     void
     __move_median_to_first(_Iterator __result,_Iterator __a, _Iterator __b,
@@ -2240,15 +2003,12 @@ template<typename T, typename U> inline T __find_if(T first, T last, U pred, inp
     return first;
 }
 
-template<typename _RandomAccessIterator, typename _Predicate>
-    _RandomAccessIterator
-    __find_if(_RandomAccessIterator __first, _RandomAccessIterator __last,
-          _Predicate __pred, random_access_iterator_tag)
+template<typename T, typename _Predicate>
+    T __find_if(T __first, T __last, _Predicate __pred, random_access_iterator_tag)
 {
-    typename iterator_traits<_RandomAccessIterator>::difference_type
-        __trip_count = (__last - __first) >> 2;
+    typename iterator_traits<T>::difference_type __trip_count = (__last - __first) >> 2;
 
-      for (; __trip_count > 0; --__trip_count)
+    for (; __trip_count > 0; --__trip_count)
     {
       if (__pred(__first))
         return __first;
@@ -2287,8 +2047,7 @@ template<typename _RandomAccessIterator, typename _Predicate>
 }
 
 template<typename _Iterator, typename _Predicate>
-    inline _Iterator
-    __find_if(_Iterator __first, _Iterator __last, _Predicate __pred)
+    inline _Iterator __find_if(_Iterator __first, _Iterator __last, _Predicate __pred)
 {
     return __find_if(__first, __last, __pred, __iterator_category(__first));
 }
@@ -2385,8 +2144,7 @@ template<typename _ForwardIterator, typename _Integer,
     return __last;
 }
 
-template<typename _RandomAccessIter, typename _Integer,
-       typename _UnaryPredicate>
+template<typename _RandomAccessIter, typename _Integer, typename _UnaryPredicate>
     _RandomAccessIter
     __search_n_aux(_RandomAccessIter __first, _RandomAccessIter __last,
            _Integer __count, _UnaryPredicate __unary_pred,
@@ -2532,9 +2290,7 @@ template<typename _Tp> struct remove_reference { typedef _Tp   type; };
 template<typename _Tp> struct remove_reference<_Tp&> { typedef _Tp   type; };
 
 template<typename _RandomAccessIterator, typename _Compare>
-    void
-    __unguarded_linear_insert(_RandomAccessIterator __last,
-                  _Compare __comp)
+    void __unguarded_linear_insert(_RandomAccessIterator __last, _Compare __comp)
 {
     typename iterator_traits<_RandomAccessIterator>::value_type
     __val = (*__last);
@@ -2630,10 +2386,7 @@ template<typename _RandomAccessIterator>
     return __is_heap(__first, distance(__first, __last));
 }
 
-template<typename _RandomAccessIterator, typename _Compare>
-    inline bool
-    __is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last,
-          _Compare __comp)
+template<typename T, typename U> inline bool __is_heap(T __first, T __last, U __comp)
 {
     return __is_heap(__first, __comp, distance(__first, __last));
 }
@@ -2655,32 +2408,21 @@ template<typename _RandomAccessIterator, typename _Distance, typename _Tp,
       *(__first + __holeIndex) = (__value);
 }
 
-template<typename _RandomAccessIterator, typename _Compare>
-    inline void
-    __pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last,
-           _RandomAccessIterator __result, _Compare __comp)
+template<typename T, typename _Compare>
+    inline void __pop_heap(T __first, T __last, T __result, _Compare __comp)
 {
-      typedef typename iterator_traits<_RandomAccessIterator>::value_type
-    _ValueType;
-      typedef typename iterator_traits<_RandomAccessIterator>::difference_type
-    _DistanceType;
-
-      _ValueType __value = (*__result);
-      *__result = (*__first);
-      __adjust_heap(__first, _DistanceType(0),
-             _DistanceType(__last - __first),
-             (__value), __comp);
+    typedef typename iterator_traits<T>::value_type _ValueType;
+    typedef typename iterator_traits<T>::difference_type _DistanceType;
+    _ValueType __value = (*__result);
+    *__result = (*__first);
+    __adjust_heap(__first, _DistanceType(0), _DistanceType(__last - __first), (__value), __comp);
 }
 
-
-template<typename _RandomAccessIterator, typename _Distance,
-       typename _Tp, typename _Compare>
-    void
-    __adjust_heap(_RandomAccessIterator __first, _Distance __holeIndex,
-          _Distance __len, _Tp __value, _Compare __comp)
+template<typename T, typename U, typename _Tp, typename _Compare> void
+    __adjust_heap(T __first, U __holeIndex, U __len, _Tp __value, _Compare __comp)
 {
-    const _Distance __topIndex = __holeIndex;
-    _Distance __secondChild = __holeIndex;
+    const U __topIndex = __holeIndex;
+    U __secondChild = __holeIndex;
 
     while (__secondChild < (__len - 1) / 2)
     {
@@ -2703,53 +2445,45 @@ template<typename _RandomAccessIterator, typename _Distance,
 }
 
 
-template <typename T, typename _Compare>
-    inline void
-    pop_heap(T __first, T __last, _Compare __comp)
+template <typename T, typename U> inline void pop_heap(T first, T last, U comp)
 {
-    if (__last - __first > 1)
+    if (last - first > 1)
     {
-        --__last;
-        __pop_heap(__first, __last, __last, __iter_comp_iter(__comp));
+        --last;
+        __pop_heap(first, last, last, __iter_comp_iter(comp));
     }
 }
 
 
-template<typename _RandomAccessIterator, typename _Compare>
-    void
-    __make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last,
-        _Compare __comp)
+template<typename _RandomAccessIterator, typename _Compare> void
+    __make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-      typedef typename iterator_traits<_RandomAccessIterator>::value_type
-      _ValueType;
-      typedef typename iterator_traits<_RandomAccessIterator>::difference_type
-      _DistanceType;
+    typedef typename iterator_traits<_RandomAccessIterator>::value_type _ValueType;
+    typedef typename iterator_traits<_RandomAccessIterator>::difference_type _DistanceType;
 
-      if (__last - __first < 2)
-    return;
-
-      const _DistanceType __len = __last - __first;
-      _DistanceType __parent = (__len - 2) / 2;
-      while (true)
-    {
-      _ValueType __value = (*(__first + __parent));
-      __adjust_heap(__first, __parent, __len, (__value),
-                 __comp);
-      if (__parent == 0)
+    if (__last - __first < 2)
         return;
-      __parent--;
+
+    const _DistanceType __len = __last - __first;
+    _DistanceType __parent = (__len - 2) / 2;
+    while (true)
+    {
+        _ValueType __value = (*(__first + __parent));
+        __adjust_heap(__first, __parent, __len, (__value), __comp);
+        if (__parent == 0)
+            return;
+        __parent--;
     }
 }
 
 
-template <typename T, typename _Compare>
-    void __heap_select(T __first, T __middle, T __last, _Compare __comp)
+template <typename T, typename U> void __heap_select(T first, T middle, T last, U comp)
 {
-    __make_heap(__first, __middle, __comp);
+    __make_heap(first, middle, comp);
 
-    for (T __i = __middle; __i < __last; ++__i)
-        if (__comp(__i, __first))
-            __pop_heap(__first, __middle, __i, __comp);
+    for (T i = middle; i < last; ++i)
+        if (comp(i, first))
+            __pop_heap(first, middle, i, comp);
 }
 
 template <typename T, typename _Compare> void __sort_heap(T __first, T __last, _Compare __comp)
@@ -2766,15 +2500,12 @@ template <typename T> inline void make_heap(T __first, T __last)
     __make_heap(__first, __last, __iter_less_iter());
 }
 
-template<typename T, typename _Compare>
-    inline void
-    make_heap(T __first, T __last, _Compare __comp)
+template<typename T, typename U> inline void make_heap(T __first, T __last, U __comp)
 {
     __make_heap(__first, __last, __iter_comp_iter(__comp));
 }
 
-template <typename T, typename _Compare>
-    inline void
+template <typename T, typename _Compare> inline void
     __partial_sort(T __first, T __middle, T __last, _Compare __comp)
 {
     __heap_select(__first, __middle, __last, __comp);
@@ -2838,34 +2569,6 @@ template <typename T, typename U, typename V>
 
 template<typename T, typename U, typename V> U transform(T first, T last, U result, V unary_op);
 
-template<typename _RandomAccessIterator>
-    inline void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
-{
-    typedef typename iterator_traits<_RandomAccessIterator>::value_type
-    _ValueType;
-
-    if (__last - __first > 1)
-    {
-        --__last;
-        __pop_heap(__first, __last, __last, __iter_less_iter());
-    }
-}
-
-template <typename T> inline void push_heap(T first, T last)
-{
-    typedef typename iterator_traits<T>::value_type _ValueType;
-    typedef typename iterator_traits<T>::difference_type _DistanceType;
-    _ValueType __value = *(last - 1);
-
-    __push_heap(first, _DistanceType((last - first) - 1), _DistanceType(0), __value,
-               __iter_less_val());
-}
-
-template<typename T> inline void sort_heap(T first, T last)
-{
-    __sort_heap(first, last, __iter_less_iter());
-}
-
 template<typename T, typename U> inline void sort_heap(T first, T last, U __comp)
 {
     __sort_heap(first, last, __iter_comp_iter(__comp));
@@ -2916,7 +2619,14 @@ public:
     istream2(FILE *fp) : _fp(fp), _lastRead(0), _eof(false) { }
     virtual ~istream2() { }
     int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
-    istream2& ignore(int n = 1, int d = '\n') { fseek(_fp, n, SEEK_CUR); return *this; }
+    istream2& ignore(size_t n = 1, int d = '\n')
+    {
+        //fprintf(stderr, "%lu\n", n);
+        while (n--)
+            getc(_fp);
+        //fseek(_fp, n, SEEK_CUR);
+        return *this;
+    }
     int get() { return fgetc(_fp); }
     size_t tellg() { return ftell(_fp); }
     size_t gcount() { return _lastRead; }
@@ -2948,10 +2658,6 @@ public:
 };
 
 class align
-{
-};
-
-class dummy
 {
 };
 
@@ -2996,7 +2702,6 @@ public:
     ostream2& operator << (const string2 s) { fprintf(_fp, s.c_str()); return *this; }
     ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
     ostream2& operator << (const align &a) { return *this; }
-    ostream2& operator << (const dummy &d) { return *this; }
     ostream2& operator << (const width2 &w) { _width = w; return *this; }
     ostream2& operator << (const base2 &base) { _base = base; return *this; }
     virtual ostream2& operator << (const uint32_t u);
@@ -3072,7 +2777,6 @@ namespace mystl
     extern ostream cerr;
     static const char endl[] = "\n";
     extern align right;
-    extern dummy dummy1;
     extern base2 hex;
     extern base2 dec;
     width2 setw(int length);

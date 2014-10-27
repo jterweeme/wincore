@@ -22,42 +22,21 @@ template <typename V, typename W> void vector2<V, W>::_M_fill_initialize(size_ty
     this->_M_impl._M_finish = this->_M_impl._M_end_of_storage;
 }
 
-
-template<typename T, typename U, typename V, typename W>
-    V __set_intersection(T __first1, T __last1,
-               U __first2, U __last2,
-               V __result, W __comp)
-{
-    while (__first1 != __last1 && __first2 != __last2)
-        if (__comp(__first1, __first2))
-            ++__first1;
-        else if (__comp(__first2, __first1))
-            ++__first2;
-        else
-        {
-            *__result = *__first1;
-            ++__first1;
-            ++__first2;
-            ++__result;
-        }
-        return __result;
-}
-
 template <typename V, typename W> vector2<V, W>::~vector2()
 {
     _Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
     _M_get_Tp_allocator());
 }
 
-template <typename V, typename W> void vector2<V, W>::push_back(const value_type& __x)
+template <typename V, typename W> void vector2<V, W>::push_back(const value_type& x)
 {
     if (this->_M_impl._M_finish != this->_M_impl._M_end_of_storage)
     {
-        _Alloc_traits::construct(this->_M_impl, this->_M_impl._M_finish, __x);
+        _Alloc_traits::construct(this->_M_impl, this->_M_impl._M_finish, x);
         ++this->_M_impl._M_finish;
     }
     else
-        _M_insert_aux(end(), __x);
+        _M_insert_aux(end(), x);
 }
 
 template <typename T> void reverse(T __first, T __last, random_access_iterator_tag)
@@ -156,6 +135,96 @@ template<typename T, typename _Alloc> void
     }
 }
 
+template<typename T, typename U>
+    vector2<T, U> &vector2<T, U>::operator=(const vector2<T, U>& __x)
+{
+    if (&__x != this)
+    {
+        const size_type __xlen = __x.size();
+        if (__xlen > capacity())
+        {
+            pointer __tmp = _M_allocate_and_copy(__xlen, __x.begin(), __x.end());
+            _Destroy(this->_M_impl._M_start, this->_M_impl._M_finish, _M_get_Tp_allocator());
+
+            _M_deallocate(this->_M_impl._M_start, this->_M_impl._M_end_of_storage
+                        - this->_M_impl._M_start);
+
+            this->_M_impl._M_start = __tmp;
+            this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __xlen;
+        }
+        else if (size() >= __xlen)
+        {
+            _Destroy(copy(__x.begin(), __x.end(), begin()), end(), _M_get_Tp_allocator());
+        }
+        else
+        {
+            copy(__x._M_impl._M_start, __x._M_impl._M_start + size(), this->_M_impl._M_start);
+
+            __uninitialized_copy_a(__x._M_impl._M_start + size(), __x._M_impl._M_finish,
+                      this->_M_impl._M_finish, _M_get_Tp_allocator());
+        }
+        this->_M_impl._M_finish = this->_M_impl._M_start + __xlen;
+    }
+    return *this;
+}
+
+template<typename T, typename U> void
+        vector2<T, U>::_M_insert_aux(iterator __position, const T &x)
+{
+    if (this->_M_impl._M_finish != this->_M_impl._M_end_of_storage)
+    {
+        _Alloc_traits::construct(this->_M_impl, this->_M_impl._M_finish,
+                   (*(this->_M_impl._M_finish  - 1)));
+
+        ++this->_M_impl._M_finish;
+        T __x_copy = x;
+
+        copy_backward(__position.base(),
+              this->_M_impl._M_finish - 2, this->_M_impl._M_finish - 1);
+
+        *__position = __x_copy;
+    }
+    else
+    {
+        const size_type __len = _M_check_len(size_type(1), "vector::_M_insert_aux");
+        const size_type __elems_before = __position - begin();
+        pointer __new_start(this->_M_allocate(__len));
+        pointer __new_finish(__new_start);
+
+        try
+        {
+            _Alloc_traits::construct(this->_M_impl, __new_start + __elems_before, x);
+            __new_finish = 0;
+
+            __new_finish = __uninitialized_move_if_noexcept_a(this->_M_impl._M_start,
+                    __position.base(), __new_start, _M_get_Tp_allocator());
+
+            ++__new_finish;
+
+            __new_finish = __uninitialized_move_if_noexcept_a(__position.base(),
+                    this->_M_impl._M_finish, __new_finish, _M_get_Tp_allocator());
+        }
+        catch(...)
+        {
+            if (!__new_finish)
+                _Alloc_traits::destroy(this->_M_impl,        __new_start + __elems_before);
+            else
+                _Destroy(__new_start, __new_finish, _M_get_Tp_allocator());
+
+            _M_deallocate(__new_start, __len);
+            throw;
+        }
+
+        _Destroy(this->_M_impl._M_start, this->_M_impl._M_finish, _M_get_Tp_allocator());
+
+        _M_deallocate(this->_M_impl._M_start, this->_M_impl._M_end_of_storage
+             - this->_M_impl._M_start);
+
+        this->_M_impl._M_start = __new_start;
+        this->_M_impl._M_finish = __new_finish;
+        this->_M_impl._M_end_of_storage = __new_start + __len;
+    }
+}
 
 
 #endif
