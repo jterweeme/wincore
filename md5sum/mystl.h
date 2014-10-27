@@ -1,7 +1,7 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <stdio.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 
 class MyUtil
 {
@@ -170,10 +170,8 @@ namespace mystl
     void *memset(void *s, const int c, const size_t n);
     typedef string2 string;
     unsigned long stoul(const string &str, size_t *idx = 0, int base = 10);
-#if 0
     extern long int strtol(const char *s, char **end, int base);
     extern uint32_t be32toh(uint32_t v);
-#endif
     template <class T> class vector : public vector2<T> { };
     typedef ios2 ios;
     typedef istream2 istream;

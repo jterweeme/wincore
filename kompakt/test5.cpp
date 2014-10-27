@@ -55,13 +55,6 @@ void testReverse()
     myAssert(v1[5], 20);
     v1.dump(cout);
     cout << "\n";
-    sort(v1.begin(), v1.end());
-#if 0
-    myAssert(v1[0], 2);
-    myAssert(v1[1], 4);
-    myAssert(v1[2], 5);
-    myAssert(v1[3], 6);
-#endif
     v1.dump(cout);
 }
 
@@ -96,33 +89,6 @@ void testCount()
     cout << "20 appears: " << myCount << " times.\n";
 }
 
-void testIntersect()
-{
-    vector<int> v1;
-    v1.push_back(5);
-    v1.push_back(7);
-    vector<int> v2;
-    v2.push_back(3);
-    v2.push_back(9);
-
-    int first[] = {5,10,15,20,25};
-    int second[] = {50,40,30,20,10};
-    vector<int> v(10);
-    vector<int>::iterator it;
-
-    //std::sort (first,first+5);
-    sort(second, second + 5);
-    it = set_intersection(first, first+5, second, second+5, v.begin());
-    v.resize(it - v.begin());
-    myAssert(v.size(), (size_t)2, "Set Intersection Failed");
-    cout << "The intersection has " << (v.size()) << " elements:\n";
-
-    for (it=v.begin(); it!=v.end(); ++it)
-        cout << ' ' << *it;
-
-    cout << '\n';
-}
-
 char tocupper(int c)
 {
     return toupper(c);
@@ -155,7 +121,6 @@ int main()
         testReverse();
         testCount();
         testEqual();
-        //testIntersect();
         testSwap();
         testTransform();
     }

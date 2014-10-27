@@ -312,10 +312,10 @@ template <typename T> inline typename iterator_traits<T>::iterator_category
     return typename iterator_traits<T>::iterator_category();
 }
 
-template<typename _Iterator, bool _HasBase> struct _Iter_base
+template<typename T, bool> struct _Iter_base
 {
-    typedef _Iterator iterator_type;
-    static iterator_type _S_base(_Iterator __it) { return __it; }
+    typedef T iterator_type;
+    static iterator_type _S_base(T it) { return it; }
 };
 
 template<typename _Iterator> struct _Iter_base<_Iterator, true>
@@ -808,10 +808,11 @@ template<typename Compare> inline _Iter_comp_val<Compare> __iter_comp_val(Compar
     return _Iter_comp_val<Compare>(__comp);
 }
 
-template<typename _Compare>
-    inline _Iter_comp_val<_Compare>
-    __iter_comp_val(_Iter_comp_iter<_Compare> __comp)
-{ return _Iter_comp_val<_Compare>(__comp._M_comp); }
+template <typename Compare> inline _Iter_comp_val<Compare>
+    __iter_comp_val(_Iter_comp_iter<Compare> comp)
+{
+    return _Iter_comp_val<Compare>(comp._M_comp);
+}
 
 template <typename _Compare> struct _Val_comp_iter
 {
@@ -1563,20 +1564,17 @@ template<typename _ForwardIterator> inline void
     _Destroy_aux<__has_trivial_destructor(_Value_type)>::__destroy(__first, __last);
 }
 
-template<typename _ForwardIterator, typename _Allocator> void
-    _Destroy(_ForwardIterator __first, _ForwardIterator __last,
-    _Allocator& __alloc)
+template<typename T, typename U> void _Destroy(T __first, T __last, U &__alloc)
 {
-    typedef alloc_traits<_Allocator> __traits;
+    typedef alloc_traits<U> __traits;
 
     for (; __first != __last; ++__first)
         __traits::destroy(__alloc, __addressof(*__first));
 }
 
-template<typename _ForwardIterator, typename _Tp> inline void
-    _Destroy(_ForwardIterator __first, _ForwardIterator __last, allocator<_Tp>&)
+template<typename T, typename U> inline void _Destroy(T first, T last, allocator<U>&)
 {
-    _Destroy(__first, __last);
+    _Destroy(first, last);
 }
 
 template <bool> struct __uninitialized_copy
@@ -1858,7 +1856,7 @@ public:
     explicit vector2(const allocator_type &a) : _Base(a) { }
 
     explicit vector2(size_type n, const value_type& value = value_type(),
-        const allocator_type& a = allocator_type()) : _Base(n, a)
+        const allocator_type& a = allocator_type())  : _Base(n, a)
     {
         _M_fill_initialize(n, value);
     }
@@ -1897,14 +1895,6 @@ public:
     const_iterator end() const { return const_iterator(this->_M_impl._M_finish); }
     size_type size() const { return size_type(this->_M_impl._M_finish - this->_M_impl._M_start); }
     size_type max_size() const { return _Alloc_traits::max_size(_M_get_Tp_allocator()); }
-
-    void resize(size_type __new_size, value_type __x = value_type())
-    {
-        if (__new_size > size())
-            insert(end(), __new_size - size(), __x);
-        else if (__new_size < size())
-            _M_erase_at_end(this->_M_impl._M_start + __new_size);
-    }
 
     size_type capacity() const
     { return size_type(this->_M_impl._M_end_of_storage - this->_M_impl._M_start); }
@@ -2242,14 +2232,12 @@ template<typename _Iterator, typename _Compare>
 }
 
 
-template<typename _InputIterator, typename _Predicate>
-    inline _InputIterator
-    __find_if(_InputIterator __first, _InputIterator __last,
-          _Predicate __pred, input_iterator_tag)
+template<typename T, typename U> inline T __find_if(T first, T last, U pred, input_iterator_tag)
 {
-      while (__first != __last && !__pred(__first))
-    ++__first;
-      return __first;
+    while (first != last && !pred(first))
+        ++first;
+
+    return first;
 }
 
 template<typename _RandomAccessIterator, typename _Predicate>
@@ -2302,8 +2290,7 @@ template<typename _Iterator, typename _Predicate>
     inline _Iterator
     __find_if(_Iterator __first, _Iterator __last, _Predicate __pred)
 {
-      return __find_if(__first, __last, __pred,
-               __iterator_category(__first));
+    return __find_if(__first, __last, __pred, __iterator_category(__first));
 }
 
 template<typename _InputIterator, typename _Predicate>
@@ -2561,31 +2548,6 @@ template<typename _RandomAccessIterator, typename _Compare>
         --__next;
     }
     *__last = (__val);
-}
-
-template<typename _RandomAccessIterator, typename _Compare>
-    void
-    __insertion_sort(_RandomAccessIterator __first,
-             _RandomAccessIterator __last, _Compare __comp)
-{
-    if (__first == __last)
-        return;
-
-    for (_RandomAccessIterator __i = __first + 1; __i != __last; ++__i)
-    {
-        if (__comp(__i, __first))
-        {
-            typename iterator_traits<_RandomAccessIterator>::value_type __val =
-                (*__i);
-
-            //move_backward(__first, __i, __i + 1);
-            *__first = (__val);
-        }
-        else
-        {
-            __unguarded_linear_insert(__i, __val_comp_iter(__comp));
-        }
-    }
 }
 
 template<typename _RandomAccessIterator, typename _Compare>
@@ -2871,18 +2833,6 @@ template <typename T, typename U> inline void sort(T first, T last, U comp)
     }
 }
 
-template<typename _RandomAccessIterator>
-    inline void
-    sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
-{
-    sort(__first, __last, __iter_less_iter());
-}
-
-template<typename T, typename U, typename V, typename W>
-    V __set_intersection(T __first1, T __last1,
-               U __first2, U __last2,
-               V __result, W __comp);
-
 template <typename T, typename U, typename V>
     inline V set_intersection(T first1, T last1, U first2, U last2, V result);
 
@@ -2901,32 +2851,24 @@ template<typename _RandomAccessIterator>
     }
 }
 
-template<typename _RandomAccessIterator>
-    inline void
-    push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
+template <typename T> inline void push_heap(T first, T last)
 {
-    typedef typename iterator_traits<_RandomAccessIterator>::value_type _ValueType;
-    typedef typename iterator_traits<_RandomAccessIterator>::difference_type _DistanceType;
-    _ValueType __value = *(__last - 1);
+    typedef typename iterator_traits<T>::value_type _ValueType;
+    typedef typename iterator_traits<T>::difference_type _DistanceType;
+    _ValueType __value = *(last - 1);
 
-    __push_heap(__first, _DistanceType((__last - __first) - 1),
-               _DistanceType(0), __value,
+    __push_heap(first, _DistanceType((last - first) - 1), _DistanceType(0), __value,
                __iter_less_val());
 }
 
-template<typename _RandomAccessIterator>
-    inline void
-    sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
+template<typename T> inline void sort_heap(T first, T last)
 {
-    __sort_heap(__first, __last, __iter_less_iter());
+    __sort_heap(first, last, __iter_less_iter());
 }
 
-template<typename _RandomAccessIterator, typename _Compare>
-    inline void
-    sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last,
-          _Compare __comp)
+template<typename T, typename U> inline void sort_heap(T first, T last, U __comp)
 {
-    __sort_heap(__first, __last, __iter_comp_iter(__comp));
+    __sort_heap(first, last, __iter_comp_iter(__comp));
 }
 
 

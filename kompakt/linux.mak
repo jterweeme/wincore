@@ -28,15 +28,15 @@ test5: test5.o mystl.o
 test6: test6.o mystl.o
 	@g++ -o $@ $(CXXFLAGS) $^
 
-kompakt.o: kompakt.cpp kompakt.h common.h mystl.h
-filesys.o: filesys.cpp filesys.h common.h mystl.h
-main.o: main.cpp kompakt.h common.h mystl.h
-mystl.o: mystl.cpp mystl.h
-test1.o: test1.cpp kompakt.h common.h mystl.h
-test2.o: test2.cpp kompakt.h common.h mystl.h
-test3.o: test3.cpp kompakt.h common.h mystl.h
-test4.o: test4.cpp kompakt.h common.h mystl.h
-test5.o: test5.cpp kompakt.h common.h mystl.h
+kompakt.o: kompakt.cpp kompakt.h common.h mystl.h mystl.tcc
+filesys.o: filesys.cpp filesys.h common.h mystl.h mystl.tcc
+main.o: main.cpp kompakt.h common.h mystl.h mystl.tcc
+mystl.o: mystl.cpp mystl.h mystl.tcc
+test1.o: test1.cpp kompakt.h common.h mystl.h mystl.tcc
+test2.o: test2.cpp kompakt.h common.h mystl.h mystl.tcc
+test3.o: test3.cpp kompakt.h common.h mystl.h mystl.tcc
+test4.o: test4.cpp kompakt.h common.h mystl.h mystl.tcc
+test5.o: test5.cpp kompakt.h common.h mystl.h mystl.tcc
 test6.o: test6.cpp common.h
 
 test: ttests testisos testbattery testfdfullcd

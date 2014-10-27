@@ -15,12 +15,6 @@ template<typename T, typename U, typename V> U transform(T first, T last, U resu
     return result;
 }
 
-template <typename T, typename U, typename V>
-    inline V set_intersection(T first1, T last1, U first2, U last2, V result)
-{
-    return __set_intersection(first1, last1, first2, last2, result, __iter_less_iter());
-}
-
 template <typename V, typename W> void vector2<V, W>::_M_fill_initialize(size_type __n,
     const value_type& __value)
 {
@@ -81,89 +75,83 @@ template <typename T> void reverse(T __first, T __last, random_access_iterator_t
     }
 }
 
-template<typename _Tp, typename _Alloc> void
-    vector2<_Tp, _Alloc>::_M_fill_insert(iterator __position,
-    size_type __n, const value_type& __x)
+template<typename T, typename _Alloc> void
+    vector2<T, _Alloc>::_M_fill_insert(iterator __position,
+    size_type n, const value_type& __x)
 {
-    if (__n != 0)
+    if (n != 0)
     {
-      if (size_type(this->_M_impl._M_end_of_storage
-            - this->_M_impl._M_finish) >= __n)
+        if (size_type(this->_M_impl._M_end_of_storage - this->_M_impl._M_finish) >= n)
         {
-          value_type __x_copy = __x;
-          const size_type __elems_after = end() - __position;
-          pointer __old_finish(this->_M_impl._M_finish);
-          if (__elems_after > __n)
-        {
-          __uninitialized_move_a(this->_M_impl._M_finish - __n,
-                          this->_M_impl._M_finish,
-                          this->_M_impl._M_finish,
-                          _M_get_Tp_allocator());
-          this->_M_impl._M_finish += __n;
-          (__position.base(),
-                      __old_finish - __n, __old_finish);
-          fill(__position.base(), __position.base() + __n,
-                __x_copy);
-        }
-          else
-        {
-          __uninitialized_fill_n_a(this->_M_impl._M_finish,
-                        __n - __elems_after,
-                        __x_copy,
-                        _M_get_Tp_allocator());
-          this->_M_impl._M_finish += __n - __elems_after;
-          __uninitialized_move_a(__position.base(), __old_finish,
-                          this->_M_impl._M_finish,
-                          _M_get_Tp_allocator());
-          this->_M_impl._M_finish += __elems_after;
-          fill(__position.base(), __old_finish, __x_copy);
-        }
-        }
-      else
-        {
-          const size_type __len =
-        _M_check_len(__n, "vector::_M_fill_insert");
-          const size_type __elems_before = __position - begin();
-          pointer __new_start(this->_M_allocate(__len));
-          pointer __new_finish(__new_start);
-          try
-        {
-          __uninitialized_fill_n_a(__new_start + __elems_before,
-                        __n, __x,
-                        _M_get_Tp_allocator());
-          __new_finish = 0;
+            value_type __x_copy = __x;
+            const size_type __elems_after = end() - __position;
+            pointer __old_finish(this->_M_impl._M_finish);
 
-          __new_finish
-            = __uninitialized_move_if_noexcept_a
-            (this->_M_impl._M_start, __position.base(),
-             __new_start, _M_get_Tp_allocator());
+            if (__elems_after > n)
+            {
+                __uninitialized_move_a(this->_M_impl._M_finish - n,
+                       this->_M_impl._M_finish, this->_M_impl._M_finish, _M_get_Tp_allocator());
 
-          __new_finish += __n;
+                this->_M_impl._M_finish += n;
+                (__position.base(), __old_finish - n, __old_finish);
+                fill(__position.base(), __position.base() + n, __x_copy);
+            }
+            else
+            {
+                __uninitialized_fill_n_a(this->_M_impl._M_finish,
+                        n - __elems_after, __x_copy, _M_get_Tp_allocator());
 
-          __new_finish
+                this->_M_impl._M_finish += n - __elems_after;
+
+                __uninitialized_move_a(__position.base(), __old_finish,
+                          this->_M_impl._M_finish, _M_get_Tp_allocator());
+
+                this->_M_impl._M_finish += __elems_after;
+                fill(__position.base(), __old_finish, __x_copy);
+            }
+        }
+        else
+        {
+            const size_type __len = _M_check_len(n, "vector::_M_fill_insert");
+            const size_type __elems_before = __position - begin();
+            pointer __new_start(this->_M_allocate(__len));
+            pointer __new_finish(__new_start);
+
+            try
+            {
+                __uninitialized_fill_n_a(__new_start + __elems_before,
+                        n, __x, _M_get_Tp_allocator());
+                __new_finish = 0;
+
+                __new_finish = __uninitialized_move_if_noexcept_a
+                    (this->_M_impl._M_start, __position.base(),
+                    __new_start, _M_get_Tp_allocator());
+
+                __new_finish += n;
+
+            __new_finish
             = __uninitialized_move_if_noexcept_a
             (__position.base(), this->_M_impl._M_finish,
              __new_finish, _M_get_Tp_allocator());
-        }
-          catch(...)
-       {
-          if (!__new_finish)
-            _Destroy(__new_start + __elems_before,
-                  __new_start + __elems_before + __n,
-                  _M_get_Tp_allocator());
-          else
-            _Destroy(__new_start, __new_finish,
-                  _M_get_Tp_allocator());
-          _M_deallocate(__new_start, __len);
-        }
-          _Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
-                _M_get_Tp_allocator());
-          _M_deallocate(this->_M_impl._M_start,
-                this->_M_impl._M_end_of_storage
-                - this->_M_impl._M_start);
-          this->_M_impl._M_start = __new_start;
-          this->_M_impl._M_finish = __new_finish;
-          this->_M_impl._M_end_of_storage = __new_start + __len;
+            }
+            catch(...)
+            {
+                if (!__new_finish)
+                    _Destroy(__new_start + __elems_before,
+                        __new_start + __elems_before + n, _M_get_Tp_allocator());
+                else
+                    _Destroy(__new_start, __new_finish, _M_get_Tp_allocator());
+
+                _M_deallocate(__new_start, __len);
+            }
+            _Destroy(this->_M_impl._M_start, this->_M_impl._M_finish, _M_get_Tp_allocator());
+
+            _M_deallocate(this->_M_impl._M_start,
+                this->_M_impl._M_end_of_storage - this->_M_impl._M_start);
+
+            this->_M_impl._M_start = __new_start;
+            this->_M_impl._M_finish = __new_finish;
+            this->_M_impl._M_end_of_storage = __new_start + __len;
         }
     }
 }
