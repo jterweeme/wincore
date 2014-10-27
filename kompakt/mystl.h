@@ -2610,25 +2610,19 @@ public:
 class istream2
 {
     typedef Util2::uint16_t uint16_t;
+    size_t _pos;
 protected:
     FILE *_fp;
     size_t _lastRead;
     bool _eof;
 public:
-    istream2() : _lastRead(0), _eof(false) { }
-    istream2(FILE *fp) : _fp(fp), _lastRead(0), _eof(false) { }
+    istream2() : _pos(0), _lastRead(0), _eof(false) { }
+    istream2(FILE *fp) : _pos(0), _fp(fp), _lastRead(0), _eof(false) { }
     virtual ~istream2() { }
     int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
-    istream2& ignore(size_t n = 1, int d = '\n')
-    {
-        //fprintf(stderr, "%lu\n", n);
-        while (n--)
-            getc(_fp);
-        //fseek(_fp, n, SEEK_CUR);
-        return *this;
-    }
-    int get() { return fgetc(_fp); }
-    size_t tellg() { return ftell(_fp); }
+    istream2& ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
+    int get() { _pos++; return fgetc(_fp); }
+    size_t tellg() { return _pos; }
     size_t gcount() { return _lastRead; }
     operator void * () const { return (void *)!_eof; }
     void getline(char *dest, size_t size);

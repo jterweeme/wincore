@@ -104,6 +104,7 @@ string2::string2(const char *s1, const char *s2)
 void istream2::read(char *s, size_t length)
 {
     _lastRead = fread(s, 1, length, _fp);
+    _pos += _lastRead;
     _eof = _lastRead < length;
 }
 
@@ -111,7 +112,7 @@ void istream2::getline(char *dest, size_t size)
 {
     for (int pos = 0, c = 1; c != '\n'; pos++)
     {
-        c = fgetc(_fp);
+        c = get();
 
         if (c == EOF)
         {
