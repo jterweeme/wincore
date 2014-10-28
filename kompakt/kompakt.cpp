@@ -37,7 +37,6 @@ void Flags::dump(ostream &os)
         os << "Permissions ";
     if (test(7))
         os << "Final Dir ";
-
 }
 
 int ISO::extract(istream &s, const char *outputDir)
@@ -138,8 +137,8 @@ void Directory::list(ostream &os, int mode)
         else
         {
             os << it->fn() << string(40 - it->fn().length(), ' ')
-                << right << setw(9) << it->dir().dataLengthLE << setw(7)
-                << it->dir().lbaLE << setw(6) << it->parentLBA() << "\n";
+               << right << setw(9) << it->dir().dataLengthLE << setw(7)
+               << it->dir().lbaLE << setw(6) << it->parentLBA() << "\n";
         }
     }
 
@@ -150,7 +149,6 @@ void PathEntry::read(istream &is)
 {
     is.read((char *)&_pe, sizeof(_pe));
     is.read(_name, _pe.length);
-    //fprintf(stderr, "%lu\n", is.tellg() % 2);
     is.ignore(is.tellg() % 2);
 }
 

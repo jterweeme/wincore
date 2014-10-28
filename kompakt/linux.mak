@@ -50,6 +50,7 @@ testisos: tester cd1.iso
 	valgrind $(VALGRIND) ./kompakt -d -f cd1.iso > /dev/null
 	@./tester2.sh battery.iso.bz2 battery battery.md5
 	@./tester2.sh wxphome.iso.bz2 wxphome wxphome.md5
+	@./tester2.sh winnt4.iso.bz2 winnt4 winnt4.md5
 
 ttests: ttest1 ttest2 ttest3 ttest5 ttest6
 

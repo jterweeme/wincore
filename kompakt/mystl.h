@@ -2566,11 +2566,7 @@ public:
     string2(const char *s) { Util2 util; util.strcpy(_s, s); }
     string2(const char *s1, const char *s2);
     string2(const char *s1, size_t n);
-    string2(size_t n, char c)
-    {
-        fprintf(stderr, "%lu\n", n);
-        _s[n] = '\0'; while (n) _s[--n] = c;
-    }
+    string2(size_t n, char c) { _s[n] = '\0'; while (n) _s[--n] = c; }
     const char *c_str() const { return _s; }
     size_t length() const { Util2 util; return util.strlen(_s); }
 };
