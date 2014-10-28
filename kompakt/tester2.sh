@@ -1,5 +1,7 @@
 #!/bin/bash
 
+VALGRIND='valgrind -q --error-exitcode=1 --leak-check=full'
+
 stat $1 &> /dev/null
 
 if [ $? != 0 ]
@@ -9,9 +11,9 @@ exit 0
 fi
 
 rm -Rf $2
-bzcat $1 | valgrind -q --error-exitcode=1 --leak-check=full ./kompakt -l -s > /dev/null
-bzcat $1 | valgrind -q --error-exitcode=1 --leak-check=full ./kompakt -p -s > /dev/null
-bzcat $1 | valgrind -q --error-exitcode=1 --leak-check=full ./kompakt -x -s -o $2 > /dev/null
+bzcat $1 | $VALGRIND ./kompakt -l -s | diff $4 -
+bzcat $1 | $VALGRIND ./kompakt -p -s > /dev/null
+bzcat $1 | $VALGRIND ./kompakt -x -s -o $2 > /dev/null
 md5sum -c $3 > /dev/null
 
 if [ $? != 0 ]
