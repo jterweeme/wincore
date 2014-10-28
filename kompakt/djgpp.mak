@@ -37,19 +37,8 @@ test3.o: test3.cpp kompakt.h common.h mystl.h
 test4.o: test4.cpp kompakt.h common.h mystl.h
 test5.o: test5.cpp kompakt.h common.h mystl.h
 test6.o: test6.cpp common.h
-
-test: ttests testbattery
-
-ttests: ttest1 ttest2 ttest3 ttest4 ttest5 ttest6
-
-cd1.iso: cd1~1.bz2
-	bzcat $< > $@
-
-cd5.iso: cd5~1.bz2
-	bzcat $< > $@
-
-cd6.iso: cd6~1.bz2
-	bzcat $< > $@
+test: ttests
+ttests: ttest1 ttest2 ttest3 ttest5 ttest6
 
 ttest1: cd1.iso cd6.iso
 	@test1 > NUL
@@ -76,5 +65,5 @@ testbattery:
 	deltree /y battery
 
 clean:
-	rm -Rvf *.o *.obj *.exe cd?.iso battery fdfullcd
+	rm -Rvf *.o *.obj *.exe battery fdfullcd
 

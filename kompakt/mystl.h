@@ -2620,7 +2620,7 @@ public:
         _lastRead = fread(buf, 1, length, _fp);
         fprintf(stderr, "Read:\n");
 
-        for (int i = 0; i < length; i++)
+        for (size_t i = 0; i < length; i++)
             fprintf(stderr, "%x ", buf[i]);
 
         _pos += _lastRead;
