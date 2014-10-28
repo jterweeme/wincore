@@ -33,6 +33,7 @@ int main()
 {
     //test1();
     test2();
+    cerr << "\033[1;32mTest1: OK\033[0m\n";
     return 0;
 
 }

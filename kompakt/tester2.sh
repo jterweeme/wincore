@@ -2,13 +2,19 @@
 
 VALGRIND='valgrind -q --error-exitcode=1 --leak-check=full'
 
-# check if iso image exists
-stat $1 &> /dev/null
+color()
+{
 if [ $? != 0 ]
 then
 echo -e "\033[1;33mSkipping $1 \033[0m"
 exit 0
 fi
+
+}
+
+# check if iso image exists
+stat $1 &> /dev/null
+color
 
 # first remove possibly previous remnants
 rm -Rf $2

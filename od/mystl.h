@@ -99,7 +99,6 @@ public:
 
     vector2() : _capacity(100), _size(0)
     {
-        printf("c");
         _buf = (T *)calloc(sizeof(T), 100);
         _busy = 45;
     }
@@ -119,7 +118,6 @@ public:
     {
         if (_busy == 45)
         {
-            printf("d");
             if (_buf)
                 free(_buf);
             _busy = 90;
