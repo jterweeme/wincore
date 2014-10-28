@@ -66,18 +66,30 @@ int ISO::extract(istream &s)
  
     _fileList.snort();
     FileSystem fs;
+    DirEntry previous;
 
     for (Directory::iterator it = _fileList.begin(); it!= _fileList.end(); it++)
     {
         if (it->isDir())
             continue;
 
+        if (it->compare(previous))
+        {
+            cerr << "Duplicate file, skipping\n";
+            continue;
+        }
+
+        previous = *it;
         FSPath path = _pathTable.recurse(it->parentLBA());
         path.dump(cout);
         cout << "/" << it->fn() << "\n";
         fs.chmkdir(path);
         ofstream of;
         of.open(it->fn().c_str());
+
+        if (it->dir().lbaLE * 2048 < s.tellg())
+            throw "Need to rewind";
+
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
         uint32_t length = it->dir().dataLengthLE;
         char buf[2048] = {0};
@@ -171,7 +183,10 @@ void PathTable::read(istream &is, uint32_t lba, size_t n)
 {
     _offsetLBA = lba;
     _size = n;
-    //fprintf(stderr, "%lu\n", lba * 2048 - is.tellg());
+
+    if (lba * 2048 < is.tellg())
+        throw "Need to rewind";
+
     is.ignore(lba * 2048 - is.tellg());
 
     for (int i = 1; is.tellg() < lba * 2048 + n; i++)
@@ -303,7 +318,6 @@ void Directory::read(istream &s, uint32_t offset)
         {
             dir1.parentLBA(offset);
             push_back(dir1);
-            //s.ignore(s.tellg() % 2);
         }
         else if (s.tellg() % 2048 > 1900)       // semi random number...
         {
@@ -316,7 +330,6 @@ void Directory::read(istream &s, uint32_t offset)
 
             dir1.parentLBA(offset);
             push_back(dir1);
-            //s.ignore(s.tellg() % 2);
         }
         else
         {

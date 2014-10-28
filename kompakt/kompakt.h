@@ -83,6 +83,7 @@ class DirEntry
     uint32_t _offset;
     uint32_t _parentLBA;
 public:
+    DirEntry() : _dir(), _offset(0), _parentLBA(0) { }
     void length(uint8_t l) { _dir.length = l; }
     uint8_t length() const { return _dir.length; }
     SFile dir() const { return _dir; }
@@ -93,6 +94,7 @@ public:
     uint32_t parentLBA() { return _parentLBA; }
     uint32_t size() const { return _dir.dataLengthLE; }
     void dump(ostream &os);
+    bool compare(DirEntry &de) { return de.dir().lbaLE == _dir.lbaLE; }
     string toString() { ostringstream oss; dump(oss); return oss.str(); }
 };
 
@@ -287,7 +289,7 @@ public:
     //Directory() { }
     void read(istream &s, uint32_t offset);
     string toString();
-    void list(ostream &os, int mode);
+    void list(ostream &os, int mode = 1);
     string list(int mode = 1) { ostringstream oss; list(oss, mode); return oss.str(); }
     void snort()
     {
