@@ -48,23 +48,12 @@ testisos: tester cd1.iso
 	valgrind $(VALGRIND) ./kompakt -l -v -f cd1.iso > /dev/null
 	valgrind $(VALGRIND) ./kompakt -l -v -s < cd1.iso > /dev/null
 	valgrind $(VALGRIND) ./kompakt -d -f cd1.iso > /dev/null
-	@./tester2.sh battery.iso.bz2 battery battery.md5 battery.lst
-	@./tester2.sh wxphome.iso.bz2 wxphome wxphome.md5 wxphome.lst
-	@./tester2.sh winnt4.iso.bz2 winnt4 winnt4.md5 winnt4.lst
+	@./tester2.sh battery.bz2 battery battery.md5 battery.lst
+	@./tester2.sh wxphome.bz2 wxphome wxphome.md5 wxphome.lst
+	@./tester2.sh winnt4.bz2 winnt4 winnt4.md5 winnt4.lst
+	@./tester2.sh win95.bz2 win95 win95.md5 win95.lst
 
 ttests: ttest1 ttest2 ttest3 ttest5 ttest6
-
-cd1.iso: cd1.iso.bz2
-	bunzip2 -kf $<
-
-cd2.iso: cd2.iso.bz2
-	bunzip2 -kf $<
-
-cd5.iso: cd5.iso.bz2
-	bunzip2 -kf $<
-
-cd6.iso: cd6.iso.bz2
-	bunzip2 -kf $<
 
 ttest1: cd1.iso cd6.iso
 	@valgrind $(VALGRIND) ./test1 > /dev/null
@@ -85,5 +74,5 @@ ttest6:
 	@valgrind $(VALGRIND) ./test6 > /dev/null
 
 clean:
-	rm -Rvf *.o test? cd?.iso kompakt fdfullcd battery tester
+	rm -Rvf *.o test? cd?.iso kompakt fdfullcd battery tester windows95
 
