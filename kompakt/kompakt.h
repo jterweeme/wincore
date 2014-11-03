@@ -2,6 +2,11 @@
 #define _MAIN_H_
 #include "filesys.h"
 
+/*
+todo: skip/ignore functie maken
+duplicate bestanden oplossen
+*/
+
 class Options
 {
     bool _verbose;
