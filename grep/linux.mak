@@ -11,5 +11,5 @@ test1: force
 force:
 
 clean:
-	rm -Rvf test1.tst grep test?
+	@rm -Rvf test1.tst grep test?
 

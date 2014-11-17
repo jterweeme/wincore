@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{903f2ec3-e626-4a9d-86bd-76010713e36d}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>uuidgen</RootNamespace>
+  </PropertyGroup>
+</Project>
+
+

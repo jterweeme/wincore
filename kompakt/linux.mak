@@ -74,5 +74,5 @@ ttest6:
 	@valgrind $(VALGRIND) ./test6 > /dev/null
 
 clean:
-	rm -Rvf *.o test? kompakt fdfullcd battery tester windows95
+	@rm -Rvf *.o test? kompakt fdfullcd battery tester windows95
 

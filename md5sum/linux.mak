@@ -11,5 +11,5 @@ test:
 	valgrind $(VALGRIND) ./test1
 
 clean:
-	rm -Rvf *.o test? md5s
+	@rm -Rvf *.o test? md5s
 

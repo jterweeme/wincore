@@ -4,6 +4,6 @@ all:
 test:
 
 clean:
-	rm -Rvf cat
+	@rm -Rvf cat
 
 
