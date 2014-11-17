@@ -14,9 +14,9 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{6298d8b3-a141-4255-ad98-72a0f20b6ea4}</ProjectGuid>
+    <ProjectGuid>{51cb300d-ddf6-4553-84b9-bb24234d23e3}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>tr</RootNamespace>
+    <RootNamespace>base64</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
