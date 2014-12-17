@@ -14,12 +14,12 @@ public:
 #else
     typedef unsigned uint32_t;
 #endif
-    void *memcpy(void *dest, const void *src, size_t n);
-    void *memset(void *s, const int c, const size_t n);
-    char *strcpy(char *dest, const char *src);
-    char *strncpy(char *dest, const char *src, size_t n);
-    size_t strlen(const char *s);
-    int atoi(const char *str);
+    void *memcpy(void *dest, const void *src, size_t n) const;
+    void *memset(void *s, const int c, const size_t n) const;
+    char *strcpy(char *dest, const char *src) const;
+    char *strncpy(char *dest, const char *src, size_t n) const;
+    size_t strlen(const char *s) const;
+    int atoi(const char *str) const;
     long int strtol(const char *s, char **end, int base);
     int isdigit(int c) { return c >= '0' && c <= '9'; }
     int isspace(int c) { return c == ' '; }
@@ -146,6 +146,7 @@ public:
     string2 str() { return string2("onzin"); }
 };
 
+#if 0
 template <class T> class vector2
 {
     T _buf[100];        // uiteraard moet dit anders
@@ -159,6 +160,7 @@ public:
     iterator end() { return _buf + _size; }
     virtual ~vector2() { }
 };
+#endif
 
 
 namespace mystl
@@ -172,7 +174,9 @@ namespace mystl
     unsigned long stoul(const string &str, size_t *idx = 0, int base = 10);
     extern long int strtol(const char *s, char **end, int base);
     extern uint32_t be32toh(uint32_t v);
+#if 0
     template <class T> class vector : public vector2<T> { };
+#endif
     typedef ios2 ios;
     typedef istream2 istream;
     typedef ifstream2 ifstream;

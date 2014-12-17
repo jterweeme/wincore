@@ -15,7 +15,7 @@ string DirEntry::fn()
     return _fn;
 }
 
-void App::help(ostream &os)
+void App::help(ostream &os) const
 {
     os << "kompakt: Usage: kompakt [options]\n";
     os << "Options:\n";
@@ -286,6 +286,31 @@ size_t Descriptors::pathTableSize()
     CPrimaryVolumeDesc *cpv = dynamic_cast<CPrimaryVolumeDesc*>(*it);
     return cpv->pathTableSize();
 }
+
+FSPath PathTable::recurse(uint32_t lba)
+{
+    FSPath path;
+    PathEntry pe;
+    pe = getByLBA(lba);
+
+    if (isRoot(pe))
+        return path;
+
+    path.push_back(pe.name());
+
+    while (true)
+    {
+        pe = getByIndex(pe.parent());
+
+        if (isRoot(pe))
+            break;
+
+        path.push_back(pe.name());
+    }
+    reverse(path.begin(), path.end());
+    return path;
+}
+
 
 int Descriptors::read(istream &s)
 {

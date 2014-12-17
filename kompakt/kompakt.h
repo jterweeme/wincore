@@ -204,30 +204,7 @@ public:
     PathEntry &root() { iterator it = begin(); return *it; }
     uint32_t offsetLBA() const { return _offsetLBA; }
     size_t size() const { return _size; }
-
-    FSPath recurse(uint32_t lba)
-    {
-        FSPath path;
-        PathEntry pe;
-        pe = getByLBA(lba);
-
-        if (isRoot(pe))
-            return path;
-
-        path.push_back(pe.name());
-
-        while (true)
-        {
-            pe = getByIndex(pe.parent());
-            
-            if (isRoot(pe))
-                break;
-            
-            path.push_back(pe.name());
-        }
-        reverse(path.begin(), path.end());
-        return path;
-    }
+    FSPath recurse(uint32_t lba);
 };
 
 class CVolumeDescriptor
@@ -334,7 +311,7 @@ class App
     ISO _iso;
     ifstream _ifs;
 public:
-    void help(ostream &os);
+    void help(ostream &os) const;
     string help() { ostringstream oss; help(oss); return oss.str(); }
     int run(int argc, char **argv);
 };

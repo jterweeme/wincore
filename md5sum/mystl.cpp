@@ -1,6 +1,6 @@
 #include "mystl.h"
 
-void *MyUtil::memcpy(void *dest, const void *src, size_t n)
+void *MyUtil::memcpy(void *dest, const void *src, size_t n) const
 {
     char *dst8 = (char *)dest;
     char *src8 = (char *)src;
@@ -11,7 +11,7 @@ void *MyUtil::memcpy(void *dest, const void *src, size_t n)
     return dest;
 }
 
-void *MyUtil::memset(void *s, const int c, size_t n)
+void *MyUtil::memset(void *s, const int c, size_t n) const
 {
     uint8_t *p = (uint8_t *)s;
 
@@ -21,7 +21,7 @@ void *MyUtil::memset(void *s, const int c, size_t n)
     return s;
 }
 
-int MyUtil::atoi(const char *str)
+int MyUtil::atoi(const char *str) const
 {
     int res = 0;
 
@@ -99,21 +99,21 @@ void istream2::getline(char *dest, size_t size)
     }
 }
 
-MyUtil::size_t MyUtil::strlen(const char *s)
+MyUtil::size_t MyUtil::strlen(const char *s) const
 {
     const char *t;
     for (t = s; *t; ++t) { }
     return (t - s);
 }
 
-char *MyUtil::strcpy(char *dest, const char *src)
+char *MyUtil::strcpy(char *dest, const char *src) const
 {
     char *save = dest;
     while ((*dest++ = *src++));
     return save;
 }
 
-char *MyUtil::strncpy(char *dest, const char *src, const size_t n)
+char *MyUtil::strncpy(char *dest, const char *src, const size_t n) const
 {
     size_t i;
 

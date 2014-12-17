@@ -16,9 +16,9 @@ public:
     uint32_t h3() const { return _h3; }
     void add(Hash &h) { _h0 += h.h0(); _h1 += h.h1(); _h2 += h.h2(); _h3 += h.h3(); }
     //string toString() { ostringstream oss; dump(oss); return oss.str(); }
-    void dump(ostream &os);
+    void dump(ostream &os) const;
 
-    bool isEqual(const Hash &h)
+    bool isEqual(const Hash &h) const
     { return _h0 == h._h0 && _h1 == h._h1 && _h2 == h._h2 && _h3 == h._h3; }
 
     Hash(uint32_t h0, uint32_t h1, uint32_t h2, uint32_t h3)
@@ -30,12 +30,12 @@ class Chunk
 {
     uint32_t _w[16];
     uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
-    uint32_t to_int32(const uint8_t *bytes);
+    uint32_t to_int32(const uint8_t *bytes) const;
 public:
     void read(const uint8_t *msg) { for (int i = 0; i < 16; i++) _w[i] = to_int32(msg + i * 4); }
     Hash calc(Hash &hash);
     uint32_t w(uint32_t g) const { return _w[g]; }
-    void dump(ostream &os);
+    void dump(ostream &os) const;
     void fillTail(uint32_t size) { _w[14] = size * 8; _w[15] = size >> 29; }
     void clear() { for (int i = 0; i < 16; i++) _w[i] = 0; }
 };

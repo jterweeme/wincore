@@ -23,7 +23,7 @@ const uint32_t r[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22
                       4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
                       6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21};
 
-uint32_t Chunk::to_int32(const uint8_t * const bytes)
+uint32_t Chunk::to_int32(const uint8_t * const bytes) const
 {
     return (uint32_t) bytes[0]
         | ((uint32_t) bytes[1] << 8)
@@ -60,7 +60,7 @@ void Hash::read(const char *hash)
 #endif
 }
 
-void Hash::dump(ostream &os)
+void Hash::dump(ostream &os) const
 {
     os << hex << setfill('0')
        << setw(8) << be32toh(_h0)
@@ -140,7 +140,7 @@ void Hasher::stream(const char *s, size_t size)
     }
 }
 
-void Chunk::dump(ostream &os)
+void Chunk::dump(ostream &os) const
 {
     for (int i = 0; i < 16; i++)
         os << hex << setw(8) << _w[i] << "\n";

@@ -1,9 +1,70 @@
-#include "main.h"
+#include "hasher.h"
 
-void Paar::dump(ostream &os)
+class Options
+{
+    bool _check;
+    bool _cin;
+    int _argc;
+    char **_argv;
+    int _argp;
+public:
+    Options(int argc, char **argv)
+      : _check(false), _cin(false), _argc(argc), _argv(argv), _argp(0)
+    { }
+
+    bool check() const { return _check; }
+    void parse(int argc, char **argv);
+    void parse() { parse(_argc, _argv); }
+    void dump(ostream &os) const;
+    bool cin() const { return _cin; }
+    bool isFile(char *arg) const { return arg[0] != '-'; }
+    bool hasNextFileName() const;
+    string nextFileName();
+};
+
+class Paar
+{
+    Hash _hash;
+    string _fn;
+public:
+    Paar() { }
+    Paar(Hash &hash, string &fn) : _hash(hash), _fn(fn) { }
+    void read(istream &is) const;
+    Hash hash() const { return _hash; }
+    string fn() const { return _fn; }
+    void dump(ostream &os) const;
+};
+
+class App
+{
+    Hasher _hasher;
+    Options _options;
+    void checkFile2(const char *fn);
+    void checkPaar(Paar &paar);
+public:
+    App(int argc, char **argv) : _options(argc, argv) { }
+    int run();
+};
+
+bool Options::hasNextFileName() const
+{
+    for (int i = _argp + 1; i < _argc; i++)
+        if (isFile(_argv[i]))
+            return true;
+
+    return false;
+}
+
+void Paar::dump(ostream &os) const
 {
     _hash.dump(os);
     os << "  " << _fn << "\n";
+}
+
+string Options::nextFileName()
+{
+    while (!isFile(_argv[++_argp]));
+    return string(_argv[_argp]);
 }
 
 void Options::parse(const int argc, char **argv)
@@ -25,7 +86,7 @@ void Options::parse(const int argc, char **argv)
     }
 }
 
-void Options::dump(ostream &os)
+void Options::dump(ostream &os) const
 {
     if (_cin)
         os << "Standard Input\n";
@@ -46,7 +107,7 @@ void App::checkFile2(const char *fn)
     cout << "  " << fn << "\n";
 }
 
-void Paar::read(istream &is)
+void Paar::read(istream &is) const
 {
     char line[255] = {0};
     is.getline(line, sizeof(line));
