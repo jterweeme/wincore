@@ -2349,9 +2349,9 @@ uint8_t App::decodeNextMCU()
 
         if (gReduce)
         {
-         for (k = 1; k < 64; k++)
-         {
-            s = huffDecode(compACTab ? &gHuffTab3 : &gHuffTab2, compACTab ? gHuffVal3 : gHuffVal2);
+            for (k = 1; k < 64; k++)
+            {
+                s = huffDecode(compACTab?&gHuffTab3:&gHuffTab2,compACTab?gHuffVal3:gHuffVal2);
 
             numExtraBits = s & 0xF;
             if (numExtraBits)
