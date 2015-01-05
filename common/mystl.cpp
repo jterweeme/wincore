@@ -72,7 +72,7 @@ ostream2& ostream2::operator << (const uint32_t u)
         fflush(_fp);
         break;
     case base2::HEX:
-        fprintf(_fp, "%08x", u);
+        fprintf(_fp, "%02x", u);
         fflush(_fp);
         break;
     default:
@@ -174,10 +174,8 @@ namespace mystl
     }
 
     dummy dummy1;
-    Hex hex;
     dummy& setw(int length) { return dummy1; }
     dummy& setfill(int length) { return dummy1; }
-    base2 oct(base2::OCT);
 }
 
 

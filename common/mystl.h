@@ -1,7 +1,6 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <stdio.h>
-//#include <stdlib.h>
 
 class MyUtil
 {
@@ -141,7 +140,6 @@ public:
     ostream2& operator << (string2 s) { fprintf(_fp, s.c_str()); return *this; }
     ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
     virtual ostream2& operator << (dummy &d) { return *this; }
-    virtual ostream2& operator << (Hex &hex) { return *this; }
     virtual ostream2& operator << (const uint32_t u);
     virtual ostream2& operator << (base2 &i) { _manip = i; return *this; }
     virtual ~ostream2() { }
@@ -154,27 +152,6 @@ public:
     static const MyUtil::uint8_t binary = 2;
 };
 
-class ostringstream3 : public ostream2
-{
-public:
-    string2 str() { return string2("onzin"); }
-};
-
-#if 0
-template <class T> class vector2
-{
-    T _buf[100];        // uiteraard moet dit anders
-    size_t _capacity;
-    size_t _size;
-public:
-    typedef T * iterator;
-    vector2() : _capacity(100), _size(0) {  }
-    void push_back(T a) { _buf[_size++] = a; }
-    iterator begin() { return _buf; }
-    iterator end() { return _buf + _size; }
-    virtual ~vector2() { }
-};
-#endif
 
 
 namespace mystl
@@ -188,22 +165,18 @@ namespace mystl
     unsigned long stoul(const string &str, size_t *idx = 0, int base = 10);
     extern long int strtol(const char *s, char **end, int base);
     extern uint32_t be32toh(uint32_t v);
-#if 0
-    template <class T> class vector : public vector2<T> { };
-#endif
     typedef ios2 ios;
     typedef istream2 istream;
     typedef ifstream2 ifstream;
     typedef ostream2 ostream;
-    typedef ostringstream3 ostringstream;
     typedef fstream2 fstream;
     extern char *strncpy(char *dest, const char *src, size_t n);
-    extern base2 oct;
+    static base2 oct(base2::OCT);
+    static base2 hex(base2::HEX);
     static istream cin(stdin);
     static ostream cout(stdout);
     static ostream cerr(stderr);
     extern dummy dummy1;
-    extern Hex hex;
     extern dummy& setw(int length);
     extern dummy& setfill(int length);
 }
