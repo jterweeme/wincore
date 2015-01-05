@@ -147,7 +147,7 @@ class App
     int PJPG_DESCALE(int x);
     int PJPG_ARITH_SHIFT_RIGHT_N_16(int x, int n) const { return x >> n; }
     int PJPG_ARITH_SHIFT_RIGHT_8_L(int x) const { return ((x) >> 8); }
-    uint8_t clamp(int16_t s);
+    uint8_t clamp(int16_t s) const;
     int16_t imul_b5(int16_t w) const;
     int16_t imul_b4(int16_t w) const;
     int16_t imul_b2(int16_t w) const;
@@ -173,7 +173,8 @@ class App
     int16_t huffExtend(uint16_t x, uint8_t s);
     void idctCols();
     void idctRows();
-    int stbi_write_tga(char const *filename, int x, int y, int comp, void *data);
+    int write_tga(ostream &os, int x, int y, int comp, void *data);
+    int write_tga(char const *filename, int x, int y, int comp, void *data);
     void huffCreate(const uint8_t* pBits, HuffTable* pHuffTable);
     void upsampleCbV(uint8_t srcOfs, uint8_t dstOfs);
     void upsampleCr(uint8_t srcOfs, uint8_t dstOfs);
@@ -210,7 +211,7 @@ class App
     uint8_t initScan();
     void fillInBuf();
     uint8_t pjpeg_decode_init(pjpeg_image_info_t *pInfo, void *pCallback_data, uint8_t reduce);
-    uint8_t neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes, void *pCallback_data);
+    uint8_t neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes);
 
     uint8_t *pjpeg_load_from_file(const char *pFilename, int *x, int *y,
         int *comps, pjpeg_scan_type_t *pScan_type, int reduce);
@@ -276,24 +277,17 @@ void App::write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
     }
 }
 
-int App::stbi_write_tga(char const *filename, int x, int y, int comp, void *data)
+int App::write_tga(ostream &f, int x, int y, int comp, void *data)
 {
     int has_alpha = !(comp & 1);
-    ofstream f(filename);
-    
-    if (!f)
-        return f != NULL;
-
     write8(f, 0);
     write8(f, 0);
     write8(f, 2);
-
     write8(f,0);
     write8(f,0>>8);
     write8(f,0);
     write8(f,0>>8);
     write8(f, 0);
-
     write8(f,0);
     write8(f,0>>8);
     write8(f,0);
@@ -302,13 +296,18 @@ int App::stbi_write_tga(char const *filename, int x, int y, int comp, void *data
     write8(f,x>>8);
     write8(f,y);
     write8(f,y>>8);
-
     write8(f, 24 + 8 * has_alpha);
     write8(f, 8 * has_alpha);
-
     write_pixels(f, -1, -1, x,y,comp,data, has_alpha, 0);
+    return 0;
+}
+
+int App::write_tga(char const *filename, int x, int y, int comp, void *data)
+{
+    ofstream f(filename);
+    write_tga(f, x, y, comp, data);
     f.close();
-    return f != NULL;
+    return 0;
 }
 
 int App::print_usage(ostream &os)
@@ -321,7 +320,7 @@ int App::print_usage(ostream &os)
     return EXIT_FAILURE;
 }
 
-uint8_t App::neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes, void *pCallback_data)
+uint8_t App::neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes)
 {
     uint32_t n = min(g_nInFileSize - g_nInFileOfs, buf_size);
 
@@ -610,10 +609,7 @@ int App::run(int argc, char **argv)
     }
 
     printf("Scan type: %s\n", p);
-
-    if (!stbi_write_tga(pDst_filename, width, height, comps, pImage))
-        throw "Failed writing image to destination file!";
-
+    write_tga(pDst_filename, width, height, comps, pImage);
     printf("Successfully wrote destination file %s\n", pDst_filename);
     free(pImage);
     return 0;
@@ -682,8 +678,7 @@ void App::fillInBuf()
     gInBufOfs = 4;
     gInBufLeft = 0;
 
-    status = neat(gInBuf + gInBufOfs, PJPG_MAX_IN_BUF_SIZE - gInBufOfs, &gInBufLeft,
-                    g_pCallback_data);
+    status = neat(gInBuf + gInBufOfs, PJPG_MAX_IN_BUF_SIZE - gInBufOfs, &gInBufLeft);
 
     if (status)
         gCallbackStatus = status;
@@ -1577,7 +1572,7 @@ int16_t App::imul_b5(int16_t w) const
     return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
 }
 
-uint8_t App::clamp(int16_t s)
+uint8_t App::clamp(int16_t s) const
 {
     if ((uint16_t)s > 255U)
     {
