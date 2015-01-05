@@ -7,7 +7,8 @@ VALGRIND = valgrind $(VALFLAGS)
 all:
 	g++ $(CXXFLAGS) -o md5s md5s.cpp mystl.cpp hasher.cpp
 	g++ $(CXXFLAGS) -o test1 test1.cpp mystl.cpp hasher.cpp
-	g++ -o jpg2tga -Wall -Wno-write-strings -g -O3 jpg2tga.cpp -lm
+	g++ $(CXXFLAGS) -o jpg2tga jpg2tga.cpp -lm
+	g++ $(CXXFLAGS) -o uuidgen uuidgen.cpp
 
 test:
 	valgrind $(VALFLAGS) ./test1
@@ -15,7 +16,7 @@ test:
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
 
 clean:
-	rm -Rvf *.o jpg2tga *.tga md5s test1
+	rm -Rvf *.o jpg2tga *.tga md5s test1 uuidgen
 
 rebuild: clean all
 

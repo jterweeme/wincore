@@ -5,6 +5,8 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <iostream>
+using namespace std;
 
 enum
 {
@@ -70,7 +72,8 @@ typedef struct
     unsigned char *m_pMCUBufR;
     unsigned char *m_pMCUBufG;
     unsigned char *m_pMCUBufB;
-} pjpeg_image_info_t;
+}
+pjpeg_image_info_t;
 
 typedef struct HuffTableT
 {
@@ -158,8 +161,8 @@ class App
     void stuffChar(uint8_t i);
     uint8_t *getHuffVal(uint8_t index);
     void write8(FILE *f, int x) { uint8_t z = (uint8_t)x; fwrite(&z,1,1,f); }
-    void writefv(FILE *f, char *fmt, va_list v);
-    void writef(FILE *f, char *fmt, ...);
+    void writefv(FILE *f, const char *fmt, va_list v);
+    void writef(FILE *f, const char *fmt, ...);
     uint8_t getChar();
     uint16_t getMaxHuffCodes(uint8_t index) { return (index < 2) ? 12 : 255; }
     int16_t getExtendOffset(uint8_t i);
@@ -202,7 +205,7 @@ class App
     uint8_t processRestart();
     uint8_t initFrame();
     uint8_t decodeNextMCU();
-    int print_usage();
+    int print_usage(ostream &os);
     unsigned char pjpeg_decode_mcu();
     void get_pixel(int* pDst, const uint8_t *pSrc, int luma_only, int num_comps);
     uint8_t initScan();
@@ -214,7 +217,7 @@ class App
         int *comps, pjpeg_scan_type_t *pScan_type, int reduce);
 
     int outfile(char const *filename, int rgb_dir, int vdir, int x, int y,
-                int comp, void *data, int alpha, int pad, char *fmt, ...);
+                int comp, void *data, int alpha, int pad, const char *fmt, ...);
 
     void write_pixels(FILE *f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad);
@@ -222,7 +225,7 @@ public:
     int run(int argc, char **argv);
 };
 
-void App::writefv(FILE *f, char *fmt, va_list v)
+void App::writefv(FILE *f, const char *fmt, va_list v)
 {
     while (*fmt)
     {
@@ -256,21 +259,25 @@ void App::writefv(FILE *f, char *fmt, va_list v)
 void App::write_pixels(FILE *f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad)
 {
-   uint8_t bg[3] = { 255, 0, 255}, px[3];
-   uint32_t zero = 0;
-   int i,j,k, j_end;
+    uint8_t bg[3] = { 255, 0, 255}, px[3];
+    uint32_t zero = 0;
+    int i,j,k, j_end;
 
-   if (vdir < 0) 
-      j_end = -1, j = y-1;
-   else
-      j_end =  y, j = 0;
+    if (vdir < 0) 
+        j_end = -1, j = y-1;
+    else
+        j_end =  y, j = 0;
 
-   for (; j != j_end; j += vdir) {
-      for (i=0; i < x; ++i) {
-         uint8_t *d = (uint8_t *) data + (j*x+i)*comp;
-         if (write_alpha < 0)
-            fwrite(&d[comp-1], 1, 1, f);
-         switch (comp) {
+    for (; j != j_end; j += vdir)
+    {
+        for (i=0; i < x; ++i)
+        {
+            uint8_t *d = (uint8_t *) data + (j*x+i)*comp;
+
+            if (write_alpha < 0)
+                fwrite(&d[comp-1], 1, 1, f);
+
+            switch (comp) {
             case 1:
             case 2: writef(f, "111", d[0],d[0],d[0]);
                     break;
@@ -292,7 +299,7 @@ void App::write_pixels(FILE *f, int rgb_dir, int vdir, int x, int y,
    }
 }
 
-void App::writef(FILE *f, char *fmt, ...)
+void App::writef(FILE *f, const char *fmt, ...)
 {
     va_list v;
     va_start(v, fmt);
@@ -309,7 +316,7 @@ int App::stbi_write_tga(char const *filename, int x, int y, int comp, void *data
 }
 
 int App::outfile(char const *filename, int rgb_dir, int vdir, int x, int y,
-                int comp, void *data, int alpha, int pad, char *fmt, ...)
+                int comp, void *data, int alpha, int pad, const char *fmt, ...)
 {
     FILE *f = fopen(filename, "wb");
 
@@ -325,14 +332,13 @@ int App::outfile(char const *filename, int rgb_dir, int vdir, int x, int y,
     return f != NULL;
 }
 
-int App::print_usage()
+int App::print_usage(ostream &os)
 {
-    printf("Usage: jpg2tga [source_file] [dest_file] <reduce>\n");
-    printf("source_file: JPEG file to decode. Note: Progressive files are not supported.\n");
-    printf("dest_file: Output .TGA file\n");
-    printf("reduce: Optional, if 1 the JPEG file is quickly decoded to ~1/8th resolution.\n");
-    printf("\n");
-    printf("Outputs 8-bit grayscale or truecolor 24-bit TGA files.\n");
+    os << "Usage: jpg2tga [source_file] [dest_file] <reduce>\n"
+       << "source_file: JPEG file to decode. Note: Progressive files are not supported.\n"
+       << "dest_file: Output .TGA file\n"
+       << "reduce: Optional, if 1 the JPEG file is quickly decoded to ~1/8th resolution.\n"
+       << "\nOutputs 8-bit grayscale or truecolor 24-bit TGA files.\n";
     return EXIT_FAILURE;
 }
 
@@ -584,7 +590,7 @@ int App::run(int argc, char **argv)
     printf("picojpeg example v1.1, Rich Geldreich, Compiled " __TIME__ " " __DATE__ "\n");
 
     if ((argc < 3) || (argc > 4))
-        return print_usage();
+        return print_usage(cout);
    
     pSrc_filename = argv[n++];
     pDst_filename = argv[n++];
@@ -690,7 +696,7 @@ static const int8_t ZAG[] =
 
 void App::fillInBuf()
 {
-    unsigned char status;
+    uint8_t status;
     gInBufOfs = 4;
     gInBufLeft = 0;
 
@@ -794,30 +800,30 @@ uint16_t App::getExtendTest(uint8_t i)
 {
     switch (i)
     {
-      case 0: return 0;
-      case 1: return 0x0001;
-      case 2: return 0x0002;
-      case 3: return 0x0004;
-      case 4: return 0x0008;
-      case 5: return 0x0010; 
-      case 6: return 0x0020;
-      case 7: return 0x0040;
-      case 8:  return 0x0080;
-      case 9:  return 0x0100;
-      case 10: return 0x0200;
-      case 11: return 0x0400;
-      case 12: return 0x0800;
-      case 13: return 0x1000;
-      case 14: return 0x2000; 
-      case 15: return 0x4000;
-      default: return 0;
+    case 0: return 0;
+    case 1: return 0x0001;
+    case 2: return 0x0002;
+    case 3: return 0x0004;
+    case 4: return 0x0008;
+    case 5: return 0x0010; 
+    case 6: return 0x0020;
+    case 7: return 0x0040;
+    case 8:  return 0x0080;
+    case 9:  return 0x0100;
+    case 10: return 0x0200;
+    case 11: return 0x0400;
+    case 12: return 0x0800;
+    case 13: return 0x1000;
+    case 14: return 0x2000; 
+    case 15: return 0x4000;
+    default: return 0;
     }      
 }
 
 int16_t App::getExtendOffset(uint8_t i)
 { 
-   switch (i)
-   {
+    switch (i)
+    {
       case 0: return 0;
       case 1: return ((-1)<<1) + 1; 
       case 2: return ((-1)<<2) + 1; 
@@ -835,8 +841,8 @@ int16_t App::getExtendOffset(uint8_t i)
       case 14: return ((-1)<<14) + 1; 
       case 15: return ((-1)<<15) + 1;
       default: return 0;
-   }
-};
+    }
+}
 
 int16_t App::huffExtend(uint16_t x, uint8_t s)
 {
@@ -917,14 +923,14 @@ HuffTable *App::getHuffTable(uint8_t index)
 
 uint8_t *App::getHuffVal(uint8_t index)
 {
-   switch (index)
-   {
-      case 0: return gHuffVal0;
-      case 1: return gHuffVal1;
-      case 2: return gHuffVal2;
-      case 3: return gHuffVal3;
-      default: return 0;
-   }
+    switch (index)
+    {
+        case 0: return gHuffVal0;
+        case 1: return gHuffVal1;
+        case 2: return gHuffVal2;
+        case 3: return gHuffVal3;
+        default: return 0;
+    }
 }
 
 uint8_t App::readDHTMarker()
@@ -1195,75 +1201,58 @@ uint8_t App::nextMarker()
 
 uint8_t App::processMarkers(uint8_t *pMarker)
 {
-   for ( ; ; )
-   {
-      uint8_t c = nextMarker();
+    for ( ; ; )
+    {
+        uint8_t c = nextMarker();
 
-      switch (c)
-      {
-         case M_SOF0:
-         case M_SOF1:
-         case M_SOF2:
-         case M_SOF3:
-         case M_SOF5:
-         case M_SOF6:
-         case M_SOF7:
-         case M_SOF9:
-         case M_SOF10:
-         case M_SOF11:
-         case M_SOF13:
-         case M_SOF14:
-         case M_SOF15:
-         case M_SOI:
-         case M_EOI:
-         case M_SOS:
-         {
+        switch (c)
+        {
+        case M_SOF0:
+        case M_SOF1:
+        case M_SOF2:
+        case M_SOF3:
+        case M_SOF5:
+        case M_SOF6:
+        case M_SOF7:
+        case M_SOF9:
+        case M_SOF10:
+        case M_SOF11:
+        case M_SOF13:
+        case M_SOF14:
+        case M_SOF15:
+        case M_SOI:
+        case M_EOI:
+        case M_SOS:
             *pMarker = c;
             return 0;
-         }
-         case M_DHT:
-         {
+        case M_DHT:
             readDHTMarker();
             break;
-         }
-         case M_DAC:
-         {
+        case M_DAC:
             return PJPG_NO_ARITHMITIC_SUPPORT;
-         }
-         case M_DQT:
-         {
+        case M_DQT:
             readDQTMarker();
             break;
-         }
-         case M_DRI:
-         {
+        case M_DRI:
             readDRIMarker();
             break;
-         }
-
-         case M_JPG:
-         case M_RST0:
-         case M_RST1:
-         case M_RST2:
-         case M_RST3:
-         case M_RST4:
-         case M_RST5:
-         case M_RST6:
-         case M_RST7:
-         case M_TEM:
-         {
+        case M_JPG:
+        case M_RST0:
+        case M_RST1:
+        case M_RST2:
+        case M_RST3:
+        case M_RST4:
+        case M_RST5:
+        case M_RST6:
+        case M_RST7:
+        case M_TEM:
             return PJPG_UNEXPECTED_MARKER;
-         }
-         default:
-         {
+        default:
             skipVariableMarker();
             break;
-         }
-      }
-   }
+        }
+    }
 }
-
-
 
 uint8_t App::locateSOIMarker()
 {
@@ -1361,7 +1350,9 @@ uint8_t App::locateSOSMarker(uint8_t* pFoundEOI)
         return 0;
     }
     else if (c != M_SOS)
+    {
         return PJPG_UNEXPECTED_MARKER;
+    }
 
     return readSOSMarker();
 }
@@ -1729,19 +1720,19 @@ void App::idctCols()
             int16_t x40 = x30 + x13;
             int16_t x43 = x30 - x13;
             int16_t x41 = x31 + x32;
-         int16_t x42 = x31 - x32;
-         *(pSrc+0*8) = clamp(PJPG_DESCALE(x40 + x17)  + 128);
-         *(pSrc+1*8) = clamp(PJPG_DESCALE(x41 + tmp2) + 128);
-         *(pSrc+2*8) = clamp(PJPG_DESCALE(x42 + tmp3) + 128);
-         *(pSrc+3*8) = clamp(PJPG_DESCALE(x43 - x44)  + 128);
-         *(pSrc+4*8) = clamp(PJPG_DESCALE(x43 + x44)  + 128);
-         *(pSrc+5*8) = clamp(PJPG_DESCALE(x42 - tmp3) + 128);
-         *(pSrc+6*8) = clamp(PJPG_DESCALE(x41 - tmp2) + 128);
-         *(pSrc+7*8) = clamp(PJPG_DESCALE(x40 - x17)  + 128);
-      }
+            int16_t x42 = x31 - x32;
+            *(pSrc+0*8) = clamp(PJPG_DESCALE(x40 + x17)  + 128);
+            *(pSrc+1*8) = clamp(PJPG_DESCALE(x41 + tmp2) + 128);
+            *(pSrc+2*8) = clamp(PJPG_DESCALE(x42 + tmp3) + 128);
+            *(pSrc+3*8) = clamp(PJPG_DESCALE(x43 - x44)  + 128);
+            *(pSrc+4*8) = clamp(PJPG_DESCALE(x43 + x44)  + 128);
+            *(pSrc+5*8) = clamp(PJPG_DESCALE(x42 - tmp3) + 128);
+            *(pSrc+6*8) = clamp(PJPG_DESCALE(x41 - tmp2) + 128);
+            *(pSrc+7*8) = clamp(PJPG_DESCALE(x40 - x17)  + 128);
+        }
 
-      pSrc++;      
-   }      
+        pSrc++;      
+    }      
 }
 
 void App::upsampleCb(uint8_t srcOfs, uint8_t dstOfs)
@@ -1804,28 +1795,28 @@ void App::upsampleCbH(uint8_t srcOfs, uint8_t dstOfs)
    
 void App::upsampleCbV(uint8_t srcOfs, uint8_t dstOfs)
 {
-   uint8_t x, y;
-   int16_t *pSrc = gCoeffBuf + srcOfs;
-   uint8_t *pDstG = gMCUBufG + dstOfs;
-   uint8_t *pDstB = gMCUBufB + dstOfs;
-   for (y = 0; y < 4; y++)
-   {
-      for (x = 0; x < 8; x++)
-      {
-         uint8_t cb = (uint8_t)*pSrc++;
-         int16_t cbG, cbB;
-         cbG = ((cb * 88U) >> 8U) - 44U;
-         pDstG[0] = subAndClamp(pDstG[0], cbG);
-         pDstG[8] = subAndClamp(pDstG[8], cbG);
-         cbB = (cb + ((cb * 198U) >> 8U)) - 227U;
-         pDstB[0] = addAndClamp(pDstB[0], cbB);
-         pDstB[8] = addAndClamp(pDstB[8], cbB);
-         ++pDstG;
-         ++pDstB;
-      }
+    uint8_t x, y;
+    int16_t *pSrc = gCoeffBuf + srcOfs;
+    uint8_t *pDstG = gMCUBufG + dstOfs;
+    uint8_t *pDstB = gMCUBufB + dstOfs;
+    for (y = 0; y < 4; y++)
+    {
+        for (x = 0; x < 8; x++)
+        {
+            uint8_t cb = (uint8_t)*pSrc++;
+            int16_t cbG, cbB;
+            cbG = ((cb * 88U) >> 8U) - 44U;
+            pDstG[0] = subAndClamp(pDstG[0], cbG);
+            pDstG[8] = subAndClamp(pDstG[8], cbG);
+            cbB = (cb + ((cb * 198U) >> 8U)) - 227U;
+            pDstB[0] = addAndClamp(pDstB[0], cbB);
+            pDstB[8] = addAndClamp(pDstB[8], cbB);
+            ++pDstG;
+            ++pDstB;
+        }
 
-      pDstG = pDstG - 8 + 16;
-      pDstB = pDstB - 8 + 16;
+        pDstG = pDstG - 8 + 16;
+        pDstB = pDstB - 8 + 16;
    }
 }   
 
@@ -1872,16 +1863,12 @@ void App::upsampleCrH(uint8_t srcOfs, uint8_t dstOfs)
         for (uint8_t x = 0; x < 4; x++)
         {
             uint8_t cr = (uint8_t)*pSrc++;
-            int16_t crR, crG;
-
-            crR = (cr + ((cr * 103U) >> 8U)) - 179;
+            int16_t crR = (cr + ((cr * 103U) >> 8U)) - 179;
             pDstR[0] = addAndClamp(pDstR[0], crR);
             pDstR[1] = addAndClamp(pDstR[1], crR);
-         
-            crG = ((cr * 183U) >> 8U) - 91;
+            int16_t crG = ((cr * 183U) >> 8U) - 91;
             pDstG[0] = subAndClamp(pDstG[0], crG);
             pDstG[1] = subAndClamp(pDstG[1], crG);
-         
             pDstR += 2;
             pDstG += 2;
         }
@@ -1954,9 +1941,9 @@ void App::convertCb(uint8_t dstOfs)
 
 void App::convertCr(uint8_t dstOfs)
 {
-    uint8_t * pDstR = gMCUBufR + dstOfs;
-    uint8_t * pDstG = gMCUBufG + dstOfs;
-    int16_t * pSrc = gCoeffBuf;
+    uint8_t *pDstR = gMCUBufR + dstOfs;
+    uint8_t *pDstG = gMCUBufG + dstOfs;
+    int16_t *pSrc = gCoeffBuf;
 
     for (uint8_t i = 64; i > 0; i--)
     {
@@ -2041,27 +2028,19 @@ void App::transformBlock(uint8_t mcuBlock)
          switch (mcuBlock)
          {
             case 0:
-            {
                copyY(0);
                break;
-            }
             case 1:
-            {
                copyY(64);
                break;
-            }
             case 2:
-            {
                upsampleCbH(0, 0);
                upsampleCbH(4, 64);
                break;
-            }
             case 3:
-            {
                upsampleCrH(0, 0);
                upsampleCrH(4, 64);
                break;
-            }
          }
          
          break;
@@ -2071,41 +2050,29 @@ void App::transformBlock(uint8_t mcuBlock)
          switch (mcuBlock)
          {
             case 0:
-            {
                copyY(0);
                break;
-            }
             case 1:
-            {
                copyY(64);
                break;
-            }
             case 2:
-            {
                copyY(128);
                break;
-            }
             case 3:
-            {
                copyY(192);
                break;
-            }
             case 4:
-            {
                upsampleCb(0, 0);
                upsampleCb(4, 64);
                upsampleCb(4*8, 128);
                upsampleCb(4+4*8, 192);
                break;
-            }
             case 5:
-            {
                upsampleCr(0, 0);
                upsampleCr(4, 64);
                upsampleCr(4*8, 128);
                upsampleCr(4+4*8, 192);
                break;
-            }
          }
 
          break;
@@ -2130,30 +2097,22 @@ void App::transformBlockReduce(uint8_t mcuBlock)
          switch (mcuBlock)
          {
             case 0:
-            {
                gMCUBufR[0] = c;
                gMCUBufG[0] = c;
                gMCUBufB[0] = c;
                break;
-            }
             case 1:
-            {
                cbG = ((c * 88U) >> 8U) - 44U;
                gMCUBufG[0] = subAndClamp(gMCUBufG[0], cbG);
-
                cbB = (c + ((c * 198U) >> 8U)) - 227U;
                gMCUBufB[0] = addAndClamp(gMCUBufB[0], cbB);
                break;
-            }
             case 2:
-            {
                crR = (c + ((c * 103U) >> 8U)) - 179;
                gMCUBufR[0] = addAndClamp(gMCUBufR[0], crR);
-
                crG = ((c * 183U) >> 8U) - 91;
                gMCUBufG[0] = subAndClamp(gMCUBufG[0], crG);
                break;
-            }
          }
 
          break;
@@ -2163,21 +2122,16 @@ void App::transformBlockReduce(uint8_t mcuBlock)
          switch (mcuBlock)
          {
             case 0:
-            {
                gMCUBufR[0] = c;
                gMCUBufG[0] = c;
                gMCUBufB[0] = c;
                break;
-            }
             case 1:
-            {
                gMCUBufR[128] = c;
                gMCUBufG[128] = c;
                gMCUBufB[128] = c;
                break;
-            }
             case 2:
-            {
                cbG = ((c * 88U) >> 8U) - 44U;
                gMCUBufG[0] = subAndClamp(gMCUBufG[0], cbG);
                gMCUBufG[128] = subAndClamp(gMCUBufG[128], cbG);
@@ -2185,9 +2139,7 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                gMCUBufB[0] = addAndClamp(gMCUBufB[0], cbB);
                gMCUBufB[128] = addAndClamp(gMCUBufB[128], cbB);
                break;
-            }
             case 3:
-            {
                crR = (c + ((c * 103U) >> 8U)) - 179;
                gMCUBufR[0] = addAndClamp(gMCUBufR[0], crR);
                gMCUBufR[128] = addAndClamp(gMCUBufR[128], crR);
@@ -2195,7 +2147,6 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                gMCUBufG[0] = subAndClamp(gMCUBufG[0], crG);
                gMCUBufG[128] = subAndClamp(gMCUBufG[128], crG);
                break;
-            }
          }
          break;
       }
@@ -2204,21 +2155,16 @@ void App::transformBlockReduce(uint8_t mcuBlock)
          switch (mcuBlock)
          {
             case 0:
-            {
                gMCUBufR[0] = c;
                gMCUBufG[0] = c;
                gMCUBufB[0] = c;
                break;
-            }
             case 1:
-            {
                gMCUBufR[64] = c;
                gMCUBufG[64] = c;
                gMCUBufB[64] = c;
                break;
-            }
             case 2:
-            {
                cbG = ((c * 88U) >> 8U) - 44U;
                gMCUBufG[0] = subAndClamp(gMCUBufG[0], cbG);
                gMCUBufG[64] = subAndClamp(gMCUBufG[64], cbG);
@@ -2226,9 +2172,7 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                gMCUBufB[0] = addAndClamp(gMCUBufB[0], cbB);
                gMCUBufB[64] = addAndClamp(gMCUBufB[64], cbB);
                break;
-            }
             case 3:
-            {
                crR = (c + ((c * 103U) >> 8U)) - 179;
                gMCUBufR[0] = addAndClamp(gMCUBufR[0], crR);
                gMCUBufR[64] = addAndClamp(gMCUBufR[64], crR);
@@ -2236,7 +2180,6 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                gMCUBufG[0] = subAndClamp(gMCUBufG[0], crG);
                gMCUBufG[64] = subAndClamp(gMCUBufG[64], crG);
                break;
-            }
          }
          break;
       }
@@ -2245,35 +2188,26 @@ void App::transformBlockReduce(uint8_t mcuBlock)
          switch (mcuBlock)
          {
             case 0:
-            {
                gMCUBufR[0] = c;
                gMCUBufG[0] = c;
                gMCUBufB[0] = c;
                break;
-            }
             case 1:
-            {
                gMCUBufR[64] = c;
                gMCUBufG[64] = c;
                gMCUBufB[64] = c;
                break;
-            }
             case 2:
-            {
                gMCUBufR[128] = c;
                gMCUBufG[128] = c;
                gMCUBufB[128] = c;
                break;
-            }
             case 3:
-            {
                gMCUBufR[192] = c;
                gMCUBufG[192] = c;
                gMCUBufB[192] = c;
                break;
-            }
             case 4:
-            {
                cbG = ((c * 88U) >> 8U) - 44U;
                gMCUBufG[0] = subAndClamp(gMCUBufG[0], cbG);
                gMCUBufG[64] = subAndClamp(gMCUBufG[64], cbG);
@@ -2285,9 +2219,7 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                gMCUBufB[128] = addAndClamp(gMCUBufB[128], cbB);
                gMCUBufB[192] = addAndClamp(gMCUBufB[192], cbB);
                break;
-            }
             case 5:
-            {
                crR = (c + ((c * 103U) >> 8U)) - 179;
                gMCUBufR[0] = addAndClamp(gMCUBufR[0], crR);
                gMCUBufR[64] = addAndClamp(gMCUBufR[64], crR);
@@ -2299,7 +2231,6 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                gMCUBufG[128] = subAndClamp(gMCUBufG[128], crG);
                gMCUBufG[192] = subAndClamp(gMCUBufG[192], crG);
                break;
-            }
          }
          break;
       }
