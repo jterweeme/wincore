@@ -56,6 +56,18 @@ template <typename T> T MyUtil::swap_endian(T u)
 }
 #endif
 
+class base2
+{
+    int _type;
+public:
+    static const MyUtil::uint8_t HEX = 1;
+    static const MyUtil::uint8_t DEC = 2;
+    static const MyUtil::uint8_t OCT = 3;
+    base2() { }
+    base2(int type) : _type(type) { }
+    int type() const { return _type; }
+};
+
 class ios2
 {
 public:
@@ -116,6 +128,7 @@ class ostream2
 {
     typedef MyUtil::uint8_t uint8_t;
     typedef MyUtil::uint32_t uint32_t;
+    base2 _manip;
 protected:
     uint8_t _mode;
     FILE *_fp;
@@ -130,6 +143,7 @@ public:
     virtual ostream2& operator << (dummy &d) { return *this; }
     virtual ostream2& operator << (Hex &hex) { return *this; }
     virtual ostream2& operator << (const uint32_t u);
+    virtual ostream2& operator << (base2 &i) { _manip = i; return *this; }
     virtual ~ostream2() { }
 };
 
@@ -184,6 +198,7 @@ namespace mystl
     typedef ostringstream3 ostringstream;
     typedef fstream2 fstream;
     extern char *strncpy(char *dest, const char *src, size_t n);
+    extern base2 oct;
     static istream cin(stdin);
     static ostream cout(stdout);
     static ostream cerr(stderr);

@@ -65,8 +65,21 @@ long int MyUtil::strtol(const char *nptr, char **endptr, int base)
 
 ostream2& ostream2::operator << (const uint32_t u)
 {
-    fprintf(_fp, "%08x", u);
-    fflush(_fp);
+    switch (_manip.type())
+    {
+    case base2::OCT:
+        fprintf(_fp, "%07o", u);
+        fflush(_fp);
+        break;
+    case base2::HEX:
+        fprintf(_fp, "%08x", u);
+        fflush(_fp);
+        break;
+    default:
+        fprintf(_fp, "%d", u);
+        fflush(_fp);
+        break;
+    }
     return *this;
 }
 
@@ -164,6 +177,7 @@ namespace mystl
     Hex hex;
     dummy& setw(int length) { return dummy1; }
     dummy& setfill(int length) { return dummy1; }
+    base2 oct(base2::OCT);
 }
 
 

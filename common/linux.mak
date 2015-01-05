@@ -1,4 +1,4 @@
-CXXFLAGS = -g -Wall -Wno-parentheses
+CXXFLAGS = -g -Wall -Wno-parentheses --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = valgrind $(VALFLAGS)
 
@@ -9,7 +9,7 @@ all:
 	g++ $(CXXFLAGS) -o test1 test1.cpp mystl.cpp hasher.cpp
 	g++ $(CXXFLAGS) -o jpg2tga jpg2tga.cpp -lm
 	g++ $(CXXFLAGS) -o uuidgen uuidgen.cpp
-	g++ $(CXXFLAGS) -o od od.cpp mystlod.cpp odmain.cpp
+	g++ $(CXXFLAGS) -o od od.cpp mystl.cpp odmain.cpp
 
 
 test:
@@ -19,7 +19,7 @@ test:
 	$(VALGRIND) ./od zero.dat | diff zero.od -
 
 clean:
-	rm -Rvf *.o jpg2tga *.tga md5s test1 uuidgen
+	rm -Rvf *.o jpg2tga *.tga od md5s test1 uuidgen
 
 rebuild: clean all
 
