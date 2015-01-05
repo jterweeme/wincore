@@ -231,14 +231,21 @@ void App::writefv(FILE *f, const char *fmt, va_list v)
     {
         switch (*fmt++)
         {
-        case ' ': break;
+        case ' ':
+            break;
         case '1':
         {
             uint8_t x = va_arg(v, int);
             write8(f,x);
             break;
         }
-        case '2': { int16_t x = va_arg(v, int); write8(f,x); write8(f,x>>8); break; }
+        case '2':
+        {
+            int16_t x = va_arg(v, int);
+            write8(f,x);
+            write8(f,x>>8);
+            break;
+        }
         case '4':
         {
             int32_t x = va_arg(v, int);

@@ -4,7 +4,7 @@ Jasper ter Weeme
 
 #ifndef _COMMON_H_
 #define _COMMON_H_
-#include "mystl.h"
+#include "mystlod.h"
 
 #ifdef _WIN32
 #include <io.h>

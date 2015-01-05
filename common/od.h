@@ -1,4 +1,4 @@
-#include "common.h"
+#include "commonod.h"
 using namespace koe;
 
 class HexStream
