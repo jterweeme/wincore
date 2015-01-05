@@ -4,7 +4,7 @@ all:
 	g++ -g -Wall -o od main.cpp od.cpp mystl.cpp
 
 test: force
-	valgrind $(VALGRIND) ./test1
+	valgrind $(VALGRIND) ./od watcom.bat | diff watcom.od -
 
 force:
 

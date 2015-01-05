@@ -4,6 +4,7 @@ class Options
 {
     bool _check;
     bool _cin;
+    bool _help;
     int _argc;
     char **_argv;
     int _argp;
