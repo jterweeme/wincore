@@ -89,9 +89,7 @@ class App
     FILE *g_pInFile;
     unsigned g_nInFileSize;
     unsigned g_nInFileOfs;
-    void *g_pCallback_data;
     uint8_t gCallbackStatus;
-    uint8_t gReduce;
     pjpeg_scan_type_t gScanType;
     uint8_t gMaxBlocksPerMCU;
     uint8_t gMaxMCUXSize;
@@ -144,7 +142,7 @@ class App
     static const uint8_t PJPG_MAXCOMPSINSCAN = 3;
     static const uint8_t PJPG_DCT_SCALE_BITS = 7;
     static const uint8_t PJPG_DCT_SCALE = 1 << PJPG_DCT_SCALE_BITS;
-    int PJPG_DESCALE(int x);
+    int descale(int x) const;
     int PJPG_ARITH_SHIFT_RIGHT_N_16(int x, int n) const { return x >> n; }
     int PJPG_ARITH_SHIFT_RIGHT_8_L(int x) const { return ((x) >> 8); }
     uint8_t clamp(int16_t s) const;
@@ -152,9 +150,9 @@ class App
     int16_t imul_b4(int16_t w) const;
     int16_t imul_b2(int16_t w) const;
     uint32_t min(const uint32_t &a, const uint32_t &b) const { return a < b ? a : b; }
-    uint8_t subAndClamp(uint8_t a, int16_t b) { b = a - b; return clamp(b); }
+    uint8_t subAndClamp(uint8_t a, int16_t b) const { b = a - b; return clamp(b); }
     int16_t imul_b1_b3(int16_t w) const;
-    uint8_t addAndClamp(uint8_t a, int16_t b) { b = a + b; return clamp(b); }
+    uint8_t addAndClamp(uint8_t a, int16_t b) const { b = a + b; return clamp(b); }
     void upsampleCb(uint8_t srcOfs, uint8_t dstOfs);
     void createWinogradQuant(int16_t* pQuant);
     HuffTable *getHuffTable(uint8_t index);
@@ -210,11 +208,11 @@ class App
     void get_pixel(int* pDst, const uint8_t *pSrc, int luma_only, int num_comps);
     uint8_t initScan();
     void fillInBuf();
-    uint8_t pjpeg_decode_init(pjpeg_image_info_t *pInfo, void *pCallback_data, uint8_t reduce);
+    uint8_t pjpeg_decode_init(pjpeg_image_info_t *pInfo);
     uint8_t neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes);
 
-    uint8_t *pjpeg_load_from_file(const char *pFilename, int *x, int *y,
-        int *comps, pjpeg_scan_type_t *pScan_type, int reduce);
+    uint8_t *pjpeg_load_from_file(const char *pFilename, int *x, int *y, int *comps,
+            pjpeg_scan_type_t *pScan_type);
 
     void write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad);
@@ -325,7 +323,7 @@ uint8_t App::neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes)
     uint32_t n = min(g_nInFileSize - g_nInFileOfs, buf_size);
 
     if (n && (fread(pBuf, 1, n, g_pInFile) != n))
-        return PJPG_STREAM_READ_ERROR;
+        throw "PJPG_STREAM_READ_ERROR";
 
     *pBytes = (uint8_t)(n);
     g_nInFileOfs += n;
@@ -333,7 +331,7 @@ uint8_t App::neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes)
 }
 
 uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
-                int *comps, pjpeg_scan_type_t *pScan_type, int reduce)
+                int *comps, pjpeg_scan_type_t *pScan_type)
 {
     pjpeg_image_info_t image_info;
     int mcu_x = 0;
@@ -342,7 +340,6 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
     uint8_t *pImage;
     uint8_t status;
     unsigned decoded_width, decoded_height;
-    unsigned row_blocks_per_mcu, col_blocks_per_mcu;
     *x = 0;
     *y = 0;
     *comps = 0;
@@ -359,7 +356,7 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
     fseek(g_pInFile, 0, SEEK_END);
     g_nInFileSize = ftell(g_pInFile);
     fseek(g_pInFile, 0, SEEK_SET);
-    status = pjpeg_decode_init(&image_info, NULL, (uint8_t)reduce);
+    status = pjpeg_decode_init(&image_info);
          
     if (status)
     {
@@ -386,12 +383,8 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
         return NULL;
     }
 
-    row_blocks_per_mcu = image_info.m_MCUWidth >> 3;
-    col_blocks_per_mcu = image_info.m_MCUHeight >> 3;
-   
-    for ( ; ; )
+    while (true)
     {
-        int y, x;
         uint8_t *pDst_row;
         status = pjpeg_decode_mcu();
       
@@ -415,91 +408,58 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
             return NULL;
         }
 
-        if (reduce)
-        {
-            pDst_row = pImage + mcu_y * col_blocks_per_mcu * row_pitch +
-                        mcu_x * row_blocks_per_mcu * image_info.m_comps;
-
-         if (image_info.m_scanType == PJPG_GRAYSCALE)
-         {
-            *pDst_row = image_info.m_pMCUBufR[0];
-         }
-         else
-         {
-            unsigned y, x;
-            for (y = 0; y < col_blocks_per_mcu; y++)
-            {
-               unsigned src_ofs = (y * 128U);
-               for (x = 0; x < row_blocks_per_mcu; x++)
-               {
-                  pDst_row[0] = image_info.m_pMCUBufR[src_ofs];
-                  pDst_row[1] = image_info.m_pMCUBufG[src_ofs];
-                  pDst_row[2] = image_info.m_pMCUBufB[src_ofs];
-                  pDst_row += 3;
-                  src_ofs += 64;
-               }
-
-               pDst_row += row_pitch - 3 * row_blocks_per_mcu;
-            }
-         }
-      }
-      else
-      {
-         pDst_row = pImage + (mcu_y * image_info.m_MCUHeight) *
+        pDst_row = pImage + (mcu_y * image_info.m_MCUHeight) *
                 row_pitch + (mcu_x * image_info.m_MCUWidth * image_info.m_comps);
 
-         for (y = 0; y < image_info.m_MCUHeight; y += 8)
-         {
-            const int by_limit = min(8, image_info.m_height - (mcu_y * image_info.m_MCUHeight + y));
+        for (int y = 0; y < image_info.m_MCUHeight; y += 8)
+        {
+            const int by_limit = min(8, image_info.m_height - (mcu_y*image_info.m_MCUHeight+y));
 
-            for (x = 0; x < image_info.m_MCUWidth; x += 8)
+            for (int x = 0; x < image_info.m_MCUWidth; x += 8)
             {
-               uint8_t *pDst_block = pDst_row + x * image_info.m_comps;
-               unsigned src_ofs = (x * 8U) + (y * 16U);
-               const uint8_t *pSrcR = image_info.m_pMCUBufR + src_ofs;
-               const uint8_t *pSrcG = image_info.m_pMCUBufG + src_ofs;
-               const uint8_t *pSrcB = image_info.m_pMCUBufB + src_ofs;
-               const int bx_limit = min(8, image_info.m_width-(mcu_x*image_info.m_MCUWidth+x));
+                uint8_t *pDst_block = pDst_row + x * image_info.m_comps;
+                unsigned src_ofs = (x * 8U) + (y * 16U);
+                const uint8_t *pSrcR = image_info.m_pMCUBufR + src_ofs;
+                const uint8_t *pSrcG = image_info.m_pMCUBufG + src_ofs;
+                const uint8_t *pSrcB = image_info.m_pMCUBufB + src_ofs;
+                const int bx_limit=min(8,image_info.m_width-(mcu_x*image_info.m_MCUWidth+x));
 
-               if (image_info.m_scanType == PJPG_GRAYSCALE)
-               {
-                  int bx, by;
-                  for (by = 0; by < by_limit; by++)
-                  {
-                     uint8_t *pDst = pDst_block;
+                if (image_info.m_scanType == PJPG_GRAYSCALE)
+                {
+                    for (int by = 0; by < by_limit; by++)
+                    {
+                        uint8_t *pDst = pDst_block;
 
-                     for (bx = 0; bx < bx_limit; bx++)
-                        *pDst++ = *pSrcR++;
+                        for (int bx = 0; bx < bx_limit; bx++)
+                            *pDst++ = *pSrcR++;
 
-                     pSrcR += (8 - bx_limit);
-                     pDst_block += row_pitch;
-                  }
-               }
-               else
-               {
-                  int bx, by;
-                  for (by = 0; by < by_limit; by++)
-                  {
-                     uint8_t *pDst = pDst_block;
+                        pSrcR += (8 - bx_limit);
+                        pDst_block += row_pitch;
+                    }
+                }
+                else
+                {
+                    for (int by = 0; by < by_limit; by++)
+                    {
+                        uint8_t *pDst = pDst_block;
 
-                     for (bx = 0; bx < bx_limit; bx++)
-                     {
-                        pDst[0] = *pSrcR++;
-                        pDst[1] = *pSrcG++;
-                        pDst[2] = *pSrcB++;
-                        pDst += 3;
-                     }
+                        for (int bx = 0; bx < bx_limit; bx++)
+                        {
+                            pDst[0] = *pSrcR++;
+                            pDst[1] = *pSrcG++;
+                            pDst[2] = *pSrcB++;
+                            pDst += 3;
+                        }
 
-                     pSrcR += (8 - bx_limit);
-                     pSrcG += (8 - bx_limit);
-                     pSrcB += (8 - bx_limit);
-                     pDst_block += row_pitch;
-                  }
-               }
+                        pSrcR += (8 - bx_limit);
+                        pSrcG += (8 - bx_limit);
+                        pSrcB += (8 - bx_limit);
+                        pDst_block += row_pitch;
+                    }
+                }
             }
 
-                pDst_row += (row_pitch * 8);
-            }
+            pDst_row += (row_pitch * 8);
         }
 
         mcu_x++;
@@ -567,7 +527,6 @@ int App::run(int argc, char **argv)
     pjpeg_scan_type_t scan_type;
     const char* p = "?";
     uint8_t *pImage;
-    int reduce = 0;
     printf("picojpeg example v1.1, Rich Geldreich, Compiled " __TIME__ " " __DATE__ "\n");
 
     if ((argc < 3) || (argc > 4))
@@ -575,14 +534,9 @@ int App::run(int argc, char **argv)
    
     pSrc_filename = argv[n++];
     pDst_filename = argv[n++];
-
-    if (argc == 4)
-        reduce = atoi(argv[n++]) != 0;
-
     printf("Source file:      \"%s\"\n", pSrc_filename);
     printf("Destination file: \"%s\"\n", pDst_filename);
-    printf("Reduce during decoding: %u\n", reduce);
-    pImage = pjpeg_load_from_file(pSrc_filename, &width, &height, &comps, &scan_type, reduce);
+    pImage = pjpeg_load_from_file(pSrc_filename, &width, &height, &comps, &scan_type);
 
     if (!pImage)
         throw "Failed loading source image!";
@@ -674,14 +628,17 @@ static const int8_t ZAG[] =
 
 void App::fillInBuf()
 {
-    uint8_t status;
     gInBufOfs = 4;
     gInBufLeft = 0;
+//uint8_t App::neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes)
+    //neat(gInBuf + gInBufOfs, PJPG_MAX_IN_BUF_SIZE - gInBufOfs, &gInBufLeft);
+    uint32_t n = min(g_nInFileSize - g_nInFileOfs, PJPG_MAX_IN_BUF_SIZE - gInBufOfs);
 
-    status = neat(gInBuf + gInBufOfs, PJPG_MAX_IN_BUF_SIZE - gInBufOfs, &gInBufLeft);
+    if (n && (fread(gInBuf + gInBufOfs, 1, n, g_pInFile) != n))
+        throw "PJPG_STREAM_READ_ERROR";
 
-    if (status)
-        gCallbackStatus = status;
+    gInBufLeft = (uint8_t)n;
+    g_nInFileOfs += n;
 }
 
 uint8_t App::getChar()
@@ -962,7 +919,7 @@ uint8_t App::readDHTMarker()
     return 0;
 }
 
-int App::PJPG_DESCALE(int x)
+int App::descale(int x) const
 {
     return PJPG_ARITH_SHIFT_RIGHT_N_16(((x) + (1U << (PJPG_DCT_SCALE_BITS - 1))),
                 PJPG_DCT_SCALE_BITS);
@@ -1004,7 +961,6 @@ uint8_t App::readDQTMarker()
 
     while (left)
     {
-        uint8_t i;
         uint8_t n = (uint8_t)getBits1(8);
         uint8_t prec = n >> 4;
         uint16_t totalRead;
@@ -1015,7 +971,7 @@ uint8_t App::readDQTMarker()
 
         gValidQuantTables |= (n ? 2 : 1);         
 
-        for (i = 0; i < 64; i++)
+        for (uint8_t i = 0; i < 64; i++)
         {
             uint16_t temp = getBits1(8);
             temp = prec ? (temp << 8) + getBits1(8) : temp;
@@ -1285,27 +1241,19 @@ uint8_t App::locateSOFMarker()
     switch (c)
     {
         case M_SOF2:
-        {
             return PJPG_UNSUPPORTED_MODE;
-        }
         case M_SOF0:
-        {
             status = readSOFMarker();
 
             if (status)
                 return status;
             
             break;
-        }
         case M_SOF9:  
-        {
             return PJPG_NO_ARITHMITIC_SUPPORT;
-        }
         case M_SOF1:
         default:
-        {
             return PJPG_UNSUPPORTED_MARKER;
-        }
     }
    
     return 0;
@@ -1587,10 +1535,9 @@ uint8_t App::clamp(int16_t s) const
 
 void App::idctRows()
 {
-    uint8_t i;
     int16_t* pSrc = gCoeffBuf;
             
-    for (i = 0; i < 8; i++)
+    for (uint8_t i = 0; i < 8; i++)
     {
         if ((pSrc[1] | pSrc[2] | pSrc[3] | pSrc[4] | pSrc[5] | pSrc[6] | pSrc[7]) == 0)
         {
@@ -1650,14 +1597,13 @@ void App::idctRows()
 
 void App::idctCols()
 {
-    uint8_t i;
     int16_t *pSrc = gCoeffBuf;
    
-    for (i = 0; i < 8; i++)
+    for (uint8_t i = 0; i < 8; i++)
     {
         if ((pSrc[1*8]|pSrc[2*8]|pSrc[3*8]|pSrc[4*8]|pSrc[5*8]|pSrc[6*8]|pSrc[7*8]) == 0)
         {
-            uint8_t c = clamp(PJPG_DESCALE(*pSrc) + 128);
+            uint8_t c = clamp(descale(*pSrc) + 128);
             *(pSrc+0*8) = c;
             *(pSrc+1*8) = c;
             *(pSrc+2*8) = c;
@@ -1698,14 +1644,14 @@ void App::idctCols()
             int16_t x43 = x30 - x13;
             int16_t x41 = x31 + x32;
             int16_t x42 = x31 - x32;
-            *(pSrc+0*8) = clamp(PJPG_DESCALE(x40 + x17)  + 128);
-            *(pSrc+1*8) = clamp(PJPG_DESCALE(x41 + tmp2) + 128);
-            *(pSrc+2*8) = clamp(PJPG_DESCALE(x42 + tmp3) + 128);
-            *(pSrc+3*8) = clamp(PJPG_DESCALE(x43 - x44)  + 128);
-            *(pSrc+4*8) = clamp(PJPG_DESCALE(x43 + x44)  + 128);
-            *(pSrc+5*8) = clamp(PJPG_DESCALE(x42 - tmp3) + 128);
-            *(pSrc+6*8) = clamp(PJPG_DESCALE(x41 - tmp2) + 128);
-            *(pSrc+7*8) = clamp(PJPG_DESCALE(x40 - x17)  + 128);
+            *(pSrc+0*8) = clamp(descale(x40 + x17)  + 128);
+            *(pSrc+1*8) = clamp(descale(x41 + tmp2) + 128);
+            *(pSrc+2*8) = clamp(descale(x42 + tmp3) + 128);
+            *(pSrc+3*8) = clamp(descale(x43 - x44)  + 128);
+            *(pSrc+4*8) = clamp(descale(x43 + x44)  + 128);
+            *(pSrc+5*8) = clamp(descale(x42 - tmp3) + 128);
+            *(pSrc+6*8) = clamp(descale(x41 - tmp2) + 128);
+            *(pSrc+7*8) = clamp(descale(x40 - x17)  + 128);
         }
 
         pSrc++;      
@@ -1937,126 +1883,110 @@ void App::convertCr(uint8_t dstOfs)
 
 void App::transformBlock(uint8_t mcuBlock)
 {
-   idctRows();
-   idctCols();
+    idctRows();
+    idctCols();
    
-   switch (gScanType)
-   {
-      case PJPG_GRAYSCALE:
-      {
-         copyY(0);
-         break;
-      }
-      case PJPG_YH1V1:
-      {
-         switch (mcuBlock)
-         {
+    switch (gScanType)
+    {
+        case PJPG_GRAYSCALE:
+            copyY(0);
+            break;
+        case PJPG_YH1V1:
+            switch (mcuBlock)
+            {
             case 0:
-               copyY(0);
-               break;
+                copyY(0);
+                break;
             case 1:
-               convertCb(0);
-               break;
+                convertCb(0);
+                break;
             case 2:
-               convertCr(0);
-               break;
-         }
+                convertCr(0);
+                break;
+            }
 
-         break;
-      }
-      case PJPG_YH1V2:
-      {
-         switch (mcuBlock)
-         {
+            break;
+        case PJPG_YH1V2:
+            switch (mcuBlock)
+            {
             case 0:
-               copyY(0);
-               break;
+                copyY(0);
+                break;
             case 1:
-               copyY(128);
-               break;
+                copyY(128);
+                break;
             case 2:
-               upsampleCbV(0, 0);
-               upsampleCbV(4*8, 128);
-               break;
+                upsampleCbV(0, 0);
+                upsampleCbV(4*8, 128);
+                break;
             case 3:
-               upsampleCrV(0, 0);
-               upsampleCrV(4*8, 128);
-               break;
-         }
-
-         break;
-      }        
-      case PJPG_YH2V1:
-      {
-         switch (mcuBlock)
-         {
+                upsampleCrV(0, 0);
+                upsampleCrV(4*8, 128);
+                break;
+            }
+            break;
+        case PJPG_YH2V1:
+            switch (mcuBlock)
+            {
             case 0:
-               copyY(0);
-               break;
+                copyY(0);
+                break;
             case 1:
-               copyY(64);
-               break;
+                copyY(64);
+                break;
             case 2:
-               upsampleCbH(0, 0);
-               upsampleCbH(4, 64);
-               break;
+                upsampleCbH(0, 0);
+                upsampleCbH(4, 64);
+                break;
             case 3:
-               upsampleCrH(0, 0);
-               upsampleCrH(4, 64);
-               break;
-         }
-         
-         break;
-      }        
-      case PJPG_YH2V2:
-      {
-         switch (mcuBlock)
-         {
+                upsampleCrH(0, 0);
+                upsampleCrH(4, 64);
+                break;
+            }
+            break;
+        case PJPG_YH2V2:
+            switch (mcuBlock)
+            {
             case 0:
-               copyY(0);
-               break;
+                copyY(0);
+                break;
             case 1:
-               copyY(64);
-               break;
+                copyY(64);
+                break;
             case 2:
-               copyY(128);
-               break;
+                copyY(128);
+                break;
             case 3:
-               copyY(192);
-               break;
+                copyY(192);
+                break;
             case 4:
-               upsampleCb(0, 0);
-               upsampleCb(4, 64);
-               upsampleCb(4*8, 128);
-               upsampleCb(4+4*8, 192);
-               break;
+                upsampleCb(0, 0);
+                upsampleCb(4, 64);
+                upsampleCb(4*8, 128);
+                upsampleCb(4+4*8, 192);
+                break;
             case 5:
-               upsampleCr(0, 0);
-               upsampleCr(4, 64);
-               upsampleCr(4*8, 128);
-               upsampleCr(4+4*8, 192);
-               break;
-         }
-
-         break;
-      }         
-   }      
+                upsampleCr(0, 0);
+                upsampleCr(4, 64);
+                upsampleCr(4*8, 128);
+                upsampleCr(4+4*8, 192);
+                break;
+            }
+            break;
+    }
 }
 
 void App::transformBlockReduce(uint8_t mcuBlock)
 {
-    uint8_t c = clamp(PJPG_DESCALE(gCoeffBuf[0]) + 128);
+    uint8_t c = clamp(descale(gCoeffBuf[0]) + 128);
     int16_t cbG, cbB, crR, crG;
 
     switch (gScanType)
     {
         case PJPG_GRAYSCALE:
-        {
             gMCUBufR[0] = c;
             break;
-        }
         case PJPG_YH1V1:
-        {
          switch (mcuBlock)
          {
             case 0:
@@ -2079,9 +2009,7 @@ void App::transformBlockReduce(uint8_t mcuBlock)
          }
 
          break;
-      }
       case PJPG_YH1V2:
-      {
          switch (mcuBlock)
          {
             case 0:
@@ -2112,9 +2040,7 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                break;
          }
          break;
-      }
       case PJPG_YH2V1:
-      {
          switch (mcuBlock)
          {
             case 0:
@@ -2145,9 +2071,7 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                break;
          }
          break;
-      }
       case PJPG_YH2V2:
-      {
          switch (mcuBlock)
          {
             case 0:
@@ -2196,7 +2120,6 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                break;
          }
          break;
-      }
    }
 }
 
@@ -2222,120 +2145,79 @@ uint8_t App::decodeNextMCU()
         uint8_t componentID = gMCUOrg[mcuBlock];
         uint8_t compQuant = gCompQuant[componentID];	
         uint8_t compDCTab = gCompDCTab[componentID];
-        uint8_t numExtraBits, compACTab, k;
+        uint8_t compACTab, k;
         const int16_t *pQ = compQuant ? gQuant1 : gQuant0;
-        uint16_t r, dc;
         uint8_t s = huffDecode(compDCTab ? &gHuffTab1:&gHuffTab0,compDCTab?gHuffVal1 : gHuffVal0);
-        r = 0;
-        numExtraBits = s & 0xF;
+        uint16_t r = 0;
+        uint8_t numExtraBits = s & 0xF;
 
         if (numExtraBits)
             r = getBits2(numExtraBits);
 
-        dc = huffExtend(r, s);
-        dc = dc + gLastDC[componentID];
+        uint16_t dc = huffExtend(r, s);
+        dc += gLastDC[componentID];
         gLastDC[componentID] = dc;
         gCoeffBuf[0] = dc * pQ[0];
         compACTab = gCompACTab[componentID];
 
-        if (gReduce)
+        for (k = 1; k < 64; k++)
         {
-            for (k = 1; k < 64; k++)
-            {
-                s = huffDecode(compACTab?&gHuffTab3:&gHuffTab2,compACTab?gHuffVal3:gHuffVal2);
-
-            numExtraBits = s & 0xF;
-            if (numExtraBits)
-               getBits2(numExtraBits);
-
-            r = s >> 4;
-            s &= 15;
-
-            if (s)
-            {
-               if (r)
-               {
-                  if ((k + r) > 63)
-                     return PJPG_DECODE_ERROR;
-
-                  k = (uint8_t)(k + r);
-               }
-            }
-            else
-            {
-               if (r == 15)
-               {
-                  if ((k + 16) > 64)
-                     return PJPG_DECODE_ERROR;
-
-                  k += (16 - 1);
-               }
-               else
-                  break;
-            }
-         }
-
-         transformBlockReduce(mcuBlock); 
-      }
-      else
-      {
-         for (k = 1; k < 64; k++)
-         {
             uint16_t extraBits;
-            s = huffDecode(compACTab ? &gHuffTab3 : &gHuffTab2, compACTab ? gHuffVal3 : gHuffVal2);
+            s=huffDecode(compACTab?&gHuffTab3:&gHuffTab2,compACTab ? gHuffVal3 : gHuffVal2);
             extraBits = 0;
             numExtraBits = s & 0xF;
 
             if (numExtraBits)
-               extraBits = getBits2(numExtraBits);
+                extraBits = getBits2(numExtraBits);
 
             r = s >> 4;
             s &= 15;
 
             if (s)
             {
-               int16_t ac;
+                int16_t ac;
 
-               if (r)
-               {
-                  if ((k + r) > 63)
-                     return PJPG_DECODE_ERROR;
+                if (r)
+                {
+                    if ((k + r) > 63)
+                        return PJPG_DECODE_ERROR;
 
-                  while (r)
-                  {
-                     gCoeffBuf[ZAG[k++]] = 0;
-                     r--;
-                  }
-               }
+                    while (r)
+                    {
+                        gCoeffBuf[ZAG[k++]] = 0;
+                        r--;
+                    }
+                }
 
-               ac = huffExtend(extraBits, s);
-               gCoeffBuf[ZAG[k]] = ac * pQ[k]; 
+                ac = huffExtend(extraBits, s);
+                gCoeffBuf[ZAG[k]] = ac * pQ[k]; 
             }
             else
             {
-               if (r == 15)
-               {
-                  if ((k + 16) > 64)
-                     return PJPG_DECODE_ERROR;
-                  
-                  for (r = 16; r > 0; r--)
-                     gCoeffBuf[ZAG[k++]] = 0;
-                  
-                  k--;
-               }
-               else
-                  break;
+                if (r == 15)
+                {
+                    if ((k + 16) > 64)
+                        return PJPG_DECODE_ERROR;
+              
+                    for (r = 16; r > 0; r--)
+                        gCoeffBuf[ZAG[k++]] = 0;
+              
+                    k--;
+                }
+                else
+                {
+                    break;
+                }
             }
-         }
-         
-         while (k < 64)
+        }
+     
+        while (k < 64)
             gCoeffBuf[ZAG[k++]] = 0;
 
-         transformBlock(mcuBlock); 
-      }
-   }
+        transformBlock(mcuBlock); 
+    }
          
-   return 0;
+    return 0;
 }
 
 uint8_t App::pjpeg_decode_mcu()
@@ -2357,7 +2239,7 @@ uint8_t App::pjpeg_decode_mcu()
     return 0;
 }
 
-uint8_t App::pjpeg_decode_init(pjpeg_image_info_t *pInfo, void *pCallback_data, uint8_t reduce)
+uint8_t App::pjpeg_decode_init(pjpeg_image_info_t *pInfo)
 {
     pInfo->m_width = 0; pInfo->m_height = 0; pInfo->m_comps = 0;
     pInfo->m_MCUSPerRow = 0; pInfo->m_MCUSPerCol = 0;
@@ -2365,9 +2247,7 @@ uint8_t App::pjpeg_decode_init(pjpeg_image_info_t *pInfo, void *pCallback_data, 
     pInfo->m_MCUWidth = 0; pInfo->m_MCUHeight = 0;
     pInfo->m_pMCUBufR = (uint8_t *)0;
     pInfo->m_pMCUBufG = (uint8_t *)0; pInfo->m_pMCUBufB = (uint8_t *)0;
-    g_pCallback_data = pCallback_data;
     gCallbackStatus = 0;
-    gReduce = reduce;
     uint8_t status = init();
 
     if ((status) || (gCallbackStatus))
