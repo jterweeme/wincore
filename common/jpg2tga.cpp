@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <iostream>
+#include <fstream>
 using namespace std;
 
 enum
@@ -160,7 +161,8 @@ class App
     void upsampleCbH(uint8_t srcOfs, uint8_t dstOfs);
     void stuffChar(uint8_t i);
     uint8_t *getHuffVal(uint8_t index);
-    void write8(FILE *f, int x) { uint8_t z = (uint8_t)x; fwrite(&z,1,1,f); }
+    //void write8(FILE *f, int x) const { uint8_t z = (uint8_t)x; fwrite(&z,1,1,f); }
+    void write8(ostream &os, int x) const { uint8_t z = (uint8_t)x; os.put(z); }
     uint8_t getChar();
     uint16_t getMaxHuffCodes(uint8_t index) const { return (index < 2) ? 12 : 255; }
     int16_t getExtendOffset(uint8_t i);
@@ -216,10 +218,14 @@ class App
 
     void write_pixels(FILE *f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad);
+
+    void write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
+                int comp, void *data, int write_alpha, int scanline_pad);
 public:
     int run(int argc, char **argv);
 };
 
+#if 0
 void App::write_pixels(FILE *f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad)
 {
@@ -273,13 +279,70 @@ void App::write_pixels(FILE *f, int rgb_dir, int vdir, int x, int y,
         fwrite(&zero,scanline_pad,1,f);
     }
 }
+#endif
+
+void App::write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
+                int comp, void *data, int write_alpha, int scanline_pad)
+{
+    uint8_t bg[3] = { 255, 0, 255}, px[3];
+    uint32_t zero = 0;
+    int j,k, j_end;
+
+    if (vdir < 0) 
+        j_end = -1, j = y-1;
+    else
+        j_end =  y, j = 0;
+
+    for (; j != j_end; j += vdir)
+    {
+        for (int i=0; i < x; ++i)
+        {
+            uint8_t *d = (uint8_t *) data + (j * x + i) * comp;
+
+            if (write_alpha < 0)
+                f.write((char *)&d[comp-1], 1);
+
+            switch (comp)
+            {
+            case 1:
+            case 2:
+                write8(f, d[0]);
+                write8(f, d[0]);
+                write8(f, d[0]);
+                break;
+            case 4:
+                if (!write_alpha)
+                {
+                    for (k=0; k < 3; ++k)
+                        px[k] = bg[k] + ((d[k] - bg[k]) * d[3])/255;
+
+                    write8(f, px[1-rgb_dir]);
+                    write8(f, px[1]);
+                    write8(f, px[1+rgb_dir]);
+                    break;
+                }
+            case 3:
+                write8(f, d[1 - rgb_dir]);
+                write8(f, d[1]);
+                write8(f, d[1 + rgb_dir]);
+                break;
+            }
+
+            if (write_alpha > 0)
+                f.write((char *)&d[comp - 1], 1);
+        }
+
+        f.write((char *)&zero, scanline_pad);
+    }
+}
 
 int App::stbi_write_tga(char const *filename, int x, int y, int comp, void *data)
 {
     int has_alpha = !(comp & 1);
 
 
-    FILE *f = fopen(filename, "wb");
+    //FILE *f = fopen(filename, "wb");
+    ofstream f(filename);
     
     if (!f)
         return f != NULL;
@@ -307,7 +370,8 @@ int App::stbi_write_tga(char const *filename, int x, int y, int comp, void *data
     write8(f, 8 * has_alpha);
 
     write_pixels(f, -1, -1, x,y,comp,data, has_alpha, 0);
-    fclose(f);
+    //fclose(f);
+    f.close();
     return f != NULL;
 }
 
