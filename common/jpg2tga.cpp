@@ -144,15 +144,15 @@ class App
     static const uint8_t PJPG_DCT_SCALE_BITS = 7;
     static const uint8_t PJPG_DCT_SCALE = 1 << PJPG_DCT_SCALE_BITS;
     int PJPG_DESCALE(int x);
-    int PJPG_ARITH_SHIFT_RIGHT_N_16(int x, int n) { return x >> n; }
-    int PJPG_ARITH_SHIFT_RIGHT_8_L(int x) { return ((x) >> 8); }
+    int PJPG_ARITH_SHIFT_RIGHT_N_16(int x, int n) const { return x >> n; }
+    int PJPG_ARITH_SHIFT_RIGHT_8_L(int x) const { return ((x) >> 8); }
     uint8_t clamp(int16_t s);
-    int16_t imul_b5(int16_t w);
-    int16_t imul_b4(int16_t w);
-    int16_t imul_b2(int16_t w);
+    int16_t imul_b5(int16_t w) const;
+    int16_t imul_b4(int16_t w) const;
+    int16_t imul_b2(int16_t w) const;
     uint32_t min(const uint32_t &a, const uint32_t &b) const { return a < b ? a : b; }
     uint8_t subAndClamp(uint8_t a, int16_t b) { b = a - b; return clamp(b); }
-    int16_t imul_b1_b3(int16_t w);
+    int16_t imul_b1_b3(int16_t w) const;
     uint8_t addAndClamp(uint8_t a, int16_t b) { b = a + b; return clamp(b); }
     void upsampleCb(uint8_t srcOfs, uint8_t dstOfs);
     void createWinogradQuant(int16_t* pQuant);
@@ -161,10 +161,8 @@ class App
     void stuffChar(uint8_t i);
     uint8_t *getHuffVal(uint8_t index);
     void write8(FILE *f, int x) { uint8_t z = (uint8_t)x; fwrite(&z,1,1,f); }
-    void writefv(FILE *f, const char *fmt, va_list v);
-    void writef(FILE *f, const char *fmt, ...);
     uint8_t getChar();
-    uint16_t getMaxHuffCodes(uint8_t index) { return (index < 2) ? 12 : 255; }
+    uint16_t getMaxHuffCodes(uint8_t index) const { return (index < 2) ? 12 : 255; }
     int16_t getExtendOffset(uint8_t i);
     uint16_t getExtendTest(uint8_t i);
     uint8_t getOctet(uint8_t FFCheck);
@@ -216,59 +214,18 @@ class App
     uint8_t *pjpeg_load_from_file(const char *pFilename, int *x, int *y,
         int *comps, pjpeg_scan_type_t *pScan_type, int reduce);
 
-    int outfile(char const *filename, int rgb_dir, int vdir, int x, int y,
-                int comp, void *data, int alpha, int pad, const char *fmt, ...);
-
     void write_pixels(FILE *f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad);
 public:
     int run(int argc, char **argv);
 };
 
-void App::writefv(FILE *f, const char *fmt, va_list v)
-{
-    while (*fmt)
-    {
-        switch (*fmt++)
-        {
-        case ' ':
-            break;
-        case '1':
-        {
-            uint8_t x = va_arg(v, int);
-            write8(f,x);
-            break;
-        }
-        case '2':
-        {
-            int16_t x = va_arg(v, int);
-            write8(f,x);
-            write8(f,x>>8);
-            break;
-        }
-        case '4':
-        {
-            int32_t x = va_arg(v, int);
-            write8(f,x);
-            write8(f,x>>8);
-            write8(f,x>>16);
-            write8(f,x>>24);
-            break;
-        }
-        default:
-            assert(0);
-            va_end(v);
-            return;
-      }
-   }
-}
-
 void App::write_pixels(FILE *f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad)
 {
     uint8_t bg[3] = { 255, 0, 255}, px[3];
     uint32_t zero = 0;
-    int i,j,k, j_end;
+    int j,k, j_end;
 
     if (vdir < 0) 
         j_end = -1, j = y-1;
@@ -277,51 +234,50 @@ void App::write_pixels(FILE *f, int rgb_dir, int vdir, int x, int y,
 
     for (; j != j_end; j += vdir)
     {
-        for (i=0; i < x; ++i)
+        for (int i=0; i < x; ++i)
         {
-            uint8_t *d = (uint8_t *) data + (j*x+i)*comp;
+            uint8_t *d = (uint8_t *) data + (j * x + i) * comp;
 
             if (write_alpha < 0)
                 fwrite(&d[comp-1], 1, 1, f);
 
-            switch (comp) {
+            switch (comp)
+            {
             case 1:
-            case 2: writef(f, "111", d[0],d[0],d[0]);
-                    break;
+            case 2:
+                write8(f, d[0]);
+                write8(f, d[0]);
+                write8(f, d[0]);
+                break;
             case 4:
-               if (!write_alpha) {
-                  for (k=0; k < 3; ++k)
-                     px[k] = bg[k] + ((d[k] - bg[k]) * d[3])/255;
-                  writef(f, "111", px[1-rgb_dir],px[1],px[1+rgb_dir]);
-                  break;
-               }
-            case 3:
-               writef(f, "111", d[1-rgb_dir],d[1],d[1+rgb_dir]);
-               break;
-         }
-         if (write_alpha > 0)
-            fwrite(&d[comp-1], 1, 1, f);
-      }
-      fwrite(&zero,scanline_pad,1,f);
-   }
-}
+                if (!write_alpha)
+                {
+                    for (k=0; k < 3; ++k)
+                        px[k] = bg[k] + ((d[k] - bg[k]) * d[3])/255;
 
-void App::writef(FILE *f, const char *fmt, ...)
-{
-    va_list v;
-    va_start(v, fmt);
-    writefv(f,fmt,v);
-    va_end(v);
+                    write8(f, px[1-rgb_dir]);
+                    write8(f, px[1]);
+                    write8(f, px[1+rgb_dir]);
+                    break;
+                }
+            case 3:
+                write8(f, d[1 - rgb_dir]);
+                write8(f, d[1]);
+                write8(f, d[1 + rgb_dir]);
+                break;
+            }
+
+            if (write_alpha > 0)
+                fwrite(&d[comp-1], 1, 1, f);
+        }
+        fwrite(&zero,scanline_pad,1,f);
+    }
 }
 
 int App::stbi_write_tga(char const *filename, int x, int y, int comp, void *data)
 {
     int has_alpha = !(comp & 1);
 
-#if 0
-    return outfile(filename, -1,-1, x, y, comp, data, has_alpha, 0,
-                  "111 221 2222 11", 0,0,2, 0,0,0, 0,0,x,y, 24+8*has_alpha, 8*has_alpha);
-#endif
 
     FILE *f = fopen(filename, "wb");
     
@@ -352,23 +308,6 @@ int App::stbi_write_tga(char const *filename, int x, int y, int comp, void *data
 
     write_pixels(f, -1, -1, x,y,comp,data, has_alpha, 0);
     fclose(f);
-    return f != NULL;
-}
-
-int App::outfile(char const *filename, int rgb_dir, int vdir, int x, int y,
-                int comp, void *data, int alpha, int pad, const char *fmt, ...)
-{
-    FILE *f = fopen(filename, "wb");
-
-    if (f)
-    {
-        va_list v;
-        va_start(v, fmt);
-        writefv(f, fmt, v);
-        va_end(v);
-        write_pixels(f,rgb_dir,vdir,x,y,comp,data,alpha,pad);
-        fclose(f);
-    }
     return f != NULL;
 }
 
@@ -457,29 +396,29 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
         uint8_t *pDst_row;
         status = pjpeg_decode_mcu();
       
-      if (status)
-      {
-         if (status != PJPG_NO_MORE_BLOCKS)
-         {
-            printf("pjpeg_decode_mcu() failed with status %u\n", status);
+        if (status)
+        {
+            if (status != PJPG_NO_MORE_BLOCKS)
+            {
+                printf("pjpeg_decode_mcu() failed with status %u\n", status);
+                free(pImage);
+                fclose(g_pInFile);
+                return NULL;
+            }
+
+            break;
+        }
+
+        if (mcu_y >= image_info.m_MCUSPerCol)
+        {
             free(pImage);
             fclose(g_pInFile);
             return NULL;
-         }
+        }
 
-         break;
-      }
-
-      if (mcu_y >= image_info.m_MCUSPerCol)
-      {
-         free(pImage);
-         fclose(g_pInFile);
-         return NULL;
-      }
-
-      if (reduce)
-      {
-         pDst_row = pImage + mcu_y * col_blocks_per_mcu * row_pitch +
+        if (reduce)
+        {
+            pDst_row = pImage + mcu_y * col_blocks_per_mcu * row_pitch +
                         mcu_x * row_blocks_per_mcu * image_info.m_comps;
 
          if (image_info.m_scanType == PJPG_GRAYSCALE)
@@ -560,11 +499,12 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
                }
             }
 
-            pDst_row += (row_pitch * 8);
-         }
-      }
+                pDst_row += (row_pitch * 8);
+            }
+        }
 
         mcu_x++;
+
         if (mcu_x == image_info.m_MCUSPerRow)
         {
             mcu_x = 0;
@@ -1609,28 +1549,28 @@ uint8_t App::initFrame()
     return 0;
 }
 
-int16_t App::imul_b1_b3(int16_t w)
+int16_t App::imul_b1_b3(int16_t w) const
 {
     long x = (w * 362L);
     x += 128L;
     return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
 }
 
-int16_t App::imul_b2(int16_t w)
+int16_t App::imul_b2(int16_t w) const
 {
     long x = (w * 669L);
     x += 128L;
     return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
 }
 
-int16_t App::imul_b4(int16_t w)
+int16_t App::imul_b4(int16_t w) const
 {
     long x = (w * 277L);
     x += 128L;
     return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
 }
 
-int16_t App::imul_b5(int16_t w)
+int16_t App::imul_b5(int16_t w) const
 {
     long x = (w * 196L);
     x += 128L;
