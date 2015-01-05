@@ -150,7 +150,7 @@ class App
     int16_t imul_b5(int16_t w);
     int16_t imul_b4(int16_t w);
     int16_t imul_b2(int16_t w);
-    static uint32_t min(const uint32_t &a, const uint32_t &b) { return a < b ? a : b; }
+    uint32_t min(const uint32_t &a, const uint32_t &b) const { return a < b ? a : b; }
     uint8_t subAndClamp(uint8_t a, int16_t b) { b = a - b; return clamp(b); }
     int16_t imul_b1_b3(int16_t w);
     uint8_t addAndClamp(uint8_t a, int16_t b) { b = a + b; return clamp(b); }
@@ -318,8 +318,41 @@ int App::stbi_write_tga(char const *filename, int x, int y, int comp, void *data
 {
     int has_alpha = !(comp & 1);
 
+#if 0
     return outfile(filename, -1,-1, x, y, comp, data, has_alpha, 0,
                   "111 221 2222 11", 0,0,2, 0,0,0, 0,0,x,y, 24+8*has_alpha, 8*has_alpha);
+#endif
+
+    FILE *f = fopen(filename, "wb");
+    
+    if (!f)
+        return f != NULL;
+
+    write8(f, 0);
+    write8(f, 0);
+    write8(f, 2);
+
+    write8(f,0);
+    write8(f,0>>8);
+    write8(f,0);
+    write8(f,0>>8);
+    write8(f, 0);
+
+    write8(f,0);
+    write8(f,0>>8);
+    write8(f,0);
+    write8(f,0>>8);
+    write8(f,x);
+    write8(f,x>>8);
+    write8(f,y);
+    write8(f,y>>8);
+
+    write8(f, 24 + 8 * has_alpha);
+    write8(f, 8 * has_alpha);
+
+    write_pixels(f, -1, -1, x,y,comp,data, has_alpha, 0);
+    fclose(f);
+    return f != NULL;
 }
 
 int App::outfile(char const *filename, int rgb_dir, int vdir, int x, int y,
@@ -404,9 +437,8 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
     if (pScan_type)
         *pScan_type = image_info.m_scanType;
 
-    decoded_width = reduce ? (image_info.m_MCUSPerRow * image_info.m_MCUWidth) / 8 : image_info.m_width;
-    decoded_height = reduce ? (image_info.m_MCUSPerCol * image_info.m_MCUHeight) / 8 : image_info.m_height;
-
+    decoded_width = image_info.m_width;
+    decoded_height = image_info.m_height;
     row_pitch = decoded_width * image_info.m_comps;
     pImage = (uint8_t *)malloc(row_pitch * decoded_height);
 
@@ -447,7 +479,9 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
 
       if (reduce)
       {
-         pDst_row = pImage + mcu_y * col_blocks_per_mcu * row_pitch + mcu_x * row_blocks_per_mcu * image_info.m_comps;
+         pDst_row = pImage + mcu_y * col_blocks_per_mcu * row_pitch +
+                        mcu_x * row_blocks_per_mcu * image_info.m_comps;
+
          if (image_info.m_scanType == PJPG_GRAYSCALE)
          {
             *pDst_row = image_info.m_pMCUBufR[0];
@@ -473,7 +507,8 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
       }
       else
       {
-         pDst_row = pImage + (mcu_y * image_info.m_MCUHeight) * row_pitch + (mcu_x * image_info.m_MCUWidth * image_info.m_comps);
+         pDst_row = pImage + (mcu_y * image_info.m_MCUHeight) *
+                row_pitch + (mcu_x * image_info.m_MCUWidth * image_info.m_comps);
 
          for (y = 0; y < image_info.m_MCUHeight; y += 8)
          {
@@ -1982,20 +2017,14 @@ void App::transformBlock(uint8_t mcuBlock)
          switch (mcuBlock)
          {
             case 0:
-            {
                copyY(0);
                break;
-            }
             case 1:
-            {
                convertCb(0);
                break;
-            }
             case 2:
-            {
                convertCr(0);
                break;
-            }
          }
 
          break;
@@ -2005,27 +2034,19 @@ void App::transformBlock(uint8_t mcuBlock)
          switch (mcuBlock)
          {
             case 0:
-            {
                copyY(0);
                break;
-            }
             case 1:
-            {
                copyY(128);
                break;
-            }
             case 2:
-            {
                upsampleCbV(0, 0);
                upsampleCbV(4*8, 128);
                break;
-            }
             case 3:
-            {
                upsampleCrV(0, 0);
                upsampleCrV(4*8, 128);
                break;
-            }
          }
 
          break;
