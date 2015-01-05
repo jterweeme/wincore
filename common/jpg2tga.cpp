@@ -2222,11 +2222,9 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                cbG = ((c * 88U) >> 8U) - 44U;
                gMCUBufG[0] = subAndClamp(gMCUBufG[0], cbG);
                gMCUBufG[64] = subAndClamp(gMCUBufG[64], cbG);
-
                cbB = (c + ((c * 198U) >> 8U)) - 227U;
                gMCUBufB[0] = addAndClamp(gMCUBufB[0], cbB);
                gMCUBufB[64] = addAndClamp(gMCUBufB[64], cbB);
-
                break;
             }
             case 3:
@@ -2237,7 +2235,6 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                crG = ((c * 183U) >> 8U) - 91;
                gMCUBufG[0] = subAndClamp(gMCUBufG[0], crG);
                gMCUBufG[64] = subAndClamp(gMCUBufG[64], crG);
-
                break;
             }
          }
