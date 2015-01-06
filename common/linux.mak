@@ -15,6 +15,7 @@ all:
 test:
 	$(VALGRIND) ./test1
 	$(VALGRIND) ./md5s -c data.md5
+	$(VALGRIND) ./md5s zero.dat | diff md5s.od -
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
 	$(VALGRIND) ./od zero.dat | diff zero.od -
 
