@@ -1,6 +1,6 @@
 CXXFLAGS = -Wall -Wno-parentheses --std=c++11 -O3
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
-VALGRIND = valgrind $(VALFLAGS)
+VALGRIND = #valgrind $(VALFLAGS)
 
 .PHONY: all
 
