@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <array>
 using namespace std;
 
 typedef enum
@@ -65,9 +66,18 @@ public:
                 int comp, void *data, int write_alpha, int scanline_pad) const;
 };
 
+class HuffVals
+{
+    uint8_t gHuffVal0[16];
+    uint8_t gHuffVal1[16];
+    uint8_t gHuffVal2[256];
+    uint8_t gHuffVal3[256];
+public:
+    uint8_t *get(uint8_t index);
+};
+
 class App
 {
-    ifstream ginfile;
     unsigned _filesize;
     unsigned g_nInFileOfs;
     pjpeg_scan_type_t gScanType;
@@ -89,7 +99,6 @@ class App
     uint8_t gCompList[3];
     uint8_t gCompDCTab[3];
     uint8_t gCompACTab[3];
-    uint8_t gHuffVal3[256];
     uint8_t gValidHuffTables;
     uint8_t gValidQuantTables;
     uint8_t gTemFlag;
@@ -106,13 +115,8 @@ class App
     int16_t gQuant0[8*8];
     int16_t gQuant1[8*8];
     int16_t gLastDC[3];
-    HuffTable gHuffTab0;
-    uint8_t gHuffVal0[16];
-    HuffTable gHuffTab1;
-    uint8_t gHuffVal1[16];
-    HuffTable gHuffTab2;
-    uint8_t gHuffVal2[256];
-    HuffTable gHuffTab3;
+    array<HuffTable, 4> _hufftabs;
+    HuffVals _hv;
     int16_t gCoeffBuf[8*8];
     uint8_t gMCUBufR[256];
     uint8_t gMCUBufG[256];
@@ -133,10 +137,8 @@ class App
     uint8_t addAndClamp(uint8_t a, int16_t b) const { b = a + b; return clamp(b); }
     void upsampleCb(uint8_t srcOfs, uint8_t dstOfs);
     void createWinogradQuant(int16_t* pQuant) const;
-    HuffTable *getHuffTable(uint8_t index);
     void upsampleCbH(uint8_t srcOfs, uint8_t dstOfs);
     void stuffChar(uint8_t i);
-    uint8_t *getHuffVal(uint8_t index);
     uint8_t getChar(istream &is);
     uint16_t getMaxHuffCodes(uint8_t index) const { return (index < 2) ? 12 : 255; }
     int16_t getExtendOffset(uint8_t i);
@@ -155,43 +157,56 @@ class App
     uint16_t getBits1(uint8_t numBits, istream &is) { return getBits(numBits, 0, is); }
     uint8_t huffDecode(const HuffTable *pHuffTable, const uint8_t* pHuffVal, istream &is);
     uint8_t readSOFMarker(istream &is);
-    uint8_t readDHTMarker();
-    uint8_t skipVariableMarker();
-    uint8_t readDRIMarker();
-    uint8_t readSOSMarker();
-    uint8_t nextMarker();
-    uint8_t processMarkers(uint8_t *pMarker);
-    uint8_t readDQTMarker();
+    uint8_t readDHTMarker(istream &is);
+    uint8_t skipVariableMarker(istream &is);
+    uint8_t readDRIMarker(istream &is);
+    uint8_t readSOSMarker(istream &is);
+    uint8_t nextMarker(istream &is);
+    uint8_t processMarkers(uint8_t *pMarker, istream &is);
+    uint8_t readDQTMarker(istream &is);
     void checkQuantTables() const;
     void upsampleCrV(uint8_t srcOfs, uint8_t dstOfs);
     void copyY(uint8_t dstOfs);
     void convertCb(uint8_t dstOfs);
     void convertCr(uint8_t dstOfs);
-    void fixInBuffer();
+    void fixInBuffer(istream &is);
     uint8_t init(istream &is);
     uint8_t locateSOIMarker(istream &is);
-    uint8_t locateSOSMarker(uint8_t *pFoundEOI);
+    uint8_t locateSOSMarker(uint8_t *pFoundEOI, istream &is);
     uint8_t locateSOFMarker(istream &is);
     void checkHuffTables() const;
     void transformBlockReduce(uint8_t mcuBlock);
     void transformBlock(uint8_t mcuBlock);
-    uint8_t processRestart();
+    uint8_t processRestart(istream &is);
     uint8_t initFrame();
     uint8_t decodeNextMCU(istream &is);
     int print_usage(ostream &os) const;
-    uint8_t pjpeg_decode_mcu();
+    uint8_t pjpeg_decode_mcu(istream &is);
     void get_pixel(int* pDst, const uint8_t *pSrc, int luma_only, int num_comps);
-    uint8_t initScan();
+    uint8_t initScan(istream &is);
     void fillInBuf(istream &is);
-    uint8_t pjpeg_decode_init(pjpeg_image_info_t *pInfo);
+    uint8_t pjpeg_decode_init(pjpeg_image_info_t *pInfo, istream &is);
+
+    uint8_t *pjpegLoadFromFile(istream &ginfile, int *x, int *y, int *comps,
+                pjpeg_scan_type_t *pScan_type);
 
     uint8_t *pjpeg_load_from_file(const char *pFilename, int *x, int *y, int *comps,
             pjpeg_scan_type_t *pScan_type);
-
-
 public:
     int run(int argc, char **argv);
 };
+
+uint8_t *HuffVals::get(uint8_t index)
+{
+    switch (index)
+    {
+        case 0: return gHuffVal0;
+        case 1: return gHuffVal1;
+        case 2: return gHuffVal2;
+        case 3: return gHuffVal3;
+        default: return 0;
+    }
+}
 
 void Options::parse(int argc, char **argv)
 {
@@ -314,12 +329,11 @@ int App::print_usage(ostream &os) const
     return EXIT_FAILURE;
 }
 
-uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
-                int *comps, pjpeg_scan_type_t *pScan_type)
+uint8_t *App::pjpegLoadFromFile(istream &ginfile, int *x, int *y, int *comps,
+                pjpeg_scan_type_t *pScan_type)
 {
     pjpeg_image_info_t image_info;
     int mcu_x = 0, mcu_y = 0;
-    unsigned row_pitch;
     uint8_t *pImage;
     uint8_t status;
     unsigned decoded_width, decoded_height;
@@ -330,25 +344,24 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
     if (pScan_type)
         *pScan_type = PJPG_GRAYSCALE;
 
-    ginfile.open(pFilename);
     g_nInFileOfs = 0;
     ginfile.seekg(0, ginfile.end);
     _filesize = ginfile.tellg();
     ginfile.seekg(0, ginfile.beg);
-    status = pjpeg_decode_init(&image_info);
+    status = pjpeg_decode_init(&image_info, ginfile);
    
     if (pScan_type)
         *pScan_type = image_info.m_scanType;
 
     decoded_width = image_info.m_width;
     decoded_height = image_info.m_height;
-    row_pitch = decoded_width * image_info.m_comps;
+    unsigned row_pitch = decoded_width * image_info.m_comps;
     pImage = (uint8_t *)malloc(row_pitch * decoded_height);
 
     while (true)
     {
         uint8_t *pDst_row;
-        status = pjpeg_decode_mcu();
+        status = pjpeg_decode_mcu(ginfile);
       
         if (status)
             break;
@@ -356,7 +369,6 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
         if (mcu_y >= image_info.m_MCUSPerCol)
         {
             free(pImage);
-            ginfile.close();
             return NULL;
         }
 
@@ -423,11 +435,20 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
         }
     }
 
-    ginfile.close();
     *x = decoded_width;
     *y = decoded_height;
     *comps = image_info.m_comps;
     return pImage;
+}
+
+uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
+                int *comps, pjpeg_scan_type_t *pScan_type)
+{
+    ifstream ginfile;
+    ginfile.open(pFilename);
+    uint8_t *ret = pjpegLoadFromFile(ginfile, x, y, comps, pScan_type);
+    ginfile.close();
+    return ret;
 }
 
 void App::get_pixel(int *pDst, const uint8_t *pSrc, int luma_only, int num_comps)
@@ -761,34 +782,10 @@ void App::huffCreate(const uint8_t *pBits, HuffTable *pHuffTable)
     }
 }
 
-HuffTable *App::getHuffTable(uint8_t index)
-{
-    switch (index)
-    {
-        case 0: return &gHuffTab0;
-        case 1: return &gHuffTab1;
-        case 2: return &gHuffTab2;
-        case 3: return &gHuffTab3;
-        default: return 0;
-    }
-}
-
-uint8_t *App::getHuffVal(uint8_t index)
-{
-    switch (index)
-    {
-        case 0: return gHuffVal0;
-        case 1: return gHuffVal1;
-        case 2: return gHuffVal2;
-        case 3: return gHuffVal3;
-        default: return 0;
-    }
-}
-
-uint8_t App::readDHTMarker()
+uint8_t App::readDHTMarker(istream &is)
 {
     uint8_t bits[16];
-    uint16_t left = getBits1(16, ginfile);
+    uint16_t left = getBits1(16, is);
 
     if (left < 2)
         throw "PJPG_BAD_DHT_MARKER";
@@ -801,20 +798,20 @@ uint8_t App::readDHTMarker()
         uint8_t *pHuffVal;
         HuffTable *pHuffTable;
         uint16_t count, totalRead;    
-        index = (uint8_t)getBits1(8, ginfile);
+        index = (uint8_t)getBits1(8, is);
       
         if (((index & 0xF) > 1) || ((index & 0xF0) > 0x10) )
             throw "PJPG_BAD_DHT_INDEX";
       
         tableIndex = ((index >> 3) & 2) + (index & 1);
-        pHuffTable = getHuffTable(tableIndex);
-        pHuffVal = getHuffVal(tableIndex);
+        pHuffTable = &_hufftabs[tableIndex];
+        pHuffVal = _hv.get(tableIndex); //getHuffVal(tableIndex);
         gValidHuffTables |= 1 << tableIndex;
         count = 0;
 
         for (uint8_t i = 0; i <= 15; i++)
         {
-            uint8_t n = (uint8_t)getBits1(8, ginfile);
+            uint8_t n = (uint8_t)getBits1(8, is);
             bits[i] = n;
             count = (uint16_t)(count + n);
         }
@@ -823,7 +820,7 @@ uint8_t App::readDHTMarker()
             throw "PJPG_BAD_DHT_COUNTS";
 
         for (uint8_t i = 0; i < count; i++)
-            pHuffVal[i] = (uint8_t)getBits1(8, ginfile);
+            pHuffVal[i] = (uint8_t)getBits1(8, is);
 
         totalRead = 1 + 16 + count;
 
@@ -859,9 +856,9 @@ void App::createWinogradQuant(int16_t *pQuant) const
     }
 }
 
-uint8_t App::readDQTMarker()
+uint8_t App::readDQTMarker(istream &is)
 {
-    uint16_t left = getBits1(16, ginfile);
+    uint16_t left = getBits1(16, is);
 
     if (left < 2)
         throw "PJPG_BAD_DQT_MARKER";
@@ -870,7 +867,7 @@ uint8_t App::readDQTMarker()
 
     while (left)
     {
-        uint8_t n = (uint8_t)getBits1(8, ginfile);
+        uint8_t n = (uint8_t)getBits1(8, is);
         uint8_t prec = n >> 4;
         uint16_t totalRead;
         n &= 0x0F;
@@ -882,8 +879,8 @@ uint8_t App::readDQTMarker()
 
         for (uint8_t i = 0; i < 64; i++)
         {
-            uint16_t temp = getBits1(8, ginfile);
-            temp = prec ? (temp << 8) + getBits1(8, ginfile) : temp;
+            uint16_t temp = getBits1(8, is);
+            temp = prec ? (temp << 8) + getBits1(8, is) : temp;
 
             if (n)
                 gQuant1[i] = (int16_t)temp;
@@ -910,7 +907,7 @@ uint8_t App::readSOFMarker(istream &is)
 {
     uint16_t left = getBits1(16, is);
 
-    if (getBits1(8, ginfile) != 8)
+    if (getBits1(8, is) != 8)
         throw "PJPG_BAD_PRECISION";
 
     gImageYSize = getBits1(16, is);
@@ -945,9 +942,9 @@ uint8_t App::readSOFMarker(istream &is)
     return 0;
 }
 
-uint8_t App::skipVariableMarker()
+uint8_t App::skipVariableMarker(istream &is)
 {
-    uint16_t left = getBits1(16, ginfile);
+    uint16_t left = getBits1(16, is);
 
     if (left < 2)
         throw "PJPG_BAD_VARIABLE_MARKER";
@@ -956,26 +953,26 @@ uint8_t App::skipVariableMarker()
 
     while (left)
     {
-        getBits1(8, ginfile);
+        getBits1(8, is);
         left--;
     }
    
     return 0;
 }
 
-uint8_t App::readDRIMarker()
+uint8_t App::readDRIMarker(istream &is)
 {
-    if (getBits1(16, ginfile) != 4)
+    if (getBits1(16, is) != 4)
         throw "PJPG_BAD_DRI_LENGTH";
 
-    gRestartInterval = getBits1(16, ginfile);
+    gRestartInterval = getBits1(16, is);
     return 0;
 }
 
-uint8_t App::readSOSMarker()
+uint8_t App::readSOSMarker(istream &is)
 {
-    uint16_t left = getBits1(16, ginfile);
-    gCompsInScan = (uint8_t)getBits1(8, ginfile);
+    uint16_t left = getBits1(16, is);
+    gCompsInScan = (uint8_t)getBits1(8, is);
     left -= 3;
 
     if ((left != (gCompsInScan + gCompsInScan + 3)) || (gCompsInScan < 1) ||
@@ -986,8 +983,8 @@ uint8_t App::readSOSMarker()
    
     for (uint8_t i = 0; i < gCompsInScan; i++)
     {
-        uint8_t cc = (uint8_t)getBits1(8, ginfile);
-        uint8_t c = (uint8_t)getBits1(8, ginfile);
+        uint8_t cc = (uint8_t)getBits1(8, is);
+        uint8_t c = (uint8_t)getBits1(8, is);
         uint8_t ci;
         left -= 2;
      
@@ -1005,16 +1002,16 @@ uint8_t App::readSOSMarker()
 
     left -= 3;
 
-    while (left)                  
+    while (left)
     {
-        getBits1(8, ginfile);
+        getBits1(8, is);
         left--;
     }
    
     return 0;
 }
 
-uint8_t App::nextMarker()
+uint8_t App::nextMarker(istream &is)
 {
     uint8_t c;
     uint8_t bytes = 0;
@@ -1024,13 +1021,13 @@ uint8_t App::nextMarker()
         do
         {
             bytes++;
-            c = (uint8_t)getBits1(8, ginfile);
+            c = (uint8_t)getBits1(8, is);
         }
         while (c != 0xFF);
 
         do
         {
-            c = (uint8_t)getBits1(8, ginfile);
+            c = (uint8_t)getBits1(8, is);
         }
         while (c == 0xFF);
 
@@ -1040,11 +1037,11 @@ uint8_t App::nextMarker()
     return c;
 }
 
-uint8_t App::processMarkers(uint8_t *pMarker)
+uint8_t App::processMarkers(uint8_t *pMarker, istream &is)
 {
     while (true)
     {
-        uint8_t c = nextMarker();
+        uint8_t c = nextMarker(is);
 
         switch (c)
         {
@@ -1067,15 +1064,15 @@ uint8_t App::processMarkers(uint8_t *pMarker)
             *pMarker = c;
             return 0;
         case M_DHT:
-            readDHTMarker();
+            readDHTMarker(is);
             break;
         case M_DAC:
             throw "PJPG_NO_ARITHMITIC_SUPPORT";
         case M_DQT:
-            readDQTMarker();
+            readDQTMarker(is);
             break;
         case M_DRI:
-            readDRIMarker();
+            readDRIMarker(is);
             break;
         case M_JPG:
         case M_RST0:
@@ -1089,7 +1086,7 @@ uint8_t App::processMarkers(uint8_t *pMarker)
         case M_TEM:
             throw "PJPG_UNEXPECTED_MARKER";
         default:
-            skipVariableMarker();
+            skipVariableMarker(is);
             break;
         }
     }
@@ -1134,7 +1131,7 @@ uint8_t App::locateSOFMarker(istream &is)
 {
     uint8_t c;
     locateSOIMarker(is);
-    processMarkers(&c);
+    processMarkers(&c, is);
 
     switch (c)
     {
@@ -1153,11 +1150,11 @@ uint8_t App::locateSOFMarker(istream &is)
     return 0;
 }
 
-uint8_t App::locateSOSMarker(uint8_t* pFoundEOI)
+uint8_t App::locateSOSMarker(uint8_t* pFoundEOI, istream &is)
 {
     uint8_t c;
     *pFoundEOI = 0;  
-    processMarkers(&c);
+    processMarkers(&c, is);
 
     if (c == M_EOI)
     {
@@ -1169,7 +1166,7 @@ uint8_t App::locateSOSMarker(uint8_t* pFoundEOI)
         throw "PJPG_UNEXPECTED_MARKER";
     }
 
-    return readSOSMarker();
+    return readSOSMarker(is);
 }
 
 uint8_t App::init(istream &is)
@@ -1186,36 +1183,36 @@ uint8_t App::init(istream &is)
     gInBufLeft = 0;
     gBitBuf = 0;
     gBitsLeft = 8;
-    getBits1(8, ginfile);
-    getBits1(8, ginfile);
+    getBits1(8, is);
+    getBits1(8, is);
     return 0;
 }
 
-void App::fixInBuffer()
+void App::fixInBuffer(istream &is)
 {
     if (gBitsLeft > 0)  
         stuffChar((uint8_t)gBitBuf);
    
     stuffChar((uint8_t)(gBitBuf >> 8));
     gBitsLeft = 8;
-    getBits2(8, ginfile);
-    getBits2(8, ginfile);
+    getBits2(8, is);
+    getBits2(8, is);
 }
 
-uint8_t App::processRestart()
+uint8_t App::processRestart(istream &is)
 {
     uint16_t i;
     uint8_t c = 0;
 
     for (i = 1536; i > 0; i--)
-        if (getChar(ginfile) == 0xFF)
+        if (getChar(is) == 0xFF)
             break;
 
     if (i == 0)
         throw "PJPG_BAD_RESTART_MARKER";
    
     for ( ; i > 0; i--)
-        if ((c = getChar(ginfile)) != 0xFF)
+        if ((c = getChar(is)) != 0xFF)
             break;
 
     if (i == 0)
@@ -1230,8 +1227,8 @@ uint8_t App::processRestart()
     gRestartsLeft = gRestartInterval;
     gNextRestartNum = (gNextRestartNum + 1) & 7;
     gBitsLeft = 8;
-    getBits2(8, ginfile);
-    getBits2(8, ginfile);
+    getBits2(8, is);
+    getBits2(8, is);
     return 0;
 }
 
@@ -1261,10 +1258,10 @@ void App::checkQuantTables() const
     }
 }
 
-uint8_t App::initScan()
+uint8_t App::initScan(istream &is)
 {
     uint8_t foundEOI;
-    uint8_t status = locateSOSMarker(&foundEOI);
+    uint8_t status = locateSOSMarker(&foundEOI, is);
 
     if (status)
         return status;
@@ -1284,7 +1281,7 @@ uint8_t App::initScan()
         gNextRestartNum = 0;
     }
 
-    fixInBuffer();
+    fixInBuffer(is);
     return 0;
 }
 
@@ -1657,10 +1654,10 @@ void App::upsampleCrV(uint8_t srcOfs, uint8_t dstOfs)
         {
             uint8_t cr = (uint8_t)*pSrc++;
             int16_t crR, crG;
-            crR = (cr + ((cr * 103U) >> 8U)) - 179;
+            crR = (cr + (cr * 103U >> 8U)) - 179;
             pDstR[0] = addAndClamp(pDstR[0], crR);
             pDstR[8] = addAndClamp(pDstR[8], crR);
-            crG = ((cr * 183U) >> 8U) - 91;
+            crG = (cr * 183U >> 8U) - 91;
             pDstG[0] = subAndClamp(pDstG[0], crG);
             pDstG[8] = subAndClamp(pDstG[8], crG);
             ++pDstR;
@@ -1676,8 +1673,8 @@ void App::copyY(uint8_t dstOfs)
 {
     uint8_t *pRDst = gMCUBufR + dstOfs;
     uint8_t *pGDst = gMCUBufG + dstOfs;
-    uint8_t* pBDst = gMCUBufB + dstOfs;
-    int16_t* pSrc = gCoeffBuf;
+    uint8_t *pBDst = gMCUBufB + dstOfs;
+    int16_t *pSrc = gCoeffBuf;
    
     for (uint8_t i = 64; i > 0; i--)
     {
@@ -1977,7 +1974,7 @@ uint8_t App::decodeNextMCU(istream &is)
     {
         if (gRestartsLeft == 0)
         {
-            status = processRestart();
+            status = processRestart(is);
 
             if (status)
                 return status;
@@ -1993,13 +1990,10 @@ uint8_t App::decodeNextMCU(istream &is)
         uint8_t compDCTab = gCompDCTab[componentID];
         uint8_t compACTab, k;
         const int16_t *pQ = compQuant ? gQuant1 : gQuant0;
-        uint8_t s = huffDecode(compDCTab?&gHuffTab1:&gHuffTab0,compDCTab?gHuffVal1:gHuffVal0, is);
-        uint16_t r = 0;
+        uint8_t s;
+        s = huffDecode(compDCTab?&_hufftabs[1]:&_hufftabs[0],compDCTab?_hv.get(1):_hv.get(0),is);
         uint8_t numExtraBits = s & 0xF;
-
-        if (numExtraBits)
-            r = getBits2(numExtraBits, is);
-
+        uint16_t r = numExtraBits ? getBits2(numExtraBits, is) : 0;
         uint16_t dc = huffExtend(r, s);
         dc += gLastDC[componentID];
         gLastDC[componentID] = dc;
@@ -2009,7 +2003,10 @@ uint8_t App::decodeNextMCU(istream &is)
         for (k = 1; k < 64; k++)
         {
             uint16_t extraBits;
-            s=huffDecode(compACTab?&gHuffTab3:&gHuffTab2,compACTab ? gHuffVal3 : gHuffVal2, is);
+
+            s = huffDecode(compACTab? &_hufftabs[3] : &_hufftabs[2],
+                    compACTab ? _hv.get(3) : _hv.get(2), is);
+
             extraBits = 0;
             numExtraBits = s & 0xF;
 
@@ -2066,17 +2063,17 @@ uint8_t App::decodeNextMCU(istream &is)
     return 0;
 }
 
-uint8_t App::pjpeg_decode_mcu()
+uint8_t App::pjpeg_decode_mcu(istream &is)
 {
     if (!gNumMCUSRemaining)
         return PJPG_NO_MORE_BLOCKS;
       
-    decodeNextMCU(ginfile);
+    decodeNextMCU(is);
     gNumMCUSRemaining--;
     return 0;
 }
 
-uint8_t App::pjpeg_decode_init(pjpeg_image_info_t *pInfo)
+uint8_t App::pjpeg_decode_init(pjpeg_image_info_t *pInfo, istream &is)
 {
     pInfo->m_width = 0;
     pInfo->m_height = 0;
@@ -2089,10 +2086,10 @@ uint8_t App::pjpeg_decode_init(pjpeg_image_info_t *pInfo)
     pInfo->m_pMCUBufR = (uint8_t *)0;
     pInfo->m_pMCUBufG = (uint8_t *)0;
     pInfo->m_pMCUBufB = (uint8_t *)0;
-    init(ginfile);
-    locateSOFMarker(ginfile);
+    init(is);
+    locateSOFMarker(is);
     initFrame();
-    initScan();
+    initScan(is);
     pInfo->m_width = gImageXSize;
     pInfo->m_height = gImageYSize;
     pInfo->m_comps = gCompsInFrame;
