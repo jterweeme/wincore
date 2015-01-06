@@ -1,16 +1,6 @@
 #ifndef _HASHER_H_
 #define _HASHER_H_
-#if 0
 #include "common.h"
-#else
-#include <iostream>
-#include <stdint.h>
-#include <fstream>
-#include <endian.h>
-#include <iomanip>
-#include <cstring>
-using namespace std;
-#endif
 
 class Hash
 {

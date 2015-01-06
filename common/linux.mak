@@ -10,6 +10,7 @@ all:
 	g++ $(CXXFLAGS) -o jpg2tga jpg2tga.cpp -lm
 	g++ $(CXXFLAGS) -o uuidgen uuidgen.cpp
 	g++ $(CXXFLAGS) -o od od.cpp mystl.cpp odmain.cpp
+	g++ $(CXXFLAGS) -o base64 base64.cpp
 
 
 test:
@@ -18,6 +19,7 @@ test:
 	$(VALGRIND) ./md5s zero.dat | diff md5s.od -
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
 	$(VALGRIND) ./od zero.dat | diff zero.od -
+	$(VALGRIND) ./base64 zero.dat | diff zero.b64 -
 
 clean:
 	rm -Rvf *.o jpg2tga *.tga od md5s test1 uuidgen
