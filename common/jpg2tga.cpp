@@ -142,7 +142,7 @@ class App
     int16_t getExtendOffset(uint8_t i);
     uint16_t getExtendTest(uint8_t i);
     uint8_t getOctet(uint8_t FFCheck, istream &is);
-    uint8_t getBit();
+    uint8_t getBit(istream &is);
     uint16_t getBits2(uint8_t numBits, istream &is) { return getBits(numBits, 1, is); }
     uint16_t getBits(uint8_t numBits, uint8_t FFCheck, istream &is);
     int16_t huffExtend(uint16_t x, uint8_t s);
@@ -153,8 +153,8 @@ class App
     void upsampleCr(uint8_t srcOfs, uint8_t dstOfs);
     void upsampleCrH(uint8_t srcOfs, uint8_t dstOfs);
     uint16_t getBits1(uint8_t numBits, istream &is) { return getBits(numBits, 0, is); }
-    uint8_t huffDecode(const HuffTable *pHuffTable, const uint8_t* pHuffVal);
-    uint8_t readSOFMarker();
+    uint8_t huffDecode(const HuffTable *pHuffTable, const uint8_t* pHuffVal, istream &is);
+    uint8_t readSOFMarker(istream &is);
     uint8_t readDHTMarker();
     uint8_t skipVariableMarker();
     uint8_t readDRIMarker();
@@ -168,16 +168,16 @@ class App
     void convertCb(uint8_t dstOfs);
     void convertCr(uint8_t dstOfs);
     void fixInBuffer();
-    uint8_t init();
-    uint8_t locateSOIMarker();
+    uint8_t init(istream &is);
+    uint8_t locateSOIMarker(istream &is);
     uint8_t locateSOSMarker(uint8_t *pFoundEOI);
-    uint8_t locateSOFMarker();
+    uint8_t locateSOFMarker(istream &is);
     void checkHuffTables() const;
     void transformBlockReduce(uint8_t mcuBlock);
     void transformBlock(uint8_t mcuBlock);
     uint8_t processRestart();
     uint8_t initFrame();
-    uint8_t decodeNextMCU();
+    uint8_t decodeNextMCU(istream &is);
     int print_usage(ostream &os) const;
     uint8_t pjpeg_decode_mcu();
     void get_pixel(int* pDst, const uint8_t *pSrc, int luma_only, int num_comps);
@@ -642,13 +642,13 @@ uint16_t App::getBits(uint8_t numBits, uint8_t FFCheck, istream &is)
     return ret >> 16 - origBits;
 }
 
-uint8_t App::getBit()
+uint8_t App::getBit(istream &is)
 {
     uint8_t ret = gBitBuf & 0x8000 ? 1 : 0;
    
     if (!gBitsLeft)
     {
-        gBitBuf |= getOctet(1, ginfile);
+        gBitBuf |= getOctet(1, is);
         gBitsLeft += 8;
     }
    
@@ -710,10 +710,10 @@ int16_t App::huffExtend(uint16_t x, uint8_t s)
     return x < getExtendTest(s) ? (int16_t)x + getExtendOffset(s) : x;
 }
 
-uint8_t App::huffDecode(const HuffTable *pHuffTable, const uint8_t *pHuffVal)
+uint8_t App::huffDecode(const HuffTable *pHuffTable, const uint8_t *pHuffVal, istream &is)
 {
     uint8_t i = 0;
-    uint16_t code = getBit();
+    uint16_t code = getBit(is);
 
     for (;; i++)
     {
@@ -726,7 +726,7 @@ uint8_t App::huffDecode(const HuffTable *pHuffTable, const uint8_t *pHuffVal)
             break;
 
         code <<= 1;
-        code |= getBit();
+        code |= getBit(is);
     }
 
     uint8_t j = pHuffTable->mValPtr[i];
@@ -734,7 +734,7 @@ uint8_t App::huffDecode(const HuffTable *pHuffTable, const uint8_t *pHuffVal)
     return pHuffVal[j];
 }
 
-void App::huffCreate(const uint8_t* pBits, HuffTable* pHuffTable)
+void App::huffCreate(const uint8_t *pBits, HuffTable *pHuffTable)
 {
     uint16_t code = 0;
       
@@ -906,24 +906,24 @@ uint8_t App::readDQTMarker()
     return 0;
 }
 
-uint8_t App::readSOFMarker()
+uint8_t App::readSOFMarker(istream &is)
 {
-    uint16_t left = getBits1(16, ginfile);
+    uint16_t left = getBits1(16, is);
 
     if (getBits1(8, ginfile) != 8)
         throw "PJPG_BAD_PRECISION";
 
-    gImageYSize = getBits1(16, ginfile);
+    gImageYSize = getBits1(16, is);
 
     if ((!gImageYSize) || (gImageYSize > PJPG_MAX_HEIGHT))
         throw "PJPG_BAD_HEIGHT";
 
-    gImageXSize = getBits1(16, ginfile);
+    gImageXSize = getBits1(16, is);
 
     if ((!gImageXSize) || (gImageXSize > PJPG_MAX_WIDTH))
         throw "PJPG_BAD_WIDTH";
 
-    gCompsInFrame = (uint8_t)getBits1(8, ginfile);
+    gCompsInFrame = (uint8_t)getBits1(8, is);
 
     if (gCompsInFrame > 3)
         throw "PJPG_TOO_MANY_COMPONENTS";
@@ -933,10 +933,10 @@ uint8_t App::readSOFMarker()
    
     for (uint8_t i = 0; i < gCompsInFrame; i++)
     {
-        gCompIdent[i] = (uint8_t)getBits1(8, ginfile);
-        gCompHSamp[i] = (uint8_t)getBits1(4, ginfile);
-        gCompVSamp[i] = (uint8_t)getBits1(4, ginfile);
-        gCompQuant[i] = (uint8_t)getBits1(8, ginfile);
+        gCompIdent[i] = (uint8_t)getBits1(8, is);
+        gCompHSamp[i] = (uint8_t)getBits1(4, is);
+        gCompVSamp[i] = (uint8_t)getBits1(4, is);
+        gCompQuant[i] = (uint8_t)getBits1(8, is);
       
         if (gCompQuant[i] > 1)
             throw "PJPG_UNSUPPORTED_QUANT_TABLE";
@@ -1095,10 +1095,10 @@ uint8_t App::processMarkers(uint8_t *pMarker)
     }
 }
 
-uint8_t App::locateSOIMarker()
+uint8_t App::locateSOIMarker(istream &is)
 {
-    uint8_t lastchar = (uint8_t)getBits1(8, ginfile);
-    uint8_t thischar = (uint8_t)getBits1(8, ginfile);
+    uint8_t lastchar = (uint8_t)getBits1(8, is);
+    uint8_t thischar = (uint8_t)getBits1(8, is);
 
     if ((lastchar == 0xFF) && (thischar == M_SOI))
         return 0;
@@ -1111,7 +1111,7 @@ uint8_t App::locateSOIMarker()
             throw "PJPG_NOT_JPEG";
 
         lastchar = thischar;
-        thischar = (uint8_t)getBits1(8, ginfile);
+        thischar = (uint8_t)getBits1(8, is);
 
         if (lastchar == 0xFF) 
         {
@@ -1130,10 +1130,10 @@ uint8_t App::locateSOIMarker()
     return 0;
 }
 
-uint8_t App::locateSOFMarker()
+uint8_t App::locateSOFMarker(istream &is)
 {
     uint8_t c;
-    locateSOIMarker();
+    locateSOIMarker(is);
     processMarkers(&c);
 
     switch (c)
@@ -1141,7 +1141,7 @@ uint8_t App::locateSOFMarker()
         case M_SOF2:
             throw "PJPG_UNSUPPORTED_MODE";
         case M_SOF0:
-            readSOFMarker();
+            readSOFMarker(is);
             break;
         case M_SOF9:  
             throw "PJPG_NO_ARITHMITIC_SUPPORT";
@@ -1172,7 +1172,7 @@ uint8_t App::locateSOSMarker(uint8_t* pFoundEOI)
     return readSOSMarker();
 }
 
-uint8_t App::init()
+uint8_t App::init(istream &is)
 {
     gImageXSize = 0;
     gImageYSize = 0;
@@ -1968,7 +1968,7 @@ void App::transformBlockReduce(uint8_t mcuBlock)
     }
 }
 
-uint8_t App::decodeNextMCU()
+uint8_t App::decodeNextMCU(istream &is)
 {
     uint8_t status;
     uint8_t mcuBlock;   
@@ -1993,12 +1993,12 @@ uint8_t App::decodeNextMCU()
         uint8_t compDCTab = gCompDCTab[componentID];
         uint8_t compACTab, k;
         const int16_t *pQ = compQuant ? gQuant1 : gQuant0;
-        uint8_t s = huffDecode(compDCTab?&gHuffTab1:&gHuffTab0,compDCTab?gHuffVal1:gHuffVal0);
+        uint8_t s = huffDecode(compDCTab?&gHuffTab1:&gHuffTab0,compDCTab?gHuffVal1:gHuffVal0, is);
         uint16_t r = 0;
         uint8_t numExtraBits = s & 0xF;
 
         if (numExtraBits)
-            r = getBits2(numExtraBits, ginfile);
+            r = getBits2(numExtraBits, is);
 
         uint16_t dc = huffExtend(r, s);
         dc += gLastDC[componentID];
@@ -2009,12 +2009,12 @@ uint8_t App::decodeNextMCU()
         for (k = 1; k < 64; k++)
         {
             uint16_t extraBits;
-            s=huffDecode(compACTab?&gHuffTab3:&gHuffTab2,compACTab ? gHuffVal3 : gHuffVal2);
+            s=huffDecode(compACTab?&gHuffTab3:&gHuffTab2,compACTab ? gHuffVal3 : gHuffVal2, is);
             extraBits = 0;
             numExtraBits = s & 0xF;
 
             if (numExtraBits)
-                extraBits = getBits2(numExtraBits, ginfile);
+                extraBits = getBits2(numExtraBits, is);
 
             r = s >> 4;
             s &= 15;
@@ -2071,7 +2071,7 @@ uint8_t App::pjpeg_decode_mcu()
     if (!gNumMCUSRemaining)
         return PJPG_NO_MORE_BLOCKS;
       
-    decodeNextMCU();
+    decodeNextMCU(ginfile);
     gNumMCUSRemaining--;
     return 0;
 }
@@ -2089,8 +2089,8 @@ uint8_t App::pjpeg_decode_init(pjpeg_image_info_t *pInfo)
     pInfo->m_pMCUBufR = (uint8_t *)0;
     pInfo->m_pMCUBufG = (uint8_t *)0;
     pInfo->m_pMCUBufB = (uint8_t *)0;
-    init();
-    locateSOFMarker();
+    init(ginfile);
+    locateSOFMarker(ginfile);
     initFrame();
     initScan();
     pInfo->m_width = gImageXSize;
