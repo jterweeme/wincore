@@ -86,6 +86,7 @@ HuffTable;
 
 class App
 {
+    ifstream ginfile;
     FILE *g_pInFile;
     unsigned g_nInFileSize;
     unsigned g_nInFileOfs;
@@ -136,14 +137,12 @@ class App
     uint8_t gMCUBufR[256];
     uint8_t gMCUBufG[256];
     uint8_t gMCUBufB[256];
-    static const uint8_t PJPG_WINOGRAD_QUANT_SCALE_BITS = 10;
-    static const uint16_t PJPG_MAX_WIDTH = 16384;
-    static const uint16_t PJPG_MAX_HEIGHT = 16384;
-    static const uint8_t PJPG_MAXCOMPSINSCAN = 3;
-    static const uint8_t PJPG_DCT_SCALE_BITS = 7;
-    static const uint8_t PJPG_DCT_SCALE = 1 << PJPG_DCT_SCALE_BITS;
-    int descale(int x) const;
-    int PJPG_ARITH_SHIFT_RIGHT_N_16(int x, int n) const { return x >> n; }
+    const uint8_t WinogradBits = 10;
+    const uint16_t PJPG_MAX_WIDTH = 16384;
+    const uint16_t PJPG_MAX_HEIGHT = 16384;
+    const uint8_t PJPG_MAXCOMPSINSCAN = 3;
+    const uint8_t DCT_BITS = 7;
+    int descale(int x) const { return x + (1U << DCT_BITS - 1) >> DCT_BITS; }
     int PJPG_ARITH_SHIFT_RIGHT_8_L(int x) const { return ((x) >> 8); }
     uint8_t clamp(int16_t s) const;
     int16_t imul_b5(int16_t w) const;
@@ -154,7 +153,7 @@ class App
     int16_t imul_b1_b3(int16_t w) const;
     uint8_t addAndClamp(uint8_t a, int16_t b) const { b = a + b; return clamp(b); }
     void upsampleCb(uint8_t srcOfs, uint8_t dstOfs);
-    void createWinogradQuant(int16_t* pQuant);
+    void createWinogradQuant(int16_t* pQuant) const;
     HuffTable *getHuffTable(uint8_t index);
     void upsampleCbH(uint8_t srcOfs, uint8_t dstOfs);
     void stuffChar(uint8_t i);
@@ -171,8 +170,8 @@ class App
     int16_t huffExtend(uint16_t x, uint8_t s);
     void idctCols();
     void idctRows();
-    int write_tga(ostream &os, int x, int y, int comp, void *data);
-    int write_tga(char const *filename, int x, int y, int comp, void *data);
+    int write_tga(ostream &os, int x, int y, int comp, void *data) const;
+    int write_tga(char const *filename, int x, int y, int comp, void *data) const;
     void huffCreate(const uint8_t* pBits, HuffTable* pHuffTable);
     void upsampleCbV(uint8_t srcOfs, uint8_t dstOfs);
     void upsampleCr(uint8_t srcOfs, uint8_t dstOfs);
@@ -187,7 +186,7 @@ class App
     uint8_t nextMarker();
     uint8_t processMarkers(uint8_t *pMarker);
     uint8_t readDQTMarker();
-    uint8_t checkQuantTables();
+    void checkQuantTables() const;
     void upsampleCrV(uint8_t srcOfs, uint8_t dstOfs);
     void copyY(uint8_t dstOfs);
     void convertCb(uint8_t dstOfs);
@@ -197,31 +196,30 @@ class App
     uint8_t locateSOIMarker();
     uint8_t locateSOSMarker(uint8_t *pFoundEOI);
     uint8_t locateSOFMarker();
-    uint8_t checkHuffTables();
+    void checkHuffTables() const;
     void transformBlockReduce(uint8_t mcuBlock);
     void transformBlock(uint8_t mcuBlock);
     uint8_t processRestart();
     uint8_t initFrame();
     uint8_t decodeNextMCU();
-    int print_usage(ostream &os);
+    int print_usage(ostream &os) const;
     unsigned char pjpeg_decode_mcu();
     void get_pixel(int* pDst, const uint8_t *pSrc, int luma_only, int num_comps);
     uint8_t initScan();
     void fillInBuf();
     uint8_t pjpeg_decode_init(pjpeg_image_info_t *pInfo);
-    uint8_t neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes);
 
     uint8_t *pjpeg_load_from_file(const char *pFilename, int *x, int *y, int *comps,
             pjpeg_scan_type_t *pScan_type);
 
     void write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
-                int comp, void *data, int write_alpha, int scanline_pad);
+                int comp, void *data, int write_alpha, int scanline_pad) const;
 public:
     int run(int argc, char **argv);
 };
 
 void App::write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
-                int comp, void *data, int write_alpha, int scanline_pad)
+                int comp, void *data, int write_alpha, int scanline_pad) const
 {
     uint8_t bg[3] = { 255, 0, 255}, px[3];
     uint32_t zero = 0;
@@ -275,7 +273,7 @@ void App::write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
     }
 }
 
-int App::write_tga(ostream &f, int x, int y, int comp, void *data)
+int App::write_tga(ostream &f, int x, int y, int comp, void *data) const
 {
     int has_alpha = !(comp & 1);
     write8(f, 0);
@@ -300,7 +298,7 @@ int App::write_tga(ostream &f, int x, int y, int comp, void *data)
     return 0;
 }
 
-int App::write_tga(char const *filename, int x, int y, int comp, void *data)
+int App::write_tga(char const *filename, int x, int y, int comp, void *data) const
 {
     ofstream f(filename);
     write_tga(f, x, y, comp, data);
@@ -308,7 +306,7 @@ int App::write_tga(char const *filename, int x, int y, int comp, void *data)
     return 0;
 }
 
-int App::print_usage(ostream &os)
+int App::print_usage(ostream &os) const
 {
     os << "Usage: jpg2tga [source_file] [dest_file] <reduce>\n"
        << "source_file: JPEG file to decode. Note: Progressive files are not supported.\n"
@@ -316,18 +314,6 @@ int App::print_usage(ostream &os)
        << "reduce: Optional, if 1 the JPEG file is quickly decoded to ~1/8th resolution.\n"
        << "\nOutputs 8-bit grayscale or truecolor 24-bit TGA files.\n";
     return EXIT_FAILURE;
-}
-
-uint8_t App::neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes)
-{
-    uint32_t n = min(g_nInFileSize - g_nInFileOfs, buf_size);
-
-    if (n && (fread(pBuf, 1, n, g_pInFile) != n))
-        throw "PJPG_STREAM_READ_ERROR";
-
-    *pBytes = (uint8_t)(n);
-    g_nInFileOfs += n;
-    return 0;
 }
 
 uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
@@ -616,26 +602,28 @@ JPEG_MARKER;
 
 static const int8_t ZAG[] = 
 {
-   0,  1,  8, 16,  9,  2,  3, 10,
-   17, 24, 32, 25, 18, 11,  4,  5,
-   12, 19, 26, 33, 40, 48, 41, 34,
-   27, 20, 13,  6,  7, 14, 21, 28,
-   35, 42, 49, 56, 57, 50, 43, 36,
-   29, 22, 15, 23, 30, 37, 44, 51,
-   58, 59, 52, 45, 38, 31, 39, 46,
-   53, 60, 61, 54, 47, 55, 62, 63,
+    0,  1,  8, 16,  9,  2,  3, 10,
+    17, 24, 32, 25, 18, 11,  4,  5,
+    12, 19, 26, 33, 40, 48, 41, 34,
+    27, 20, 13,  6,  7, 14, 21, 28,
+    35, 42, 49, 56, 57, 50, 43, 36,
+    29, 22, 15, 23, 30, 37, 44, 51,
+    58, 59, 52, 45, 38, 31, 39, 46,
+    53, 60, 61, 54, 47, 55, 62, 63,
 };
 
 void App::fillInBuf()
 {
     gInBufOfs = 4;
     gInBufLeft = 0;
-//uint8_t App::neat(uint8_t *pBuf, uint8_t buf_size, uint8_t *pBytes)
-    //neat(gInBuf + gInBufOfs, PJPG_MAX_IN_BUF_SIZE - gInBufOfs, &gInBufLeft);
     uint32_t n = min(g_nInFileSize - g_nInFileOfs, PJPG_MAX_IN_BUF_SIZE - gInBufOfs);
 
+#if 1
     if (n && (fread(gInBuf + gInBufOfs, 1, n, g_pInFile) != n))
         throw "PJPG_STREAM_READ_ERROR";
+#else
+    ginfile.read((char *)(gInBuf + gInBufOfs), n);
+#endif
 
     gInBufLeft = (uint8_t)n;
     g_nInFileOfs += n;
@@ -873,7 +861,7 @@ uint8_t App::readDHTMarker()
     uint16_t left = getBits1(16);
 
     if (left < 2)
-        return PJPG_BAD_DHT_MARKER;
+        throw "PJPG_BAD_DHT_MARKER";
 
     left -= 2;
 
@@ -902,7 +890,7 @@ uint8_t App::readDHTMarker()
         }
       
         if (count > getMaxHuffCodes(tableIndex))
-            return PJPG_BAD_DHT_COUNTS;
+            throw "PJPG_BAD_DHT_COUNTS";
 
         for (i = 0; i < count; i++)
             pHuffVal[i] = (uint8_t)getBits1(8);
@@ -910,7 +898,7 @@ uint8_t App::readDHTMarker()
         totalRead = 1 + 16 + count;
 
         if (left < totalRead)
-            return PJPG_BAD_DHT_MARKER;
+            throw "PJPG_BAD_DHT_MARKER";
 
         left = (uint16_t)(left - totalRead);
         huffCreate(bits, pHuffTable);
@@ -919,11 +907,7 @@ uint8_t App::readDHTMarker()
     return 0;
 }
 
-int App::descale(int x) const
-{
-    return PJPG_ARITH_SHIFT_RIGHT_N_16(((x) + (1U << (PJPG_DCT_SCALE_BITS - 1))),
-                PJPG_DCT_SCALE_BITS);
-}
+
 
 const uint8_t gWinogradQuant[] = 
 {
@@ -937,16 +921,13 @@ const uint8_t gWinogradQuant[] =
    54,   35,   28,   37,   28,   19,   19,   10,
 };   
 
-void App::createWinogradQuant(int16_t *pQuant)
+void App::createWinogradQuant(int16_t *pQuant) const
 {
     for (uint8_t i = 0; i < 64; i++) 
     {
         long x = pQuant[i];
         x *= gWinogradQuant[i];
-
-        pQuant[i] = (int16_t)((x + (1 << (PJPG_WINOGRAD_QUANT_SCALE_BITS -
-            PJPG_DCT_SCALE_BITS - 1))) >> (PJPG_WINOGRAD_QUANT_SCALE_BITS -
-            PJPG_DCT_SCALE_BITS));
+        pQuant[i] = (int16_t)(x + (1 << WinogradBits - DCT_BITS - 1) >> WinogradBits - DCT_BITS);
    }
 }
 
@@ -955,7 +936,7 @@ uint8_t App::readDQTMarker()
     uint16_t left = getBits1(16);
 
     if (left < 2)
-        return PJPG_BAD_DQT_MARKER;
+        throw "PJPG_BAD_DQT_MARKER";
 
     left -= 2;
 
@@ -967,7 +948,7 @@ uint8_t App::readDQTMarker()
         n &= 0x0F;
 
         if (n > 1)
-            return PJPG_BAD_DQT_TABLE;
+            throw "PJPG_BAD_DQT_TABLE";
 
         gValidQuantTables |= (n ? 2 : 1);         
 
@@ -1002,25 +983,25 @@ uint8_t App::readSOFMarker()
     uint16_t left = getBits1(16);
 
     if (getBits1(8) != 8)   
-        return PJPG_BAD_PRECISION;
+        throw "PJPG_BAD_PRECISION";
 
     gImageYSize = getBits1(16);
 
     if ((!gImageYSize) || (gImageYSize > PJPG_MAX_HEIGHT))
-        return PJPG_BAD_HEIGHT;
+        throw "PJPG_BAD_HEIGHT";
 
     gImageXSize = getBits1(16);
 
     if ((!gImageXSize) || (gImageXSize > PJPG_MAX_WIDTH))
-        return PJPG_BAD_WIDTH;
+        throw "PJPG_BAD_WIDTH";
 
     gCompsInFrame = (uint8_t)getBits1(8);
 
     if (gCompsInFrame > 3)
-        return PJPG_TOO_MANY_COMPONENTS;
+        throw "PJPG_TOO_MANY_COMPONENTS";
 
     if (left != (gCompsInFrame + gCompsInFrame + gCompsInFrame + 8))
-        return PJPG_BAD_SOF_LENGTH;
+        throw "PJPG_BAD_SOF_LENGTH";
    
     for (uint8_t i = 0; i < gCompsInFrame; i++)
     {
@@ -1030,7 +1011,7 @@ uint8_t App::readSOFMarker()
         gCompQuant[i] = (uint8_t)getBits1(8);
       
         if (gCompQuant[i] > 1)
-            return PJPG_UNSUPPORTED_QUANT_TABLE;
+            throw "PJPG_UNSUPPORTED_QUANT_TABLE";
     }
    
     return 0;
@@ -1041,7 +1022,7 @@ uint8_t App::skipVariableMarker()
     uint16_t left = getBits1(16);
 
     if (left < 2)
-        return PJPG_BAD_VARIABLE_MARKER;
+        throw "PJPG_BAD_VARIABLE_MARKER";
 
     left -= 2;
 
@@ -1057,7 +1038,7 @@ uint8_t App::skipVariableMarker()
 uint8_t App::readDRIMarker()
 {
     if (getBits1(16) != 4)
-        return PJPG_BAD_DRI_LENGTH;
+        throw "PJPG_BAD_DRI_LENGTH";
 
     gRestartInterval = getBits1(16);
     return 0;
@@ -1073,7 +1054,7 @@ uint8_t App::readSOSMarker()
     if ( (left != (gCompsInScan + gCompsInScan + 3)) || (gCompsInScan < 1) ||
         (gCompsInScan > PJPG_MAXCOMPSINSCAN) )
     {
-        return PJPG_BAD_SOS_LENGTH;
+        throw "PJPG_BAD_SOS_LENGTH";
     }
    
     for (i = 0; i < gCompsInScan; i++)
@@ -1088,7 +1069,7 @@ uint8_t App::readSOSMarker()
                 break;
 
         if (ci >= gCompsInFrame)
-            return PJPG_BAD_SOS_COMP_ID;
+            throw "PJPG_BAD_SOS_COMP_ID";
 
         gCompList[i] = ci;
         gCompDCTab[ci] = (c >> 4) & 15;
@@ -1134,7 +1115,7 @@ uint8_t App::nextMarker()
 
 uint8_t App::processMarkers(uint8_t *pMarker)
 {
-    for ( ; ; )
+    while (true)
     {
         uint8_t c = nextMarker();
 
@@ -1162,7 +1143,7 @@ uint8_t App::processMarkers(uint8_t *pMarker)
             readDHTMarker();
             break;
         case M_DAC:
-            return PJPG_NO_ARITHMITIC_SUPPORT;
+            throw "PJPG_NO_ARITHMITIC_SUPPORT";
         case M_DQT:
             readDQTMarker();
             break;
@@ -1179,7 +1160,7 @@ uint8_t App::processMarkers(uint8_t *pMarker)
         case M_RST6:
         case M_RST7:
         case M_TEM:
-            return PJPG_UNEXPECTED_MARKER;
+            throw "PJPG_UNEXPECTED_MARKER";
         default:
             skipVariableMarker();
             break;
@@ -1201,7 +1182,7 @@ uint8_t App::locateSOIMarker()
     for ( ; ; )
     {
         if (--bytesleft == 0)
-            return PJPG_NOT_JPEG;
+            throw "PJPG_NOT_JPEG";
 
         lastchar = thischar;
         thischar = (uint8_t)getBits1(8);
@@ -1211,14 +1192,14 @@ uint8_t App::locateSOIMarker()
             if (thischar == M_SOI)
                 break;
             else if (thischar == M_EOI)
-                return PJPG_NOT_JPEG;
+                throw "PJPG_NOT_JPEG";
         }
     }
 
     thischar = (uint8_t)((gBitBuf >> 8) & 0xFF);
 
     if (thischar != 0xFF)
-        return PJPG_NOT_JPEG;
+        throw "PJPG_NOT_JPEG";
       
     return 0;
 }
@@ -1241,7 +1222,7 @@ uint8_t App::locateSOFMarker()
     switch (c)
     {
         case M_SOF2:
-            return PJPG_UNSUPPORTED_MODE;
+            throw "PJPG_UNSUPPORTED_MODE";
         case M_SOF0:
             status = readSOFMarker();
 
@@ -1250,10 +1231,10 @@ uint8_t App::locateSOFMarker()
             
             break;
         case M_SOF9:  
-            return PJPG_NO_ARITHMITIC_SUPPORT;
+            throw "PJPG_NO_ARITHMITIC_SUPPORT";
         case M_SOF1:
         default:
-            return PJPG_UNSUPPORTED_MARKER;
+            throw "PJPG_UNSUPPORTED_MARKER";
     }
    
     return 0;
@@ -1276,7 +1257,7 @@ uint8_t App::locateSOSMarker(uint8_t* pFoundEOI)
     }
     else if (c != M_SOS)
     {
-        return PJPG_UNEXPECTED_MARKER;
+        throw "PJPG_UNEXPECTED_MARKER";
     }
 
     return readSOSMarker();
@@ -1322,17 +1303,17 @@ uint8_t App::processRestart()
             break;
 
     if (i == 0)
-        return PJPG_BAD_RESTART_MARKER;
+        throw "PJPG_BAD_RESTART_MARKER";
    
     for ( ; i > 0; i--)
         if ((c = getChar()) != 0xFF)
             break;
 
     if (i == 0)
-        return PJPG_BAD_RESTART_MARKER;
+        throw "PJPG_BAD_RESTART_MARKER";
 
     if (c != (gNextRestartNum + M_RST0))
-        return PJPG_BAD_RESTART_MARKER;
+        throw "PJPG_BAD_RESTART_MARKER";
 
     gLastDC[0] = 0;
     gLastDC[1] = 0;
@@ -1345,7 +1326,7 @@ uint8_t App::processRestart()
     return 0;
 }
 
-uint8_t App::checkHuffTables()
+void App::checkHuffTables() const
 {
     for (uint8_t i = 0; i < gCompsInScan; i++)
     {
@@ -1355,24 +1336,20 @@ uint8_t App::checkHuffTables()
         if (((gValidHuffTables & (1 << compDCTab)) == 0) ||
            ((gValidHuffTables & (1 << compACTab)) == 0))
         {
-            return PJPG_UNDEFINED_HUFF_TABLE;
+            throw "PJPG_UNDEFINED_HUFF_TABLE";
         }
     }
-   
-    return 0;
 }
 
-uint8_t App::checkQuantTables()
+void App::checkQuantTables() const
 {
     for (uint8_t i = 0; i < gCompsInScan; i++)
     {
         uint8_t compQuantMask = gCompQuant[gCompList[i]] ? 2 : 1;
       
         if ((gValidQuantTables & compQuantMask) == 0)
-            return PJPG_UNDEFINED_QUANT_TABLE;
+            throw "PJPG_UNDEFINED_QUANT_TABLE";
     }
-
-    return 0;         
 }
 
 uint8_t App::initScan()
@@ -1384,18 +1361,10 @@ uint8_t App::initScan()
         return status;
 
     if (foundEOI)
-        return PJPG_UNEXPECTED_MARKER;
+        throw "PJPG_UNEXPECTED_MARKER";
    
-    status = checkHuffTables();
-
-    if (status)
-        return status;
-
-    status = checkQuantTables();
-
-    if (status)
-        return status;
-
+    checkHuffTables();
+    checkQuantTables();
     gLastDC[0] = 0;
     gLastDC[1] = 0;
     gLastDC[2] = 0;
@@ -1415,7 +1384,7 @@ uint8_t App::initFrame()
     if (gCompsInFrame == 1)
     {
         if ((gCompHSamp[0] != 1) || (gCompVSamp[0] != 1))
-            return PJPG_UNSUPPORTED_SAMP_FACTORS;
+            throw "PJPG_UNSUPPORTED_SAMP_FACTORS";
 
         gScanType = PJPG_GRAYSCALE;
         gMaxBlocksPerMCU = 1;
@@ -1428,7 +1397,7 @@ uint8_t App::initFrame()
         if (((gCompHSamp[1] != 1) || (gCompVSamp[1] != 1)) ||
             ((gCompHSamp[2] != 1) || (gCompVSamp[2] != 1)))
         {
-            return PJPG_UNSUPPORTED_SAMP_FACTORS;
+            throw "PJPG_UNSUPPORTED_SAMP_FACTORS";
         }
 
         if ((gCompHSamp[0] == 1) && (gCompVSamp[0] == 1))
@@ -1494,29 +1463,25 @@ uint8_t App::initFrame()
 
 int16_t App::imul_b1_b3(int16_t w) const
 {
-    long x = (w * 362L);
-    x += 128L;
-    return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
+    long x = w * 362L + 128;
+    return (int16_t)PJPG_ARITH_SHIFT_RIGHT_8_L(x);
 }
 
 int16_t App::imul_b2(int16_t w) const
 {
-    long x = (w * 669L);
-    x += 128L;
+    long x = w * 669 + 128;
     return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
 }
 
 int16_t App::imul_b4(int16_t w) const
 {
-    long x = (w * 277L);
-    x += 128L;
+    long x = w * 277 + 128;
     return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
 }
 
 int16_t App::imul_b5(int16_t w) const
 {
-    long x = (w * 196L);
-    x += 128L;
+    long x = w * 196L + 128;
     return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
 }
 
@@ -1718,13 +1683,13 @@ void App::upsampleCbH(uint8_t srcOfs, uint8_t dstOfs)
    
 void App::upsampleCbV(uint8_t srcOfs, uint8_t dstOfs)
 {
-    uint8_t x, y;
     int16_t *pSrc = gCoeffBuf + srcOfs;
     uint8_t *pDstG = gMCUBufG + dstOfs;
     uint8_t *pDstB = gMCUBufB + dstOfs;
-    for (y = 0; y < 4; y++)
+
+    for (uint8_t y = 0; y < 4; y++)
     {
-        for (x = 0; x < 8; x++)
+        for (uint8_t x = 0; x < 8; x++)
         {
             uint8_t cb = (uint8_t)*pSrc++;
             int16_t cbG, cbB;
@@ -2120,7 +2085,7 @@ void App::transformBlockReduce(uint8_t mcuBlock)
                break;
          }
          break;
-   }
+    }
 }
 
 uint8_t App::decodeNextMCU()
@@ -2137,6 +2102,7 @@ uint8_t App::decodeNextMCU()
             if (status)
                 return status;
         }
+
         gRestartsLeft--;
     }      
    

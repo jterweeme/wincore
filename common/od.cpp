@@ -10,7 +10,7 @@ and another empty line will be displayed.
 void HexStream::dump(istream &input)
 {
     char arr[16] = { 0 };
-    int pos;
+    int pos = 0;
 
     while (input)
     {
