@@ -9,47 +9,6 @@
 #include <fstream>
 using namespace std;
 
-enum
-{
-   PJPG_NO_MORE_BLOCKS = 1,
-   PJPG_BAD_DHT_COUNTS,
-   PJPG_BAD_DHT_INDEX,
-   PJPG_BAD_DHT_MARKER,
-   PJPG_BAD_DQT_MARKER,
-   PJPG_BAD_DQT_TABLE,
-   PJPG_BAD_PRECISION,
-   PJPG_BAD_HEIGHT,
-   PJPG_BAD_WIDTH,
-   PJPG_TOO_MANY_COMPONENTS,
-   PJPG_BAD_SOF_LENGTH,
-   PJPG_BAD_VARIABLE_MARKER,
-   PJPG_BAD_DRI_LENGTH,
-   PJPG_BAD_SOS_LENGTH,
-   PJPG_BAD_SOS_COMP_ID,
-   PJPG_W_EXTRA_BYTES_BEFORE_MARKER,
-   PJPG_NO_ARITHMITIC_SUPPORT,
-   PJPG_UNEXPECTED_MARKER,
-   PJPG_NOT_JPEG,
-   PJPG_UNSUPPORTED_MARKER,
-   PJPG_BAD_DQT_LENGTH,
-   PJPG_TOO_MANY_BLOCKS,
-   PJPG_UNDEFINED_QUANT_TABLE,
-   PJPG_UNDEFINED_HUFF_TABLE,
-   PJPG_NOT_SINGLE_SCAN,
-   PJPG_UNSUPPORTED_COLORSPACE,
-   PJPG_UNSUPPORTED_SAMP_FACTORS,
-   PJPG_DECODE_ERROR,
-   PJPG_BAD_RESTART_MARKER,
-   PJPG_ASSERTION_ERROR,
-   PJPG_BAD_SOS_SPECTRAL,
-   PJPG_BAD_SOS_SUCCESSIVE,
-   PJPG_STREAM_READ_ERROR,
-   PJPG_NOTENOUGHMEM,
-   PJPG_UNSUPPORTED_COMP_IDENT,
-   PJPG_UNSUPPORTED_QUANT_TABLE,
-   PJPG_UNSUPPORTED_MODE,
-};  
-
 typedef enum
 {
     PJPG_GRAYSCALE,
@@ -60,7 +19,7 @@ typedef enum
 }
 pjpeg_scan_type_t;
 
-typedef struct
+struct pjpeg_image_info_t
 {
     int m_width;
     int m_height;
@@ -73,21 +32,18 @@ typedef struct
     unsigned char *m_pMCUBufR;
     unsigned char *m_pMCUBufG;
     unsigned char *m_pMCUBufB;
-}
-pjpeg_image_info_t;
+};
 
-typedef struct HuffTableT
+struct HuffTable
 {
     uint16_t mMinCode[16];
     uint16_t mMaxCode[16];
     uint8_t mValPtr[16];
-}
-HuffTable;
+};
 
 class App
 {
     ifstream ginfile;
-    FILE *g_pInFile;
     unsigned g_nInFileSize;
     unsigned g_nInFileOfs;
     uint8_t gCallbackStatus;
@@ -114,6 +70,7 @@ class App
     uint8_t gValidHuffTables;
     uint8_t gValidQuantTables;
     uint8_t gTemFlag;
+    static const uint8_t PJPG_NO_MORE_BLOCKS = 1;
     static const uint16_t PJPG_MAX_IN_BUF_SIZE = 256;
     uint8_t gInBuf[PJPG_MAX_IN_BUF_SIZE];
     uint8_t gInBufOfs;
@@ -143,14 +100,13 @@ class App
     const uint8_t PJPG_MAXCOMPSINSCAN = 3;
     const uint8_t DCT_BITS = 7;
     int descale(int x) const { return x + (1U << DCT_BITS - 1) >> DCT_BITS; }
-    int PJPG_ARITH_SHIFT_RIGHT_8_L(int x) const { return ((x) >> 8); }
     uint8_t clamp(int16_t s) const;
-    int16_t imul_b5(int16_t w) const;
-    int16_t imul_b4(int16_t w) const;
-    int16_t imul_b2(int16_t w) const;
+    int16_t imul_b5(int16_t w) const { return w * 196 + 128 >> 8; }
+    int16_t imul_b4(int16_t w) const { return w * 227 + 128 >> 8; }
+    int16_t imul_b2(int16_t w) const { return w * 669 + 128 >> 8; }
     uint32_t min(const uint32_t &a, const uint32_t &b) const { return a < b ? a : b; }
     uint8_t subAndClamp(uint8_t a, int16_t b) const { b = a - b; return clamp(b); }
-    int16_t imul_b1_b3(int16_t w) const;
+    int16_t imul_b1_b3(int16_t w) const { return w * 362 + 128 >> 8; }
     uint8_t addAndClamp(uint8_t a, int16_t b) const { b = a + b; return clamp(b); }
     void upsampleCb(uint8_t srcOfs, uint8_t dstOfs);
     void createWinogradQuant(int16_t* pQuant) const;
@@ -203,7 +159,7 @@ class App
     uint8_t initFrame();
     uint8_t decodeNextMCU();
     int print_usage(ostream &os) const;
-    unsigned char pjpeg_decode_mcu();
+    uint8_t pjpeg_decode_mcu();
     void get_pixel(int* pDst, const uint8_t *pSrc, int luma_only, int num_comps);
     uint8_t initScan();
     void fillInBuf();
@@ -333,27 +289,12 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
     if (pScan_type)
         *pScan_type = PJPG_GRAYSCALE;
 
-    g_pInFile = fopen(pFilename, "rb");
-
-    if (!g_pInFile)
-        return NULL;
-
+    ginfile.open(pFilename);
     g_nInFileOfs = 0;
-    fseek(g_pInFile, 0, SEEK_END);
-    g_nInFileSize = ftell(g_pInFile);
-    fseek(g_pInFile, 0, SEEK_SET);
+    ginfile.seekg(0, ginfile.end);
+    g_nInFileSize = ginfile.tellg();
+    ginfile.seekg(0, ginfile.beg);
     status = pjpeg_decode_init(&image_info);
-         
-    if (status)
-    {
-        printf("pjpeg_decode_init() failed with status %u\n", status);
-
-        if (status == PJPG_UNSUPPORTED_MODE)
-            printf("Progressive JPEG files are not supported.\n");
-
-        fclose(g_pInFile);
-        return NULL;
-    }
    
     if (pScan_type)
         *pScan_type = image_info.m_scanType;
@@ -363,34 +304,18 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
     row_pitch = decoded_width * image_info.m_comps;
     pImage = (uint8_t *)malloc(row_pitch * decoded_height);
 
-    if (!pImage)
-    {
-        fclose(g_pInFile);
-        return NULL;
-    }
-
     while (true)
     {
         uint8_t *pDst_row;
         status = pjpeg_decode_mcu();
       
         if (status)
-        {
-            if (status != PJPG_NO_MORE_BLOCKS)
-            {
-                printf("pjpeg_decode_mcu() failed with status %u\n", status);
-                free(pImage);
-                fclose(g_pInFile);
-                return NULL;
-            }
-
             break;
-        }
 
         if (mcu_y >= image_info.m_MCUSPerCol)
         {
             free(pImage);
-            fclose(g_pInFile);
+            ginfile.close();
             return NULL;
         }
 
@@ -457,7 +382,7 @@ uint8_t *App::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
         }
     }
 
-    fclose(g_pInFile);
+    ginfile.close();
     *x = decoded_width;
     *y = decoded_height;
     *comps = image_info.m_comps;
@@ -484,7 +409,9 @@ void App::get_pixel(int *pDst, const uint8_t *pSrc, int luma_only, int num_comps
         b = pSrc[2];
     }
 
-    pDst[0] = r; pDst[1] = g; pDst[2] = b;
+    pDst[0] = r;
+    pDst[1] = g;
+    pDst[2] = b;
 }
 
 int main(int argc, char **argv)
@@ -506,7 +433,6 @@ int main(int argc, char **argv)
 
 int App::run(int argc, char **argv)
 {
-    int n = 1;
     const char *pSrc_filename;
     const char *pDst_filename;
     int width, height, comps;
@@ -518,8 +444,8 @@ int App::run(int argc, char **argv)
     if ((argc < 3) || (argc > 4))
         return print_usage(cout);
    
-    pSrc_filename = argv[n++];
-    pDst_filename = argv[n++];
+    pSrc_filename = argv[1];
+    pDst_filename = argv[2];
     printf("Source file:      \"%s\"\n", pSrc_filename);
     printf("Destination file: \"%s\"\n", pDst_filename);
     pImage = pjpeg_load_from_file(pSrc_filename, &width, &height, &comps, &scan_type);
@@ -600,7 +526,7 @@ typedef enum
 }
 JPEG_MARKER;
 
-static const int8_t ZAG[] = 
+const int8_t ZAG[] = 
 {
     0,  1,  8, 16,  9,  2,  3, 10,
     17, 24, 32, 25, 18, 11,  4,  5,
@@ -617,14 +543,7 @@ void App::fillInBuf()
     gInBufOfs = 4;
     gInBufLeft = 0;
     uint32_t n = min(g_nInFileSize - g_nInFileOfs, PJPG_MAX_IN_BUF_SIZE - gInBufOfs);
-
-#if 1
-    if (n && (fread(gInBuf + gInBufOfs, 1, n, g_pInFile) != n))
-        throw "PJPG_STREAM_READ_ERROR";
-#else
     ginfile.read((char *)(gInBuf + gInBufOfs), n);
-#endif
-
     gInBufLeft = (uint8_t)n;
     g_nInFileOfs += n;
 }
@@ -634,6 +553,7 @@ uint8_t App::getChar()
     if (!gInBufLeft)
     {
         fillInBuf();
+
         if (!gInBufLeft)
         {
             gTemFlag = ~gTemFlag;
@@ -697,15 +617,12 @@ uint16_t App::getBits(uint8_t numBits, uint8_t FFCheck)
         gBitBuf <<= numBits;
     }
    
-    return ret >> (16 - origBits);
+    return ret >> 16 - origBits;
 }
 
 uint8_t App::getBit()
 {
-    uint8_t ret = 0;
-
-    if (gBitBuf & 0x8000)
-        ret = 1;
+    uint8_t ret = gBitBuf & 0x8000 ? 1 : 0;
    
     if (!gBitsLeft)
     {
@@ -768,7 +685,7 @@ int16_t App::getExtendOffset(uint8_t i)
 
 int16_t App::huffExtend(uint16_t x, uint8_t s)
 {
-    return ((x < getExtendTest(s)) ? ((int16_t)x + getExtendOffset(s)) : (int16_t)x);
+    return x < getExtendTest(s) ? (int16_t)x + getExtendOffset(s) : x;
 }
 
 uint8_t App::huffDecode(const HuffTable* pHuffTable, const uint8_t* pHuffVal)
@@ -777,7 +694,7 @@ uint8_t App::huffDecode(const HuffTable* pHuffTable, const uint8_t* pHuffVal)
     uint8_t j;
     uint16_t code = getBit();
 
-    for ( ; ; )
+    while (true)
     {
         uint16_t maxCode;
 
@@ -785,6 +702,7 @@ uint8_t App::huffDecode(const HuffTable* pHuffTable, const uint8_t* pHuffVal)
             return 0;
 
         maxCode = pHuffTable->mMaxCode[i];
+
         if ((code <= maxCode) && (maxCode != 0xFFFF))
             break;
 
@@ -800,11 +718,9 @@ uint8_t App::huffDecode(const HuffTable* pHuffTable, const uint8_t* pHuffVal)
 
 void App::huffCreate(const uint8_t* pBits, HuffTable* pHuffTable)
 {
-    uint8_t i = 0;
-    uint8_t j = 0;
     uint16_t code = 0;
       
-    for ( ; ; )
+    for (uint8_t i = 0, j = 0; i < 16; i++)
     {
         uint8_t num = pBits[i];
       
@@ -824,10 +740,6 @@ void App::huffCreate(const uint8_t* pBits, HuffTable* pHuffTable)
         }
       
         code <<= 1;
-        i++;
-
-        if (i > 15)
-            break;
     }
 }
 
@@ -873,8 +785,8 @@ uint8_t App::readDHTMarker()
         uint16_t count, totalRead;    
         index = (uint8_t)getBits1(8);
       
-        if ( ((index & 0xF) > 1) || ((index & 0xF0) > 0x10) )
-            return PJPG_BAD_DHT_INDEX;
+        if (((index & 0xF) > 1) || ((index & 0xF0) > 0x10) )
+            throw "PJPG_BAD_DHT_INDEX";
       
         tableIndex = ((index >> 3) & 2) + (index & 1);
         pHuffTable = getHuffTable(tableIndex);
@@ -907,8 +819,6 @@ uint8_t App::readDHTMarker()
     return 0;
 }
 
-
-
 const uint8_t gWinogradQuant[] = 
 {
    128,  178,  178,  167,  246,  167,  151,  232,
@@ -928,7 +838,7 @@ void App::createWinogradQuant(int16_t *pQuant) const
         long x = pQuant[i];
         x *= gWinogradQuant[i];
         pQuant[i] = (int16_t)(x + (1 << WinogradBits - DCT_BITS - 1) >> WinogradBits - DCT_BITS);
-   }
+    }
 }
 
 uint8_t App::readDQTMarker()
@@ -961,21 +871,21 @@ uint8_t App::readDQTMarker()
                 gQuant1[i] = (int16_t)temp;
             else
                 gQuant0[i] = (int16_t)temp;
-      }
+        }
       
-      createWinogradQuant(n ? gQuant1 : gQuant0);
-      totalRead = 64 + 1;
+        createWinogradQuant(n ? gQuant1 : gQuant0);
+        totalRead = 64 + 1;
 
-      if (prec)
-         totalRead += 64;
+        if (prec)
+            totalRead += 64;
 
-      if (left < totalRead)
-         return PJPG_BAD_DQT_LENGTH;
+        if (left < totalRead)
+            throw "PJPG_BAD_DQT_LENGTH";
 
-      left = (uint16_t)(left - totalRead);
-   }
+        left = (uint16_t)(left - totalRead);
+    }
    
-   return 0;
+    return 0;
 }
 
 uint8_t App::readSOFMarker()
@@ -1046,18 +956,17 @@ uint8_t App::readDRIMarker()
 
 uint8_t App::readSOSMarker()
 {
-    uint8_t i;
     uint16_t left = getBits1(16);
     gCompsInScan = (uint8_t)getBits1(8);
     left -= 3;
 
-    if ( (left != (gCompsInScan + gCompsInScan + 3)) || (gCompsInScan < 1) ||
-        (gCompsInScan > PJPG_MAXCOMPSINSCAN) )
+    if ((left != (gCompsInScan + gCompsInScan + 3)) || (gCompsInScan < 1) ||
+        (gCompsInScan > PJPG_MAXCOMPSINSCAN))
     {
         throw "PJPG_BAD_SOS_LENGTH";
     }
    
-    for (i = 0; i < gCompsInScan; i++)
+    for (uint8_t i = 0; i < gCompsInScan; i++)
     {
         uint8_t cc = (uint8_t)getBits1(8);
         uint8_t c = (uint8_t)getBits1(8);
@@ -1179,7 +1088,7 @@ uint8_t App::locateSOIMarker()
 
     bytesleft = 4096;
 
-    for ( ; ; )
+    while (true)
     {
         if (--bytesleft == 0)
             throw "PJPG_NOT_JPEG";
@@ -1209,26 +1118,15 @@ uint8_t App::locateSOIMarker()
 uint8_t App::locateSOFMarker()
 {
     uint8_t c;
-    uint8_t status = locateSOIMarker();
-
-    if (status)
-        return status;
-   
-    status = processMarkers(&c);
-
-    if (status)
-        return status;
+    locateSOIMarker();
+    processMarkers(&c);
 
     switch (c)
     {
         case M_SOF2:
             throw "PJPG_UNSUPPORTED_MODE";
         case M_SOF0:
-            status = readSOFMarker();
-
-            if (status)
-                return status;
-            
+            readSOFMarker();
             break;
         case M_SOF9:  
             throw "PJPG_NO_ARITHMITIC_SUPPORT";
@@ -1243,12 +1141,8 @@ uint8_t App::locateSOFMarker()
 uint8_t App::locateSOSMarker(uint8_t* pFoundEOI)
 {
     uint8_t c;
-    uint8_t status;
     *pFoundEOI = 0;  
-    status = processMarkers(&c);
-
-    if (status)
-        return status;
+    processMarkers(&c);
 
     if (c == M_EOI)
     {
@@ -1447,53 +1341,24 @@ uint8_t App::initFrame()
         }
         else
         {
-            return PJPG_UNSUPPORTED_SAMP_FACTORS;
+            throw "PJPG_UNSUPPORTED_SAMP_FACTORS";
         }
     }
     else
     {
-        return PJPG_UNSUPPORTED_COLORSPACE;
+        throw "PJPG_UNSUPPORTED_COLORSPACE";
     }
 
-    gMaxMCUSPerRow = (gImageXSize + (gMaxMCUXSize - 1)) >> ((gMaxMCUXSize == 8) ? 3 : 4);
-    gMaxMCUSPerCol = (gImageYSize + (gMaxMCUYSize - 1)) >> ((gMaxMCUYSize == 8) ? 3 : 4);
+    gMaxMCUSPerRow = gImageXSize + gMaxMCUXSize - 1 >> ((gMaxMCUXSize == 8) ? 3 : 4);
+    gMaxMCUSPerCol = gImageYSize + gMaxMCUYSize - 1 >> ((gMaxMCUYSize == 8) ? 3 : 4);
     gNumMCUSRemaining = gMaxMCUSPerRow * gMaxMCUSPerCol;
     return 0;
-}
-
-int16_t App::imul_b1_b3(int16_t w) const
-{
-    long x = w * 362L + 128;
-    return (int16_t)PJPG_ARITH_SHIFT_RIGHT_8_L(x);
-}
-
-int16_t App::imul_b2(int16_t w) const
-{
-    long x = w * 669 + 128;
-    return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
-}
-
-int16_t App::imul_b4(int16_t w) const
-{
-    long x = w * 277 + 128;
-    return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
-}
-
-int16_t App::imul_b5(int16_t w) const
-{
-    long x = w * 196L + 128;
-    return (int16_t)(PJPG_ARITH_SHIFT_RIGHT_8_L(x));
 }
 
 uint8_t App::clamp(int16_t s) const
 {
     if ((uint16_t)s > 255U)
-    {
-        if (s < 0) 
-            return 0; 
-        else if (s > 255) 
-            return 255;
-    }
+        return s < 0 ? 0 : s > 255 ? 255 : s;
       
     return (uint8_t)s;
 }
@@ -2113,7 +1978,7 @@ uint8_t App::decodeNextMCU()
         uint8_t compDCTab = gCompDCTab[componentID];
         uint8_t compACTab, k;
         const int16_t *pQ = compQuant ? gQuant1 : gQuant0;
-        uint8_t s = huffDecode(compDCTab ? &gHuffTab1:&gHuffTab0,compDCTab?gHuffVal1 : gHuffVal0);
+        uint8_t s = huffDecode(compDCTab?&gHuffTab1:&gHuffTab0,compDCTab?gHuffVal1:gHuffVal0);
         uint16_t r = 0;
         uint8_t numExtraBits = s & 0xF;
 
@@ -2146,7 +2011,7 @@ uint8_t App::decodeNextMCU()
                 if (r)
                 {
                     if ((k + r) > 63)
-                        return PJPG_DECODE_ERROR;
+                        throw "PJPG_DECODE_ERROR";
 
                     while (r)
                     {
@@ -2163,7 +2028,7 @@ uint8_t App::decodeNextMCU()
                 if (r == 15)
                 {
                     if ((k + 16) > 64)
-                        return PJPG_DECODE_ERROR;
+                        throw "PJPG_DECODE_ERROR";
               
                     for (r = 16; r > 0; r--)
                         gCoeffBuf[ZAG[k++]] = 0;
@@ -2188,57 +2053,43 @@ uint8_t App::decodeNextMCU()
 
 uint8_t App::pjpeg_decode_mcu()
 {
-    uint8_t status;
-   
-    if (gCallbackStatus)
-        return gCallbackStatus;
-   
     if (!gNumMCUSRemaining)
         return PJPG_NO_MORE_BLOCKS;
       
-    status = decodeNextMCU();
-
-    if ((status) || (gCallbackStatus))
-        return gCallbackStatus ? gCallbackStatus : status;
-      
+    decodeNextMCU();
     gNumMCUSRemaining--;
     return 0;
 }
 
 uint8_t App::pjpeg_decode_init(pjpeg_image_info_t *pInfo)
 {
-    pInfo->m_width = 0; pInfo->m_height = 0; pInfo->m_comps = 0;
-    pInfo->m_MCUSPerRow = 0; pInfo->m_MCUSPerCol = 0;
+    pInfo->m_width = 0;
+    pInfo->m_height = 0;
+    pInfo->m_comps = 0;
+    pInfo->m_MCUSPerRow = 0;
+    pInfo->m_MCUSPerCol = 0;
     pInfo->m_scanType = PJPG_GRAYSCALE;
-    pInfo->m_MCUWidth = 0; pInfo->m_MCUHeight = 0;
+    pInfo->m_MCUWidth = 0;
+    pInfo->m_MCUHeight = 0;
     pInfo->m_pMCUBufR = (uint8_t *)0;
-    pInfo->m_pMCUBufG = (uint8_t *)0; pInfo->m_pMCUBufB = (uint8_t *)0;
+    pInfo->m_pMCUBufG = (uint8_t *)0;
+    pInfo->m_pMCUBufB = (uint8_t *)0;
     gCallbackStatus = 0;
-    uint8_t status = init();
-
-    if ((status) || (gCallbackStatus))
-        return gCallbackStatus ? gCallbackStatus : status;
-   
-    status = locateSOFMarker();
-
-    if ((status) || (gCallbackStatus))
-        return gCallbackStatus ? gCallbackStatus : status;
-
-    status = initFrame();
-
-    if ((status) || (gCallbackStatus))
-        return gCallbackStatus ? gCallbackStatus : status;
-
-    status = initScan();
-
-    if ((status) || (gCallbackStatus))
-        return gCallbackStatus ? gCallbackStatus : status;
-
-    pInfo->m_width = gImageXSize; pInfo->m_height = gImageYSize; pInfo->m_comps = gCompsInFrame;
+    init();
+    locateSOFMarker();
+    initFrame();
+    initScan();
+    pInfo->m_width = gImageXSize;
+    pInfo->m_height = gImageYSize;
+    pInfo->m_comps = gCompsInFrame;
     pInfo->m_scanType = gScanType;
-    pInfo->m_MCUSPerRow = gMaxMCUSPerRow; pInfo->m_MCUSPerCol = gMaxMCUSPerCol;
-    pInfo->m_MCUWidth = gMaxMCUXSize; pInfo->m_MCUHeight = gMaxMCUYSize;
-    pInfo->m_pMCUBufR = gMCUBufR; pInfo->m_pMCUBufG = gMCUBufG; pInfo->m_pMCUBufB = gMCUBufB;  
+    pInfo->m_MCUSPerRow = gMaxMCUSPerRow;
+    pInfo->m_MCUSPerCol = gMaxMCUSPerCol;
+    pInfo->m_MCUWidth = gMaxMCUXSize;
+    pInfo->m_MCUHeight = gMaxMCUYSize;
+    pInfo->m_pMCUBufR = gMCUBufR;
+    pInfo->m_pMCUBufG = gMCUBufG;
+    pInfo->m_pMCUBufB = gMCUBufB;  
     return 0;
 }
 
