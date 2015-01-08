@@ -1,11 +1,19 @@
 #include <stdint.h>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
+#include <vector>
 using namespace std;
+
+typedef vector<string> Files;
 
 class Options
 {
+    bool _cin = false;
+    Files _files;
 public:
+    Files files() const { return _files; }
+    bool cin() const { return _cin; }
     void parse(int argc, char **argv);
 };
 
@@ -17,7 +25,28 @@ public:
     unsigned reverse() { return _crc = reverse(~_crc); }
     void crc32a(unsigned byte);
     void crc32a(istream &is);
+    void reset() { _crc = 0xffffffff; }
 };
+
+void Options::parse(int argc, char **argv)
+{
+    if (argc == 1)
+    {
+        _cin = true;
+        return;
+    }
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (argv[i][0] == '-')
+        {
+        }
+        else
+        {
+            _files.push_back(argv[i]);
+        }
+    }
+}
 
 unsigned CRC::reverse(unsigned x) const
 {
@@ -48,9 +77,30 @@ void CRC::crc32a(istream &is)
 int main(int argc, char **argv)
 {
     Options o;
+    o.parse(argc, argv);
     CRC crc;
-    crc.crc32a(cin);
-    cout << hex << crc.reverse() << "\n";
+    ifstream ifs;
+    
+    if (o.cin())
+    {
+        crc.crc32a(cin);
+        cout << hex << crc.reverse() << "\n";
+    }
+
+    if (o.files().size() > 0)
+    {
+        Files files = o.files();
+        
+        for (Files::const_iterator it = files.begin(); it != files.end(); it++)
+        {
+            crc.reset();
+            ifs.open(*it);
+            crc.crc32a(ifs);
+            cout << hex << crc.reverse() << "\n";
+            ifs.close();
+        }
+    }
+    
     return 0;
 }
 

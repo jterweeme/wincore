@@ -1,6 +1,6 @@
 #include "mystl.h"
 
-void *MyUtil::memcpy(void *dest, const void *src, size_t n) const
+void *Util2::memcpy(void *dest, const void *src, size_t n)
 {
     char *dst8 = (char *)dest;
     char *src8 = (char *)src;
@@ -11,7 +11,73 @@ void *MyUtil::memcpy(void *dest, const void *src, size_t n) const
     return dest;
 }
 
-void *MyUtil::memset(void *s, const int c, size_t n) const
+char *Util2::strtok(char *str, const char *delimiters)
+{
+    static char *sp = NULL;
+    int i = 0;
+    int len = strlen(delimiters);
+ 
+    if(len == 0)
+        printf("delimiters are empty\n");
+ 
+    if(!str && !sp)
+        return NULL;
+ 
+    if(str && !sp)
+        sp = str;
+ 
+    char* p_start = sp;
+
+    while(true)
+    {
+        for(i = 0; i < len; i ++)
+        {
+            if(*p_start == delimiters[i])
+            {
+                p_start ++;
+                break;
+            }
+        }
+ 
+        if (i == len)
+        {
+            sp = p_start;
+            break;
+        }
+    }
+ 
+    if(*sp == '\0')
+    {
+        sp = NULL;
+        return sp;
+    }
+ 
+    while(*sp != '\0')
+    {
+        for(i = 0; i < len; i ++)
+        {
+            if(*sp == delimiters[i])
+            {
+                *sp = '\0';
+                break;
+            }
+        }
+ 
+        sp ++;
+        if (i < len)
+            break;
+    }
+    return p_start;
+}
+
+Util2::size_t Util2::strlen(const char *s)
+{
+    const char *t;
+    for (t = s; *t; ++t) { }
+    return (t - s);
+}
+
+void *Util2::memset(void *s, int c, size_t n)
 {
     uint8_t *p = (uint8_t *)s;
 
@@ -21,71 +87,24 @@ void *MyUtil::memset(void *s, const int c, size_t n) const
     return s;
 }
 
-int MyUtil::atoi(const char *str) const
+string2::string2(const char *s1, size_t n)
 {
-    int res = 0;
-
-    for (int i = 0; str[i] != '\0'; ++i)        // kan anders
-        res = res * 10 + str[i] - '0';
-
-    return res;
+    Util2 util;
+    util.memset(_s, 0, sizeof(_s));
+    util.strncpy(_s, s1, n);
 }
 
-int MyUtil::xdigit(int c)
+string2::string2(const char *s1, const char *s2)
 {
-    if (!isxdigit(c))
-        return -1;
-
-    if (isdigit(c))
-        return c - '0';
-
-    if (isupper(c))
-        return c - 0x37;
-
-    if (islower(c))
-        return c - 0x57;
-
-    return -1;
-}
-
-
-long int MyUtil::strtol(const char *nptr, char **endptr, int base)
-{
-    MyUtil util;
-    long int result = xdigit(nptr[0]);
-    
-    for (int i = 1; util.isxdigit(nptr[i]); i++)
-    {
-        result <<= 4;
-        result += xdigit(nptr[i]);
-    }
-
-    return result;
-}
-
-ostream2& ostream2::operator << (const uint32_t u)
-{
-    switch (_manip.type())
-    {
-    case base2::OCT:
-        fprintf(_fp, "%07o", u);
-        fflush(_fp);
-        break;
-    case base2::HEX:
-        fprintf(_fp, "%02x", u);
-        fflush(_fp);
-        break;
-    default:
-        fprintf(_fp, "%d", u);
-        fflush(_fp);
-        break;
-    }
-    return *this;
+    Util2 util;
+    util.memset(_s, 0, sizeof(_s));
+    util.strncpy(_s, s1, s2 - s1);
 }
 
 void istream2::read(char *s, size_t length)
 {
     _lastRead = fread(s, 1, length, _fp);
+    _pos += _lastRead;
     _eof = _lastRead < length;
 }
 
@@ -93,7 +112,7 @@ void istream2::getline(char *dest, size_t size)
 {
     for (int pos = 0, c = 1; c != '\n'; pos++)
     {
-        c = fgetc(_fp);
+        c = get();
 
         if (c == EOF)
         {
@@ -112,21 +131,62 @@ void istream2::getline(char *dest, size_t size)
     }
 }
 
-MyUtil::size_t MyUtil::strlen(const char *s) const
+void ofstream2::open(const char *fn, openmode om)
 {
-    const char *t;
-    for (t = s; *t; ++t) { }
-    return (t - s);
+    switch (om)
+    {
+    case out:
+        _fp = fopen(fn, "wb+");
+        break;
+    default:
+        _fp = fopen(fn, "wb+");
+        break;
+    }
 }
 
-char *MyUtil::strcpy(char *dest, const char *src) const
+ostream2& ostream2::operator << (const uint32_t u)
 {
-    char *save = dest;
-    while ((*dest++ = *src++));
-    return save;
+    char a[] = "%08x";
+    char d[] = "%8d";
+    a[2] = _width.size() + '0';
+    d[1] = _width.size() + '0';
+
+    switch (_base.type())
+    {
+    case base2::OCT:
+        fprintf(_fp, "%07o", u);
+        break;
+    case base2::HEX:
+        fprintf(_fp, a, u);
+        break;
+    default:
+        fprintf(_fp, d, u);
+        break;
+    }
+    fflush(_fp);
+    _width.size(1);
+    return *this;
 }
 
-char *MyUtil::strncpy(char *dest, const char *src, const size_t n) const
+int Util2::strcmp(const char *s1, const char *s2)
+{
+    while (*s1 == *s2++)
+        if (*s1++ == 0)
+            return (0);
+    return (*(const unsigned char *)s1 - *(const unsigned char *)(s2 - 1));
+}
+
+int Util2::strncmp(const char *s1, const char *s2, size_t n)
+{
+    for ( ; n > 0; s1++, s2++, --n)
+        if (*s1 != *s2)
+            return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
+        else if (*s1 == '\0')
+            return 0;
+    return 0;
+}
+
+char *Util2::strncpy(char *dest, const char *src, size_t n)
 {
     size_t i;
 
@@ -138,44 +198,32 @@ char *MyUtil::strncpy(char *dest, const char *src, const size_t n) const
     return dest;
 }
 
-namespace mystl
+char *Util2::strcpy(char *dest, const char *src)
 {
-
-    char *strncpy(char *dest, const char *src, size_t n)
-    {
-        MyUtil u;
-        return u.strncpy(dest, src, n);
-    }
-
-    void *memcpy(void *dest, const void *src, size_t n)
-    {
-        MyUtil u;
-        return u.memcpy(dest, src, n);
-    }
-
-    void *memset(void *s, const int c, const size_t n)
-    {
-        MyUtil util;
-        return util.memset(s, c, n);
-    }
-
-    uint32_t be32toh(uint32_t v) { MyUtil u; return u.be32toh(v); }
-
-    long int strtol(const char *s, char **end, int base)
-    {
-        MyUtil u;
-        return u.strtol(s, end, base);
-    }
-
-    unsigned long stoul(const string &str, size_t *idx, int base)
-    {
-        MyUtil util;
-        return util.strtol(str.c_str(), 0, 16);
-    }
-
-    dummy dummy1;
-    dummy& setw(int length) { return dummy1; }
-    dummy& setfill(int length) { return dummy1; }
+    char *save = dest;
+    while ((*dest++ = *src++));
+    return save;
 }
 
+namespace mystl
+{
+    void *memcpy(void *dest, const void *src, size_t n) { Util2 u; return u.memcpy(dest, src, n); }
+    void *memset(void *s, const int c, const size_t n) { Util2 u; return u.memset(s, c, n); }
+    char *strcpy(char *dest, const char *src) { Util2 util; return util.strcpy(dest, src); }
+    char *strncpy(char *d, const char *src, size_t n) { Util2 u; return u.strncpy(d, src, n); }
+    int strncmp(const char *s1, const char *s2, size_t n) { Util2 u; return u.strncmp(s1, s2, n); }
+    int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }
+    size_t strlen(const char *s) { Util2 u; return u.strlen(s); }
+    base2 hex(base2::HEX);
+    base2 oct(base2::OCT);
+    base2 dec(base2::DEC);
+    istream cin(stdin);
+    ostream cout(stdout);
+    ostream cerr(stderr);
+    align right;
+    fill2 setfill(char c) { return fill2(c); }
+    width2 setw(int length) { return width2(length); }
+    int toupper(int c) { Util2 u; return u.toupper(c); }
+    char *strtok(char *s, const char *delim) { Util2 u; return u.strtok(s, delim); }
+}
 
