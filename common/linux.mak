@@ -11,7 +11,12 @@ all:
 	g++ $(CXXFLAGS) -o uuidgen uuidgen.cpp
 	g++ $(CXXFLAGS) -o od od.cpp mystl.cpp odmain.cpp
 	g++ $(CXXFLAGS) -o base64 base64.cpp
-
+	g++ $(CXXFLAGS) -o grep grep.cpp
+	g++ $(CXXFLAGS) -o yes yes.cpp
+	g++ $(CXXFLAGS) -o tr tr.cpp
+	g++ $(CXXFLAGS) -o cat cat.cpp
+	g++ $(CXXFLAGS) -o nl nl.cpp
+	g++ $(CXXFLAGS) -o crc32 crc32.cpp
 
 test:
 	$(VALGRIND) ./test1
@@ -22,7 +27,7 @@ test:
 	$(VALGRIND) ./base64 zero.dat | diff zero.b64 -
 
 clean:
-	rm -Rvf *.o jpg2tga *.tga od md5s test1 uuidgen
+	rm -Rvf *.o jpg2tga *.tga od md5s test1 uuidgen base64 grep yes cat tr nl crc32
 
 rebuild: clean all
 
