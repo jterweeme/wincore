@@ -923,7 +923,7 @@ template<> struct __iter_swap<true>
 template <typename T, typename _ForwardIterator2>
     inline void iter_swap(T __a, _ForwardIterator2 __b)
 {
-    typedef typename iterator_traits<T>::value_type _ValueType1;
+    //typedef typename iterator_traits<T>::value_type _ValueType1;
     typedef typename iterator_traits<_ForwardIterator2>::value_type _ValueType2;
     typedef typename iterator_traits<T>::reference _ReferenceType1;
     typedef typename iterator_traits<_ForwardIterator2>::reference _ReferenceType2;
@@ -2587,7 +2587,7 @@ public:
     virtual istream2& ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
     virtual int get() { _pos++; return fgetc(_fp); }
     size_t tellg() { return _pos; }
-    size_t gcount() { return _lastRead; }
+    int gcount() { return _lastRead; }
     operator void * () const { return (void *)!_eof; }
     virtual void getline(char *dest, size_t size);
     virtual void read(char *s, size_t length);
