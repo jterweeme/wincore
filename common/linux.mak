@@ -4,7 +4,7 @@ VALGRIND = #valgrind $(VALFLAGS)
 
 .PHONY: all
 
-all:
+all: crc32
 	g++ $(CXXFLAGS) -o md5s md5s.cpp mystl.cpp hasher.cpp
 	g++ $(CXXFLAGS) -o test1 test1.cpp mystl.cpp hasher.cpp
 	g++ $(CXXFLAGS) -o jpg2tga jpg2tga.cpp -lm
@@ -16,6 +16,8 @@ all:
 	g++ $(CXXFLAGS) -o tr tr.cpp
 	g++ $(CXXFLAGS) -o cat cat.cpp
 	g++ $(CXXFLAGS) -o nl nl.cpp
+
+crc32: crc32.cpp
 	g++ $(CXXFLAGS) -o crc32 crc32.cpp
 
 test:
