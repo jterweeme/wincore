@@ -161,7 +161,7 @@ void App::checkPaar(Paar &paar)
     Hash hash2 = _hasher.hash();
 
     if (paar.hash().isEqual(hash2))
-        cout << paar.fn() << ": OK\n";
+        cout << "\e[1;32m" << paar.fn() << ": OK\e[0m\n";
     else
         cout << paar.fn() << ": FAILED\n";
 }
