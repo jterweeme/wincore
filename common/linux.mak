@@ -10,41 +10,42 @@ VALGRIND = #valgrind $(VALFLAGS)
 
 .PHONY: all
 
-all: mystl.o bunzip2 cat crc32 grep kompakt nl test1 testbinp tr yes
-	g++ $(CXXFLAGS) -o md5s md5s.cpp mystl.o hasher.cpp
-	g++ $(CXXFLAGS) -o jpg2tga jpg2tga.cpp -lm
-	g++ $(CXXFLAGS) -o uuidgen uuidgen.cpp
-	g++ $(CXXFLAGS) -o od od.cpp mystl.o odmain.cpp
-	g++ $(CXXFLAGS) -o base64 base64.cpp
-
+all: base64 bunzip2 cat crc32 grep jpg2tga kompakt md5s nl od test1 testbinp tr uuidgen yes
+base64: base64.o
 bunzip2: bunzip2.o bitinput.o
 cat: cat.o
 crc32: crc32.o
+grep: grep.o
+jpg2tga: jpg2tga.o
 kompakt: kompakt.o main.o mystl.o filesys.o
 md5s: md5s.o mystl.o hasher.o
 nl: nl.o
+od: od.o mystl.o odmain.o
 test1: test1.o mystl.o hasher.o
 testbinp: testbinp.o bitinput.o
 tr: tr.o
+uuidgen: uuidgen.o
 yes: yes.o
-
+base64.o: base64.cpp
 bitinput.o: bitinput.cpp bitinput.h
 bunzip2.o: bunzip2.cpp bitinput.h
 cat.o: cat.cpp
 crc32.o: crc32.cpp
 filesys.o: filesys.cpp filesys.h
+grep.o: grep.cpp
 hasher.o: hasher.cpp hasher.h
+jpg2tga.o: jpg2tga.cpp
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h mystl.tcc
 main.o: main.cpp
 mystl.o: mystl.cpp
 nl.o: nl.cpp
+od.o: od.cpp
+odmain.o: odmain.cpp
 test1.o: test1.cpp
 testbinp.o: testbinp.cpp
 tr.o: tr.cpp
+uuidgen.o: uuidgen.cpp
 yes.o: yes.cpp
-
-grep: grep.cpp
-	g++ $(CXXFLAGS) -o $@ $<
 
 test:
 	$(VALGRIND) ./test1

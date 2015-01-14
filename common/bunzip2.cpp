@@ -59,7 +59,7 @@ class BlockDec
     int _rleAccumulator;
     int _bwtCurrentMergedPointer;
     uint8_t *_bwtBlock;
-    int _bwtBlockLength;
+    uint32_t _bwtBlockLength;
     int _bwtBytesDecoded;
     int _decodeNextBWTByte();
     int _huffmanEndOfBlockSymbol;
@@ -131,13 +131,15 @@ uint8_t BlockDec::_indexToFront(uint8_t *a, int index)
 BlockDec::BlockDec(BitInput *bi, int blockSize) : _bi(bi)
 {
     _bwtBlock = new uint8_t[blockSize];
-    _bi->readInt();
+    uint32_t onzin = _bi->readInt();
+    cerr << "Onzin: " << hex << onzin << "\n";
     _blockRandomised = _bi->readBool();
     cerr << _blockRandomised << "\n";
     uint32_t bwtStartPointer = _bi->readBits(24);
-    cerr << hex << bwtStartPointer << "\n";
+    cerr << dec << (int)bwtStartPointer << "\n";
     uint8_t tableCodeLengths[6][258];
-    int huffmanUsedRanges = _bi->readBits(16);
+    uint16_t huffmanUsedRanges = _bi->readBits(16);
+    cerr << huffmanUsedRanges << "\n";
     int huffmanSymbolCount = 0;
 
     for (int i = 0; i < 16; i++)
@@ -169,15 +171,15 @@ BlockDec::BlockDec(BitInput *bi, int blockSize) : _bi(bi)
         }
     }
 
-
     Huffman h(_bi, endOfBlockSymbol + 1, tableCodeLengths, selectors);
     uint8_t *symbolMTF = _generate();
     _bwtBlockLength = 0;
-       
+
+      
     for (int repeatCount = 0, repeatIncrement = 1, mtfValue = 0;;)
     {
         int nextSymbol = h.nextSymbol();
-
+        cerr << "NextSymbol: " << nextSymbol << "\n";
 
         if (nextSymbol == 0)
         {
@@ -213,11 +215,14 @@ BlockDec::BlockDec(BitInput *bi, int blockSize) : _bi(bi)
         }
     }
 
+
     //_bwtMergedPointers[_bwtBlockLength];
     int characterBase[256];
     
     for (int i = 0; i < 255; i++)
         characterBase[i + 1] = _bwtByteCounts[i];
+
+    cerr << "BWTBlockLength: " << _bwtBlockLength << "\n";
 
     for (int i = 0; i < _bwtBlockLength; i++)
     {
@@ -227,7 +232,6 @@ BlockDec::BlockDec(BitInput *bi, int blockSize) : _bi(bi)
 
     _bwtBlock = 0;
     _bwtCurrentMergedPointer = _bwtMergedPointers[bwtStartPointer];
-
 }
 
 Huffman::Huffman(BitInput *bi, int nalphabet, uint8_t tblCodeLengths[6][258], Vugt selectors)

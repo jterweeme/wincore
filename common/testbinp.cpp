@@ -6,7 +6,8 @@ int main()
     ifstream ifs;
     ifs.open("whouse.jpg");
     BitInput b(&ifs);
-    
+    cerr << b.readBool() << "\n";
+    cerr << hex << b.readBits(24) << "\n";
     ifs.close();
     return 0;
 
