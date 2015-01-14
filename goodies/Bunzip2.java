@@ -173,7 +173,7 @@ class Bunzip2
             return nextDecodedByte;
 	    }
         
-	    public int read()
+        public int read()
         {
             while (_rleRepeat < 1)
             {
@@ -233,7 +233,7 @@ class Bunzip2
                 
                 for (int i = 0; i <= _huffmanEndOfBlockSymbol; i++)
                 {
-				    while (_bi.readBool())
+                    while (_bi.readBool())
                         c += _bi.readBool() ? -1 : 1;
                     
                     tableCodeLengths[t][i] = (byte)c;
@@ -413,11 +413,11 @@ class Bunzip2
         fis.close();
     }
     
-	public static void main(String[] args) throws IOException
+    public static void main(String[] args) throws IOException
     {
         Bunzip2 d = new Bunzip2();
         d.run(args);
-	}
+    }
 }
 
 
