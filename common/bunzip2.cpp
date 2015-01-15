@@ -46,7 +46,7 @@ class Huffman
     Vugt _selectors;
     int _minLengths[6];
     int _codeBases[6][25], _codeLimits[6][24], _codeSymbols[6][258];
-    int _curTbl, _groupIdx, _groupPos;
+    int _curTbl = 0, _groupIdx = -1, _groupPos = -1;
 public:
     int nextSymbol();
     Huffman(BitInput *bis, int nalphabet, uint8_t tblCodeLengths[6][258], Vugt selectors);
@@ -55,34 +55,29 @@ public:
 class BlockDec
 {
     BitInput *_bi;
-    int _rleRepeat;
-    int _rleAccumulator;
-    int _bwtCurrentMergedPointer;
-    uint8_t *_bwtBlock;
-    uint32_t _bwtBlockLength;
-    int _bwtBytesDecoded;
+    int _rleRepeat = 0;
+    int _rleAccumulator = 0;
+    int _bwtCurrentMergedPointer = 0;
+    uint8_t _bwtBlock[900000] = {0};
+    uint32_t _bwtBlockLength = 0;
+    uint32_t _bwtBytesDecoded = 0;
     int _decodeNextBWTByte();
-    int _huffmanEndOfBlockSymbol;
-    uint8_t _huffmanSymbolMap[256];
-    int _bwtByteCounts[256];
-    int *_bwtMergedPointers;
-    int _blockRandomised;
-    int _randomCount = rnums[0] - 1;
-    int _randomIndex = 0;
-    int _rleLastDecodedByte = -1;
-    uint8_t *_generate();
+    uint8_t _huffmanSymbolMap[256] = {0};
+    int _bwtByteCounts[256], _bwtMergedPointers[9999], _blockRandomised = 0;
+    int _randomCount = rnums[0] - 1, _randomIndex = 0, _rleLastDecodedByte = -1;
+    void _generate(uint8_t *a) { for (unsigned i = 0; i < 256; i++) a[i] = i; }
     uint8_t _indexToFront(uint8_t *a, int i);
     int _decNextBWTByte();
 public:
     int read();
-    BlockDec(BitInput *bi, int blockSize);
+    BlockDec(BitInput *bi) : _bi(bi) { }
+    void reset();
 };
 
 class DecStream
 {
     BitInput *_bi;
-    BlockDec *_bd = 0;
-    int _streamBlockSize;
+    BlockDec _bd;
     int _streamComplete = false;
     bool _initNextBlock();
 public:
@@ -97,25 +92,11 @@ public:
     int run(int argc, char **argv);
 };
 
-uint8_t *BlockDec::_generate()
+DecStream::DecStream(BitInput *bi) : _bi(bi), _bd(bi)
 {
-    uint8_t *a = new uint8_t[256];
-    
-    for (unsigned i = 0; i < 256; i++)
-        a[i] = i;
-
-    return a;
-}
-
-DecStream::DecStream(BitInput *bi) : _bi(bi)
-{
-    if (_streamComplete)
-        return;
-
     _bi->readBits(16);
-    _bi->readBits(8);
-    uint8_t blockSize = _bi->readBits(8) - '0';
-    _streamBlockSize = blockSize * 100000;
+    _bi->readBits(16);
+    _initNextBlock();
 }
 
 uint8_t BlockDec::_indexToFront(uint8_t *a, int index)
@@ -128,84 +109,78 @@ uint8_t BlockDec::_indexToFront(uint8_t *a, int index)
     return a[0] = value;
 }
 
-BlockDec::BlockDec(BitInput *bi, int blockSize) : _bi(bi)
+void BlockDec::reset()
 {
-    _bwtBlock = new uint8_t[blockSize];
-    uint32_t onzin = _bi->readInt();
-    cerr << "Onzin: " << hex << onzin << "\n";
+    _bi->readInt();
     _blockRandomised = _bi->readBool();
-    cerr << _blockRandomised << "\n";
-    uint32_t bwtStartPointer = _bi->readBits(24);
-    cerr << dec << (int)bwtStartPointer << "\n";
+    uint32_t bwtStartPointer = _bi->readBits(24), symbolCount = 0;
     uint8_t tableCodeLengths[6][258];
-    uint16_t huffmanUsedRanges = _bi->readBits(16);
-    cerr << huffmanUsedRanges << "\n";
-    int huffmanSymbolCount = 0;
 
-    for (int i = 0; i < 16; i++)
-        if ((huffmanUsedRanges & ((1 << 15) >> i)) != 0)
+    for (uint16_t i = 0, ranges = _bi->readBits(16); i < 16; i++)
+        if ((ranges & ((1 << 15) >> i)) != 0)
             for (int j = 0, k = i << 4; j < 16; j++, k++)
                 if (_bi->readBool())
-                    _huffmanSymbolMap[huffmanSymbolCount++] = (uint8_t)k;
+                    _huffmanSymbolMap[symbolCount++] = (uint8_t)k;
 
-    int endOfBlockSymbol = huffmanSymbolCount + 1;
-    _huffmanEndOfBlockSymbol = huffmanSymbolCount + 1;
-    int totalTables = _bi->readBits(3);
-    int totalSelectors = _bi->readBits(15);
-    uint8_t *tableMTF = _generate();
+    uint32_t _eob = symbolCount + 1;
+    uint32_t totalTables = _bi->readBits(3), totalSelectors = _bi->readBits(15);
+    uint8_t tableMTF[256];
+    _generate(tableMTF);
     Vugt selectors(totalSelectors);
 
-    for (int selector = 0; selector < totalSelectors; selector++)
-        selectors[selector] = _indexToFront(tableMTF, _bi->readUnary());
+    for (uint32_t selector = 0; selector < totalSelectors; selector++)
+        selectors.push_back(_indexToFront(tableMTF, _bi->readUnary()));
+        //selectors[selector] = _indexToFront(tableMTF, _bi->readUnary());
 
-    for (int table = 0; table < totalTables; table++)
+    for (uint32_t table = 0; table < totalTables; table++)
     {
-        int currentLength = _bi->readBits(5);
+        uint8_t currentLength = _bi->readBits(5);
 
-        for (int i = 0; i <= _huffmanEndOfBlockSymbol; i++)
+        for (uint32_t i = 0; i <= _eob; i++)
         {
             while (_bi->readBool())
                 currentLength += _bi->readBool() ? -1 : 1;
 
-            tableCodeLengths[table][i] = (uint8_t)currentLength;
+            tableCodeLengths[table][i] = currentLength;
         }
     }
 
-    Huffman h(_bi, endOfBlockSymbol + 1, tableCodeLengths, selectors);
-    uint8_t *symbolMTF = _generate();
+    Huffman h(_bi, symbolCount + 2, tableCodeLengths, selectors);
+    uint8_t symbolMTF[256];
+    _generate(symbolMTF);
     _bwtBlockLength = 0;
-
-      
-    for (int repeatCount = 0, repeatIncrement = 1, mtfValue = 0;;)
+   
+    for (int n = 0, repeatIncrement = 1, mtfValue = 0; n < 2; n++)
     {
-        int nextSymbol = h.nextSymbol();
-        cerr << "NextSymbol: " << nextSymbol << "\n";
+        uint32_t nextSymbol = h.nextSymbol();
+        //int nextSymbol = _eob;
 
+#if 0
         if (nextSymbol == 0)
         {
-            repeatCount += repeatIncrement;
+            n += repeatIncrement;
             repeatIncrement <<= 1;
         }
         else if (nextSymbol == 1)
         {
-            repeatCount += repeatIncrement << 1;
+            n += repeatIncrement << 1;
             repeatIncrement <<= 1;
         }
         else
         {
-            if (repeatCount > 0)
+            if (n > 0)
             {
                 uint8_t nextByte = _huffmanSymbolMap[mtfValue];
-                _bwtByteCounts[nextByte & 0xff] += repeatCount;
+                _bwtByteCounts[nextByte & 0xff] += n;
                 
-                while (--repeatCount >= 0)
+                while (--n >= 0)
                     _bwtBlock[_bwtBlockLength++] = nextByte;
 
-                repeatCount = 0;
+                n = 0;
                 repeatIncrement = 1;
             }
 
-            if (nextSymbol == _huffmanEndOfBlockSymbol)
+            if (nextSymbol == _eob)
                 break;
 
             mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
@@ -213,24 +188,22 @@ BlockDec::BlockDec(BitInput *bi, int blockSize) : _bi(bi)
             _bwtByteCounts[nextByte & 0xff]++;
             _bwtBlock[_bwtBlockLength++] = nextByte;
         }
+#endif
     }
 
+    cerr << "BWTBlockLength: " << _bwtBlockLength << "\n";
 
-    //_bwtMergedPointers[_bwtBlockLength];
     int characterBase[256];
     
     for (int i = 0; i < 255; i++)
         characterBase[i + 1] = _bwtByteCounts[i];
 
-    cerr << "BWTBlockLength: " << _bwtBlockLength << "\n";
-
-    for (int i = 0; i < _bwtBlockLength; i++)
+    for (uint32_t i = 0; i < _bwtBlockLength; i++)
     {
         int value = _bwtBlock[i] & 0xff;
         _bwtMergedPointers[characterBase[value]++] = (i << 8) + value;
     }
 
-    _bwtBlock = 0;
     _bwtCurrentMergedPointer = _bwtMergedPointers[bwtStartPointer];
 }
 
@@ -275,6 +248,7 @@ Huffman::Huffman(BitInput *bi, int nalphabet, uint8_t tblCodeLengths[6][258], Vu
 
 int Huffman::nextSymbol()
 {
+#if 0
     if (++_groupPos % 50 == 0)
         _curTbl = _selectors[_groupIdx] & 0xff;
 
@@ -287,6 +261,7 @@ int Huffman::nextSymbol()
     }
     
     throw "Error decoding BZip2 block";
+#endif
     return 0;
 }
 
@@ -298,15 +273,16 @@ void DecStream::extractTo(ostream &os)
 
 int DecStream::read()
 {
-    int nextByte = -1;
-    
-    if (_bd)
-        nextByte = _bd->read();
+#if 1
+    int nextByte = _bd.read();
 
     if (nextByte == -1 && _initNextBlock())
-        nextByte = _bd->read();
+        nextByte = _bd.read();
 
     return nextByte;
+#else
+    return -1;
+#endif
 }
 
 bool DecStream::_initNextBlock()
@@ -314,14 +290,11 @@ bool DecStream::_initNextBlock()
     if (_streamComplete)
         return false;
 
-    int marker1 = _bi->readBits(24);
-    cerr << hex << marker1 << "\n";
-    int marker2 = _bi->readBits(24);
-    cerr << hex << marker2 << "\n";
+    uint32_t marker1 = _bi->readBits(24), marker2 = _bi->readBits(24);
 
     if (marker1 == 0x314159 && marker2 == 0x265359)
     {
-        _bd = new BlockDec(_bi, _streamBlockSize);
+        _bd.reset();
         return true;
     }
     else if (marker1 == 0x177245 && marker2 == 0x385090)
@@ -337,7 +310,6 @@ bool DecStream::_initNextBlock()
 
 int BlockDec::_decodeNextBWTByte()
 {
-    cerr << "NextBWT\n";
     int mergedPointer = _bwtCurrentMergedPointer, nextDecodedByte = mergedPointer & 0xff;
     _bwtCurrentMergedPointer = _bwtMergedPointers[mergedPointer >> 8];
 
@@ -386,13 +358,10 @@ int App::run(int argc, char **argv)
 {
     ifstream ifs(argv[1]);
     BitInput bi(&ifs);
-    //cerr << hex << bi.readInt() << "\n";
-#if 1
     DecStream ds(&bi);
     ofstream ofs(argv[2]);
     ds.extractTo(ofs);
     ofs.close();
-#endif
     ifs.close();
     return 0;
 }
