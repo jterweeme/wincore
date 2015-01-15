@@ -1,4 +1,4 @@
-CXXFLAGS = -Wall -Wno-parentheses --std=c++11 -O3
+CXXFLAGS = -Wall -Wno-parentheses --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = #valgrind $(VALFLAGS)
 

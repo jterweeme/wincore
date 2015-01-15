@@ -43,10 +43,10 @@ int rnums[] = {
 class Huffman
 {
     BitInput *_bi;
-    Vugt _selectors;
+    const Vugt _selectors;
     int _minLengths[6];
-    int _codeBases[6][25], _codeLimits[6][24], _codeSymbols[6][258];
-    int _curTbl = 0, _groupIdx = -1, _groupPos = -1;
+    uint32_t _codeBases[6][25], _codeLimits[6][24], _codeSymbols[6][258];
+    uint32_t _curTbl = 0, _groupIdx = -1, _groupPos = -1;
 public:
     int nextSymbol();
     Huffman(BitInput *bis, int nalphabet, uint8_t tblCodeLengths[6][258], Vugt selectors);
@@ -248,20 +248,28 @@ Huffman::Huffman(BitInput *bi, int nalphabet, uint8_t tblCodeLengths[6][258], Vu
 
 int Huffman::nextSymbol()
 {
-#if 0
     if (++_groupPos % 50 == 0)
-        _curTbl = _selectors[_groupIdx] & 0xff;
-
-    for (int n = _minLengths[_curTbl], codeBits = _bi->readBits(n); n <= 23; n++)
     {
-        if (codeBits <= _codeLimits[_curTbl][n])
-            return _codeSymbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
+        if (++_groupIdx == _selectors.size())
+            throw "Error decoding BZip2 block";
 
+        _curTbl = _selectors[_groupIdx] & 0xff;
+    }
+
+    for (uint32_t n = _minLengths[_curTbl], codeBits = _bi->readBits(n); n <= 23; n++)
+    {
+        cerr << n << " " << _curTbl << " " << codeBits << "\n";
+        return 0;
+        if (codeBits <= _codeLimits[_curTbl][n])
+            return 0;
+            return _codeSymbols[0][0];
+#if 0
+            return _codeSymbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
+#endif
         codeBits = codeBits << 1 | _bi->readBits(1);
     }
     
     throw "Error decoding BZip2 block";
-#endif
     return 0;
 }
 
