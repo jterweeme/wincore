@@ -32,22 +32,29 @@ class Bunzip2
     {
         BitInput _bi;
         byte[] _selectors;
-        int[] _minimumLengths = new int[6];
+        int[] _minLengths = new int[6];
         int[][] _codeBases=new int[6][25],_codeLimits=new int[6][24],_codeSymbols=new int[6][258];
-        int _curTbl, _groupIndex = -1, _groupPos = -1;
+        int _curTbl, _groupIdx = -1, _groupPos = -1;
         
         public int nextSymbol() throws IOException
         {
+            System.err.format("GroupPos: %d\n", _groupPos);
+            System.err.format("GroupIdx: %d\n", _groupIdx);
+
             if (++_groupPos % 50 == 0)
             {
-                if (++_groupIndex == _selectors.length)
+                if (++_groupIdx == _selectors.length)
                     throw new IOException("Error decoding BZip2 block");
                 
-                _curTbl = _selectors[_groupIndex] & 0xff;
+                System.err.format("GroupIdx: %d\n", _groupIdx);
+                _curTbl = _selectors[_groupIdx] & 0xff;
+                System.err.format("CurTbl: %d\n", _curTbl);
             }
             
-            for (int n = _minimumLengths[_curTbl], codeBits = _bi.readBits(n); n <= 23; n++)
+            for (int n = _minLengths[_curTbl], codeBits = _bi.readBits(n); n <= 23; n++)
             {
+                System.err.format("CodeBits: %d %d\n", n, codeBits);
+
                 if (codeBits <= _codeLimits[_curTbl][n])
                     return _codeSymbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
                 
@@ -63,6 +70,8 @@ class Bunzip2
             _selectors = selectors;
             _curTbl = _selectors[0];
 
+            System.err.format("N_alphabet: %d\n", nalphabet);
+
 	        for (int table = 0, minLength = 23, maxLength = 0; table < 6; table++)
             {
                 for (int i = 0; i < nalphabet; i++)
@@ -71,7 +80,8 @@ class Bunzip2
                     minLength = Math.min(tblCodeLengths[table][i], minLength);
                 }
                 
-                _minimumLengths[table] = minLength;
+                System.err.format("MinLength: %d\nMaxLength: %d\n", minLength, maxLength);
+                _minLengths[table] = minLength;
                 
                 for (int i = 0; i < nalphabet; i++)
                     _codeBases[table][tblCodeLengths[table][i] + 1]++;
@@ -91,7 +101,10 @@ class Bunzip2
                 for (int bitLength = minLength, i = 0; bitLength <= maxLength; bitLength++)
                     for (int symbol = 0; symbol < nalphabet; symbol++)
                         if (tblCodeLengths[table][symbol] == bitLength)
+                        {
                             _codeSymbols[table][i++] = symbol;
+                            System.err.format("Symbol: %d\n", symbol);
+                        }
             }
         }
     }
@@ -221,18 +234,21 @@ class Bunzip2
                     for (int j = 0, k = i << 4; j < 16; j++, k++)
                         if (_bi.readBool())
                             _huffmanSymbolMap[symbolCount++] = (byte)k;
+
+            System.err.format("SymbolCount: %d\n", symbolCount);
+            int eob = symbolCount + 1, tables = _bi.readBits(3), selectors_n = _bi.readBits(15);
+            System.err.format("Tables: %d\nSelectors_n: %d\n", tables, selectors_n);
+            byte[] tableMTF = generate(), selectors = new byte[selectors_n];
             
-            int _eob = symbolCount + 1;
-            int totalTables = _bi.readBits(3), totalSelectors = _bi.readBits(15);
-            byte[] tableMTF = generate(), selectors = new byte[totalSelectors];
-            
-            for (int i = 0; i < totalSelectors; i++)
+            for (int i = 0; i < selectors_n; i++)
                 selectors[i] = indexToFront(tableMTF, _bi.readUnary());
 
-            for (int t = 0; t < totalTables; t++)
+            for (int t = 0; t < tables; t++)
             {
-                for (int i = 0, c = _bi.readBits(5); i <= _eob; i++)
+                for (int i = 0, c = _bi.readBits(5); i <= eob; i++)
                 {
+                    System.err.format("C: %d\n", c);
+
                     while (_bi.readBool())
                         c += _bi.readBool() ? -1 : 1;
                     
@@ -247,7 +263,7 @@ class Bunzip2
             for (int n = 0, repeatIncrement = 1, mtfValue = 0;;)
             {
                 int nextSymbol = h.nextSymbol();
-                System.err.println(nextSymbol);
+                System.err.format("NextSymbol: %d\n", nextSymbol);
                 
                 if (nextSymbol == 0)
                 {
@@ -273,7 +289,7 @@ class Bunzip2
                         repeatIncrement = 1;
                     }
                     
-                    if (nextSymbol == _eob)
+                    if (nextSymbol == eob)
                         break;
                 
                     mtfValue = indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
@@ -360,7 +376,8 @@ class Bunzip2
 
             try
             {
-                _bi.readBits(16);
+                int magic = _bi.readBits(16);
+                System.err.format("Magic: %x\n", magic);
                 _bi.readBits(16);
             }
             catch (IOException e)
