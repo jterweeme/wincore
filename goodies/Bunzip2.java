@@ -98,7 +98,7 @@ class Bunzip2
 
     class BlockDec
     {
-        final int[] RNUMS = {
+        final int[] rnums = {
 			619, 720, 127, 481, 931, 816, 813, 233, 566, 247, 985, 724, 205, 454, 863, 491,
 			741, 242, 949, 214, 733, 859, 335, 708, 621, 574, 73, 654, 730, 472, 419, 436,
 			278, 496, 867, 210, 399, 680, 480, 51, 878, 465, 811, 169, 869, 675, 611, 697,
@@ -134,14 +134,14 @@ class Bunzip2
         };
         
         final BitInput _bi;
-        final boolean _blockRandomised;
+        boolean _blockRandomised;
         final byte[] _huffmanSymbolMap = new byte[256];
         final int[] _bwtByteCounts = new int[256];
         byte[] _bwtBlock;
         int[] _bwtMergedPointers;
         int _bwtCurrentMergedPointer, _bwtBlockLength, _bwtBytesDecoded, _huffmanEndOfBlockSymbol;
         int _rleLastDecodedByte = -1, _rleAccumulator, _rleRepeat, _randomIndex = 0;
-        int _randomCount = RNUMS[0] - 1;
+        int _randomCount = rnums[0] - 1;
 
         byte[] generate()
         {
@@ -166,7 +166,7 @@ class Bunzip2
             {
                 nextDecodedByte ^= 1;
                 _randomIndex = (_randomIndex + 1) % 512;
-                _randomCount = RNUMS[_randomIndex];
+                _randomCount = rnums[_randomIndex];
             }
             
             _bwtBytesDecoded++;
@@ -207,6 +207,11 @@ class Bunzip2
         {
             _bi = bi;
             _bwtBlock = new byte[blockSize];
+            reset();
+        }
+
+        public void reset() throws IOException
+        {
             int onzin = _bi.readInt();
             _blockRandomised = _bi.readBool();
             int bwtStartPointer = _bi.readBits(24);
