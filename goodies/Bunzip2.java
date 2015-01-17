@@ -96,7 +96,7 @@ class Bunzip2
         }
     }
 
-    class BlockDec
+    class Block
     {
         final int[] rnums = {
 			619, 720, 127, 481, 931, 816, 813, 233, 566, 247, 985, 724, 205, 454, 863, 491,
@@ -133,15 +133,11 @@ class Bunzip2
 			203, 50, 668, 108, 645, 990, 626, 197, 510, 357, 358, 850, 858, 364, 936, 638
         };
         
-        final BitInput _bi;
         boolean _blockRandomised;
-        final byte[] _huffmanSymbolMap = new byte[256];
-        final int[] _bwtByteCounts = new int[256];
-        byte[] _bwtBlock;
-        int[] _bwtMergedPointers;
-        int _bwtCurrentMergedPointer, _bwtBlockLength, _bwtBytesDecoded, _huffmanEndOfBlockSymbol;
-        int _rleLastDecodedByte = -1, _rleAccumulator, _rleRepeat, _randomIndex = 0;
-        int _randomCount = rnums[0] - 1;
+        byte[] _huffmanSymbolMap, _bwtBlock;
+        int[] _bwtByteCounts, _bwtMergedPointers;
+        int _bwtCurrentMergedPointer, _bwtBlockLength, _bwtBytesDecoded;
+        int _rleLastDecodedByte, _rleAccumulator, _rleRepeat, _randomIndex, _randomCount;
 
         byte[] generate()
         {
@@ -203,49 +199,48 @@ class Bunzip2
             return _rleLastDecodedByte;
         }
         
-        public BlockDec(BitInput bi, int blockSize) throws IOException
+        public void init(BitInput bi) throws IOException
         {
-            _bi = bi;
-            _bwtBlock = new byte[blockSize];
-            reset();
-        }
-
-        public void reset() throws IOException
-        {
-            int onzin = _bi.readInt();
-            _blockRandomised = _bi.readBool();
-            int bwtStartPointer = _bi.readBits(24);
+            _bwtBlock = new byte[900000];
+            _huffmanSymbolMap = new byte[256];
+            _bwtByteCounts = new int[256];
+            _rleLastDecodedByte = -1;
+            _randomIndex = 0;
+            _randomCount = rnums[0] - 1;
+            int onzin = bi.readInt();
+            _blockRandomised = bi.readBool();
+            int bwtStartPointer = bi.readBits(24);
             byte[] huffmanSymbolMap = _huffmanSymbolMap;
             byte[][] tableCodeLengths = new byte[6][258];
-            int huffmanUsedRanges = _bi.readBits(16), symbolCount = 0;
+            int huffmanUsedRanges = bi.readBits(16), symbolCount = 0;
             
             for (int i = 0; i < 16; i++)
                 if ((huffmanUsedRanges & 1 << 15 >>> i) != 0)
                     for (int j = 0, k = i << 4; j < 16; j++, k++)
-                        if (_bi.readBool())
+                        if (bi.readBool())
                             huffmanSymbolMap[symbolCount++] = (byte)k;
             
-            _huffmanEndOfBlockSymbol = symbolCount + 1;
-            int totalTables = _bi.readBits(3), totalSelectors = _bi.readBits(15);
+            int eob = symbolCount + 1;
+            int totalTables = bi.readBits(3), totalSelectors = bi.readBits(15);
             byte[] tableMTF = generate(), selectors = new byte[totalSelectors];
             
             for (int i = 0; i < totalSelectors; i++)
-                selectors[i] = indexToFront(tableMTF, _bi.readUnary());
+                selectors[i] = indexToFront(tableMTF, bi.readUnary());
 
             for (int t = 0; t < totalTables; t++)
             {
-                int c = _bi.readBits(5);
+                int c = bi.readBits(5);
                 
-                for (int i = 0; i <= _huffmanEndOfBlockSymbol; i++)
+                for (int i = 0; i <= eob; i++)
                 {
-				    while (_bi.readBool())
-                        c += _bi.readBool() ? -1 : 1;
+				    while (bi.readBool())
+                        c += bi.readBool() ? -1 : 1;
                     
                     tableCodeLengths[t][i] = (byte)c;
 			    }
 		    }
             
-            Huffman h = new Huffman(_bi, symbolCount + 2, tableCodeLengths, selectors);
+            Huffman h = new Huffman(bi, symbolCount + 2, tableCodeLengths, selectors);
             byte[] symbolMTF = generate();
             _bwtBlockLength = 0;
             
@@ -277,7 +272,7 @@ class Bunzip2
                         repeatIncrement = 1;
                     }
                     
-                    if (nextSymbol == _huffmanEndOfBlockSymbol)
+                    if (nextSymbol == eob)
                         break;
                 
                     mtfValue = indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
@@ -310,7 +305,7 @@ class Bunzip2
         BitInput _bi;
         boolean _streamComplete = false;
         int _streamBlockSize;
-        BlockDec _blockDecompressor = null;
+        Block _blockDecompressor;
         
         public void extractTo(OutputStream o) throws IOException
         {
@@ -320,10 +315,7 @@ class Bunzip2
 
         public int read() throws IOException
         {
-            int nextByte = -1;
-            
-            if (_blockDecompressor != null)
-                nextByte = _blockDecompressor.read();
+            int nextByte = _blockDecompressor.read();
             
             if (nextByte == -1 && _initNextBlock())
                 nextByte = _blockDecompressor.read();
@@ -340,9 +332,11 @@ class Bunzip2
 
             if (marker1 == 0x314159 && marker2 == 0x265359)
             {
+                _blockDecompressor = new Block();
+
                 try
                 {
-                    _blockDecompressor = new BlockDec(_bi, _streamBlockSize);
+                    _blockDecompressor.init(_bi);
                 }
                 catch (IOException e)
                 {
@@ -381,6 +375,8 @@ class Bunzip2
                 _streamComplete = true;
                 throw e;
             }
+
+            _blockDecompressor = new Block();
         }
     }
 
