@@ -30,38 +30,34 @@ class Bunzip2
 
     class Huffman
     {
-        BitInput _bi;
-        byte[] _selectors;
         int[] _minimumLengths = new int[6];
         int[][] _codeBases=new int[6][25],_codeLimits=new int[6][24],_codeSymbols=new int[6][258];
         int _curTbl, _groupIndex = -1, _groupPos = -1;
         
-        public int nextSymbol() throws IOException
+        public int nextSymbol(BitInput bi, byte[] selectors) throws IOException
         {
             if (++_groupPos % 50 == 0)
             {
-                if (++_groupIndex == _selectors.length)
+                if (++_groupIndex == selectors.length)
                     throw new IOException("Error decoding BZip2 block");
                 
-                _curTbl = _selectors[_groupIndex] & 0xff;
+                _curTbl = selectors[_groupIndex] & 0xff;
             }
             
-            for (int n = _minimumLengths[_curTbl], codeBits = _bi.readBits(n); n <= 23; n++)
+            for (int n = _minimumLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
             {
                 if (codeBits <= _codeLimits[_curTbl][n])
                     return _codeSymbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
                 
-                codeBits = codeBits << 1 | _bi.readBits(1);
+                codeBits = codeBits << 1 | bi.readBits(1);
             }
 
             throw new IOException("Error decoding BZip2 block");
         }
 
-        public Huffman(BitInput bi, int nalphabet, byte[][] tblCodeLengths, byte[] selectors)
+        public void init(BitInput bi, int nalphabet, byte[][] tblCodeLengths, byte[] selectors)
         {
-            _bi = bi;
-            _selectors = selectors;
-            _curTbl = _selectors[0];
+            _curTbl = selectors[0];
 
 	        for (int table = 0, minLength = 23, maxLength = 0; table < 6; table++)
             {
@@ -245,13 +241,15 @@ class Bunzip2
 			    }
 		    }
             
-            Huffman h = new Huffman(bi, symbolCount + 2, tableCodeLengths, selectors);
+            Huffman h = new Huffman();
+            h.init(bi, symbolCount + 2, tableCodeLengths, selectors);
+            //Huvman(bi, symbolCount + 2, tableCodeLengths, selectors);
             byte[] symbolMTF = generate();
             _bwtBlockLength = 0;
             
             for (int repeatCount = 0, repeatIncrement = 1, mtfValue = 0;;)
             {
-                int nextSymbol = h.nextSymbol();
+                int nextSymbol = h.nextSymbol(bi, selectors);
                 
                 if (nextSymbol == 0)
                 {
@@ -337,15 +335,7 @@ class Bunzip2
 
             if (marker1 == 0x314159 && marker2 == 0x265359)
             {
-                try
-                {
                     _blockDecompressor.init(_bi);
-                }
-                catch (IOException e)
-                {
-                    _streamComplete = true;
-                    throw e;
-                }
                 return true;
             }
             else if (marker1 == 0x177245 && marker2 == 0x385090)
