@@ -28,14 +28,6 @@ class Bunzip2
         }
     }
 
-    class Huffman
-    {
-        public int[] _minimumLengths = new int[6];
-        public int[][] _codeBases=new int[6][25];
-        public int[][] _codeLimits=new int[6][24],_symbols=new int[6][258];
-        public int _curTbl, _groupIndex = -1, _groupPos = -1;
-    }
-
     class Block
     {
         final int[] rnums = {
@@ -77,27 +69,26 @@ class Bunzip2
         public int[][] _codeBases=new int[6][25];
         public int[][] _codeLimits=new int[6][24],_symbols=new int[6][258];
         public int _curTbl, _groupIndex = -1, _groupPos = -1;
-
         boolean _blockRandomised;
         byte[] _huffmanSymbolMap, _bwtBlock;
         int[] _bwtByteCounts, _bwtMergedPointers;
         int _bwtCurrentMergedPointer, _bwtBlockLength, _bwtBytesDecoded;
         int _rleLastDecodedByte, _rleAccumulator, _rleRepeat, _randomIndex, _randomCount;
 
-        public int nextSymbol(BitInput bi, byte[] selectors, Huffman h) throws IOException
+        public int nextSymbol(BitInput bi, byte[] selectors) throws IOException
         {
-            if (++h._groupPos % 50 == 0)
+            if (++_groupPos % 50 == 0)
             {
-                if (++h._groupIndex == selectors.length)
+                if (++_groupIndex == selectors.length)
                     throw new IOException("Error decoding BZip2 block");
                 
-                h._curTbl = selectors[h._groupIndex] & 0xff;
+                _curTbl = selectors[_groupIndex] & 0xff;
             }
             
-            for (int n = h._minimumLengths[h._curTbl], codeBits = bi.readBits(n); n <= 23; n++)
+            for (int n = _minimumLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
             {
-                if (codeBits <= h._codeLimits[h._curTbl][n])
-                    return h._symbols[h._curTbl][codeBits - h._codeBases[h._curTbl][n]];
+                if (codeBits <= _codeLimits[_curTbl][n])
+                    return _symbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
                 
                 codeBits = codeBits << 1 | bi.readBits(1);
             }
@@ -174,7 +165,6 @@ class Bunzip2
             _curTbl = 0;
             _groupIndex = -1;
             _groupPos = -1;
-
             _bwtBlock = new byte[900000];
             _huffmanSymbolMap = new byte[256];
             _bwtByteCounts = new int[256];
@@ -219,7 +209,6 @@ class Bunzip2
 			    }
 		    }
             
-            Huffman h = new Huffman();
             int curTbl = selectors[0];
             int[] minLengths = new int[6];
             int[][] codeBases=new int[6][25];
@@ -258,19 +247,19 @@ class Bunzip2
                             codeSymbols[table][i++] = symbol;
             }
             
-            h._minimumLengths = minLengths;
-            h._codeBases = codeBases;
-            h._codeLimits = codeLimits;
-            h._symbols = codeSymbols;
-            h._curTbl = curTbl;
-            h._groupIndex = groupIndex;
-            h._groupPos = groupPos;
+            _minimumLengths = minLengths;
+            _codeBases = codeBases;
+            _codeLimits = codeLimits;
+            _symbols = codeSymbols;
+            _curTbl = curTbl;
+            _groupIndex = groupIndex;
+            _groupPos = groupPos;
             byte[] symbolMTF = generate();
             _bwtBlockLength = 0;
             
             for (int repeatCount = 0, repeatIncrement = 1, mtfValue = 0;;)
             {
-                int nextSymbol = nextSymbol(bi, selectors, h);
+                int nextSymbol = nextSymbol(bi, selectors);
                 
                 if (nextSymbol == 0)
                 {
