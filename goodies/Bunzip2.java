@@ -34,27 +34,6 @@ class Bunzip2
         public int[][] _codeBases=new int[6][25];
         public int[][] _codeLimits=new int[6][24],_symbols=new int[6][258];
         public int _curTbl, _groupIndex = -1, _groupPos = -1;
-        
-        public int nextSymbol(BitInput bi, byte[] selectors) throws IOException
-        {
-            if (++_groupPos % 50 == 0)
-            {
-                if (++_groupIndex == selectors.length)
-                    throw new IOException("Error decoding BZip2 block");
-                
-                _curTbl = selectors[_groupIndex] & 0xff;
-            }
-            
-            for (int n = _minimumLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
-            {
-                if (codeBits <= _codeLimits[_curTbl][n])
-                    return _symbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
-                
-                codeBits = codeBits << 1 | bi.readBits(1);
-            }
-
-            throw new IOException("Error decoding BZip2 block");
-        }
     }
 
     class Block
@@ -94,11 +73,37 @@ class Bunzip2
 			203, 50, 668, 108, 645, 990, 626, 197, 510, 357, 358, 850, 858, 364, 936, 638
         };
         
+        public int[] _minimumLengths = new int[6];
+        public int[][] _codeBases=new int[6][25];
+        public int[][] _codeLimits=new int[6][24],_symbols=new int[6][258];
+        public int _curTbl, _groupIndex = -1, _groupPos = -1;
+
         boolean _blockRandomised;
         byte[] _huffmanSymbolMap, _bwtBlock;
         int[] _bwtByteCounts, _bwtMergedPointers;
         int _bwtCurrentMergedPointer, _bwtBlockLength, _bwtBytesDecoded;
         int _rleLastDecodedByte, _rleAccumulator, _rleRepeat, _randomIndex, _randomCount;
+
+        public int nextSymbol(BitInput bi, byte[] selectors, Huffman h) throws IOException
+        {
+            if (++h._groupPos % 50 == 0)
+            {
+                if (++h._groupIndex == selectors.length)
+                    throw new IOException("Error decoding BZip2 block");
+                
+                h._curTbl = selectors[h._groupIndex] & 0xff;
+            }
+            
+            for (int n = h._minimumLengths[h._curTbl], codeBits = bi.readBits(n); n <= 23; n++)
+            {
+                if (codeBits <= h._codeLimits[h._curTbl][n])
+                    return h._symbols[h._curTbl][codeBits - h._codeBases[h._curTbl][n]];
+                
+                codeBits = codeBits << 1 | bi.readBits(1);
+            }
+
+            throw new IOException("Error decoding BZip2 block");
+        }
 
         byte[] generate()
         {
@@ -162,6 +167,14 @@ class Bunzip2
         
         public void init(BitInput bi) throws IOException
         {
+            _minimumLengths = new int[6];
+            _codeBases = new int[6][25];
+            _codeLimits = new int[6][24];
+            _symbols = new int[6][258];
+            _curTbl = 0;
+            _groupIndex = -1;
+            _groupPos = -1;
+
             _bwtBlock = new byte[900000];
             _huffmanSymbolMap = new byte[256];
             _bwtByteCounts = new int[256];
@@ -257,7 +270,7 @@ class Bunzip2
             
             for (int repeatCount = 0, repeatIncrement = 1, mtfValue = 0;;)
             {
-                int nextSymbol = h.nextSymbol(bi, selectors);
+                int nextSymbol = nextSymbol(bi, selectors, h);
                 
                 if (nextSymbol == 0)
                 {
