@@ -31,7 +31,7 @@ class Bunzip2
 
     class Block
     {
-        final int[] rnums = {
+        final int[] _rnums = {
 			619, 720, 127, 481, 931, 816, 813, 233, 566, 247, 985, 724, 205, 454, 863, 491,
 			741, 242, 949, 214, 733, 859, 335, 708, 621, 574, 73, 654, 730, 472, 419, 436,
 			278, 496, 867, 210, 399, 680, 480, 51, 878, 465, 811, 169, 869, 675, 611, 697,
@@ -68,20 +68,15 @@ class Bunzip2
         
         int[] _minLengths = new int[6], _bwtByteCounts, _bwtMergedPointers;
         int[][] _bases = new int[6][25], _limits = new int[6][24], _symbols = new int[6][258];
-        int _curTbl, _grpIdx, _groupPos, _last, _acc, _rleRepeat, _randomIndex, _randomCount;
+        int _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat, _randomIndex, _randomCount;
         boolean _blockRandomised;
         byte[] _symbolMap, _bwtBlock;
         int _bwtCurrentMergedPointer, _bwtBlockLength, _bwtBytesDecoded;
 
-        public int nextSymbol(BitInput bi, byte[] selectors) throws IOException
+        int _nextSymbol(BitInput bi, byte[] selectors) throws IOException
         {
-            if (++_groupPos % 50 == 0)
-            {
-                if (++_grpIdx == selectors.length)
-                    throw new IOException("Error decoding BZip2 block");
-                
-                _curTbl = selectors[_grpIdx] & 0xff;
-            }
+            if (++_grpPos % 50 == 0)
+                _curTbl = selectors[++_grpIdx];
             
             for (int n = _minLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
             {
@@ -94,21 +89,21 @@ class Bunzip2
             throw new IOException("Error decoding BZip2 block");
         }
 
-        byte[] generate()
+        byte[] _generate()
         {
             byte a[] = new byte[256];
             for (int i = 0; i < a.length; i++) a[i] = (byte)i;
             return a;
         }
 
-        byte indexToFront(byte[] a, int index)
+        byte _indexToFront(byte[] a, int index)
         {
             byte value = a[index];
             System.arraycopy(a, 0, a, 1, index);
             return a[0] = value;
         }
         
-        int decodeNextBWTByte()
+        int _decodeNextBWTByte()
         {
             int mergedPointer = _bwtCurrentMergedPointer, nextDecodedByte = mergedPointer & 0xff;
             _bwtCurrentMergedPointer = _bwtMergedPointers[mergedPointer >>> 8];
@@ -117,7 +112,7 @@ class Bunzip2
             {
                 nextDecodedByte ^= 1;
                 _randomIndex = (_randomIndex + 1) % 512;
-                _randomCount = rnums[_randomIndex];
+                _randomCount = _rnums[_randomIndex];
             }
             
             _bwtBytesDecoded++;
@@ -131,7 +126,7 @@ class Bunzip2
                 if (_bwtBytesDecoded == _bwtBlockLength)
                     return -1;
                 
-                int nextByte = decodeNextBWTByte();
+                int nextByte = _decodeNextBWTByte();
                 
                 if (nextByte != _last)
                 {
@@ -141,7 +136,7 @@ class Bunzip2
                 }
                 else if (++_acc == 4)
                 {
-                    _rleRepeat = decodeNextBWTByte() + 1;
+                    _rleRepeat = _decodeNextBWTByte() + 1;
                     _acc = 0;
                 }
                 else
@@ -162,13 +157,13 @@ class Bunzip2
             _symbols = new int[6][258];
             _curTbl = 0;
             _grpIdx = -1;
-            _groupPos = -1;
+            _grpPos = -1;
             _bwtBlock = new byte[900000];
             _symbolMap = new byte[256];
             _bwtByteCounts = new int[256];
             _last = -1;
             _randomIndex = 0;
-            _randomCount = rnums[0] - 1;
+            _randomCount = _rnums[0] - 1;
             bi.readInt();
             _blockRandomised = bi.readBool();
             _acc = 0;
@@ -186,10 +181,10 @@ class Bunzip2
                             _symbolMap[symbolCount++] = (byte)k;
             
             int eob = symbolCount + 1, tables = bi.readBits(3), selectors_n = bi.readBits(15);
-            byte[] tableMTF = generate(), selectors = new byte[selectors_n];
+            byte[] tableMTF = _generate(), selectors = new byte[selectors_n];
             
             for (int i = 0; i < selectors_n; i++)
-                selectors[i] = indexToFront(tableMTF, bi.readUnary());
+                selectors[i] = _indexToFront(tableMTF, bi.readUnary());
 
             for (int t = 0; t < tables; t++)
             {
@@ -234,12 +229,12 @@ class Bunzip2
             }
             
             _curTbl = selectors[0];
-            byte[] symbolMTF = generate();
+            byte[] symbolMTF = _generate();
             _bwtBlockLength = 0;
             
             for (int repeatCount = 0, repeatIncrement = 1, mtfValue = 0, nextSymbol;;)
             {
-                if ((nextSymbol = nextSymbol(bi, selectors)) == 0)
+                if ((nextSymbol = _nextSymbol(bi, selectors)) == 0)
                 {
                     repeatCount += repeatIncrement;
                     repeatIncrement <<= 1;
@@ -266,7 +261,7 @@ class Bunzip2
                     if (nextSymbol == eob)
                         break;
                 
-                    mtfValue = indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
+                    mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
                     byte next = _symbolMap[mtfValue];
                     _bwtByteCounts[next & 0xff]++;
                     _bwtBlock[_bwtBlockLength++] = next;
@@ -299,11 +294,11 @@ class Bunzip2
         
         public void extractTo(OutputStream o) throws IOException
         {
-            for (int b = read(); b != -1; b = read())
+            for (int b = _read(); b != -1; b = _read())
                 o.write(b);
         }
 
-        public int read() throws IOException
+        int _read() throws IOException
         {
             int nextByte = _bd.read();
             nextByte = nextByte == -1 && _initNextBlock() ? _bd.read() : nextByte;

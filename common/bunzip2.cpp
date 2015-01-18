@@ -40,47 +40,37 @@ uint16_t rnums[] = {
             780, 773, 635, 389, 707, 100, 626, 958, 165, 504, 920, 176, 193, 713, 857, 265,
             203, 50, 668, 108, 645, 990, 626, 197, 510, 357, 358, 850, 858, 364, 936, 638 };
 
-class Huffman
+class Block
 {
-    BitInput *_bi;
-    const Vugt _selectors;
-    uint32_t _minLengths[6], _codeBases[6][25], _codeLimits[6][24], _codeSymbols[6][258];
-    int _curTbl = 0, _groupIdx = -1, _groupPos = -1;
-public:
-    uint32_t nextSymbol();
-    Huffman(BitInput *bi, uint32_t nalphabet, uint8_t tblCodeLengths[6][258], Vugt selectors);
-};
-
-class BlockDec
-{
-    BitInput *_bi;
-    uint32_t _rleRepeat = 0, _rleAccumulator = 0, _bwtCurrentMergedPointer = 0;
+    uint32_t _minLengths[6], _bwtByteCounts[256];
+    uint32_t _bases[6][25], _limits[6][24], _symbols[6][258];
     uint8_t _bwtBlock[900000] = {0};
-    uint32_t _bwtBlockLength = 0;
-    uint32_t _bwtBytesDecoded = 0;
+    uint32_t _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat, _randomIndex;
+    uint32_t _bwtCurrentMergedPointer, _bwtBlockLength, _bwtBytesDecoded;
     uint32_t _decodeNextBWTByte();
     uint8_t _huffmanSymbolMap[256] = {0};
-    uint32_t _bwtByteCounts[256], _bwtMergedPointers[9999], _blockRandomised = 0;
-    uint32_t _randomCount = rnums[0] - 1, _randomIndex = 0, _rleLastDecodedByte = -1;
+    uint32_t _bwtMergedPointers[9999];
+    bool _blockRandomised;
+    uint32_t _randomCount = rnums[0] - 1, _rleLastDecodedByte = -1;
     void _generate(uint8_t *a) { for (unsigned i = 0; i < 256; i++) a[i] = i; }
     uint8_t _indexToFront(uint8_t *a, uint32_t i);
     uint32_t _decNextBWTByte();
+    uint32_t _nextSymbol(BitInput *bi, Vugt selectors);
 public:
     uint32_t read();
-    BlockDec(BitInput *bi) : _bi(bi) { }
-    void reset();
+    void init(BitInput *bi);
 };
 
 class DecStream
 {
     BitInput *_bi;
-    BlockDec _bd;
+    Block _bd;
     uint32_t _streamComplete = false;
     bool _initNextBlock();
+    int _read();
 public:
-    DecStream(BitInput *bi);
-    void extractTo(ostream &os);
-    int read();
+    DecStream(BitInput *bi) : _bi(bi) { _bi->ignore(32); }
+    void extractTo(ostream &os) { for (int b = _read(); b != -1; b = _read()) os.put(b); }
 };
 
 class App
@@ -89,15 +79,7 @@ public:
     int run(int argc, char **argv);
 };
 
-DecStream::DecStream(BitInput *bi) : _bi(bi), _bd(bi)
-{
-    uint16_t magic = _bi->readBits(16);
-    cerr << "Magic: " << hex << magic << "\n";
-    _bi->readBits(16);
-    _initNextBlock();
-}
-
-uint8_t BlockDec::_indexToFront(uint8_t *a, uint32_t index)
+uint8_t Block::_indexToFront(uint8_t *a, uint32_t index)
 {
     uint8_t value = a[index];
     
@@ -107,51 +89,61 @@ uint8_t BlockDec::_indexToFront(uint8_t *a, uint32_t index)
     return a[0] = value;
 }
 
-void BlockDec::reset()
+uint32_t Block::_nextSymbol(BitInput *bi, Vugt selectors)
 {
-    _bi->readInt();
-    _blockRandomised = _bi->readBool();
-    uint32_t bwtStartPointer = _bi->readBits(24), symbolCount = 0;
-    uint8_t tableCodeLengths[6][258];
+    if (++_grpPos % 50 == 0)
+        _curTbl = selectors[++_grpIdx];
 
-    for (uint16_t i = 0, ranges = _bi->readBits(16); i < 16; i++)
+    for (uint32_t n = _minLengths[_curTbl], codeBits = bi->readBits(n); n <= 23; n++)
+    {
+        if (codeBits <= _limits[_curTbl][n])
+            return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
+
+        codeBits = codeBits << 1 | bi->readBits(1);
+    }
+    
+    return 0;
+}
+
+void Block::init(BitInput *bi)
+{
+    bi->readInt();
+    _blockRandomised = bi->readBool();
+    uint32_t bwtStartPointer = bi->readBits(24), symbolCount = 0;
+    //uint8_t tableCodeLengths[6][258];
+
+    for (uint16_t i = 0, ranges = bi->readBits(16); i < 16; i++)
         if ((ranges & ((1 << 15) >> i)) != 0)
             for (int j = 0, k = i << 4; j < 16; j++, k++)
-                if (_bi->readBool())
+                if (bi->readBool())
                     _huffmanSymbolMap[symbolCount++] = (uint8_t)k;
 
-    cerr << "SymbolCount: " << dec << symbolCount << "\n";
-    uint32_t _eob = symbolCount + 1, tables = _bi->readBits(3), selectors_n = _bi->readBits(15);
-    cerr << dec << "Tables: " << tables << "\n";
-    cerr << dec << "Selectors_n: " << selectors_n << "\n";
+    uint32_t _eob = symbolCount + 1, tables = bi->readBits(3), selectors_n = bi->readBits(15);
     uint8_t tableMTF[256];
     _generate(tableMTF);
     Vugt selectors(selectors_n);
 
     for (uint32_t i = 0; i < selectors_n; i++)
-        selectors.push_back(_indexToFront(tableMTF, _bi->readUnary()));
+        selectors.push_back(_indexToFront(tableMTF, bi->readUnary()));
 
     for (uint32_t t = 0; t < tables; t++)
     {
-        for (uint32_t i = 0, c = _bi->readBits(5); i <= _eob; i++)
+        for (uint32_t i = 0, c = bi->readBits(5); i <= _eob; i++)
         {
-            cerr << "C: " << c << "\n";
+            while (bi->readBool())
+                c += bi->readBool() ? -1 : 1;
 
-            while (_bi->readBool())
-                c += _bi->readBool() ? -1 : 1;
-
-            tableCodeLengths[t][i] = c;
+            //tableCodeLengths[t][i] = c;
         }
     }
 
-    Huffman h(_bi, symbolCount + 2, tableCodeLengths, selectors);
     uint8_t symbolMTF[256];
     _generate(symbolMTF);
     _bwtBlockLength = 0;
    
     for (int n = 0, repeatIncrement = 1, mtfValue = 0; n < 2; n++)
     {
-        uint32_t nextSymbol = h.nextSymbol();
+        uint32_t nextSymbol = _nextSymbol(bi, selectors);
         cerr << "NextSymbol: " << dec << nextSymbol << "\n";
 
         if (nextSymbol == 0)
@@ -188,8 +180,6 @@ void BlockDec::reset()
         }
     }
 
-    cerr << "BWTBlockLength: " << _bwtBlockLength << "\n";
-
     int characterBase[256];
     
     for (int i = 0; i < 255; i++)
@@ -204,93 +194,10 @@ void BlockDec::reset()
     _bwtCurrentMergedPointer = _bwtMergedPointers[bwtStartPointer];
 }
 
-Huffman::Huffman(BitInput *bi, uint32_t nalphabet, uint8_t tblCodeLengths[6][258], Vugt selectors)
-  :
-    _bi(bi),
-    _selectors(selectors),
-    _curTbl(_selectors.front())
-{
-    cerr << "N_alphabet: " << nalphabet << "\n";
-
-    for (uint8_t table = 0, minLength = 23, maxLength = 0; table < 6; table++)
-    {
-        for (uint32_t i = 0; i < nalphabet; i++)
-        {
-            maxLength = max(tblCodeLengths[table][i], maxLength);
-            minLength = min(tblCodeLengths[table][i], minLength);
-        }
-
-        cerr << "MinLength: " << (uint16_t)minLength << "\n";
-        cerr << "MaxLength: " << (uint16_t)maxLength << "\n";
-        _minLengths[table] = minLength;
-
-        for (uint32_t i = 0; i < nalphabet; i++)
-            _codeBases[table][tblCodeLengths[table][i] + 1]++;
-
-        for (int i = 1; i < 25; i++)
-            _codeBases[table][i] += _codeBases[table][i - 1];
-
-        for (int i = minLength, code = 0; i <= maxLength; i++)
-        {
-            int base = code;
-            code += _codeBases[table][i + 1] - _codeBases[table][i];
-            _codeBases[table][i] = base - _codeBases[table][i];
-            _codeLimits[table][i] = code - 1;
-            code <<= 1;
-        }
-
-        for (int bitLength = minLength, i = 0; bitLength <= maxLength; bitLength++)
-            for (uint32_t symbol = 0; symbol < nalphabet; symbol++)
-                if (tblCodeLengths[table][symbol] == bitLength)
-                {
-                    _codeSymbols[table][i++] = symbol;
-                    cerr << "Symbol: " << symbol << "\n";
-                }
-    }
-}
-
-uint32_t Huffman::nextSymbol()
-{
-    cerr << "GroupPos: " << _groupPos << "\n";
-    cerr << "GroupIdx: " << _groupIdx << "\n";
-
-    if (++_groupPos % 50 == 0)
-    {
-        if (++_groupIdx == _selectors.size())
-            throw "Error decoding BZip2 block";
-
-        cerr << "GroupIdx: " << _groupIdx << "\n";
-        _curTbl = _selectors[_groupIdx] & 0xff;
-        cerr << "CurTbl: " << _curTbl << "\n";
-    }
-
-    for (uint32_t n = _minLengths[_curTbl], codeBits = _bi->readBits(n); n <= 23; n++)
-    {
-        cerr << "CodeBits: " << n << " " << codeBits << "\n";
-
-        if (codeBits <= _codeLimits[_curTbl][n])
-            return _codeSymbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
-
-        codeBits = codeBits << 1 | _bi->readBits(1);
-    }
-    
-    throw "Error decoding BZip2 block";
-    return 0;
-}
-
-void DecStream::extractTo(ostream &os)
-{
-    for (int b = read(); b != -1; b = read())
-        os.put(b);
-}
-
-int DecStream::read()
+int DecStream::_read()
 {
     int nextByte = _bd.read();
-
-    if (nextByte == -1 && _initNextBlock())
-        nextByte = _bd.read();
-
+    nextByte = nextByte == -1 && _initNextBlock() ? _bd.read() : nextByte;
     return nextByte;
 }
 
@@ -303,7 +210,7 @@ bool DecStream::_initNextBlock()
 
     if (marker1 == 0x314159 && marker2 == 0x265359)
     {
-        _bd.reset();
+        _bd.init(_bi);
         return true;
     }
     else if (marker1 == 0x177245 && marker2 == 0x385090)
@@ -317,7 +224,7 @@ bool DecStream::_initNextBlock()
     throw "BZip2 stream format error";
 }
 
-uint32_t BlockDec::_decodeNextBWTByte()
+uint32_t Block::_decodeNextBWTByte()
 {
     int mergedPointer = _bwtCurrentMergedPointer, nextDecodedByte = mergedPointer & 0xff;
     _bwtCurrentMergedPointer = _bwtMergedPointers[mergedPointer >> 8];
@@ -333,7 +240,7 @@ uint32_t BlockDec::_decodeNextBWTByte()
     return nextDecodedByte;
 }
 
-uint32_t BlockDec::read()
+uint32_t Block::read()
 {
     while (_rleRepeat < 1)
     {
@@ -346,12 +253,12 @@ uint32_t BlockDec::read()
         {
             _rleLastDecodedByte = nextByte;
             _rleRepeat = 1;
-            _rleAccumulator = 1;
+            _acc = 1;
         }
-        else if (++_rleAccumulator == 4)
+        else if (++_acc == 4)
         {
             _rleRepeat = _decodeNextBWTByte() + 1;
-            _rleAccumulator = 0;
+            _acc = 0;
         }
         else
         {

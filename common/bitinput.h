@@ -13,6 +13,7 @@ public:
     bool readBool() { return readBits(1); }
     uint32_t readUnary() { uint32_t u = 0; while (readBool()) u++; return u; }
     uint16_t readInt() { return readBits(16) << 16 | readBits(16); }
+    void ignore(uint32_t n) { while (n--) readBool(); }
 };
 
 
