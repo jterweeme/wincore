@@ -17,14 +17,15 @@ class Bunzip2
         public BitInput(final InputStream inputStream) { _inputStream = inputStream; }
         public boolean readBool() throws IOException { return readBits(1) == 0 ? false : true; }
         public int readUnary() throws IOException { int u = 0; while (readBool()) u++; return u; }
+        public void ignore(int n) throws IOException { while (n-- > 0) readBool(); }
         
-        public int readBits(final int count) throws IOException
+        public int readBits(int n) throws IOException
         {
-            for (; _bitCount < count; _bitCount += 8)
+            for (; _bitCount < n; _bitCount += 8)
                 _bitBuffer = _bitBuffer << 8 | _inputStream.read();
             
-            _bitCount -= count;
-            return _bitBuffer >>> _bitCount & (1 << count) - 1;
+            _bitCount -= n;
+            return _bitBuffer >>> _bitCount & (1 << n) - 1;
         }
     }
 
@@ -66,8 +67,7 @@ class Bunzip2
         };
         
         public int[] _minimumLengths = new int[6];
-        public int[][] _codeBases=new int[6][25];
-        public int[][] _codeLimits=new int[6][24],_symbols=new int[6][258];
+        public int[][] _bases=new int[6][25], _codeLimits=new int[6][24],_symbols=new int[6][258];
         public int _curTbl, _groupIndex = -1, _groupPos = -1;
         boolean _blockRandomised;
         byte[] _huffmanSymbolMap, _bwtBlock;
@@ -88,7 +88,7 @@ class Bunzip2
             for (int n = _minimumLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
             {
                 if (codeBits <= _codeLimits[_curTbl][n])
-                    return _symbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
+                    return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
                 
                 codeBits = codeBits << 1 | bi.readBits(1);
             }
@@ -159,7 +159,7 @@ class Bunzip2
         public void init(BitInput bi) throws IOException
         {
             _minimumLengths = new int[6];
-            _codeBases = new int[6][25];
+            _bases = new int[6][25];
             _codeLimits = new int[6][24];
             _symbols = new int[6][258];
             _curTbl = 0;
@@ -211,7 +211,7 @@ class Bunzip2
             
             int curTbl = selectors[0];
             int[] minLengths = new int[6];
-            int[][] codeBases=new int[6][25];
+            int[][] bases=new int[6][25];
             int[][] codeLimits=new int[6][24];
             int[][] codeSymbols=new int[6][258];
             int groupIndex = -1, groupPos = -1;
@@ -227,16 +227,16 @@ class Bunzip2
                 minLengths[table] = minLength;
                 
                 for (int i = 0; i < symbolCount + 2; i++)
-                    codeBases[table][tableCodeLengths[table][i] + 1]++;
+                    bases[table][tableCodeLengths[table][i] + 1]++;
                 
                 for (int i = 1; i < 25; i++)
-                    codeBases[table][i] += codeBases[table][i - 1];
+                    bases[table][i] += bases[table][i - 1];
                 
                 for (int i = minLength, code = 0; i <= maxLength; i++)
                 {
                     int base = code;
-                    code += codeBases[table][i + 1] - codeBases[table][i];
-                    codeBases[table][i] = base - codeBases[table][i];
+                    code += bases[table][i + 1] - bases[table][i];
+                    bases[table][i] = base - bases[table][i];
                     codeLimits[table][i] = code - 1;
                     code <<= 1;
                 }
@@ -248,7 +248,7 @@ class Bunzip2
             }
             
             _minimumLengths = minLengths;
-            _codeBases = codeBases;
+            _bases = bases;
             _codeLimits = codeLimits;
             _symbols = codeSymbols;
             _curTbl = curTbl;
@@ -362,23 +362,7 @@ class Bunzip2
         public DecStream(BitInput bi) throws IOException
         {
             _bi = bi;
-
-            if (_streamComplete)
-                return;
-
-            try
-            {
-                _bi.readBits(16);
-                _bi.readBits(8);
-                int blockSize = _bi.readBits(8) - '0';
-                _streamBlockSize = blockSize * 100000;
-            }
-            catch (IOException e)
-            {
-                _streamComplete = true;
-                throw e;
-            }
-
+            _bi.ignore(32);
             _blockDecompressor = new Block();
         }
     }
