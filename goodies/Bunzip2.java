@@ -30,9 +30,10 @@ class Bunzip2
 
     class Huffman
     {
-        int[] _minimumLengths = new int[6];
-        int[][] _codeBases=new int[6][25],_codeLimits=new int[6][24],_codeSymbols=new int[6][258];
-        int _curTbl, _groupIndex = -1, _groupPos = -1;
+        public int[] _minimumLengths = new int[6];
+        public int[][] _codeBases=new int[6][25];
+        public int[][] _codeLimits=new int[6][24],_symbols=new int[6][258];
+        public int _curTbl, _groupIndex = -1, _groupPos = -1;
         
         public int nextSymbol(BitInput bi, byte[] selectors) throws IOException
         {
@@ -47,23 +48,12 @@ class Bunzip2
             for (int n = _minimumLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
             {
                 if (codeBits <= _codeLimits[_curTbl][n])
-                    return _codeSymbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
+                    return _symbols[_curTbl][codeBits - _codeBases[_curTbl][n]];
                 
                 codeBits = codeBits << 1 | bi.readBits(1);
             }
 
             throw new IOException("Error decoding BZip2 block");
-        }
-
-        public void init(int[] a, int[][] b, int[][] c, int[][] d, int e, int f, int g)
-        {
-            _minimumLengths = a;
-            _codeBases = b;
-            _codeLimits = c;
-            _codeSymbols = d;
-            _curTbl = e;
-            _groupIndex = f;
-            _groupPos = g;
         }
     }
 
@@ -254,9 +244,14 @@ class Bunzip2
                         if (tableCodeLengths[table][symbol] == bitLength)
                             codeSymbols[table][i++] = symbol;
             }
-
-            h.init(minLengths, codeBases, codeLimits, codeSymbols, curTbl, groupIndex, groupPos);
-
+            
+            h._minimumLengths = minLengths;
+            h._codeBases = codeBases;
+            h._codeLimits = codeLimits;
+            h._symbols = codeSymbols;
+            h._curTbl = curTbl;
+            h._groupIndex = groupIndex;
+            h._groupPos = groupPos;
             byte[] symbolMTF = generate();
             _bwtBlockLength = 0;
             
