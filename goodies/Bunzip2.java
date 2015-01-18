@@ -55,40 +55,15 @@ class Bunzip2
             throw new IOException("Error decoding BZip2 block");
         }
 
-        public void init(BitInput bi, int nalphabet, byte[][] tblCodeLengths, byte[] selectors)
+        public void init(int[] a, int[][] b, int[][] c, int[][] d, int e, int f, int g)
         {
-            _curTbl = selectors[0];
-
-	        for (int table = 0, minLength = 23, maxLength = 0; table < 6; table++)
-            {
-                for (int i = 0; i < nalphabet; i++)
-                {
-                    maxLength = Math.max(tblCodeLengths[table][i], maxLength);
-                    minLength = Math.min(tblCodeLengths[table][i], minLength);
-                }
-                
-                _minimumLengths[table] = minLength;
-                
-                for (int i = 0; i < nalphabet; i++)
-                    _codeBases[table][tblCodeLengths[table][i] + 1]++;
-                
-                for (int i = 1; i < 25; i++)
-                    _codeBases[table][i] += _codeBases[table][i - 1];
-                
-                for (int i = minLength, code = 0; i <= maxLength; i++)
-                {
-                    int base = code;
-                    code += _codeBases[table][i + 1] - _codeBases[table][i];
-                    _codeBases[table][i] = base - _codeBases[table][i];
-                    _codeLimits[table][i] = code - 1;
-                    code <<= 1;
-                }
-                
-                for (int bitLength = minLength, i = 0; bitLength <= maxLength; bitLength++)
-                    for (int symbol = 0; symbol < nalphabet; symbol++)
-                        if (tblCodeLengths[table][symbol] == bitLength)
-                            _codeSymbols[table][i++] = symbol;
-            }
+            _minimumLengths = a;
+            _codeBases = b;
+            _codeLimits = c;
+            _codeSymbols = d;
+            _curTbl = e;
+            _groupIndex = f;
+            _groupPos = g;
         }
     }
 
@@ -242,8 +217,46 @@ class Bunzip2
 		    }
             
             Huffman h = new Huffman();
-            h.init(bi, symbolCount + 2, tableCodeLengths, selectors);
-            //Huvman(bi, symbolCount + 2, tableCodeLengths, selectors);
+            int curTbl = selectors[0];
+            int[] minLengths = new int[6];
+            int[][] codeBases=new int[6][25];
+            int[][] codeLimits=new int[6][24];
+            int[][] codeSymbols=new int[6][258];
+            int groupIndex = -1, groupPos = -1;
+
+	        for (int table = 0, minLength = 23, maxLength = 0; table < 6; table++)
+            {
+                for (int i = 0; i < symbolCount + 2; i++)
+                {
+                    maxLength = Math.max(tableCodeLengths[table][i], maxLength);
+                    minLength = Math.min(tableCodeLengths[table][i], minLength);
+                }
+                
+                minLengths[table] = minLength;
+                
+                for (int i = 0; i < symbolCount + 2; i++)
+                    codeBases[table][tableCodeLengths[table][i] + 1]++;
+                
+                for (int i = 1; i < 25; i++)
+                    codeBases[table][i] += codeBases[table][i - 1];
+                
+                for (int i = minLength, code = 0; i <= maxLength; i++)
+                {
+                    int base = code;
+                    code += codeBases[table][i + 1] - codeBases[table][i];
+                    codeBases[table][i] = base - codeBases[table][i];
+                    codeLimits[table][i] = code - 1;
+                    code <<= 1;
+                }
+                
+                for (int bitLength = minLength, i = 0; bitLength <= maxLength; bitLength++)
+                    for (int symbol = 0; symbol < symbolCount + 2; symbol++)
+                        if (tableCodeLengths[table][symbol] == bitLength)
+                            codeSymbols[table][i++] = symbol;
+            }
+
+            h.init(minLengths, codeBases, codeLimits, codeSymbols, curTbl, groupIndex, groupPos);
+
             byte[] symbolMTF = generate();
             _bwtBlockLength = 0;
             
