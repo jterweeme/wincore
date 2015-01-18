@@ -207,8 +207,13 @@ class Bunzip2
             _rleLastDecodedByte = -1;
             _randomIndex = 0;
             _randomCount = rnums[0] - 1;
-            int onzin = bi.readInt();
+            bi.readInt();
             _blockRandomised = bi.readBool();
+            _rleAccumulator = 0;
+            _rleRepeat = 0;
+            _bwtBlockLength = 0;
+            _bwtCurrentMergedPointer = 0;
+            _bwtBytesDecoded = 0;
             int bwtStartPointer = bi.readBits(24);
             byte[] huffmanSymbolMap = _huffmanSymbolMap;
             byte[][] tableCodeLengths = new byte[6][258];
@@ -332,8 +337,6 @@ class Bunzip2
 
             if (marker1 == 0x314159 && marker2 == 0x265359)
             {
-                _blockDecompressor = new Block();
-
                 try
                 {
                     _blockDecompressor.init(_bi);
