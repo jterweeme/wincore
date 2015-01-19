@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <vector>
 #include <algorithm>
+#include <cstring>
 #include "bitinput.h"
 
 typedef vector<uint8_t> Vugt;
@@ -42,22 +43,18 @@ uint16_t rnums[] = {
 
 class Block
 {
-    uint32_t _minLengths[6], _bwtByteCounts[256];
+    uint32_t _minLengths[6], _bwtByteCounts[256], _merged[999999];
     uint32_t _bases[6][25], _limits[6][24], _symbols[6][258];
-    uint8_t _bwtBlock[900000] = {0};
-    uint32_t _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat, _randomIndex;
-    uint32_t _bwtCurrentMergedPointer, _bwtBlockLength, _bwtBytesDecoded;
-    uint32_t _decodeNextBWTByte();
-    uint8_t _huffmanSymbolMap[256] = {0};
-    uint32_t _bwtMergedPointers[9999];
+    int _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat, _randomIndex, _randomCount;
     bool _blockRandomised;
-    uint32_t _randomCount = rnums[0] - 1, _rleLastDecodedByte = -1;
+    uint8_t _bwtBlock[900000], _symbolMap[256], _indexToFront(uint8_t *a, uint32_t i);
+    uint32_t _curp, _length = 0, _dec = 0, _nextByte();
+
     void _generate(uint8_t *a) { for (unsigned i = 0; i < 256; i++) a[i] = i; }
-    uint8_t _indexToFront(uint8_t *a, uint32_t i);
-    uint32_t _decNextBWTByte();
     uint32_t _nextSymbol(BitInput *bi, Vugt selectors);
 public:
-    uint32_t read();
+    Block();
+    int read();
     void init(BitInput *bi);
 };
 
@@ -79,23 +76,30 @@ public:
     int run(int argc, char **argv);
 };
 
+Block::Block()
+{
+    memset(_symbols, 0, sizeof(_symbols));
+    memset(_limits, 0, sizeof(_limits));
+}
+
 uint8_t Block::_indexToFront(uint8_t *a, uint32_t index)
 {
     uint8_t value = a[index];
-    
-    for (uint32_t i = 0; i < index; i++)
-        a[i + 1] = a[i];
-
+    for (uint32_t i = index; i > 0; i--) a[i] = a[i - 1];
     return a[0] = value;
 }
 
 uint32_t Block::_nextSymbol(BitInput *bi, Vugt selectors)
 {
+
     if (++_grpPos % 50 == 0)
         _curTbl = selectors[++_grpIdx];
 
+    cout << "Block::_nextSymbol: " << _minLengths[_curTbl] << " " << _grpIdx << "\n";
+
     for (uint32_t n = _minLengths[_curTbl], codeBits = bi->readBits(n); n <= 23; n++)
     {
+        cout << "Codebits: " << codeBits << " " << n << " " << _limits[_curTbl][n] << "\n";
         if (codeBits <= _limits[_curTbl][n])
             return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
 
@@ -107,96 +111,143 @@ uint32_t Block::_nextSymbol(BitInput *bi, Vugt selectors)
 
 void Block::init(BitInput *bi)
 {
+    memset(_minLengths, 0, sizeof(_minLengths));
+    memset(_bases, 0, sizeof(_bases));
+    memset(_limits, 0, sizeof(_limits));
+    memset(_symbols, 0, sizeof(_symbols));
+    _grpIdx = _grpPos = _last = -1;
+    memset(_bwtBlock, 0, sizeof(_bwtBlock));
+    memset(_symbolMap, 0, sizeof(_symbolMap));
+    memset(_bwtByteCounts, 0, sizeof(_bwtByteCounts));
+    _randomCount = rnums[0] - 1;
     bi->readInt();
     _blockRandomised = bi->readBool();
+    _acc = _rleRepeat = _length = _curp = _dec = _randomIndex = _curTbl = 0;
     uint32_t bwtStartPointer = bi->readBits(24), symbolCount = 0;
-    //uint8_t tableCodeLengths[6][258];
+    uint8_t tableCodeLengths[6][258];
 
     for (uint16_t i = 0, ranges = bi->readBits(16); i < 16; i++)
         if ((ranges & ((1 << 15) >> i)) != 0)
             for (int j = 0, k = i << 4; j < 16; j++, k++)
                 if (bi->readBool())
-                    _huffmanSymbolMap[symbolCount++] = (uint8_t)k;
+                    _symbolMap[symbolCount++] = (uint8_t)k;
 
-    uint32_t _eob = symbolCount + 1, tables = bi->readBits(3), selectors_n = bi->readBits(15);
+    uint32_t eob = symbolCount + 1, tables = bi->readBits(3), selectors_n = bi->readBits(15);
+    cout << "Block::init: " << symbolCount << " " << selectors_n << "\n";
     uint8_t tableMTF[256];
     _generate(tableMTF);
-    Vugt selectors(selectors_n);
+    Vugt selectors;
 
     for (uint32_t i = 0; i < selectors_n; i++)
         selectors.push_back(_indexToFront(tableMTF, bi->readUnary()));
 
     for (uint32_t t = 0; t < tables; t++)
     {
-        for (uint32_t i = 0, c = bi->readBits(5); i <= _eob; i++)
+        for (uint32_t i = 0, c = bi->readBits(5); i <= eob; i++)
         {
-            while (bi->readBool())
-                c += bi->readBool() ? -1 : 1;
-
-            //tableCodeLengths[t][i] = c;
+            while (bi->readBool()) c += bi->readBool() ? -1 : 1;
+            tableCodeLengths[t][i] = c;
         }
     }
 
+    for (uint32_t table = 0, minLength = 23, maxLength = 0; table < 6; table++)
+    {
+        for (uint32_t i = 0; i < symbolCount + 2; i++)
+        {
+            maxLength = max((uint32_t)tableCodeLengths[table][i], maxLength);
+            minLength = min((uint32_t)tableCodeLengths[table][i], minLength);
+        }
+
+        _minLengths[table] = minLength;
+
+        for (uint32_t i = 0; i < symbolCount + 2; i++)
+            _bases[table][tableCodeLengths[table][i] + 1]++;
+
+        for (uint32_t i = 1; i < 25; i++)
+            _bases[table][i] += _bases[table][i - 1];
+
+        for (uint32_t i = minLength, code = 0; i <= maxLength; i++)
+        {
+            int base = code;
+            code += _bases[table][i + 1] - _bases[table][i];
+            _bases[table][i] = base - _bases[table][i];
+            _limits[table][i] = code - 1;
+            code <<= 1;
+        }
+
+        for (uint32_t n = minLength, i = 0; n <= maxLength; n++)
+            for (uint32_t symbol = 0; symbol < symbolCount + 2; symbol++)
+                if (tableCodeLengths[table][symbol] == n)
+                    _symbols[table][i++] = symbol;
+    }
+
+    _curTbl = selectors[0];
     uint8_t symbolMTF[256];
     _generate(symbolMTF);
-    _bwtBlockLength = 0;
-   
-    for (int n = 0, repeatIncrement = 1, mtfValue = 0; n < 2; n++)
+    cout << "Block::init:_curTbl: " << _curTbl << "\n";
+    _length = 0;
+
+    for (int n = 0, inc = 1, mtfValue = 0;;)
     {
         uint32_t nextSymbol = _nextSymbol(bi, selectors);
-        cerr << "NextSymbol: " << dec << nextSymbol << "\n";
+        cout << "Block::init:nextSymbol: " << nextSymbol << "\n";
 
         if (nextSymbol == 0)
         {
-            n += repeatIncrement;
-            repeatIncrement <<= 1;
+            n += inc;
+            inc <<= 1;
         }
         else if (nextSymbol == 1)
         {
-            n += repeatIncrement << 1;
-            repeatIncrement <<= 1;
+            n += inc << 1;
+            inc <<= 1;
         }
         else
         {
             if (n > 0)
             {
-                uint8_t nextByte = _huffmanSymbolMap[mtfValue];
+                uint8_t nextByte = _symbolMap[mtfValue];
                 _bwtByteCounts[nextByte & 0xff] += n;
-                
-                while (--n >= 0)
-                    _bwtBlock[_bwtBlockLength++] = nextByte;
-
+                while (--n >= 0) _bwtBlock[_length++] = nextByte;
                 n = 0;
-                repeatIncrement = 1;
+                inc = 1;
             }
 
-            if (nextSymbol == _eob)
+            if (nextSymbol == eob)
                 break;
 
             mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
-            uint8_t nextByte = _huffmanSymbolMap[mtfValue];
+            cout << "Block::init:mtfValue: " << mtfValue << "\n";
+            uint8_t nextByte = _symbolMap[mtfValue];
             _bwtByteCounts[nextByte & 0xff]++;
-            _bwtBlock[_bwtBlockLength++] = nextByte;
+            _bwtBlock[_length++] = nextByte;
         }
     }
 
-    int characterBase[256];
+    memset(_merged, 0, sizeof(_merged));
+    int characterBase[256] = {0};
     
     for (int i = 0; i < 255; i++)
         characterBase[i + 1] = _bwtByteCounts[i];
 
-    for (uint32_t i = 0; i < _bwtBlockLength; i++)
+    for (int i = 2; i <= 255; i++)
+        characterBase[i] += characterBase[i - 1];
+
+    for (uint32_t i = 0; i < _length; i++)
     {
         int value = _bwtBlock[i] & 0xff;
-        _bwtMergedPointers[characterBase[value]++] = (i << 8) + value;
+        _merged[characterBase[value]++] = (i << 8) + value;
     }
 
-    _bwtCurrentMergedPointer = _bwtMergedPointers[bwtStartPointer];
+    memset(_bwtBlock, 0, sizeof(_bwtBlock));
+    _curp = _merged[bwtStartPointer];
+    cout << "Block::init:_curp: " << _curp << "\n";
 }
 
 int DecStream::_read()
 {
     int nextByte = _bd.read();
+    cout << "DecStream::read:NextByte: " << nextByte << "\n";
     nextByte = nextByte == -1 && _initNextBlock() ? _bd.read() : nextByte;
     return nextByte;
 }
@@ -207,6 +258,7 @@ bool DecStream::_initNextBlock()
         return false;
 
     uint32_t marker1 = _bi->readBits(24), marker2 = _bi->readBits(24);
+    cout << "DecStream::_initNextBlock: " << marker1 << " " << marker2 << "\n";
 
     if (marker1 == 0x314159 && marker2 == 0x265359)
     {
@@ -224,40 +276,43 @@ bool DecStream::_initNextBlock()
     throw "BZip2 stream format error";
 }
 
-uint32_t Block::_decodeNextBWTByte()
+uint32_t Block::_nextByte()
 {
-    int mergedPointer = _bwtCurrentMergedPointer, nextDecodedByte = mergedPointer & 0xff;
-    _bwtCurrentMergedPointer = _bwtMergedPointers[mergedPointer >> 8];
+    int next = _curp & 0xff;
+    cout << "Block-NextByte: " << next << " " << _curp << "\n";
+    _curp = _merged[_curp >> 8];
 
     if (_blockRandomised && --_randomCount == 0)
     {
-        nextDecodedByte ^= 1;
+        next ^= 1;
         _randomIndex = (_randomIndex + 1) % 512;
         _randomCount = rnums[_randomIndex];
     }
 
-    _bwtBytesDecoded++;
-    return nextDecodedByte;
+    _dec++;
+    return next;
 }
 
-uint32_t Block::read()
+int Block::read()
 {
+    cout << "Block::read: " << _dec << " " << _length << "\n";
+
     while (_rleRepeat < 1)
     {
-        if (_bwtBytesDecoded == _bwtBlockLength)
+        if (_dec == _length)
             return -1;
 
-        uint32_t nextByte = _decodeNextBWTByte();
+        int nextByte = _nextByte();
 
-        if (nextByte != _rleLastDecodedByte)
+        if (nextByte != _last)
         {
-            _rleLastDecodedByte = nextByte;
+            _last = nextByte;
             _rleRepeat = 1;
             _acc = 1;
         }
         else if (++_acc == 4)
         {
-            _rleRepeat = _decodeNextBWTByte() + 1;
+            _rleRepeat = _nextByte() + 1;
             _acc = 0;
         }
         else
@@ -267,11 +322,12 @@ uint32_t Block::read()
     }
 
     _rleRepeat--;
-    return _rleLastDecodedByte;
+    return _last;
 }
 
 int App::run(int argc, char **argv)
 {
+    cout << argv[1] << "\n";
     ifstream ifs(argv[1]);
     BitInput bi(&ifs);
     DecStream ds(&bi);

@@ -9,6 +9,8 @@ import java.io.OutputStream;
 
 class Bunzip2
 {
+    static final boolean debug = false;
+
     class BitInput
     {
         final InputStream _inputStream;
@@ -66,20 +68,27 @@ class Bunzip2
 			203, 50, 668, 108, 645, 990, 626, 197, 510, 357, 358, 850, 858, 364, 936, 638
         };
         
-        int[] _minLengths = new int[6], _bwtByteCounts, _bwtMergedPointers;
+        int[] _minLengths = new int[6], _bwtByteCounts, _merged;
         int[][] _bases = new int[6][25], _limits = new int[6][24], _symbols = new int[6][258];
         int _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat, _randomIndex, _randomCount;
         boolean _blockRandomised;
         byte[] _symbolMap, _bwtBlock;
-        int _bwtCurrentMergedPointer, _bwtBlockLength, _bwtBytesDecoded;
+        int _curp, _length = 0, _bwtBytesDecoded = 0;
 
         int _nextSymbol(BitInput bi, byte[] selectors) throws IOException
         {
+
             if (++_grpPos % 50 == 0)
                 _curTbl = selectors[++_grpIdx];
-            
+
+            if (debug)
+                System.out.format("Block::_nextSymbol: %d %d\n", _minLengths[_curTbl], _grpIdx);
+
             for (int n = _minLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
             {
+                if (debug)
+                    System.out.format("Codebits: %d %d %d\n", codeBits, n, _limits[_curTbl][n]);
+
                 if (codeBits <= _limits[_curTbl][n])
                     return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
                 
@@ -99,34 +108,41 @@ class Bunzip2
         byte _indexToFront(byte[] a, int index)
         {
             byte value = a[index];
-            System.arraycopy(a, 0, a, 1, index);
+            for (int i = index; i > 0; i--) a[i] = a[i - 1];
             return a[0] = value;
         }
         
-        int _decodeNextBWTByte()
+        int _nextByte()
         {
-            int mergedPointer = _bwtCurrentMergedPointer, nextDecodedByte = mergedPointer & 0xff;
-            _bwtCurrentMergedPointer = _bwtMergedPointers[mergedPointer >>> 8];
+            int next = _curp & 0xff;
+
+            if (debug)
+                System.out.format("Block-NextByte: %d %d\n", next, _curp);
+
+            _curp = _merged[_curp >>> 8];
             
             if (_blockRandomised && --_randomCount == 0)
             {
-                nextDecodedByte ^= 1;
+                next ^= 1;
                 _randomIndex = (_randomIndex + 1) % 512;
                 _randomCount = _rnums[_randomIndex];
             }
             
             _bwtBytesDecoded++;
-            return nextDecodedByte;
+            return next;
 	    }
         
 	    public int read()
         {
+            if (debug)
+                System.out.format("Block read: %d %d\n", _bwtBytesDecoded, _length);
+
             while (_rleRepeat < 1)
             {
-                if (_bwtBytesDecoded == _bwtBlockLength)
+                if (_bwtBytesDecoded == _length)
                     return -1;
                 
-                int nextByte = _decodeNextBWTByte();
+                int nextByte = _nextByte();
                 
                 if (nextByte != _last)
                 {
@@ -136,7 +152,7 @@ class Bunzip2
                 }
                 else if (++_acc == 4)
                 {
-                    _rleRepeat = _decodeNextBWTByte() + 1;
+                    _rleRepeat = _nextByte() + 1;
                     _acc = 0;
                 }
                 else
@@ -168,19 +184,23 @@ class Bunzip2
             _blockRandomised = bi.readBool();
             _acc = 0;
             _rleRepeat = 0;
-            _bwtBlockLength = 0;
-            _bwtCurrentMergedPointer = 0;
+            _length = 0;
+            _curp = 0;
             _bwtBytesDecoded = 0;
-            int bwtStartPointer = bi.readBits(24), ranges = bi.readBits(16), symbolCount = 0;
+            int bwtStartPointer = bi.readBits(24), symbolCount = 0;
             byte[][] tableCodeLengths = new byte[6][258];
             
-            for (int i = 0; i < 16; i++)
+            for (int i = 0, ranges = bi.readBits(16); i < 16; i++)
                 if ((ranges & 1 << 15 >>> i) != 0)
                     for (int j = 0, k = i << 4; j < 16; j++, k++)
                         if (bi.readBool())
                             _symbolMap[symbolCount++] = (byte)k;
             
             int eob = symbolCount + 1, tables = bi.readBits(3), selectors_n = bi.readBits(15);
+
+            if (debug)
+                System.out.format("Block::Init: %d %d\n", symbolCount, selectors_n);
+
             byte[] tableMTF = _generate(), selectors = new byte[selectors_n];
             
             for (int i = 0; i < selectors_n; i++)
@@ -190,9 +210,7 @@ class Bunzip2
             {
                 for (int i = 0, c = bi.readBits(5); i <= eob; i++)
                 {
-				    while (bi.readBool())
-                        c += bi.readBool() ? -1 : 1;
-                    
+				    while (bi.readBool()) c += bi.readBool() ? -1 : 1;
                     tableCodeLengths[t][i] = (byte)c;
 			    }
 		    }
@@ -222,67 +240,79 @@ class Bunzip2
                     code <<= 1;
                 }
                 
-                for (int bitLength = minLength, i = 0; bitLength <= maxLength; bitLength++)
+                for (int n = minLength, i = 0; n <= maxLength; n++)
                     for (int symbol = 0; symbol < symbolCount + 2; symbol++)
-                        if (tableCodeLengths[table][symbol] == bitLength)
+                        if (tableCodeLengths[table][symbol] == n)
                             _symbols[table][i++] = symbol;
             }
             
             _curTbl = selectors[0];
             byte[] symbolMTF = _generate();
-            _bwtBlockLength = 0;
+
+            if (debug)
+                System.out.format("Block::init:_curTbl: %d\n", _curTbl);
+
+            _length = 0;
             
-            for (int repeatCount = 0, repeatIncrement = 1, mtfValue = 0, nextSymbol;;)
+            for (int n = 0, inc = 1, mtfValue = 0;;)
             {
-                if ((nextSymbol = _nextSymbol(bi, selectors)) == 0)
+                int nextSymbol = _nextSymbol(bi, selectors);
+
+                if (debug)
+                    System.out.format("Block::init:nextSymbol: %d\n", nextSymbol);
+
+                if (nextSymbol == 0)
                 {
-                    repeatCount += repeatIncrement;
-                    repeatIncrement <<= 1;
+                    n += inc;
+                    inc <<= 1;
                 }
                 else if (nextSymbol == 1)
                 {
-                    repeatCount += repeatIncrement << 1;
-                    repeatIncrement <<= 1;
+                    n += inc << 1;
+                    inc <<= 1;
                 }
                 else
                 {
-                    if (repeatCount > 0)
+                    if (n > 0)
                     {
-                        final byte nextByte = _symbolMap[mtfValue];
-                        _bwtByteCounts[nextByte & 0xff] += repeatCount;
-                        
-                        while (--repeatCount >= 0)
-                            _bwtBlock[_bwtBlockLength++] = nextByte;
-                    
-                        repeatCount = 0;
-                        repeatIncrement = 1;
+                        byte nextByte = _symbolMap[mtfValue];
+                        _bwtByteCounts[nextByte & 0xff] += n;
+                        while (--n >= 0) _bwtBlock[_length++] = nextByte;
+                        n = 0;
+                        inc = 1;
                     }
                     
                     if (nextSymbol == eob)
                         break;
                 
                     mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
+
+                    if (debug)
+                        System.out.format("Block::init:mtfValue: %d\n", mtfValue);
+
                     byte next = _symbolMap[mtfValue];
                     _bwtByteCounts[next & 0xff]++;
-                    _bwtBlock[_bwtBlockLength++] = next;
+                    _bwtBlock[_length++] = next;
 			    }
             }
             
-            _bwtMergedPointers = new int[_bwtBlockLength];
+            _merged = new int[_length];
             int[] characterBase = new int[256];
-            System.arraycopy(_bwtByteCounts, 0, characterBase, 1, 255);
+            
+            for (int i = 0; i < 255; i++)
+                characterBase[i + 1] = _bwtByteCounts[i];
             
             for (int i = 2; i <= 255; i++)
                 characterBase[i] += characterBase[i - 1];
             
-            for (int i = 0; i < _bwtBlockLength; i++)
+            for (int i = 0; i < _length; i++)
             {
                 int value = _bwtBlock[i] & 0xff;
-                _bwtMergedPointers[characterBase[value]++] = (i << 8) + value;
+                _merged[characterBase[value]++] = (i << 8) + value;
             }
             
             _bwtBlock = null;
-            _bwtCurrentMergedPointer = _bwtMergedPointers[bwtStartPointer];
+            _curp = _merged[bwtStartPointer];
         }
     }
 
@@ -300,9 +330,13 @@ class Bunzip2
 
         int _read() throws IOException
         {
-            int nextByte = _bd.read();
-            nextByte = nextByte == -1 && _initNextBlock() ? _bd.read() : nextByte;
-            return nextByte;
+            int next = _bd.read();
+
+            if (debug)
+                System.out.format("NextByte: %d\n", next);
+
+            next = next == -1 && _initNextBlock() ? _bd.read() : next;
+            return next;
         }
         
         boolean _initNextBlock() throws IOException
@@ -311,6 +345,7 @@ class Bunzip2
                 return false;
 
             final int marker1 = _bi.readBits(24), marker2 = _bi.readBits(24);
+            System.out.format("InitNextBlock: %d %d\n", marker1, marker2);
 
             if (marker1 == 0x314159 && marker2 == 0x265359)
             {
@@ -346,6 +381,7 @@ class Bunzip2
 		}
         
         File inputFile = new File(args[0]);
+        System.out.println(args[0]);
         
         if (!inputFile.exists() || !inputFile.canRead() || !args[0].endsWith(".bz2"))
             throw new Error("Cannot read file " + inputFile.getPath());
