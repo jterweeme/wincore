@@ -49,11 +49,13 @@ yes.o: yes.cpp
 
 test:
 	$(VALGRIND) ./test1
-	$(VALGRIND) ./md5s -c data.md5
 	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | diff md5s.od -
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
 	$(VALGRIND) ./od zero.dat | diff zero.od -
 	$(VALGRIND) ./base64 zero.dat | diff zero.b64 -
+	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
+	$(VALGRIND) ./md5s -c data.md5
+
 
 clean:
 	rm -Rvf *.o jpg2tga *.tga od md5s test1 uuidgen base64 grep yes cat tr nl crc32

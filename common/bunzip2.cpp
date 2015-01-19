@@ -7,6 +7,8 @@
 
 typedef vector<uint8_t> Vugt;
 
+static const bool debug = false;
+
 uint16_t rnums[] = {
             619, 720, 127, 481, 931, 816, 813, 233, 566, 247, 985, 724, 205, 454, 863, 491,
             741, 242, 949, 214, 733, 859, 335, 708, 621, 574, 73, 654, 730, 472, 419, 436,
@@ -43,11 +45,11 @@ uint16_t rnums[] = {
 
 class Block
 {
-    uint32_t _minLengths[6], _bwtByteCounts[256], _merged[999999];
+    uint32_t _minLengths[6] = {0}, _bwtByteCounts[256] = {0}, _merged[999999] = {0};
     uint32_t _bases[6][25], _limits[6][24], _symbols[6][258];
     int _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat, _randomIndex, _randomCount;
     bool _blockRandomised;
-    uint8_t _bwtBlock[900000], _symbolMap[256], _indexToFront(uint8_t *a, uint32_t i);
+    uint8_t _bwtBlock[900000] = {0}, _symbolMap[256] = {0}, _indexToFront(uint8_t *a, uint32_t i);
     uint32_t _curp, _length = 0, _dec = 0, _nextByte();
 
     void _generate(uint8_t *a) { for (unsigned i = 0; i < 256; i++) a[i] = i; }
@@ -78,6 +80,7 @@ public:
 
 Block::Block()
 {
+    memset(_bases, 0, sizeof(_bases));
     memset(_symbols, 0, sizeof(_symbols));
     memset(_limits, 0, sizeof(_limits));
 }
@@ -95,11 +98,14 @@ uint32_t Block::_nextSymbol(BitInput *bi, Vugt selectors)
     if (++_grpPos % 50 == 0)
         _curTbl = selectors[++_grpIdx];
 
-    cout << "Block::_nextSymbol: " << _minLengths[_curTbl] << " " << _grpIdx << "\n";
+    if (debug)
+        cout << "nextSymbol: " << _curTbl << " " << _minLengths[_curTbl] << " " << _grpIdx << "\n";
 
     for (uint32_t n = _minLengths[_curTbl], codeBits = bi->readBits(n); n <= 23; n++)
     {
-        cout << "Codebits: " << codeBits << " " << n << " " << _limits[_curTbl][n] << "\n";
+        if (debug)
+            cout << "Codebits: " << codeBits << " " << n << " " << _limits[_curTbl][n] << "\n";
+
         if (codeBits <= _limits[_curTbl][n])
             return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
 
@@ -125,6 +131,7 @@ void Block::init(BitInput *bi)
     _acc = _rleRepeat = _length = _curp = _dec = _randomIndex = _curTbl = 0;
     uint32_t bwtStartPointer = bi->readBits(24), symbolCount = 0;
     uint8_t tableCodeLengths[6][258];
+    memset(tableCodeLengths, 0, sizeof(tableCodeLengths));
 
     for (uint16_t i = 0, ranges = bi->readBits(16); i < 16; i++)
         if ((ranges & ((1 << 15) >> i)) != 0)
@@ -133,7 +140,10 @@ void Block::init(BitInput *bi)
                     _symbolMap[symbolCount++] = (uint8_t)k;
 
     uint32_t eob = symbolCount + 1, tables = bi->readBits(3), selectors_n = bi->readBits(15);
-    cout << "Block::init: " << symbolCount << " " << selectors_n << "\n";
+
+    if (debug)
+        cout << "Block::init: " << symbolCount << " " << selectors_n << "\n";
+
     uint8_t tableMTF[256];
     _generate(tableMTF);
     Vugt selectors;
@@ -154,9 +164,15 @@ void Block::init(BitInput *bi)
     {
         for (uint32_t i = 0; i < symbolCount + 2; i++)
         {
+            if (debug)
+                cout << "c: " << (uint16_t)tableCodeLengths[table][i] << "\n";
+
             maxLength = max((uint32_t)tableCodeLengths[table][i], maxLength);
             minLength = min((uint32_t)tableCodeLengths[table][i], minLength);
         }
+
+        if (debug)
+            cout << "b: " << maxLength << " " << minLength << "\n";
 
         _minLengths[table] = minLength;
 
@@ -173,6 +189,9 @@ void Block::init(BitInput *bi)
             _bases[table][i] = base - _bases[table][i];
             _limits[table][i] = code - 1;
             code <<= 1;
+
+            if (debug)
+                cout << "a: " << code << " " << base << "\n";
         }
 
         for (uint32_t n = minLength, i = 0; n <= maxLength; n++)
@@ -184,13 +203,18 @@ void Block::init(BitInput *bi)
     _curTbl = selectors[0];
     uint8_t symbolMTF[256];
     _generate(symbolMTF);
-    cout << "Block::init:_curTbl: " << _curTbl << "\n";
+
+    if (debug)
+        cout << "Block::init:_curTbl: " << _curTbl << "\n";
+
     _length = 0;
 
     for (int n = 0, inc = 1, mtfValue = 0;;)
     {
         uint32_t nextSymbol = _nextSymbol(bi, selectors);
-        cout << "Block::init:nextSymbol: " << nextSymbol << "\n";
+
+        if (debug)
+            cout << "Block::init:nextSymbol: " << nextSymbol << "\n";
 
         if (nextSymbol == 0)
         {
@@ -217,7 +241,10 @@ void Block::init(BitInput *bi)
                 break;
 
             mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
-            cout << "Block::init:mtfValue: " << mtfValue << "\n";
+
+            if (debug)
+                cout << "Block::init:mtfValue: " << mtfValue << "\n";
+
             uint8_t nextByte = _symbolMap[mtfValue];
             _bwtByteCounts[nextByte & 0xff]++;
             _bwtBlock[_length++] = nextByte;
@@ -241,13 +268,18 @@ void Block::init(BitInput *bi)
 
     memset(_bwtBlock, 0, sizeof(_bwtBlock));
     _curp = _merged[bwtStartPointer];
-    cout << "Block::init:_curp: " << _curp << "\n";
+
+    if (debug)
+        cout << "Block::init:_curp: " << _curp << "\n";
 }
 
 int DecStream::_read()
 {
     int nextByte = _bd.read();
-    cout << "DecStream::read:NextByte: " << nextByte << "\n";
+
+    if (debug)
+        cout << "DecStream::read:NextByte: " << nextByte << "\n";
+
     nextByte = nextByte == -1 && _initNextBlock() ? _bd.read() : nextByte;
     return nextByte;
 }
@@ -258,7 +290,9 @@ bool DecStream::_initNextBlock()
         return false;
 
     uint32_t marker1 = _bi->readBits(24), marker2 = _bi->readBits(24);
-    cout << "DecStream::_initNextBlock: " << marker1 << " " << marker2 << "\n";
+
+    if (debug)
+        cout << "DecStream::_initNextBlock: " << marker1 << " " << marker2 << "\n";
 
     if (marker1 == 0x314159 && marker2 == 0x265359)
     {
@@ -279,7 +313,10 @@ bool DecStream::_initNextBlock()
 uint32_t Block::_nextByte()
 {
     int next = _curp & 0xff;
-    cout << "Block-NextByte: " << next << " " << _curp << "\n";
+
+    if (debug)
+        cout << "Block-NextByte: " << next << " " << _curp << "\n";
+
     _curp = _merged[_curp >> 8];
 
     if (_blockRandomised && --_randomCount == 0)
@@ -295,7 +332,8 @@ uint32_t Block::_nextByte()
 
 int Block::read()
 {
-    cout << "Block::read: " << _dec << " " << _length << "\n";
+    if (debug)
+        cout << "Block::read: " << _dec << " " << _length << "\n";
 
     while (_rleRepeat < 1)
     {

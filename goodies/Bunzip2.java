@@ -9,7 +9,7 @@ import java.io.OutputStream;
 
 class Bunzip2
 {
-    static final boolean debug = false;
+    static final boolean debug = true;
 
     class BitInput
     {
@@ -82,7 +82,7 @@ class Bunzip2
                 _curTbl = selectors[++_grpIdx];
 
             if (debug)
-                System.out.format("Block::_nextSymbol: %d %d\n", _minLengths[_curTbl], _grpIdx);
+                System.out.format("nextSymbol: %d %d %d\n", _curTbl, _minLengths[_curTbl], _grpIdx);
 
             for (int n = _minLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
             {
@@ -219,10 +219,16 @@ class Bunzip2
             {
                 for (int i = 0; i < symbolCount + 2; i++)
                 {
+                    if (debug)
+                        System.out.format("c: %d\n", tableCodeLengths[table][i]);
+
                     maxLength = Math.max(tableCodeLengths[table][i], maxLength);
                     minLength = Math.min(tableCodeLengths[table][i], minLength);
                 }
                 
+                if (debug)
+                    System.out.format("b: %d %d\n", maxLength, minLength);
+
                 _minLengths[table] = minLength;
                 
                 for (int i = 0; i < symbolCount + 2; i++)
@@ -238,6 +244,9 @@ class Bunzip2
                     _bases[table][i] = base - _bases[table][i];
                     _limits[table][i] = code - 1;
                     code <<= 1;
+
+                    if (debug)
+                        System.out.format("a: %d %d\n", code, base);
                 }
                 
                 for (int n = minLength, i = 0; n <= maxLength; n++)
@@ -345,7 +354,9 @@ class Bunzip2
                 return false;
 
             final int marker1 = _bi.readBits(24), marker2 = _bi.readBits(24);
-            System.out.format("InitNextBlock: %d %d\n", marker1, marker2);
+
+            if (debug)
+                System.out.format("InitNextBlock: %d %d\n", marker1, marker2);
 
             if (marker1 == 0x314159 && marker2 == 0x265359)
             {
