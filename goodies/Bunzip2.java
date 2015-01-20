@@ -9,8 +9,6 @@ import java.io.OutputStream;
 
 class Bunzip2
 {
-    static final boolean debug = true;
-
     class BitInput
     {
         final InputStream _inputStream;
@@ -81,14 +79,8 @@ class Bunzip2
             if (++_grpPos % 50 == 0)
                 _curTbl = selectors[++_grpIdx];
 
-            if (debug)
-                System.out.format("nextSymbol: %d %d %d\n", _curTbl, _minLengths[_curTbl], _grpIdx);
-
             for (int n = _minLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
             {
-                if (debug)
-                    System.out.format("Codebits: %d %d %d\n", codeBits, n, _limits[_curTbl][n]);
-
                 if (codeBits <= _limits[_curTbl][n])
                     return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
                 
@@ -115,10 +107,6 @@ class Bunzip2
         int _nextByte()
         {
             int next = _curp & 0xff;
-
-            if (debug)
-                System.out.format("Block-NextByte: %d %d\n", next, _curp);
-
             _curp = _merged[_curp >>> 8];
             
             if (_blockRandomised && --_randomCount == 0)
@@ -134,9 +122,6 @@ class Bunzip2
         
 	    public int read()
         {
-            if (debug)
-                System.out.format("Block read: %d %d\n", _bwtBytesDecoded, _length);
-
             while (_rleRepeat < 1)
             {
                 if (_bwtBytesDecoded == _length)
@@ -197,10 +182,6 @@ class Bunzip2
                             _symbolMap[symbolCount++] = (byte)k;
             
             int eob = symbolCount + 1, tables = bi.readBits(3), selectors_n = bi.readBits(15);
-
-            if (debug)
-                System.out.format("Block::Init: %d %d\n", symbolCount, selectors_n);
-
             byte[] tableMTF = _generate(), selectors = new byte[selectors_n];
             
             for (int i = 0; i < selectors_n; i++)
@@ -219,16 +200,10 @@ class Bunzip2
             {
                 for (int i = 0; i < symbolCount + 2; i++)
                 {
-                    if (debug)
-                        System.out.format("c: %d\n", tableCodeLengths[table][i]);
-
                     maxLength = Math.max(tableCodeLengths[table][i], maxLength);
                     minLength = Math.min(tableCodeLengths[table][i], minLength);
                 }
                 
-                if (debug)
-                    System.out.format("b: %d %d\n", maxLength, minLength);
-
                 _minLengths[table] = minLength;
                 
                 for (int i = 0; i < symbolCount + 2; i++)
@@ -244,9 +219,6 @@ class Bunzip2
                     _bases[table][i] = base - _bases[table][i];
                     _limits[table][i] = code - 1;
                     code <<= 1;
-
-                    if (debug)
-                        System.out.format("a: %d %d\n", code, base);
                 }
                 
                 for (int n = minLength, i = 0; n <= maxLength; n++)
@@ -257,18 +229,11 @@ class Bunzip2
             
             _curTbl = selectors[0];
             byte[] symbolMTF = _generate();
-
-            if (debug)
-                System.out.format("Block::init:_curTbl: %d\n", _curTbl);
-
             _length = 0;
             
             for (int n = 0, inc = 1, mtfValue = 0;;)
             {
                 int nextSymbol = _nextSymbol(bi, selectors);
-
-                if (debug)
-                    System.out.format("Block::init:nextSymbol: %d\n", nextSymbol);
 
                 if (nextSymbol == 0)
                 {
@@ -295,10 +260,6 @@ class Bunzip2
                         break;
                 
                     mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
-
-                    if (debug)
-                        System.out.format("Block::init:mtfValue: %d\n", mtfValue);
-
                     byte next = _symbolMap[mtfValue];
                     _bwtByteCounts[next & 0xff]++;
                     _bwtBlock[_length++] = next;
@@ -340,12 +301,7 @@ class Bunzip2
         int _read() throws IOException
         {
             int next = _bd.read();
-
-            if (debug)
-                System.out.format("NextByte: %d\n", next);
-
-            next = next == -1 && _initNextBlock() ? _bd.read() : next;
-            return next;
+            return next = next == -1 && _initNextBlock() ? _bd.read() : next;
         }
         
         boolean _initNextBlock() throws IOException
@@ -354,9 +310,6 @@ class Bunzip2
                 return false;
 
             final int marker1 = _bi.readBits(24), marker2 = _bi.readBits(24);
-
-            if (debug)
-                System.out.format("InitNextBlock: %d %d\n", marker1, marker2);
 
             if (marker1 == 0x314159 && marker2 == 0x265359)
             {

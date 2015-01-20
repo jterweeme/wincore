@@ -59,7 +59,7 @@ test:
 
 clean:
 	rm -Rvf *.o jpg2tga *.tga od md5s test1 uuidgen base64 grep yes cat tr nl crc32
-	rm -Rvf kompakt bunzip2 testbinp
+	rm -Rvf kompakt bunzip2 testbinp battery.iso
 
 rebuild: clean all
 
