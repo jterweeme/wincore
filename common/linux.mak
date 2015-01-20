@@ -10,9 +10,10 @@ VALGRIND = #valgrind $(VALFLAGS)
 
 .PHONY: all
 
-all: base64 bunzip2 cat crc32 grep jpg2tga kompakt md5s nl od test1 testbinp tr uuidgen yes
+all: base64 bunzip2 bzcat cat crc32 grep jpg2tga kompakt md5s nl od test1 testbinp tr uuidgen yes
 base64: base64.o
 bunzip2: bunzip2.o bitinput.o
+bzcat: bzcat.o bitinput.o
 cat: cat.o
 crc32: crc32.o
 grep: grep.o
@@ -29,6 +30,7 @@ yes: yes.o
 base64.o: base64.cpp
 bitinput.o: bitinput.cpp bitinput.h
 bunzip2.o: bunzip2.cpp bitinput.h
+bzcat.o: bzcat.cpp bitinput.h
 cat.o: cat.cpp
 crc32.o: crc32.cpp
 filesys.o: filesys.cpp filesys.h
@@ -59,7 +61,7 @@ test:
 
 clean:
 	rm -Rvf *.o jpg2tga *.tga od md5s test1 uuidgen base64 grep yes cat tr nl crc32
-	rm -Rvf kompakt bunzip2 testbinp battery.iso
+	rm -Rvf kompakt bunzip2 testbinp battery.iso bzcat
 
 rebuild: clean all
 
