@@ -57,7 +57,7 @@ test:
 	$(VALGRIND) ./base64 zero.dat | diff zero.b64 -
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
 	$(VALGRIND) ./md5s -c data.md5
-
+	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s
 
 clean:
 	rm -Rvf *.o jpg2tga *.tga od md5s test1 uuidgen base64 grep yes cat tr nl crc32
