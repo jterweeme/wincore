@@ -86,7 +86,7 @@ int ISO::extract(istream &s)
         ofstream of;
         of.open(it->fn().c_str());
 
-        if (it->dir().lbaLE * 2048 < s.tellg())
+        if (it->dir().lbaLE * 2048 < (uint32_t)s.tellg())
             throw "Need to rewind";
 
         s.ignore(it->dir().lbaLE * 2048 - s.tellg());
@@ -177,7 +177,7 @@ PathEntry &PathTable::getByIndex(int i)
 
 }
 
-void PathTable::read(istream &is, uint32_t lba, size_t n)
+void PathTable::read(istream &is, int lba, size_t n)
 {
     _offsetLBA = lba;
     _size = n;
@@ -187,7 +187,7 @@ void PathTable::read(istream &is, uint32_t lba, size_t n)
 
     is.ignore(lba * 2048 - is.tellg());
 
-    for (int i = 1; is.tellg() < lba * 2048 + n; i++)
+    for (int i = 1; is.tellg() < lba * 2048 + (int)n; i++)
     {
         PathEntry pe;
         pe.read(is);

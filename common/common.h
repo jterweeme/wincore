@@ -7,8 +7,20 @@
 #define PACKED
 #endif
 
+#if 1
 #include "mystl.h"
 using namespace mystl;
+#else
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <vector>
+#include <bitset>
+#include <cstring>
+#include <algorithm>
+using namespace std;
+#endif
 
 #endif
 

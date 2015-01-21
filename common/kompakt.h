@@ -195,7 +195,7 @@ class PathTable : public vector<PathEntry>
     uint32_t _offsetLBA;
     size_t _size;
 public:
-    void read(istream &is, uint32_t lba, size_t n);
+    void read(istream &is, int lba, size_t n);
     void snort();
     void dump(ostream &os);
     PathEntry &getByLBA(uint32_t lba);

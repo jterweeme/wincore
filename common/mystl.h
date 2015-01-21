@@ -2586,7 +2586,7 @@ public:
     int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
     virtual istream2& ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
     virtual int get() { _pos++; return fgetc(_fp); }
-    size_t tellg() { return _pos; }
+    int tellg() { return _pos; }
     int gcount() { return _lastRead; }
     operator void * () const { return (void *)!_eof; }
     virtual void getline(char *dest, size_t size);
