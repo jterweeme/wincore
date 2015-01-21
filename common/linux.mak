@@ -2,7 +2,7 @@ CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = #valgrind $(VALFLAGS)
 
-TARGETS = base64 bunzip2 bzcat cat crc32 dos2unix grep jpg2tga kompakt md5s nl \
+TARGETS = base64 bunzip2 bzcat cat crc32 dd diff dos2unix grep jpg2tga kompakt md5s nl \
     od tar test1 testbinp tr unix2dos uuidgen yes
 
 %.o: %.cpp
@@ -22,6 +22,8 @@ bunzip2: bunzip2.o bitinput.o
 bzcat: bzcat.o bitinput.o
 cat: cat.o
 crc32: crc32.o
+dd: dd.o
+diff: diff.o
 dos2unix: dos2unix.o mystl.o
 grep: grep.o
 jpg2tga: jpg2tga.o
@@ -42,6 +44,8 @@ bunzip2.o: bunzip2.cpp bitinput.h
 bzcat.o: bzcat.cpp bitinput.h
 cat.o: cat.cpp
 crc32.o: crc32.cpp
+dd.o: dd.cpp
+diff.o: diff.cpp
 dos2unix.o: dos2unix.cpp
 filesys.o: filesys.cpp filesys.h
 grep.o: grep.cpp
@@ -63,14 +67,14 @@ yes.o: yes.cpp
 
 test:
 	$(VALGRIND) ./test1
-	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | diff -s md5s.od -
+	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
-	$(VALGRIND) ./od zero.dat | diff -s zero.od -
-	$(VALGRIND) ./base64 zero.dat | diff -s zero.b64 -
+	$(VALGRIND) ./od zero.dat | ./diff -s zero.od -
+	$(VALGRIND) ./base64 zero.dat | ./diff -s zero.b64 -
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
 	$(VALGRIND) ./md5s -c data.md5
-	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s
-	$(VALGRIND) ./grep include Makefile | diff -s grep1.out -
+	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s | ./diff -s kompakt1.out -
+	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 
 clean:
 	rm -Rvf *.o jpg2tga *.tga $(TARGETS)
