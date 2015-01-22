@@ -2,7 +2,7 @@ CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = #valgrind $(VALFLAGS)
 
-TARGETS = base64 bunzip2 bzcat cat crc32 dd diff dos2unix grep jpg2tga kompakt md5s nl \
+TARGETS = base64 bunzip2 bzcat cat cp crc32 dd diff dos2unix grep jpg2tga kompakt md5s nl \
     od tar test1 testbinp tr unix2dos uuidgen yes
 
 %.o: %.cpp
@@ -13,14 +13,12 @@ TARGETS = base64 bunzip2 bzcat cat crc32 dd diff dos2unix grep jpg2tga kompakt m
 
 .PHONY: all
 
-#all: base64 bunzip2 bzcat cat crc32 dos2unix grep jpg2tga kompakt md5s nl \
-#    od tar test1 testbinp tr unix2dos uuidgen yes
-
 all: $(TARGETS)
 base64: base64.o
-bunzip2: bunzip2.o bitinput.o
-bzcat: bzcat.o bitinput.o
+bunzip2: bunzip2.o bitinput.o bzip2.o
+bzcat: bzcat.o bitinput.o bzip2.o
 cat: cat.o
+cp: cp.o
 crc32: crc32.o
 dd: dd.o
 diff: diff.o
@@ -40,9 +38,11 @@ uuidgen: uuidgen.o
 yes: yes.o
 base64.o: base64.cpp
 bitinput.o: bitinput.cpp bitinput.h
-bunzip2.o: bunzip2.cpp bitinput.h
-bzcat.o: bzcat.cpp bitinput.h
+bunzip2.o: bunzip2.cpp bzip2.h bitinput.h
+bzcat.o: bzcat.cpp bzip2.h bitinput.h
+bzip2.o: bzip2.cpp bzip2.h bitinput.h
 cat.o: cat.cpp
+cp.o: cp.cpp
 crc32.o: crc32.cpp
 dd.o: dd.cpp
 diff.o: diff.cpp

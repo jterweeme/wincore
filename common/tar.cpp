@@ -81,7 +81,7 @@ public:
     void extractTar(istream &is, bool verbose = false) { while (extractFile(is, verbose)); }
     void extractTar(string fn, bool v = false) { ifstream i(fn); extractTar(i, v); i.close(); }
     void listTar(istream &is, bool v = false) { while (listFile(is, v)); }
-    void listTar(string fn, bool v = false) { ifstream i(fn); listTar(i, v); i.close(); }
+    void listTar(string fn, bool v = false);
     int run(int argc, char **argv);
 };
 
@@ -144,6 +144,13 @@ bool App::extractFile(istream &is, bool verbose)
     ofs.close();
     is.ignore(512 - is.tellg() % 512);
     return true;
+}
+
+void App::listTar(string fn, bool v)
+{
+    ifstream i(fn);
+    listTar(i, v);
+    i.close();
 }
 
 void Options::parse(int argc, char **argv)

@@ -1,15 +1,5 @@
 #include "bzip2.h"
-#include <fstream>
-#include <algorithm>
-#include <cstring>
 
-class App
-{
-public:
-    int run(int argc, char **argv);
-};
-
-#if 0
 uint8_t Block::_indexToFront(uint8_t *a, uint32_t index)
 {
     uint8_t value = a[index];
@@ -30,7 +20,7 @@ uint32_t Block::_nextSymbol(BitInput *bi, Vugt selectors)
 
         codeBits = codeBits << 1 | bi->readBits(1);
     }
-    
+
     return 0;
 }
 
@@ -139,7 +129,7 @@ void Block::init(BitInput *bi)
     }
 
     int characterBase[256] = {0};
-    
+
     for (int i = 0; i < 255; i++)
         characterBase[i + 1] = _bwtByteCounts[i];
 
@@ -224,36 +214,6 @@ int Block::read()
 
     _rleRepeat--;
     return _last;
-}
-#endif
-
-int App::run(int argc, char **argv)
-{
-    ifstream ifs(argv[1]);
-    BitInput bi(&ifs);
-    DecStream ds(&bi);
-    ds.extractTo(cout);
-    return 0;
-}
-
-int main(int argc, char **argv)
-{
-    App app;
-
-    try
-    {
-        return app.run(argc, argv);
-    }
-    catch (const char *e)
-    {
-        cout << e << "\n";
-    }
-    catch (...)
-    {
-        cout << "Unknown exception\n";
-    }
-
-    return -1;
 }
 
 
