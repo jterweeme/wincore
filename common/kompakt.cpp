@@ -15,6 +15,36 @@ string DirEntry::fn()
     return _fn;
 }
 
+void mistream::read(char *s, size_t length)
+{
+    _lastRead = fread(s, 1, length, _fp);
+    _pos += _lastRead;
+    _eof = _lastRead < length;
+}
+
+void mistream::getline(char *dest, size_t size)
+{
+    for (int pos = 0, c = 1; c != '\n'; pos++)
+    {
+        c = get();
+
+        if (c == EOF)
+        {
+            _eof = true;
+            dest[pos] = '\0';
+            return;
+        }
+
+        if (c == '\n')
+        {
+            dest[pos] = '\0';
+            return;
+        }
+
+        dest[pos] = c;
+    }
+}
+
 void App::help(ostream &os) const
 {
     os << "kompakt: Usage: kompakt [options]\n";
@@ -39,7 +69,7 @@ void Flags::dump(ostream &os)
         os << "Final Dir ";
 }
 
-int ISO::extract(istream &s, const char *outputDir)
+int ISO::extract(mistream &s, const char *outputDir)
 {
     FileSystem fs;
     fs.chmkdir(outputDir);
@@ -48,20 +78,12 @@ int ISO::extract(istream &s, const char *outputDir)
     return 0;
 }
 
-int ISO::extract(istream &s)
+int ISO::extract(mistream &s)
 {
 
-    for (Directories::iterator directory = _directories.begin();
-            directory != _directories.end();
-            directory++)
-    {
-        for (Directory::iterator file = directory->begin() + 2;
-                file != directory->end();
-                file++)
-        {
+    for (Directories::iterator d = _directories.begin(); d != _directories.end(); d++)
+        for (Directory::iterator file = d->begin() + 2; file != d->end(); file++)
             _fileList.push_back(*file);
-        }
-    }
  
     _fileList.snort();
     FileSystem fs;
@@ -109,7 +131,7 @@ int ISO::extract(istream &s)
     return 0;
 }
 
-void Directories::read(istream &is, PathTable &pt)
+void Directories::read(mistream &is, PathTable &pt)
 {
     for (PathTable::iterator it = pt.begin(); it != pt.end(); it++)
     {
@@ -145,7 +167,7 @@ void Directory::list(ostream &os, int mode)
     os << "\n";
 }
 
-void PathEntry::read(istream &is)
+void PathEntry::read(mistream &is)
 {
     is.read((char *)&_pe, sizeof(_pe));
     is.read(_name, _pe.length);
@@ -177,7 +199,7 @@ PathEntry &PathTable::getByIndex(int i)
 
 }
 
-void PathTable::read(istream &is, int lba, size_t n)
+void PathTable::read(mistream &is, int lba, size_t n)
 {
     _offsetLBA = lba;
     _size = n;
@@ -210,7 +232,7 @@ CVolumeDescriptorSetTerminator::CVolumeDescriptorSetTerminator(const CVolumeDesc
     memcpy(&_desc, &vd._desc, sizeof(_desc));
 }
 
-uint8_t DirEntry::read(istream &s)
+uint8_t DirEntry::read(mistream &s)
 {
     _offset = s.tellg();
     uint8_t lengte = s.get();
@@ -312,7 +334,7 @@ FSPath PathTable::recurse(uint32_t lba)
 }
 
 
-int Descriptors::read(istream &s)
+int Descriptors::read(mistream &s)
 {
     CVolumeDescriptor desc1;
 
@@ -328,7 +350,7 @@ int Descriptors::read(istream &s)
     return 0;
 }
 
-void Directory::read(istream &s, uint32_t offset)
+void Directory::read(mistream &s, uint32_t offset)
 {
     s.ignore(offset * 2048 - s.tellg());
 
@@ -361,7 +383,7 @@ void Directory::read(istream &s, uint32_t offset)
     }
 }
 
-int ISO::read(istream &s)
+int ISO::read(mistream &s)
 {
     s.ignore(32768);
     _descriptors.read(s);
@@ -535,11 +557,12 @@ int App::run(int argc, char **argv)
         return 0;
     }
 
-    istream *is;
+    mistream *is;
+    mistream mcin(stdin);
 
     if (_options.stdinput())
     {
-        is = &cin;
+        is = &mcin;
     }
     else if (_options.file())
     {

@@ -7,6 +7,40 @@ todo: skip/ignore functie maken
 duplicate bestanden oplossen
 */
 
+class mistream
+{   
+protected:
+    size_t _pos;
+    FILE *_fp;
+    size_t _lastRead;
+    bool _eof;
+public:
+    mistream() : _pos(0), _lastRead(0), _eof(false) { }
+    mistream(FILE *fp) : _pos(0), _fp(fp), _lastRead(0), _eof(false) { }
+    virtual ~mistream() { }
+    virtual mistream &ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
+    virtual int get() { _pos++; return fgetc(_fp); }
+    int tellg() { return _pos; } 
+    int gcount() { return _lastRead; }
+    operator void * () const { return (void *)!_eof; }
+    virtual void getline(char *dest, size_t size);
+    virtual void read(char *s, size_t length);
+};
+
+class mifstream : public mistream
+{
+    bool _open;
+public:
+    bool is_open() const { return _open; }
+    static const uint8_t in = 1;
+    static const uint8_t binary = 2;
+    mifstream() : _open(false) { }
+    mifstream(const char *s, int m = 1) : mistream(fopen(s, "rb")) { _open = _fp; }
+    void open(const char *fn, int mode = 1) { _open = _fp = fopen(fn, "rb"); }
+    void close() { if (_open) { fclose(_fp); _open = false; } }
+    virtual ~mifstream() { close(); }
+};
+
 class Options
 {
     bool _verbose;
@@ -94,7 +128,7 @@ public:
     SFile dir() const { return _dir; }
     string fn();
     bool isDir() { Flags flags(_dir.flags); return flags.test(1); }
-    uint8_t read(istream &s);
+    uint8_t read(mistream &s);
     void parentLBA(uint32_t n) { _parentLBA = n; }
     uint32_t parentLBA() { return _parentLBA; }
     uint32_t size() const { return _dir.dataLengthLE; }
@@ -180,7 +214,7 @@ public:
     PathEntry() { memset(_name, 0, sizeof(_name)); }
     uint32_t offsetLBA() const { return _pe.lba; }
     uint32_t offset() const { return offsetLBA() * 2048; }
-    void read(istream &is);
+    void read(mistream &is);
     void dump(ostream &os);
     char *name() { return _name; }
     void index(int i) { _index = i; }
@@ -195,7 +229,7 @@ class PathTable : public vector<PathEntry>
     uint32_t _offsetLBA;
     size_t _size;
 public:
-    void read(istream &is, int lba, size_t n);
+    void read(mistream &is, int lba, size_t n);
     void snort();
     void dump(ostream &os);
     PathEntry &getByLBA(uint32_t lba);
@@ -216,7 +250,7 @@ public:
     const char *typeString();
     static const uint8_t SUPPLEMENTARY_VOLUME_DESCRIPTOR = 2;
     static const uint8_t VOLUME_DESCRIPTOR_SET_TERMINATOR = 255;
-    int read(istream &s) { s.read((char *)&_desc, sizeof(_desc)); return 0; }
+    int read(mistream &s) { s.read((char *)&_desc, sizeof(_desc)); return 0; }
     void erase() { memset((void *)&_desc, 0, sizeof(_desc)); }
     virtual void dump(ostream &os);
     virtual string toString() { ostringstream oss; dump(oss); return oss.str(); }
@@ -255,7 +289,7 @@ class Descriptors : public vector<CVolumeDescriptor *>
 {
 public:
     virtual ~Descriptors() { for (iterator it = begin(); it != end(); it++) delete *it; }
-    int read(istream &s);
+    int read(mistream &s);
     void dump(ostream &os);
     uint32_t pathTableOffset();
     size_t pathTableSize();
@@ -269,7 +303,7 @@ class Directory : public vector<DirEntry>
     { return p1.dir().lbaLE < p2.dir().lbaLE; }
 public:
     //Directory() { }
-    void read(istream &s, uint32_t offset);
+    void read(mistream &s, uint32_t offset);
     string toString();
     void list(ostream &os, int mode = 1);
     string list(int mode = 1) { ostringstream oss; list(oss, mode); return oss.str(); }
@@ -283,7 +317,7 @@ public:
 class Directories : public vector<Directory>
 {
 public:
-    void read(istream &is, PathTable &pt);
+    void read(mistream &is, PathTable &pt);
     void list(ostream &os, int mode = 1);
 };
 
@@ -294,9 +328,9 @@ class ISO
     Directories _directories;
     Directory _fileList;
 public:
-    int read(istream &s);
-    int extract(istream &s);
-    int extract(istream &s, const char *outputDir);
+    int read(mistream &s);
+    int extract(mistream &s);
+    int extract(mistream &s, const char *outputDir);
     void list(ostream &os, int mode = 1) { _directories.list(os, mode); }
     void dumpDescriptors(ostream &os) { _descriptors.dump(os); }
     void dumpPathTable(ostream &os) { _pathTable.dump(os); }
@@ -309,7 +343,7 @@ class App
 {
     Options _options;
     ISO _iso;
-    ifstream _ifs;
+    mifstream _ifs;
 public:
     void help(ostream &os) const;
     string help() { ostringstream oss; help(oss); return oss.str(); }

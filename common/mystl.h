@@ -426,31 +426,6 @@ template<typename _Iterator> inline bool
           const reverse_iterator<_Iterator>& __y)
     { return __y < __x; }
 
-template<typename _Iterator>
-    inline bool
-    operator<=(const reverse_iterator<_Iterator>& __x,
-           const reverse_iterator<_Iterator>& __y)
-{ return !(__y < __x); }
-
-template<typename _Iterator>
-    inline bool
-    operator>=(const reverse_iterator<_Iterator>& __x,
-           const reverse_iterator<_Iterator>& __y)
-{ return !(__x < __y); }
-
-template<typename _Iterator>
-    inline typename reverse_iterator<_Iterator>::difference_type
-    operator-(const reverse_iterator<_Iterator>& __x,
-          const reverse_iterator<_Iterator>& __y)
-{ return __y.base() - __x.base(); }
-
-template<typename _Iterator>
-    inline reverse_iterator<_Iterator>
-    operator+(typename reverse_iterator<_Iterator>::difference_type __n,
-          const reverse_iterator<_Iterator>& __x)
-{ return reverse_iterator<_Iterator>(__x.base() - __n); }
-
-
 template<typename _IteratorL, typename _IteratorR>
     inline bool
     operator==(const reverse_iterator<_IteratorL>& __x,
@@ -579,11 +554,6 @@ public:
     insert_iterator& operator++() { return *this; }
     insert_iterator& operator++(int) { return *this; }
 };
-
-template<typename T, typename U> inline insert_iterator<T> inserter(T &x, U i)
-{
-    return insert_iterator<T>(x, typename T::iterator(i));
-}
 
 template <typename T, typename U> class __normal_iterator
 {
@@ -923,7 +893,6 @@ template<> struct __iter_swap<true>
 template <typename T, typename _ForwardIterator2>
     inline void iter_swap(T __a, _ForwardIterator2 __b)
 {
-    //typedef typename iterator_traits<T>::value_type _ValueType1;
     typedef typename iterator_traits<_ForwardIterator2>::value_type _ValueType2;
     typedef typename iterator_traits<T>::reference _ReferenceType1;
     typedef typename iterator_traits<_ForwardIterator2>::reference _ReferenceType2;
@@ -2583,7 +2552,7 @@ public:
     istream2() : _pos(0), _lastRead(0), _eof(false) { }
     istream2(FILE *fp) : _pos(0), _fp(fp), _lastRead(0), _eof(false) { }
     virtual ~istream2() { }
-    int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
+    //int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
     virtual istream2& ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
     virtual int get() { _pos++; return fgetc(_fp); }
     int tellg() { return _pos; }
