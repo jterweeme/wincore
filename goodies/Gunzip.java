@@ -1,63 +1,23 @@
 import java.io.IOException;
 import java.io.EOFException;
 import java.util.zip.DataFormatException;
-import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
-import java.util.zip.DataFormatException;
-import java.util.List;
 
-public class Gunzip
+class GzipStream
 {
-    public static void main(String[] args)
+    java.io.InputStream in;
+    
+    public GzipStream(java.io.InputStream is)
     {
-        Gunzip g = new Gunzip();
-
-        try
-        {
-            g.run(args);
-        }
-        catch (Exception e)
-        {
-            System.err.println(e.getMessage());
-            System.exit(1);
-        }
+        in = is;
     }
 
-    void run(String[] args) throws Exception
+    public void extractTo(java.io.OutputStream out) throws IOException, DataFormatException
     {
-        if (args.length != 2)
-            throw new Exception("Usage: java GzipDecompress InputFile OutputFile");
-
-        java.io.File inFile = new java.io.File(args[0]);
-        java.io.FileInputStream fis = new java.io.FileInputStream(inFile);
-        java.io.DataInputStream in = new java.io.DataInputStream(fis);
-        byte[] decomp, x = new byte[10];
+        byte[] x = new byte[10];
         int flags;
-        in.readFully(x);
+        in.read(x);
         flags = x[3] & 0xFF;
-
-        if ((flags & 0xE0) != 0)
-            throw new Exception("Reserved flags are set");
-					
-        int m = x[4] & 0xFF | (x[5] & 0xFF) << 8 | (x[6] & 0xFF) << 16 | x[7] << 24;
-
-        if (m != 0)
-            System.out.println("Last modified: " + new java.util.Date(m * 1000L));
-        else
-            System.out.println("Last modified: N/A");
-					
-        switch (x[8] & 0xFF)
-        {
-            case 2:
-                System.out.println("Extra flags: Maximum compression");
-                break;
-            case 4:
-                System.out.println("Extra flags: Fastest compression");
-                break;
-            default:
-                System.out.println("Extra flags: Unknown (" + (x[8] & 0xFF) + ")");
-                break;
-        }
 
         if ((flags & 0x01) != 0)
             System.out.println("Flag: Text");
@@ -66,9 +26,9 @@ public class Gunzip
         {
             System.out.println("Flag: Extra");
             byte[] b = new byte[2];
-            in.readFully(b);
+            in.read(b);
             int len = b[0] & 0xFF | (b[1] & 0xFF) << 8;
-            in.readFully(new byte[len]);
+            in.read(new byte[len]);
         }
 
         if ((flags & 0x08) != 0)
@@ -77,48 +37,48 @@ public class Gunzip
         if ((flags & 0x02) != 0)
         {
             byte[] b = new byte[2];
-            in.readFully(b);
+            in.read(b);
             System.out.printf("Header CRC-16: %04X%n", b[0] & 0xFF | (b[1] & 0xFF) << 8);
         }
 
         if ((flags & 0x10) != 0)
             System.out.println("Comment: " + readNullTerminatedString(in));
 
-        Decompressor d = new Decompressor(new ByteBitInputStream(in));
-        decomp = d.output.toByteArray();
-        java.io.File outFile = new java.io.File(args[1]);
-        java.io.OutputStream out = new java.io.FileOutputStream(outFile);
-        out.write(decomp);
-        out.close();
-	}
+        Decompressor d = new Decompressor(in);
+        d.extractTo(out);       
+    }
 
-    String readNullTerminatedString(java.io.DataInput in) throws IOException
+    String readNullTerminatedString(java.io.InputStream in) throws IOException
     {
         StringBuilder sb = new StringBuilder();
 
         while (true)
         {
-            byte c = in.readByte();
+            int c = in.read();
             if (c == 0) break; else sb.append((char)(c & 0xFF));
         }
         return sb.toString();
     }
-
-    int getCrc32(byte[] data)
-    {
-        java.util.zip.CRC32 crc = new java.util.zip.CRC32();
-        crc.update(data);
-        return (int)crc.getValue();
-    }	
 }
 
 class Decompressor
 {
     ByteBitInputStream input;
-    ByteArrayOutputStream output;
+    java.io.ByteArrayOutputStream output;
     CircularDictionary dictionary;
     CodeTree fixedLiteralLengthCode, fixedDistanceCode;
     int[] llcodelens = new int[288];
+
+    void extractTo(java.io.OutputStream o) throws IOException
+    {
+        byte[] decomp = output.toByteArray();
+        o.write(decomp);
+    }
+
+    Decompressor(java.io.InputStream in) throws IOException, DataFormatException
+    {
+        this(new ByteBitInputStream(in));
+    }
 
     Decompressor(ByteBitInputStream in) throws IOException, DataFormatException
     {
@@ -131,10 +91,10 @@ class Decompressor
         Arrays.fill(distcodelens, 5);
         fixedDistanceCode = new CanonicalCode(distcodelens).toCodeTree();
         input = in;
-        output = new ByteArrayOutputStream();
+        output = new java.io.ByteArrayOutputStream();
         dictionary = new CircularDictionary(32 * 1024);
 
-        while (true)
+        for (;;)
         {
             boolean isFinal = in.readNoEof() == 1;
             int type = readInt(2);
@@ -189,18 +149,12 @@ class Decompressor
         {
             if (i % 2 == 0)
                 codeLenCodeLen[8 + i / 2] = readInt(3);
-			else
-				codeLenCodeLen[7 - i / 2] = readInt(3);
-		}
+            else
+                codeLenCodeLen[7 - i / 2] = readInt(3);
+        }
 
-		CodeTree codeLenCode;
-		try {
-			codeLenCode = new CanonicalCode(codeLenCodeLen).toCodeTree();
-		} catch (IllegalStateException e) {
-			throw new DataFormatException(e.getMessage());
-		}
-		
-		int[] codeLens = new int[numLitLenCodes + numDistCodes];
+        CodeTree codeLenCode = new CanonicalCode(codeLenCodeLen).toCodeTree();
+        int[] codeLens = new int[numLitLenCodes + numDistCodes];
         int runVal = -1, runLen = 0;
 
         for (int i = 0; i < codeLens.length; i++)
@@ -222,31 +176,25 @@ class Decompressor
 						if (runVal == -1)
 							throw new DataFormatException("No code length value to copy");
 						runLen = readInt(2) + 3;
-					} else if (sym == 17) {
-						runVal = 0;
-						runLen = readInt(3) + 3;
-					} else if (sym == 18) {
-						runVal = 0;
-						runLen = readInt(7) + 11;
-					} else
-						throw new AssertionError();
-					i--;
-				}
-			}
-		}
-		if (runLen > 0)
-			throw new DataFormatException("Run exceeds number of codes");
-		
-		int[] litLenCodeLen = Arrays.copyOf(codeLens, numLitLenCodes);
-		CodeTree litLenCode;
-		try {
-			litLenCode = new CanonicalCode(litLenCodeLen).toCodeTree();
-		} catch (IllegalStateException e) {
-			throw new DataFormatException(e.getMessage());
-		}
-		
-		int[] distCodeLen = Arrays.copyOfRange(codeLens, numLitLenCodes, codeLens.length);
-		CodeTree distCode;
+                    } else if (sym == 17) {
+                        runVal = 0;
+                        runLen = readInt(3) + 3;
+                    } else if (sym == 18) {
+                        runVal = 0;
+                        runLen = readInt(7) + 11;
+                    } else
+                        throw new AssertionError();
+                    i--;
+                }
+            }
+        }
+        if (runLen > 0)
+            throw new DataFormatException("Run exceeds number of codes");
+
+        int[] litLenCodeLen = Arrays.copyOf(codeLens, numLitLenCodes);
+        CodeTree litLenCode = new CanonicalCode(litLenCodeLen).toCodeTree();
+        int[] distCodeLen = Arrays.copyOfRange(codeLens, numLitLenCodes, codeLens.length);
+        CodeTree distCode;
 
         if (distCodeLen.length == 1 && distCodeLen[0] == 0)
         {
@@ -258,31 +206,24 @@ class Decompressor
 
             for (int x : distCodeLen)
             {
-				if (x == 1)
-					oneCount++;
-				else if (x > 1)
-					otherPositiveCount++;
+                if (x == 1)
+                    oneCount++;
+                else if (x > 1)
+                    otherPositiveCount++;
             }
 
-			if (oneCount == 1 && otherPositiveCount == 0)
+            if (oneCount == 1 && otherPositiveCount == 0)
             {
-				distCodeLen = Arrays.copyOf(distCodeLen, 32);
-				distCodeLen[31] = 1;
-			}
-			
-			try
-            {
-				distCode = new CanonicalCode(distCodeLen).toCodeTree();
-			}
-            catch (IllegalStateException e)
-            {
-				throw new DataFormatException(e.getMessage());
-			}
-		}
-		
-		return new CodeTree[]{litLenCode, distCode};
-	}
-	
+                distCodeLen = Arrays.copyOf(distCodeLen, 32);
+                distCodeLen[31] = 1;
+            }
+
+            distCode = new CanonicalCode(distCodeLen).toCodeTree();
+        }
+
+        return new CodeTree[]{litLenCode, distCode};
+    }
+
     void decompressUncompressedBlock() throws IOException, DataFormatException
     {
         while (input.getBitPosition() != 0)
@@ -344,14 +285,18 @@ class Decompressor
         {
 			int temp = input.readNoEof();
 			Node nextNode;
-			if      (temp == 0) nextNode = currentNode.leftChild;
-			else if (temp == 1) nextNode = currentNode.rightChild;
-			else throw new AssertionError();
-			
-			if (nextNode instanceof Leaf)
-				return ((Leaf)nextNode).symbol;
-			else if (nextNode instanceof InternalNode)
-				currentNode = (InternalNode)nextNode;
+
+			if (temp == 0)
+                nextNode = currentNode.leftChild;
+            else if (temp == 1)
+                nextNode = currentNode.rightChild;
+            else
+                throw new AssertionError();
+
+            if (nextNode instanceof Leaf)
+                return ((Leaf)nextNode).symbol;
+            else if (nextNode instanceof InternalNode)
+                currentNode = (InternalNode)nextNode;
             else
                 throw new AssertionError();
         }
@@ -375,14 +320,18 @@ class Decompressor
     int decodeDistance(int sym) throws IOException, DataFormatException
     {
         if (sym <= 3)
+        {
             return sym + 1;
+        }
         else if (sym <= 29)
         {
             int i = sym / 2 - 1;
             return ((sym % 2 + 2) << i) + 1 + readInt(i);
         }
         else
+        {
             throw new DataFormatException("Invalid distance symbol: " + sym);
+        }
     }
 
     int readInt(int numBits) throws IOException
@@ -391,8 +340,10 @@ class Decompressor
             throw new IllegalArgumentException();
 
         int result = 0;
+
         for (int i = 0; i < numBits; i++)
             result |= input.readNoEof() << i;
+
         return result;
     }
 }
@@ -454,11 +405,11 @@ class CanonicalCode
 
     public CodeTree toCodeTree()
     {
-        List<Node> nodes = new java.util.ArrayList<Node>();
+        java.util.List<Node> nodes = new java.util.ArrayList<Node>();
 
         for (int i = max(codeLengths); i >= 1; i--)
         {
-            List<Node> newNodes = new java.util.ArrayList<Node>();
+            java.util.List<Node> newNodes = new java.util.ArrayList<Node>();
 
             for (int j = 0; j < codeLengths.length; j++)
                 if (codeLengths[j] == i)
@@ -515,30 +466,31 @@ class CircularDictionary
 
         if (mask != 0)
         {
-            int readIndex = (index - dist + data.length) & mask;
-
-            for (int i = 0; i < len; i++) {
-				out.write(data[readIndex]);
-				data[index] = data[readIndex];
-				readIndex = (readIndex + 1) & mask;
-				index = (index + 1) & mask;
-			}
-		} else {
-			int readIndex = (index - dist + data.length) % data.length;
-			for (int i = 0; i < len; i++) {
-				out.write(data[readIndex]);
-				data[index] = data[readIndex];
-				readIndex = (readIndex + 1) % data.length;
-				index = (index + 1) % data.length;
-			}
-		}
-	}
+            for (int i = 0, readIndex = (index - dist + data.length) & mask; i < len; i++)
+            {
+                out.write(data[readIndex]);
+                data[index] = data[readIndex];
+                readIndex = (readIndex + 1) & mask;
+                index = (index + 1) & mask;
+            }
+        }
+        else
+        {
+            for (int i = 0, readIndex = (index - dist + data.length) % data.length; i < len; i++)
+            {
+                out.write(data[readIndex]);
+                data[index] = data[readIndex];
+                readIndex = (readIndex + 1) % data.length;
+                index = (index + 1) % data.length;
+            }
+        }
+    }
 }
 
 class CodeTree
 {
     public final InternalNode root;
-    List<List<Integer>> codes;
+    java.util.List<java.util.List<Integer>> codes;
 
     public CodeTree(InternalNode root, int symbolLimit)
     {
@@ -546,7 +498,7 @@ class CodeTree
             throw new NullPointerException("Argument is null");
 
         this.root = root;
-        codes = new java.util.ArrayList<List<Integer>>();
+        codes = new java.util.ArrayList<java.util.List<Integer>>();
 
         for (int i = 0; i < symbolLimit; i++)
             codes.add(null);
@@ -554,7 +506,7 @@ class CodeTree
         buildCodeList(root, new java.util.ArrayList<Integer>());
     }
 
-    void buildCodeList(Node node, List<Integer> prefix)
+    void buildCodeList(Node node, java.util.List<Integer> prefix)
     {
         if (node instanceof InternalNode)
         {
@@ -584,7 +536,7 @@ class CodeTree
         }
     }
 
-    public List<Integer> getCode(int symbol)
+    public java.util.List<Integer> getCode(int symbol)
     {
         if (symbol < 0)
             throw new IllegalArgumentException("Illegal symbol");
@@ -714,6 +666,42 @@ class ByteBitInputStream
     {
         input.close();
     }
+}
+
+public class Gunzip
+{
+    public static void main(String[] args)
+    {
+        Gunzip g = new Gunzip();
+
+        try
+        {
+            g.run(args);
+        }
+        catch (Exception e)
+        {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    void _extract(java.io.InputStream in, java.io.OutputStream out) throws Exception
+    {
+        GzipStream gz = new GzipStream(in);
+        gz.extractTo(out);
+    }
+
+    void run(String[] args) throws Exception
+    {
+        if (args.length != 2)
+            throw new Exception("Usage: java GzipDecompress InputFile OutputFile");
+
+        java.io.FileInputStream ifs = new java.io.FileInputStream(args[0]);
+        java.io.OutputStream ofs = new java.io.FileOutputStream(args[1]);
+        _extract(ifs, ofs);
+        ofs.close();
+        ifs.close();
+	}
 }
 
 
