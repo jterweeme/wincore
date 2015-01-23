@@ -1,16 +1,20 @@
 import java.io.IOException;
 import java.io.EOFException;
+import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.util.zip.DataFormatException;
 import java.util.Arrays;
 
 class GzipStream
 {
     BitInput _is;
-    public GzipStream(java.io.InputStream is) { this(new BitInput(is)); }
+    public GzipStream(InputStream is) { this(new BitInput(is)); }
     public GzipStream(BitInput is) { _is = is; }
 
-    public void extractTo(java.io.OutputStream os) throws IOException, DataFormatException
+    public void extractTo(OutputStream os) throws IOException, DataFormatException
     {
         byte[] x = new byte[10];
         _is.read(x);
@@ -59,12 +63,11 @@ class GzipStream
 class Decompressor
 {
     BitInput _bi;
-    java.io.ByteArrayOutputStream _output;
     CircularDictionary _dictionary;
     CodeTree _lit, _dist;
     int[] llcodelens = new int[288];
 
-    void extractTo(java.io.OutputStream o) throws IOException, DataFormatException
+    void extractTo(OutputStream os) throws IOException, DataFormatException
     {
         for (boolean isFinal = false; !isFinal;)
         {
@@ -75,16 +78,16 @@ class Decompressor
             switch (type)
             {
             case 0:
-                decompressUncompressedBlock();
+                decompressUncompressedBlock(os);
                 break;
             case 1:
-                decompressHuffmanBlock(_lit, _dist);
+                decompressHuffmanBlock(_lit, _dist, os);
                 break;
             case 2:
                 CodeTree[] temp = decodeHuffmanCodes();
                 litLenCode = temp[0];
                 distCode = temp[1];
-                decompressHuffmanBlock(litLenCode, distCode);
+                decompressHuffmanBlock(litLenCode, distCode, os);
                 break;
             case 3:
                 throw new DataFormatException("Invalid block type");
@@ -92,9 +95,6 @@ class Decompressor
                 throw new AssertionError();
             }
         }
-
-        byte[] decomp = _output.toByteArray();
-        o.write(decomp);
     }
 
     Decompressor(BitInput in) throws IOException, DataFormatException
@@ -108,7 +108,6 @@ class Decompressor
         Arrays.fill(distcodelens, 5);
         _dist = new CanonicalCode(distcodelens).toCodeTree();
         _bi = in;
-        _output = new java.io.ByteArrayOutputStream();
         _dictionary = new CircularDictionary(32 * 1024);
     }
 
@@ -202,7 +201,7 @@ class Decompressor
         return new CodeTree[]{litLenCode, distCode};
     }
 
-    void decompressUncompressedBlock() throws IOException, DataFormatException
+    void decompressUncompressedBlock(OutputStream os) throws IOException, DataFormatException
     {
         _bi.ignoreBuf();
         int len = readInt(16), nlen = readInt(16);
@@ -217,12 +216,12 @@ class Decompressor
             if (temp == -1)
                 throw new EOFException();
 
-            _output.write(temp);
+            os.write(temp);
             _dictionary.append(temp);
         }
     }
 
-    void decompressHuffmanBlock(CodeTree litLenCode, CodeTree distCode)
+    void decompressHuffmanBlock(CodeTree litLenCode, CodeTree distCode, OutputStream os)
             throws IOException, DataFormatException
     {
         if (litLenCode == null)
@@ -237,7 +236,7 @@ class Decompressor
 
             if (sym < 256)
             {
-                _output.write(sym);
+                os.write(sym);
                 _dictionary.append(sym);
             }
             else
@@ -248,7 +247,7 @@ class Decompressor
                     throw new DataFormatException("Length sym encountered with empty dist code");
 
                 int distSym = decodeSymbol(distCode), dist = decodeDistance(distSym);
-                _dictionary.copy(dist, len, _output);
+                _dictionary.copy(dist, len, os);
             }
         }
     }
@@ -617,12 +616,14 @@ public class Gunzip
         if (args.length != 2)
             throw new Exception("Usage: java GzipDecompress InputFile OutputFile");
 
-        java.io.FileInputStream ifs = new java.io.FileInputStream(args[0]);
-        java.io.OutputStream ofs = new java.io.FileOutputStream(args[1]);
-        GzipStream gz = new GzipStream(ifs);
-        gz.extractTo(ofs);
-        ofs.close();
-        ifs.close();
+        FileInputStream ifs = new FileInputStream(args[0]);
+        BufferedInputStream bis = new BufferedInputStream(ifs, 16 * 1024);
+        OutputStream ofs = new java.io.FileOutputStream(args[1]);
+        BufferedOutputStream bos = new BufferedOutputStream(ofs, 16 * 1024);
+        GzipStream gz = new GzipStream(bis);
+        gz.extractTo(bos);
+        bos.close();
+        bis.close();
 	}
 }
 
