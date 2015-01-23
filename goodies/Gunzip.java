@@ -10,147 +10,89 @@ public class Gunzip
 {
     public static void main(String[] args)
     {
-        String msg = submain(args);
+        Gunzip g = new Gunzip();
 
-        if (msg != null)
+        try
         {
-            System.err.println(msg);
+            g.run(args);
+        }
+        catch (Exception e)
+        {
+            System.err.println(e.getMessage());
             System.exit(1);
         }
     }
 
-    static String submain(String[] args)
+    void run(String[] args) throws Exception
     {
         if (args.length != 2)
-            return "Usage: java GzipDecompress InputFile OutputFile";
-		
+            throw new Exception("Usage: java GzipDecompress InputFile OutputFile");
+
         java.io.File inFile = new java.io.File(args[0]);
+        java.io.FileInputStream fis = new java.io.FileInputStream(inFile);
+        java.io.DataInputStream in = new java.io.DataInputStream(fis);
+        byte[] decomp, x = new byte[10];
+        int flags;
+        in.readFully(x);
+        flags = x[3] & 0xFF;
 
-        if (!inFile.exists())
-            return "Input file does not exist: " + inFile;
-        if (inFile.isDirectory())
-            return "Input file is a directory: " + inFile;
-
-        try
-        {
-            java.io.FileInputStream fis = new java.io.FileInputStream(inFile);
-            java.io.DataInputStream in = new java.io.DataInputStream(fis);
-            byte[] decomp, x = new byte[10];
-            int crc, size, flags;
-            in.readFully(x);
-
-            if (x[0] != 0x1F || x[1] != (byte)0x8B)
-                return "Invalid GZIP magic number";
-
-            if (x[2] != 8)
-                return "Unsupported compression method: " + (x[2] & 0xFF);
-
-            flags = x[3] & 0xFF;
-
-            if ((flags & 0xE0) != 0)
-                return "Reserved flags are set";
+        if ((flags & 0xE0) != 0)
+            throw new Exception("Reserved flags are set");
 					
-            int m = x[4] & 0xFF | (x[5] & 0xFF) << 8 | (x[6] & 0xFF) << 16 | x[7] << 24;
+        int m = x[4] & 0xFF | (x[5] & 0xFF) << 8 | (x[6] & 0xFF) << 16 | x[7] << 24;
 
-            if (m != 0)
-                System.out.println("Last modified: " + new java.util.Date(m * 1000L));
-            else
-                System.out.println("Last modified: N/A");
+        if (m != 0)
+            System.out.println("Last modified: " + new java.util.Date(m * 1000L));
+        else
+            System.out.println("Last modified: N/A");
 					
-            switch (x[8] & 0xFF)
-            {
-                case 2:
-                    System.out.println("Extra flags: Maximum compression");
-                    break;
-                case 4:
-                    System.out.println("Extra flags: Fastest compression");
-                    break;
-                default:
-                    System.out.println("Extra flags: Unknown (" + (x[8] & 0xFF) + ")");
-                    break;
-            }
-
-            String os;
-
-            switch (x[9] & 0xFF)
-            {
-                case 0: os = "FAT"; break;
-                case 1: os = "Amiga"; break;
-                case 2: os = "VMS"; break;
-                case 3: os = "Unix"; break;
-                case 4: os = "VM/CMS"; break;
-                case 5: os = "Atari TOS"; break;
-                case 6: os = "HPFS";            break;
-                case 7: os = "Macintosh";       break;
-                case 8: os = "Z-System";        break;
-                case 9: os = "CP/M";            break;
-                case 10: os = "TOPS-20";         break;
-                case 11: os = "NTFS";            break;
-                case 12: os = "QDOS";            break;
-                case 13: os = "Acorn RISCOS";    break;
-                case 255: os = "Unknown";         break;
-                default: os = "Really unknown"; break;
-            }
-
-            System.out.println("Operating system: " + os);
-			
-            if ((flags & 0x01) != 0)
-                System.out.println("Flag: Text");
-
-            if ((flags & 0x04) != 0)
-            {
-                System.out.println("Flag: Extra");
-                byte[] b = new byte[2];
-                in.readFully(b);
-                int len = (b[0] & 0xFF) | (b[1] & 0xFF) << 8;
-                in.readFully(new byte[len]);
-            }
-
-            if ((flags & 0x08) != 0)
-                System.out.println("File name: " + readNullTerminatedString(in));
-
-            if ((flags & 0x02) != 0)
-            {
-                byte[] b = new byte[2];
-                in.readFully(b);
-                System.out.printf("Header CRC-16: %04X%n", b[0] & 0xFF | (b[1] & 0xFF) << 8);
-            }
-
-            if ((flags & 0x10) != 0)
-                System.out.println("Comment: " + readNullTerminatedString(in));
-
-            decomp = Decompressor.decompress(new ByteBitInputStream(in));
-            byte[] y = new byte[8];
-            in.readFully(y);
-            crc = (y[0] & 0xFF) | (y[1] & 0xFF) << 8 | (y[2] & 0xFF) << 16 | y[3] << 24;
-            size = (y[4] & 0xFF) | (y[5] & 0xFF) << 8 | (y[6] & 0xFF) << 16 | y[7] << 24;
-            in.close();
-			
-			if (size != decomp.length)
-				return String.format("Size mismatch: expected=%d, actual=%d", size, decomp.length);
-
-            if (crc != getCrc32(decomp))
-                return String.format("CRC-32 mismatch: expected=%08X, actual=%08X",
-                            crc, getCrc32(decomp));
-			
-            java.io.File outFile = new java.io.File(args[1]);
-            java.io.OutputStream out = new java.io.FileOutputStream(outFile);
-            out.write(decomp);
-            out.close();
-        }
-        catch (DataFormatException e)
+        switch (x[8] & 0xFF)
         {
-            return "Invalid or corrupt compressed data: " + e.getMessage();
+            case 2:
+                System.out.println("Extra flags: Maximum compression");
+                break;
+            case 4:
+                System.out.println("Extra flags: Fastest compression");
+                break;
+            default:
+                System.out.println("Extra flags: Unknown (" + (x[8] & 0xFF) + ")");
+                break;
         }
-        catch (IOException e)
+
+        if ((flags & 0x01) != 0)
+            System.out.println("Flag: Text");
+
+        if ((flags & 0x04) != 0)
         {
-			return "I/O exception: " + e.getMessage();
-		}
-		
-		return null;
+            System.out.println("Flag: Extra");
+            byte[] b = new byte[2];
+            in.readFully(b);
+            int len = b[0] & 0xFF | (b[1] & 0xFF) << 8;
+            in.readFully(new byte[len]);
+        }
+
+        if ((flags & 0x08) != 0)
+            System.out.println("File name: " + readNullTerminatedString(in));
+
+        if ((flags & 0x02) != 0)
+        {
+            byte[] b = new byte[2];
+            in.readFully(b);
+            System.out.printf("Header CRC-16: %04X%n", b[0] & 0xFF | (b[1] & 0xFF) << 8);
+        }
+
+        if ((flags & 0x10) != 0)
+            System.out.println("Comment: " + readNullTerminatedString(in));
+
+        Decompressor d = new Decompressor(new ByteBitInputStream(in));
+        decomp = d.output.toByteArray();
+        java.io.File outFile = new java.io.File(args[1]);
+        java.io.OutputStream out = new java.io.FileOutputStream(outFile);
+        out.write(decomp);
+        out.close();
 	}
-	
-    static String readNullTerminatedString(java.io.DataInput in) throws IOException
+
+    String readNullTerminatedString(java.io.DataInput in) throws IOException
     {
         StringBuilder sb = new StringBuilder();
 
@@ -161,8 +103,8 @@ public class Gunzip
         }
         return sb.toString();
     }
-	
-    static int getCrc32(byte[] data)
+
+    int getCrc32(byte[] data)
     {
         java.util.zip.CRC32 crc = new java.util.zip.CRC32();
         crc.update(data);
@@ -170,20 +112,24 @@ public class Gunzip
     }	
 }
 
-final class Decompressor
+class Decompressor
 {
-    public static byte[] decompress(ByteBitInputStream in) throws IOException, DataFormatException
-    {
-        Decompressor decomp = new Decompressor(in);
-        return decomp.output.toByteArray();
-    }
-
     ByteBitInputStream input;
     ByteArrayOutputStream output;
     CircularDictionary dictionary;
-	
+    CodeTree fixedLiteralLengthCode, fixedDistanceCode;
+    int[] llcodelens = new int[288];
+
     Decompressor(ByteBitInputStream in) throws IOException, DataFormatException
     {
+        Arrays.fill(llcodelens,   0, 144, 8);
+        Arrays.fill(llcodelens, 144, 256, 9);
+        Arrays.fill(llcodelens, 256, 280, 7);
+        Arrays.fill(llcodelens, 280, 288, 8);
+        fixedLiteralLengthCode = new CanonicalCode(llcodelens).toCodeTree();
+        int[] distcodelens = new int[32];
+        Arrays.fill(distcodelens, 5);
+        fixedDistanceCode = new CanonicalCode(distcodelens).toCodeTree();
         input = in;
         output = new ByteArrayOutputStream();
         dictionary = new CircularDictionary(32 * 1024);
@@ -194,7 +140,9 @@ final class Decompressor
             int type = readInt(2);
 
             if (type == 0)
+            {
                 decompressUncompressedBlock();
+            }
             else if (type == 1 || type == 2)
             {
                 CodeTree litLenCode, distCode;
@@ -213,27 +161,17 @@ final class Decompressor
                 decompressHuffmanBlock(litLenCode, distCode);
             }
             else if (type == 3)
+            {
                 throw new DataFormatException("Invalid block type");
+            }
             else
+            {
                 throw new AssertionError();
+            }
 
             if (isFinal)
                 break;
         }
-    }
-
-    static CodeTree fixedLiteralLengthCode, fixedDistanceCode;
-
-    static {
-        int[] llcodelens = new int[288];
-        Arrays.fill(llcodelens,   0, 144, 8);
-        Arrays.fill(llcodelens, 144, 256, 9);
-        Arrays.fill(llcodelens, 256, 280, 7);
-        Arrays.fill(llcodelens, 280, 288, 8);
-        fixedLiteralLengthCode = new CanonicalCode(llcodelens).toCodeTree();
-        int[] distcodelens = new int[32];
-        Arrays.fill(distcodelens, 5);
-        fixedDistanceCode = new CanonicalCode(distcodelens).toCodeTree();
     }
 
     CodeTree[] decodeHuffmanCodes(ByteBitInputStream in) throws IOException, DataFormatException
@@ -316,8 +254,7 @@ final class Decompressor
         }
         else
         {
-            int oneCount = 0;
-            int otherPositiveCount = 0;
+            int oneCount = 0, otherPositiveCount = 0;
 
             for (int x : distCodeLen)
             {
@@ -327,14 +264,18 @@ final class Decompressor
 					otherPositiveCount++;
             }
 
-			if (oneCount == 1 && otherPositiveCount == 0) {
+			if (oneCount == 1 && otherPositiveCount == 0)
+            {
 				distCodeLen = Arrays.copyOf(distCodeLen, 32);
 				distCodeLen[31] = 1;
 			}
 			
-			try {
+			try
+            {
 				distCode = new CanonicalCode(distCodeLen).toCodeTree();
-			} catch (IllegalStateException e) {
+			}
+            catch (IllegalStateException e)
+            {
 				throw new DataFormatException(e.getMessage());
 			}
 		}
@@ -347,8 +288,7 @@ final class Decompressor
         while (input.getBitPosition() != 0)
             input.readNoEof();
 		
-        int len = readInt(16);
-        int nlen = readInt(16);
+        int len = readInt(16), nlen = readInt(16);
 
         if ((len ^ 0xFFFF) != nlen)
             throw new DataFormatException("Invalid length in uncompressed block");
@@ -389,8 +329,8 @@ final class Decompressor
 
                 if (distCode == null)
                     throw new DataFormatException("Length sym encountered with empty dist code");
-                int distSym = decodeSymbol(distCode);
-                int dist = decodeDistance(distSym);
+
+                int distSym = decodeSymbol(distCode), dist = decodeDistance(distSym);
                 dictionary.copy(dist, len, output);
             }
         }
@@ -457,7 +397,7 @@ final class Decompressor
     }
 }
 
-final class CanonicalCode
+class CanonicalCode
 {	
     int[] codeLengths;
 
@@ -469,90 +409,91 @@ final class CanonicalCode
         this.codeLengths = codeLengths.clone();
 
         for (int x : codeLengths)
-        {
             if (x < 0)
                 throw new IllegalArgumentException("Illegal code length");
-        }
     }
 	
     public CanonicalCode(CodeTree tree, int symbolLimit)
     {
         codeLengths = new int[symbolLimit];
-		buildCodeLengths(tree.root, 0);
-	}
-	
-	
-	private void buildCodeLengths(Node node, int depth) {
-		if (node instanceof InternalNode) {
-			InternalNode internalNode = (InternalNode)node;
-			buildCodeLengths(internalNode.leftChild , depth + 1);
-			buildCodeLengths(internalNode.rightChild, depth + 1);
-		} else if (node instanceof Leaf) {
-			int symbol = ((Leaf)node).symbol;
-			if (codeLengths[symbol] != 0)
-				throw new AssertionError("Symbol has more than one code");
-			if (symbol >= codeLengths.length)
-				throw new IllegalArgumentException("Symbol exceeds symbol limit");
+        buildCodeLengths(tree.root, 0);
+    }
+
+    void buildCodeLengths(Node node, int depth)
+    {
+        if (node instanceof InternalNode)
+        {
+            InternalNode internalNode = (InternalNode)node;
+            buildCodeLengths(internalNode.leftChild , depth + 1);
+            buildCodeLengths(internalNode.rightChild, depth + 1);
+        }
+        else if (node instanceof Leaf)
+        {
+            int symbol = ((Leaf)node).symbol;
+            if (codeLengths[symbol] != 0)
+                throw new AssertionError("Symbol has more than one code");
+            if (symbol >= codeLengths.length)
+                throw new IllegalArgumentException("Symbol exceeds symbol limit");
 			codeLengths[symbol] = depth;
 		} else {
 			throw new AssertionError("Illegal node type");
 		}
 	}
-	
-	
-	
-	public int getSymbolLimit() {
-		return codeLengths.length;
-	}
-	
-	
-	public int getCodeLength(int symbol) {
-		if (symbol < 0 || symbol >= codeLengths.length)
-			throw new IllegalArgumentException("Symbol out of range");
-		return codeLengths[symbol];
-	}
-	
-	
-	public CodeTree toCodeTree()
+
+    public int getSymbolLimit()
     {
-		List<Node> nodes = new java.util.ArrayList<Node>();
-		for (int i = max(codeLengths); i >= 1; i--)
+        return codeLengths.length;
+    }
+
+    public int getCodeLength(int symbol)
+    {
+        if (symbol < 0 || symbol >= codeLengths.length)
+            throw new IllegalArgumentException("Symbol out of range");
+        return codeLengths[symbol];
+    }
+
+    public CodeTree toCodeTree()
+    {
+        List<Node> nodes = new java.util.ArrayList<Node>();
+
+        for (int i = max(codeLengths); i >= 1; i--)
         {
-			List<Node> newNodes = new java.util.ArrayList<Node>();
-			
-			for (int j = 0; j < codeLengths.length; j++) {
-				if (codeLengths[j] == i)
-					newNodes.add(new Leaf(j));
-			}
-			
-			for (int j = 0; j < nodes.size(); j += 2)
-				newNodes.add(new InternalNode(nodes.get(j), nodes.get(j + 1)));
-			
-			nodes = newNodes;
-			if (nodes.size() % 2 != 0)
-				throw new IllegalStateException("This cano code doesnt repr a Huffman code tree");
-		}
-		
-		if (nodes.size() != 2)
-			throw new IllegalStateException("This canonical code doesnt repr a Huffman code tree");
-		return new CodeTree(new InternalNode(nodes.get(0), nodes.get(1)), codeLengths.length);
-	}
-	
-	
-    private static int max(int[] array)
+            List<Node> newNodes = new java.util.ArrayList<Node>();
+
+            for (int j = 0; j < codeLengths.length; j++)
+                if (codeLengths[j] == i)
+                    newNodes.add(new Leaf(j));
+
+            for (int j = 0; j < nodes.size(); j += 2)
+                newNodes.add(new InternalNode(nodes.get(j), nodes.get(j + 1)));
+
+            nodes = newNodes;
+
+            if (nodes.size() % 2 != 0)
+                throw new IllegalStateException("This cano code doesnt repr a Huffman code tree");
+        }
+
+        if (nodes.size() != 2)
+            throw new IllegalStateException("This canonical code doesnt repr a Huffman code tree");
+
+        return new CodeTree(new InternalNode(nodes.get(0), nodes.get(1)), codeLengths.length);
+    }
+
+    int max(int[] array)
     {
         int result = array[0];
+
         for (int x : array)
             result = Math.max(x, result);
+
         return result;
     }
 }
 
-final class CircularDictionary
+class CircularDictionary
 {
-    private byte[] data;
-    private int index;
-    private int mask;
+    byte[] data;
+    int index, mask;
 	
     public CircularDictionary(int size)
     {
@@ -566,7 +507,6 @@ final class CircularDictionary
         data[index] = (byte)b;
         index = mask != 0 ? (index + 1) & mask : (index + 1) % data.length;
 	}
-	
 	
     public void copy(int dist, int len, java.io.OutputStream out) throws IOException
     {
@@ -593,15 +533,14 @@ final class CircularDictionary
 			}
 		}
 	}
-	
 }
 
-final class CodeTree
+class CodeTree
 {
-	public final InternalNode root;
-	private List<List<Integer>> codes;
-	
-	public CodeTree(InternalNode root, int symbolLimit)
+    public final InternalNode root;
+    List<List<Integer>> codes;
+
+    public CodeTree(InternalNode root, int symbolLimit)
     {
         if (root == null)
             throw new NullPointerException("Argument is null");
@@ -615,7 +554,7 @@ final class CodeTree
         buildCodeList(root, new java.util.ArrayList<Integer>());
     }
 
-    private void buildCodeList(Node node, List<Integer> prefix)
+    void buildCodeList(Node node, List<Integer> prefix)
     {
         if (node instanceof InternalNode)
         {
@@ -645,33 +584,40 @@ final class CodeTree
         }
     }
 
-    public List<Integer> getCode(int symbol) {
-		if (symbol < 0)
-			throw new IllegalArgumentException("Illegal symbol");
-		else if (codes.get(symbol) == null)
-			throw new IllegalArgumentException("No code for given symbol");
-		else
-			return codes.get(symbol);
-	}
-	
-	public String toString()
+    public List<Integer> getCode(int symbol)
     {
-		StringBuilder sb = new StringBuilder();
-		toString("", root, sb);
-		return sb.toString();
-	}
+        if (symbol < 0)
+            throw new IllegalArgumentException("Illegal symbol");
+        else if (codes.get(symbol) == null)
+            throw new IllegalArgumentException("No code for given symbol");
+        else
+            return codes.get(symbol);
+    }
 	
-	private static void toString(String prefix, Node node, StringBuilder sb) {
-		if (node instanceof InternalNode) {
-			InternalNode internalNode = (InternalNode)node;
-			toString(prefix + "0", internalNode.leftChild , sb);
-			toString(prefix + "1", internalNode.rightChild, sb);
-		} else if (node instanceof Leaf) {
-			sb.append(String.format("Code %s: Symbol %d%n", prefix, ((Leaf)node).symbol));
-		} else {
-			throw new AssertionError("Illegal node type");
-		}
-	}
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        toString("", root, sb);
+        return sb.toString();
+    }
+	
+    void toString(String prefix, Node node, StringBuilder sb)
+    {
+        if (node instanceof InternalNode)
+        {
+            InternalNode internalNode = (InternalNode)node;
+            toString(prefix + "0", internalNode.leftChild , sb);
+            toString(prefix + "1", internalNode.rightChild, sb);
+        }
+        else if (node instanceof Leaf)
+        {
+            sb.append(String.format("Code %s: Symbol %d%n", prefix, ((Leaf)node).symbol));
+        }
+        else
+        {
+            throw new AssertionError("Illegal node type");
+        }
+    }
 }
 
 abstract class Node
@@ -679,7 +625,7 @@ abstract class Node
     public Node() {}
 }
 
-final class InternalNode extends Node
+class InternalNode extends Node
 {
     public final Node leftChild;
     public final Node rightChild;
@@ -688,24 +634,25 @@ final class InternalNode extends Node
     {
         if (leftChild == null || rightChild == null)
             throw new NullPointerException("Argument is null");
+
         this.leftChild = leftChild;
         this.rightChild = rightChild;
-	}
+    }
 }
 
-final class Leaf extends Node
+class Leaf extends Node
 {	
-	public final int symbol;
-	
-	public Leaf(int symbol)
+    public final int symbol;
+
+    public Leaf(int symbol)
     {
-		if (symbol < 0)
-			throw new IllegalArgumentException("Illegal symbol value");
-		this.symbol = symbol;
-	}
+        if (symbol < 0)
+            throw new IllegalArgumentException("Illegal symbol value");
+        this.symbol = symbol;
+    }
 }
 
-final class ByteBitInputStream
+class ByteBitInputStream
 {
     java.io.InputStream input;
     int nextBits, bitPosition;
@@ -742,14 +689,16 @@ final class ByteBitInputStream
         return result;
     }
 
-    public int readNoEof() throws IOException {
+    public int readNoEof() throws IOException
+    {
         int result = read();
+
         if (result != -1)
-			return result;
-		else
-			throw new EOFException("End of stream reached");
-	}
-	
+            return result;
+        else
+            throw new EOFException("End of stream reached");
+    }
+
     public int getBitPosition()
     {
         return bitPosition % 8;
