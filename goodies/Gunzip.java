@@ -1,23 +1,20 @@
 import java.io.IOException;
 import java.io.EOFException;
+import java.io.InputStream;
 import java.util.zip.DataFormatException;
 import java.util.Arrays;
 
 class GzipStream
 {
-    java.io.InputStream in;
-    
-    public GzipStream(java.io.InputStream is)
-    {
-        in = is;
-    }
+    BitInput _is;
+    public GzipStream(java.io.InputStream is) { this(new BitInput(is)); }
+    public GzipStream(BitInput is) { _is = is; }
 
-    public void extractTo(java.io.OutputStream out) throws IOException, DataFormatException
+    public void extractTo(java.io.OutputStream os) throws IOException, DataFormatException
     {
         byte[] x = new byte[10];
-        int flags;
-        in.read(x);
-        flags = x[3] & 0xFF;
+        _is.read(x);
+        byte flags = x[3];
 
         if ((flags & 0x01) != 0)
             System.out.println("Flag: Text");
@@ -26,115 +23,96 @@ class GzipStream
         {
             System.out.println("Flag: Extra");
             byte[] b = new byte[2];
-            in.read(b);
+            _is.read(b);
             int len = b[0] & 0xFF | (b[1] & 0xFF) << 8;
-            in.read(new byte[len]);
+            _is.read(new byte[len]);
         }
 
         if ((flags & 0x08) != 0)
-            System.out.println("File name: " + readNullTerminatedString(in));
+            System.out.println("File name: " + readNullTerminatedString());
 
         if ((flags & 0x02) != 0)
         {
             byte[] b = new byte[2];
-            in.read(b);
+            _is.read(b);
             System.out.printf("Header CRC-16: %04X%n", b[0] & 0xFF | (b[1] & 0xFF) << 8);
         }
 
         if ((flags & 0x10) != 0)
-            System.out.println("Comment: " + readNullTerminatedString(in));
+            System.out.println("Comment: " + readNullTerminatedString());
 
-        Decompressor d = new Decompressor(in);
-        d.extractTo(out);       
+        Decompressor d = new Decompressor(_is);
+        d.extractTo(os);
     }
 
-    String readNullTerminatedString(java.io.InputStream in) throws IOException
+    String readNullTerminatedString() throws IOException
     {
         StringBuilder sb = new StringBuilder();
 
-        while (true)
-        {
-            int c = in.read();
-            if (c == 0) break; else sb.append((char)(c & 0xFF));
-        }
+        for (int c = _is.readByte(); c != 0; c = _is.readByte())
+            sb.append((char)c);
+
         return sb.toString();
     }
 }
 
 class Decompressor
 {
-    ByteBitInputStream input;
-    java.io.ByteArrayOutputStream output;
-    CircularDictionary dictionary;
-    CodeTree fixedLiteralLengthCode, fixedDistanceCode;
+    BitInput _bi;
+    java.io.ByteArrayOutputStream _output;
+    CircularDictionary _dictionary;
+    CodeTree _lit, _dist;
     int[] llcodelens = new int[288];
 
-    void extractTo(java.io.OutputStream o) throws IOException
+    void extractTo(java.io.OutputStream o) throws IOException, DataFormatException
     {
-        byte[] decomp = output.toByteArray();
+        for (boolean isFinal = false; !isFinal;)
+        {
+            isFinal = _bi.readBool();
+            int type = readInt(2);
+            CodeTree litLenCode, distCode;
+
+            switch (type)
+            {
+            case 0:
+                decompressUncompressedBlock();
+                break;
+            case 1:
+                decompressHuffmanBlock(_lit, _dist);
+                break;
+            case 2:
+                CodeTree[] temp = decodeHuffmanCodes();
+                litLenCode = temp[0];
+                distCode = temp[1];
+                decompressHuffmanBlock(litLenCode, distCode);
+                break;
+            case 3:
+                throw new DataFormatException("Invalid block type");
+            default:
+                throw new AssertionError();
+            }
+        }
+
+        byte[] decomp = _output.toByteArray();
         o.write(decomp);
     }
 
-    Decompressor(java.io.InputStream in) throws IOException, DataFormatException
-    {
-        this(new ByteBitInputStream(in));
-    }
-
-    Decompressor(ByteBitInputStream in) throws IOException, DataFormatException
+    Decompressor(BitInput in) throws IOException, DataFormatException
     {
         Arrays.fill(llcodelens,   0, 144, 8);
         Arrays.fill(llcodelens, 144, 256, 9);
         Arrays.fill(llcodelens, 256, 280, 7);
         Arrays.fill(llcodelens, 280, 288, 8);
-        fixedLiteralLengthCode = new CanonicalCode(llcodelens).toCodeTree();
+        _lit = new CanonicalCode(llcodelens).toCodeTree();
         int[] distcodelens = new int[32];
         Arrays.fill(distcodelens, 5);
-        fixedDistanceCode = new CanonicalCode(distcodelens).toCodeTree();
-        input = in;
-        output = new java.io.ByteArrayOutputStream();
-        dictionary = new CircularDictionary(32 * 1024);
-
-        for (;;)
-        {
-            boolean isFinal = in.readNoEof() == 1;
-            int type = readInt(2);
-
-            if (type == 0)
-            {
-                decompressUncompressedBlock();
-            }
-            else if (type == 1 || type == 2)
-            {
-                CodeTree litLenCode, distCode;
-
-                if (type == 1)
-                {
-                    litLenCode = fixedLiteralLengthCode;
-                    distCode = fixedDistanceCode;
-                }
-                else
-                {
-                    CodeTree[] temp = decodeHuffmanCodes(in);
-                    litLenCode = temp[0];
-                    distCode = temp[1];
-                }
-                decompressHuffmanBlock(litLenCode, distCode);
-            }
-            else if (type == 3)
-            {
-                throw new DataFormatException("Invalid block type");
-            }
-            else
-            {
-                throw new AssertionError();
-            }
-
-            if (isFinal)
-                break;
-        }
+        _dist = new CanonicalCode(distcodelens).toCodeTree();
+        _bi = in;
+        _output = new java.io.ByteArrayOutputStream();
+        _dictionary = new CircularDictionary(32 * 1024);
     }
 
-    CodeTree[] decodeHuffmanCodes(ByteBitInputStream in) throws IOException, DataFormatException
+    CodeTree[] decodeHuffmanCodes() throws IOException, DataFormatException
     {
         int numLitLenCodes = readInt(5) + 257;
         int numDistCodes = readInt(5) + 1;
@@ -226,9 +204,7 @@ class Decompressor
 
     void decompressUncompressedBlock() throws IOException, DataFormatException
     {
-        while (input.getBitPosition() != 0)
-            input.readNoEof();
-		
+        _bi.ignoreBuf();
         int len = readInt(16), nlen = readInt(16);
 
         if ((len ^ 0xFFFF) != nlen)
@@ -236,13 +212,13 @@ class Decompressor
 		
         for (int i = 0; i < len; i++)
         {
-            int temp = input.readByte();
+            int temp = _bi.readByte();
 
             if (temp == -1)
                 throw new EOFException();
 
-            output.write(temp);
-            dictionary.append(temp);
+            _output.write(temp);
+            _dictionary.append(temp);
         }
     }
 
@@ -261,8 +237,8 @@ class Decompressor
 
             if (sym < 256)
             {
-                output.write(sym);
-                dictionary.append(sym);
+                _output.write(sym);
+                _dictionary.append(sym);
             }
             else
             {
@@ -272,7 +248,7 @@ class Decompressor
                     throw new DataFormatException("Length sym encountered with empty dist code");
 
                 int distSym = decodeSymbol(distCode), dist = decodeDistance(distSym);
-                dictionary.copy(dist, len, output);
+                _dictionary.copy(dist, len, _output);
             }
         }
     }
@@ -283,15 +259,7 @@ class Decompressor
 
         while (true)
         {
-			int temp = input.readNoEof();
-			Node nextNode;
-
-			if (temp == 0)
-                nextNode = currentNode.leftChild;
-            else if (temp == 1)
-                nextNode = currentNode.rightChild;
-            else
-                throw new AssertionError();
+			Node nextNode = _bi.readBool() ? currentNode.rightChild : currentNode.leftChild;
 
             if (nextNode instanceof Leaf)
                 return ((Leaf)nextNode).symbol;
@@ -342,7 +310,7 @@ class Decompressor
         int result = 0;
 
         for (int i = 0; i < numBits; i++)
-            result |= input.readNoEof() << i;
+            result |= _bi.readBit() << i;
 
         return result;
     }
@@ -579,8 +547,7 @@ abstract class Node
 
 class InternalNode extends Node
 {
-    public final Node leftChild;
-    public final Node rightChild;
+    public final Node leftChild, rightChild;
 
     public InternalNode(Node leftChild, Node rightChild)
     {
@@ -604,67 +571,27 @@ class Leaf extends Node
     }
 }
 
-class ByteBitInputStream
+class BitInput
 {
-    java.io.InputStream input;
-    int nextBits, bitPosition;
-    boolean isEndOfStream;
-
-    public ByteBitInputStream(java.io.InputStream in)
+    java.io.InputStream _is;
+    int _nextBits, _bitPos = 8;
+    int _getBitPos() { return _bitPos % 8; }
+    public BitInput(java.io.InputStream is) { _is = is; }
+    public boolean readBool() throws IOException { return readBit() == 1; }
+    public void ignore(int n) throws IOException { while (n-- > 0) readBool(); }
+    public void ignoreBuf() throws IOException { ignore(_getBitPos()); }
+    public int readByte() throws IOException { return _is.read(); }
+    public int read(byte[] b) throws IOException { return _is.read(b); }
+    	
+    public int readBit() throws IOException
     {
-        if (in == null)
-            throw new NullPointerException("Argument is null");
-        input = in;
-        bitPosition = 8;
-        isEndOfStream = false;
-    }
-	
-    public int read() throws IOException
-    {
-        if (isEndOfStream)
-            return -1;
-
-        if (bitPosition == 8)
+        if (_bitPos == 8)
         {
-            nextBits = input.read();
-
-            if (nextBits == -1)
-            {
-				isEndOfStream = true;
-				return -1;
-            }
-            bitPosition = 0;
+            _nextBits = _is.read();
+            _bitPos = 0;
         }
 
-        int result = (nextBits >>> bitPosition) & 1;
-        bitPosition++;
-        return result;
-    }
-
-    public int readNoEof() throws IOException
-    {
-        int result = read();
-
-        if (result != -1)
-            return result;
-        else
-            throw new EOFException("End of stream reached");
-    }
-
-    public int getBitPosition()
-    {
-        return bitPosition % 8;
-    }
-
-    public int readByte() throws IOException
-    {
-        bitPosition = 8;
-        return input.read();
-    }
-
-    public void close() throws IOException
-    {
-        input.close();
+        return _nextBits >>> _bitPos++ & 1;
     }
 }
 
@@ -685,12 +612,6 @@ public class Gunzip
         }
     }
 
-    void _extract(java.io.InputStream in, java.io.OutputStream out) throws Exception
-    {
-        GzipStream gz = new GzipStream(in);
-        gz.extractTo(out);
-    }
-
     void run(String[] args) throws Exception
     {
         if (args.length != 2)
@@ -698,7 +619,8 @@ public class Gunzip
 
         java.io.FileInputStream ifs = new java.io.FileInputStream(args[0]);
         java.io.OutputStream ofs = new java.io.FileOutputStream(args[1]);
-        _extract(ifs, ofs);
+        GzipStream gz = new GzipStream(ifs);
+        gz.extractTo(ofs);
         ofs.close();
         ifs.close();
 	}
