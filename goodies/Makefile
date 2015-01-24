@@ -12,9 +12,10 @@ test:
 	java Bunzip2 aquarius.mp3.bz2
 	md5sum -c bunzip.md5
 
-testgzip:
-	rm -f battery boston.mp3 dinges aquarius.mp3
+testgz:
+	rm -f battery boston.mp3 dinges aquarius.mp3 cdrtools.tar
 	java Gunzip boston.mp3.gz boston.mp3
+	java Gunzip cdrtools.tar.gz cdrtools.tar
 	md5sum -c data.md5
 
 rebuild: clean all

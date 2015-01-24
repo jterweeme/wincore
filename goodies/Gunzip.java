@@ -1,23 +1,18 @@
 import java.io.IOException;
-import java.io.EOFException;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.util.zip.DataFormatException;
 import java.util.Arrays;
 
 class GzipStream
 {
-    BitInput _is;
-    public GzipStream(InputStream is) { this(new BitInput(is)); }
-    public GzipStream(BitInput is) { _is = is; }
+    BitInput _bi;
+    GzipStream(InputStream is) { this(new BitInput(is)); }
+    GzipStream(BitInput bi) { _bi = bi; }
 
-    public void extractTo(OutputStream os) throws IOException, DataFormatException
+    void extractTo(OutputStream os) throws IOException
     {
         byte[] x = new byte[10];
-        _is.read(x);
+        _bi.read(x);
         byte flags = x[3];
 
         if ((flags & 0x01) != 0)
@@ -27,9 +22,9 @@ class GzipStream
         {
             System.out.println("Flag: Extra");
             byte[] b = new byte[2];
-            _is.read(b);
+            _bi.read(b);
             int len = b[0] & 0xFF | (b[1] & 0xFF) << 8;
-            _is.read(new byte[len]);
+            _bi.read(new byte[len]);
         }
 
         if ((flags & 0x08) != 0)
@@ -38,24 +33,21 @@ class GzipStream
         if ((flags & 0x02) != 0)
         {
             byte[] b = new byte[2];
-            _is.read(b);
+            _bi.read(b);
             System.out.printf("Header CRC-16: %04X%n", b[0] & 0xFF | (b[1] & 0xFF) << 8);
         }
 
         if ((flags & 0x10) != 0)
             System.out.println("Comment: " + readNullTerminatedString());
 
-        Decompressor d = new Decompressor(_is);
+        Decompressor d = new Decompressor(_bi);
         d.extractTo(os);
     }
 
     String readNullTerminatedString() throws IOException
     {
         StringBuilder sb = new StringBuilder();
-
-        for (int c = _is.readByte(); c != 0; c = _is.readByte())
-            sb.append((char)c);
-
+        for (int c = _bi.readByte(); c != 0; c = _bi.readByte()) sb.append((char)c);
         return sb.toString();
     }
 }
@@ -63,114 +55,104 @@ class GzipStream
 class Decompressor
 {
     BitInput _bi;
-    CircularDictionary _dictionary;
+    CircularDict _dict;
     CodeTree _lit, _dist;
-    int[] llcodelens = new int[288];
+    int[] _llcodelens = new int[288];
 
-    void extractTo(OutputStream os) throws IOException, DataFormatException
+    void extractTo(OutputStream os) throws IOException
     {
         for (boolean isFinal = false; !isFinal;)
         {
             isFinal = _bi.readBool();
-            int type = readInt(2);
-            CodeTree litLenCode, distCode;
+            int type = _bi.readInt(2);
 
             switch (type)
             {
             case 0:
-                decompressUncompressedBlock(os);
+                _decRaw(os);
                 break;
             case 1:
-                decompressHuffmanBlock(_lit, _dist, os);
+                _decHuff(_lit, _dist, os);
                 break;
             case 2:
                 CodeTree[] temp = decodeHuffmanCodes();
-                litLenCode = temp[0];
-                distCode = temp[1];
-                decompressHuffmanBlock(litLenCode, distCode, os);
+                _decHuff(temp[0], temp[1], os);
                 break;
-            case 3:
-                throw new DataFormatException("Invalid block type");
             default:
                 throw new AssertionError();
             }
         }
     }
 
-    Decompressor(BitInput in) throws IOException, DataFormatException
+    Decompressor(BitInput in) throws IOException
     {
-        Arrays.fill(llcodelens,   0, 144, 8);
-        Arrays.fill(llcodelens, 144, 256, 9);
-        Arrays.fill(llcodelens, 256, 280, 7);
-        Arrays.fill(llcodelens, 280, 288, 8);
-        _lit = new CanonicalCode(llcodelens).toCodeTree();
+        _dict = new CircularDict(32 * 1024);
+        Arrays.fill(_llcodelens,   0, 144, 8);
+        Arrays.fill(_llcodelens, 144, 256, 9);
+        Arrays.fill(_llcodelens, 256, 280, 7);
+        Arrays.fill(_llcodelens, 280, 288, 8);
+        _lit = new CanonicalCode(_llcodelens).toCodeTree();
         int[] distcodelens = new int[32];
         Arrays.fill(distcodelens, 5);
         _dist = new CanonicalCode(distcodelens).toCodeTree();
         _bi = in;
-        _dictionary = new CircularDictionary(32 * 1024);
     }
 
-    CodeTree[] decodeHuffmanCodes() throws IOException, DataFormatException
+    CodeTree[] decodeHuffmanCodes() throws IOException
     {
-        int numLitLenCodes = readInt(5) + 257;
-        int numDistCodes = readInt(5) + 1;
-        int numCodeLenCodes = readInt(4) + 4;
+        int nlit = _bi.readInt(5) + 257, ndist = _bi.readInt(5) + 1, ncode = _bi.readInt(4) + 4;
         int[] codeLenCodeLen = new int[19];
-        codeLenCodeLen[16] = readInt(3);
-        codeLenCodeLen[17] = readInt(3);
-        codeLenCodeLen[18] = readInt(3);
-        codeLenCodeLen[ 0] = readInt(3);
+        codeLenCodeLen[16] = _bi.readInt(3);
+        codeLenCodeLen[17] = _bi.readInt(3);
+        codeLenCodeLen[18] = _bi.readInt(3);
+        codeLenCodeLen[ 0] = _bi.readInt(3);
 
-        for (int i = 0; i < numCodeLenCodes - 4; i++)
+        for (int i = 0; i < ncode - 4; i++)
         {
-            if (i % 2 == 0)
-                codeLenCodeLen[8 + i / 2] = readInt(3);
-            else
-                codeLenCodeLen[7 - i / 2] = readInt(3);
+            int j = i % 2 == 0 ? 8 + i / 2 : 7 - i / 2;
+            codeLenCodeLen[j] = _bi.readInt(3);
         }
 
         CodeTree codeLenCode = new CanonicalCode(codeLenCodeLen).toCodeTree();
-        int[] codeLens = new int[numLitLenCodes + numDistCodes];
-        int runVal = -1, runLen = 0;
+        int[] codeLens = new int[nlit + ndist];
 
-        for (int i = 0; i < codeLens.length; i++)
+        for (int i = 0, runVal = -1, runLen = 0; i < codeLens.length; i++)
         {
             if (runLen > 0)
             {
                 codeLens[i] = runVal;
                 runLen--;	
-			}
+            }
             else
             {
-                int sym = decodeSymbol(codeLenCode);
+                int sym = _decSym(codeLenCode);
 
-                if (sym < 16) {
-					codeLens[i] = sym;
-					runVal = sym;
-				} else {
-					if (sym == 16) {
-						if (runVal == -1)
-							throw new DataFormatException("No code length value to copy");
-						runLen = readInt(2) + 3;
-                    } else if (sym == 17) {
-                        runVal = 0;
-                        runLen = readInt(3) + 3;
-                    } else if (sym == 18) {
-                        runVal = 0;
-                        runLen = readInt(7) + 11;
-                    } else
-                        throw new AssertionError();
+                switch (sym)
+                {
+                case 16:
+                    runLen = _bi.readInt(2) + 3;
                     i--;
+                    break;
+                case 17:
+                    runVal = 0;
+                    runLen = _bi.readInt(3) + 3;
+                    i--;
+                    break;
+                case 18:
+                    runVal = 0;
+                    runLen = _bi.readInt(7) + 11;
+                    i--;
+                    break;
+                default:
+                    codeLens[i] = sym;
+                    runVal = sym;
                 }
             }
         }
-        if (runLen > 0)
-            throw new DataFormatException("Run exceeds number of codes");
 
-        int[] litLenCodeLen = Arrays.copyOf(codeLens, numLitLenCodes);
+        int[] litLenCodeLen = Arrays.copyOf(codeLens, nlit);
         CodeTree litLenCode = new CanonicalCode(litLenCodeLen).toCodeTree();
-        int[] distCodeLen = Arrays.copyOfRange(codeLens, numLitLenCodes, codeLens.length);
+        int[] distCodeLen = Arrays.copyOfRange(codeLens, nlit, codeLens.length);
         CodeTree distCode;
 
         if (distCodeLen.length == 1 && distCodeLen[0] == 0)
@@ -182,12 +164,7 @@ class Decompressor
             int oneCount = 0, otherPositiveCount = 0;
 
             for (int x : distCodeLen)
-            {
-                if (x == 1)
-                    oneCount++;
-                else if (x > 1)
-                    otherPositiveCount++;
-            }
+                if (x == 1) oneCount++; else if (x > 1) otherPositiveCount++;
 
             if (oneCount == 1 && otherPositiveCount == 0)
             {
@@ -201,35 +178,25 @@ class Decompressor
         return new CodeTree[]{litLenCode, distCode};
     }
 
-    void decompressUncompressedBlock(OutputStream os) throws IOException, DataFormatException
+    private void _decRaw(OutputStream os) throws IOException
     {
         _bi.ignoreBuf();
-        int len = readInt(16), nlen = readInt(16);
-
-        if ((len ^ 0xFFFF) != nlen)
-            throw new DataFormatException("Invalid length in uncompressed block");
+        int len = _bi.readInt(16);
+        _bi.ignore(16);
 		
         for (int i = 0; i < len; i++)
         {
             int temp = _bi.readByte();
-
-            if (temp == -1)
-                throw new EOFException();
-
             os.write(temp);
-            _dictionary.append(temp);
+            _dict.append(temp);
         }
     }
 
-    void decompressHuffmanBlock(CodeTree litLenCode, CodeTree distCode, OutputStream os)
-            throws IOException, DataFormatException
+    private void _decHuff(CodeTree lit, CodeTree dist, OutputStream os) throws IOException
     {
-        if (litLenCode == null)
-            throw new NullPointerException();
-		
         while (true)
         {
-            int sym = decodeSymbol(litLenCode);
+            int sym = _decSym(lit);
 
             if (sym == 256)
                 break;
@@ -237,218 +204,139 @@ class Decompressor
             if (sym < 256)
             {
                 os.write(sym);
-                _dictionary.append(sym);
+                _dict.append(sym);
             }
             else
             {
-                int len = decodeRunLength(sym);
-
-                if (distCode == null)
-                    throw new DataFormatException("Length sym encountered with empty dist code");
-
-                int distSym = decodeSymbol(distCode), dist = decodeDistance(distSym);
-                _dictionary.copy(dist, len, os);
+                int len = _decRll(sym), distSym = _decSym(dist);
+                _dict.copy(_decDist(distSym), len, os);
             }
         }
     }
 	
-    int decodeSymbol(CodeTree code) throws IOException
+    private int _decSym(CodeTree code) throws IOException
     {
-        InternalNode currentNode = code.root;
+        return _decSym(code.root);
+    }
 
-        while (true)
+    private int _decSym(Node n) throws IOException
+    {
+        for (;;)
         {
-			Node nextNode = _bi.readBool() ? currentNode.rightChild : currentNode.leftChild;
-
-            if (nextNode instanceof Leaf)
-                return ((Leaf)nextNode).symbol;
-            else if (nextNode instanceof InternalNode)
-                currentNode = (InternalNode)nextNode;
-            else
-                throw new AssertionError();
+            Node next = _bi.readBool() ? n.right : n.left;
+            if (next.type == 2) return next.symbol;
+            n = next;
         }
     }
 
-    int decodeRunLength(int sym) throws IOException, DataFormatException
+    private int _decRll(int sym) throws IOException
     {
-        if (sym < 257 || sym > 285)
-            throw new DataFormatException("Invalid run length symbol: " + sym);
-        else if (sym <= 264)
-            return sym - 254;
-        else if (sym <= 284)
-        {
-            int i = (sym - 261) / 4;
-            return (((sym - 265) % 4 + 4) << i) + 3 + readInt(i);
-        }
-        else
-            return 258;
+        int i = (sym - 261) / 4;
+        if (sym <= 264) return sym - 254;
+        if (sym <= 284) return ((sym - 265) % 4 + 4 << i) + 3 + _bi.readInt(i);
+        return 258;
     }
 
-    int decodeDistance(int sym) throws IOException, DataFormatException
+    private int _decDist(int sym) throws IOException
     {
-        if (sym <= 3)
-        {
-            return sym + 1;
-        }
-        else if (sym <= 29)
-        {
-            int i = sym / 2 - 1;
-            return ((sym % 2 + 2) << i) + 1 + readInt(i);
-        }
-        else
-        {
-            throw new DataFormatException("Invalid distance symbol: " + sym);
-        }
-    }
-
-    int readInt(int numBits) throws IOException
-    {
-        if (numBits < 0 || numBits >= 32)
-            throw new IllegalArgumentException();
-
-        int result = 0;
-
-        for (int i = 0; i < numBits; i++)
-            result |= _bi.readBit() << i;
-
-        return result;
+        int i = sym / 2 - 1;
+        return sym <= 3 ? sym + 1 : (sym % 2 + 2 << i) + 1 + _bi.readInt(i);
     }
 }
 
 class CanonicalCode
 {	
-    int[] codeLengths;
-
-    public CanonicalCode(int[] codeLengths)
-    {
-        if (codeLengths == null)
-            throw new NullPointerException("Argument is null");
-
-        this.codeLengths = codeLengths.clone();
-
-        for (int x : codeLengths)
-            if (x < 0)
-                throw new IllegalArgumentException("Illegal code length");
-    }
+    private int[] _codeLengths;
+    CanonicalCode(int[] codeLengths) { _codeLengths = codeLengths.clone(); }
 	
-    public CanonicalCode(CodeTree tree, int symbolLimit)
+    CanonicalCode(CodeTree tree, int symbolLimit)
     {
-        codeLengths = new int[symbolLimit];
-        buildCodeLengths(tree.root, 0);
+        _codeLengths = new int[symbolLimit];
+        _buildCodeLengths(tree.root, 0);
     }
 
-    void buildCodeLengths(Node node, int depth)
+    private void _buildCodeLengths(Node node, int depth)
     {
-        if (node instanceof InternalNode)
+        if (node.type == 1)
         {
-            InternalNode internalNode = (InternalNode)node;
-            buildCodeLengths(internalNode.leftChild , depth + 1);
-            buildCodeLengths(internalNode.rightChild, depth + 1);
+            Node internalNode = node;
+            _buildCodeLengths(internalNode.left , depth + 1);
+            _buildCodeLengths(internalNode.right, depth + 1);
         }
-        else if (node instanceof Leaf)
+        else if (node.type == 2)
         {
-            int symbol = ((Leaf)node).symbol;
-            if (codeLengths[symbol] != 0)
-                throw new AssertionError("Symbol has more than one code");
-            if (symbol >= codeLengths.length)
-                throw new IllegalArgumentException("Symbol exceeds symbol limit");
-			codeLengths[symbol] = depth;
-		} else {
-			throw new AssertionError("Illegal node type");
-		}
-	}
-
-    public int getSymbolLimit()
-    {
-        return codeLengths.length;
+            int symbol = node.symbol;
+            _codeLengths[symbol] = depth;
+        }
     }
 
-    public int getCodeLength(int symbol)
-    {
-        if (symbol < 0 || symbol >= codeLengths.length)
-            throw new IllegalArgumentException("Symbol out of range");
-        return codeLengths[symbol];
-    }
-
-    public CodeTree toCodeTree()
+    CodeTree toCodeTree()
     {
         java.util.List<Node> nodes = new java.util.ArrayList<Node>();
 
-        for (int i = max(codeLengths); i >= 1; i--)
+        for (int i = _max(_codeLengths); i >= 1; i--)
         {
             java.util.List<Node> newNodes = new java.util.ArrayList<Node>();
 
-            for (int j = 0; j < codeLengths.length; j++)
-                if (codeLengths[j] == i)
-                    newNodes.add(new Leaf(j));
+            for (int j = 0; j < _codeLengths.length; j++)
+                if (_codeLengths[j] == i)
+                    newNodes.add(new Node(j));
 
             for (int j = 0; j < nodes.size(); j += 2)
-                newNodes.add(new InternalNode(nodes.get(j), nodes.get(j + 1)));
+                newNodes.add(new Node(nodes.get(j), nodes.get(j + 1)));
 
             nodes = newNodes;
-
-            if (nodes.size() % 2 != 0)
-                throw new IllegalStateException("This cano code doesnt repr a Huffman code tree");
         }
 
-        if (nodes.size() != 2)
-            throw new IllegalStateException("This canonical code doesnt repr a Huffman code tree");
-
-        return new CodeTree(new InternalNode(nodes.get(0), nodes.get(1)), codeLengths.length);
+        return new CodeTree(new Node(nodes.get(0), nodes.get(1)), _codeLengths.length);
     }
 
-    int max(int[] array)
+    private int _max(int[] array)
     {
         int result = array[0];
-
-        for (int x : array)
-            result = Math.max(x, result);
-
+        for (int x : array) result = Math.max(x, result);
         return result;
     }
 }
 
-class CircularDictionary
+class CircularDict
 {
-    byte[] data;
-    int index, mask;
-	
-    public CircularDictionary(int size)
+    private byte[] _data;
+    private int _index, _mask;
+
+    CircularDict(int size)
     {
-        data = new byte[size];
-        index = 0;
-        mask = size > 0 && (size & (size - 1)) == 0 ? size - 1 : 0;
+        _data = new byte[size];
+        _index = 0;
+        _mask = size > 0 && (size & (size - 1)) == 0 ? size - 1 : 0;
     }
     
-    public void append(int b)
+    void append(int b)
     {
-        data[index] = (byte)b;
-        index = mask != 0 ? (index + 1) & mask : (index + 1) % data.length;
+        _data[_index] = (byte)b;
+        _index = _mask != 0 ? (_index + 1) & _mask : (_index + 1) % _data.length;
 	}
-	
-    public void copy(int dist, int len, java.io.OutputStream out) throws IOException
-    {
-        if (len < 0 || dist < 1 || dist > data.length)
-            throw new IllegalArgumentException();
 
-        if (mask != 0)
+    void copy(int dist, int len, java.io.OutputStream out) throws IOException
+    {
+        if (_mask != 0)
         {
-            for (int i = 0, readIndex = (index - dist + data.length) & mask; i < len; i++)
+            for (int i = 0, readIndex = (_index - dist + _data.length) & _mask; i < len; i++)
             {
-                out.write(data[readIndex]);
-                data[index] = data[readIndex];
-                readIndex = (readIndex + 1) & mask;
-                index = (index + 1) & mask;
+                out.write(_data[readIndex]);
+                _data[_index] = _data[readIndex];
+                readIndex = (readIndex + 1) & _mask;
+                _index = (_index + 1) & _mask;
             }
         }
         else
         {
-            for (int i = 0, readIndex = (index - dist + data.length) % data.length; i < len; i++)
+            for (int i = 0, j = (_index - dist + _data.length) % _data.length; i < len; i++)
             {
-                out.write(data[readIndex]);
-                data[index] = data[readIndex];
-                readIndex = (readIndex + 1) % data.length;
-                index = (index + 1) % data.length;
+                out.write(_data[j]);
+                _data[_index] = _data[j];
+                j = (j + 1) % _data.length;
+                _index = (_index + 1) % _data.length;
             }
         }
     }
@@ -456,118 +344,40 @@ class CircularDictionary
 
 class CodeTree
 {
-    public final InternalNode root;
-    java.util.List<java.util.List<Integer>> codes;
+    final Node root;
+    private java.util.List<java.util.List<Integer>> _codes;
 
-    public CodeTree(InternalNode root, int symbolLimit)
+    CodeTree(Node root, int symbolLimit)
     {
-        if (root == null)
-            throw new NullPointerException("Argument is null");
-
         this.root = root;
-        codes = new java.util.ArrayList<java.util.List<Integer>>();
-
-        for (int i = 0; i < symbolLimit; i++)
-            codes.add(null);
-
-        buildCodeList(root, new java.util.ArrayList<Integer>());
+        _codes = new java.util.ArrayList<java.util.List<Integer>>();
+        for (int i = 0; i < symbolLimit; i++) _codes.add(null);
+        _buildCodeList(root, new java.util.ArrayList<Integer>());
+        //System.out.println("CodeTree constructor");
     }
 
-    void buildCodeList(Node node, java.util.List<Integer> prefix)
+    private void _buildCodeList(Node node, java.util.List<Integer> prefix)
     {
-        if (node instanceof InternalNode)
+        if (node.type == 1)
         {
-            InternalNode internalNode = (InternalNode)node;
             prefix.add(0);
-            buildCodeList(internalNode.leftChild , prefix);
+            _buildCodeList(node.left , prefix);
             prefix.remove(prefix.size() - 1);
             prefix.add(1);
-            buildCodeList(internalNode.rightChild, prefix);
+            _buildCodeList(node.right, prefix);
             prefix.remove(prefix.size() - 1);
         }
-        else if (node instanceof Leaf)
-        {
-            Leaf leaf = (Leaf)node;
-
-            if (leaf.symbol >= codes.size())
-                throw new IllegalArgumentException("Symbol exceeds symbol limit");
-
-            if (codes.get(leaf.symbol) != null)
-                throw new IllegalArgumentException("Symbol has more than one code");
-
-            codes.set(leaf.symbol, new java.util.ArrayList<Integer>(prefix));
-        }
-        else
-        {
-            throw new AssertionError("Illegal node type");
-        }
-    }
-
-    public java.util.List<Integer> getCode(int symbol)
-    {
-        if (symbol < 0)
-            throw new IllegalArgumentException("Illegal symbol");
-        else if (codes.get(symbol) == null)
-            throw new IllegalArgumentException("No code for given symbol");
-        else
-            return codes.get(symbol);
-    }
-	
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder();
-        toString("", root, sb);
-        return sb.toString();
-    }
-	
-    void toString(String prefix, Node node, StringBuilder sb)
-    {
-        if (node instanceof InternalNode)
-        {
-            InternalNode internalNode = (InternalNode)node;
-            toString(prefix + "0", internalNode.leftChild , sb);
-            toString(prefix + "1", internalNode.rightChild, sb);
-        }
-        else if (node instanceof Leaf)
-        {
-            sb.append(String.format("Code %s: Symbol %d%n", prefix, ((Leaf)node).symbol));
-        }
-        else
-        {
-            throw new AssertionError("Illegal node type");
-        }
+        else if (node.type == 2)
+            _codes.set(node.symbol, new java.util.ArrayList<Integer>(prefix));
     }
 }
 
-abstract class Node
+class Node
 {
-    public Node() {}
-}
-
-class InternalNode extends Node
-{
-    public final Node leftChild, rightChild;
-
-    public InternalNode(Node leftChild, Node rightChild)
-    {
-        if (leftChild == null || rightChild == null)
-            throw new NullPointerException("Argument is null");
-
-        this.leftChild = leftChild;
-        this.rightChild = rightChild;
-    }
-}
-
-class Leaf extends Node
-{	
-    public final int symbol;
-
-    public Leaf(int symbol)
-    {
-        if (symbol < 0)
-            throw new IllegalArgumentException("Illegal symbol value");
-        this.symbol = symbol;
-    }
+    Node left, right;
+    final int symbol, type;
+    Node(Node l, Node r) { symbol = 0; left = l; right = r; type = 1; }
+    Node(int s) { symbol = s; type = 2; }
 }
 
 class BitInput
@@ -575,14 +385,14 @@ class BitInput
     java.io.InputStream _is;
     int _nextBits, _bitPos = 8;
     int _getBitPos() { return _bitPos % 8; }
-    public BitInput(java.io.InputStream is) { _is = is; }
-    public boolean readBool() throws IOException { return readBit() == 1; }
-    public void ignore(int n) throws IOException { while (n-- > 0) readBool(); }
-    public void ignoreBuf() throws IOException { ignore(_getBitPos()); }
-    public int readByte() throws IOException { return _is.read(); }
-    public int read(byte[] b) throws IOException { return _is.read(b); }
+    BitInput(java.io.InputStream is) { _is = is; }
+    boolean readBool() throws IOException { return readBit() == 1; }
+    void ignore(int n) throws IOException { while (n-- > 0) readBool(); }
+    void ignoreBuf() throws IOException { ignore(_getBitPos()); }
+    int readByte() throws IOException { return _is.read(); }
+    int read(byte[] b) throws IOException { return _is.read(b); }
     	
-    public int readBit() throws IOException
+    int readBit() throws IOException
     {
         if (_bitPos == 8)
         {
@@ -591,6 +401,13 @@ class BitInput
         }
 
         return _nextBits >>> _bitPos++ & 1;
+    }
+
+    int readInt(int numBits) throws IOException
+    {
+        int result = 0;
+        for (int i = 0; i < numBits; i++) result |= readBit() << i;
+        return result;
     }
 }
 
@@ -616,10 +433,10 @@ public class Gunzip
         if (args.length != 2)
             throw new Exception("Usage: java GzipDecompress InputFile OutputFile");
 
-        FileInputStream ifs = new FileInputStream(args[0]);
-        BufferedInputStream bis = new BufferedInputStream(ifs, 16 * 1024);
+        java.io.FileInputStream ifs = new java.io.FileInputStream(args[0]);
+        java.io.BufferedInputStream bis = new java.io.BufferedInputStream(ifs, 16 * 1024);
         OutputStream ofs = new java.io.FileOutputStream(args[1]);
-        BufferedOutputStream bos = new BufferedOutputStream(ofs, 16 * 1024);
+        java.io.BufferedOutputStream bos = new java.io.BufferedOutputStream(ofs, 16 * 1024);
         GzipStream gz = new GzipStream(bis);
         gz.extractTo(bos);
         bos.close();
