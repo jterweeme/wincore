@@ -7,10 +7,10 @@ TARGETS = base64 bunzip2 bzcat cat cp crc32 dd diff dos2unix grep gunzip gzip \
     od tar test1 testbinp tr unix2dos uuidgen yes
 
 %.o: %.cpp
-	g++ $(CXXFLAGS) -c -o $@ $<
+	@g++ $(CXXFLAGS) -c -o $@ $<
 
 %: %.o
-	g++ -o $@ $^
+	@g++ -o $@ $^
 
 .PHONY: all
 
@@ -80,6 +80,9 @@ test:
 	$(VALGRIND) ./md5s -c data.md5
 	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s | ./diff -s kompakt1.out -
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
+	$(VALGRIND) ./gzip boston.mp3
+	gunzip boston.mp3.gz
+	$(VALGRIND) ./md5s -c data.md5
 
 clean:
 	rm -Rvf *.o jpg2tga *.tga $(TARGETS)
