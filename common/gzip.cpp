@@ -369,21 +369,12 @@ extern int save_orig_name;
 #define SH(p) ((ush)(uch)((p)[0]) | ((ush)(uch)((p)[1]) << 8))
 #define LG(p) ((ulg)(SH(p)) | ((ulg)(SH((p)+2)) << 16))
 
-#ifdef DEBUG
-#  define Assert(cond,msg) {if(!(cond)) error(msg);}
-#  define Trace(x) fprintf x
-#  define Tracev(x) {if (verbose) fprintf x ;}
-#  define Tracevv(x) {if (verbose>1) fprintf x ;}
-#  define Tracec(c,x) {if (verbose && (c)) fprintf x ;}
-#  define Tracecv(c,x) {if (verbose>1 && (c)) fprintf x ;}
-#else
 #  define Assert(cond,msg)
 #  define Trace(x)
 #  define Tracev(x)
 #  define Tracevv(x)
 #  define Tracec(c,x)
 #  define Tracecv(c,x)
-#endif
 
 #define WARN(msg) {if (!quiet) fprintf msg ; \
 		   if (exit_code == OK) exit_code = WARNING;}
@@ -453,18 +444,11 @@ local int bi_valid;
 
 int (*read_buf) OF((char *buf, unsigned size));
 
-#ifdef DEBUG
-  off_t bits_sent; 
-#endif
-
 void bi_init (file_t zipfile)
 {
     zfile  = zipfile;
     bi_buf = 0;
     bi_valid = 0;
-#ifdef DEBUG
-    bits_sent = 0L;
-#endif
 
     if (zfile != NO_FILE) {
 	read_buf  = file_read;
@@ -473,12 +457,6 @@ void bi_init (file_t zipfile)
 
 void send_bits(int value, int length)
 {
-#ifdef DEBUG
-    Tracev((stderr," l %2d v %4x ", length, value));
-    Assert(length > 0 && length <= 15, "invalid length");
-    bits_sent += (off_t)length;
-#endif
-
     if (bi_valid > (int)Buf_size - length) {
         bi_buf |= (value << bi_valid);
         put_short(bi_buf);
@@ -511,9 +489,7 @@ void bi_windup()
     }
     bi_buf = 0;
     bi_valid = 0;
-#ifdef DEBUG
-    bits_sent = (bits_sent+7) & ~7;
-#endif
+
 }
 
 
@@ -524,13 +500,8 @@ void copy_block(char *buf, unsigned len, int header)
     if (header) {
         put_short((ush)len);   
         put_short((ush)~len);
-#ifdef DEBUG
-        bits_sent += 2*16;
-#endif
+
     }
-#ifdef DEBUG
-    bits_sent += (off_t)len<<3;
-#endif
     while (len--) {
 #ifdef CRYPT
         int t;
@@ -670,9 +641,6 @@ local off_t deflate_fast OF((void));
       void match_init OF((void));
 #endif
 
-#ifdef DEBUG
-local  void check_match OF((IPos start, IPos match, int length));
-#endif
 #define UPDATE_HASH(h,c) (h = (((h)<<H_SHIFT) ^ (c)) & HASH_MASK)
 
 
@@ -823,24 +791,7 @@ int longest_match(IPos cur_match)
 }
 #endif
 
-#ifdef DEBUG
-local void check_match(IPos start, IPos match, int length)
-{
-    if (memcmp((char*)window + match,
-                (char*)window + start, length) != EQUAL) {
-        fprintf(stderr,
-            " start %d, match %d, length %d\n",
-            start, match, length);
-        error("invalid match");
-    }
-    if (verbose > 1) {
-        fprintf(stderr,"\\[%d,%d]", start-match, length);
-        do { putc(window[start++], stderr); } while (--length != 0);
-    }
-}
-#else
-#  define check_match(start, match, length)
-#endif
+#define check_match(start, match, length)
 
 
 local void fill_window()
@@ -1065,16 +1016,9 @@ off_t deflate()
 extern "C" {
 #endif
 
-
-
 extern char *optarg;
-
 extern int optind;
-
-
-
 extern int opterr;
-
 extern int optopt;
 
 
@@ -1094,8 +1038,6 @@ struct option
 # define no_argument		0
 # define required_argument	1
 # define optional_argument	2
-
-
 
 
 #if (defined __STDC__ && __STDC__) || defined __cplusplus
@@ -2045,9 +1987,6 @@ local void version()
 #endif
 #ifdef ASMV
     printf ("ASMV ");
-#endif
-#ifdef DEBUG
-    printf ("DEBUG ");
 #endif
 #ifdef DYN_ALLOC
     printf ("DYN_ALLOC ");
@@ -3812,8 +3751,6 @@ int inflate_dynamic()
   return 0;
 }
 
-
-
 int inflate_block(int *e)
 {
   unsigned t;          
@@ -3873,11 +3810,6 @@ int inflate()
   }
 
   flush_output(wp);
-
-
-#ifdef DEBUG
-  fprintf(stderr, "<%u> ", h);
-#endif 
   return 0;
 }
 
@@ -4022,14 +3954,8 @@ local off_t compressed_len;
 local off_t input_len;
 ush *file_type;        
 int *file_method;      
-
-#ifdef DEBUG
-extern off_t bits_sent; 
-#endif
-
 extern long block_start;       
 extern unsigned near strstart; 
-
 
 local void init_block     OF((void));
 local void pqdownheap     OF((ct_data near *tree, int k));
@@ -5188,18 +5114,6 @@ int unlzw(int in, int out)
 	    
 	    if (code >= free_ent) {
 		if (code > free_ent) {
-#ifdef DEBUG		    
-		    char_type *p;
-
-		    posbits -= n_bits;
-		    p = &inbuf[posbits>>3];
-		    fprintf(stderr,
-			    "code:%ld free_ent:%ld n_bits:%d insize:%u\n",
-			    code, free_ent, n_bits, insize);
-		    fprintf(stderr,
-			    "posbits:%ld inbuf:%02X %02X %02X %02X %02X\n",
-			    posbits, p[-1],p[0],p[1],p[2],p[3]);
-#endif
 		    if (!test && outpos > 0) {
 			write_buf(out, (char*)outbuf, outpos);
 			bytes_out += (off_t)outpos;
