@@ -17,17 +17,11 @@
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
+#include <stdint.h>
 
-#define HAVE_CONFIG_H 1
 #define HAVE_DIRENT_H 1
-#define HAVE_FCNTL_H 1
-#define HAVE_INTTYPES_H 1
-#define HAVE_LIMITS_H 1
 #define HAVE_LSTAT 1
 #define HAVE_MEMORY_H 1
-#define HAVE_STDINT_H 1
-#define HAVE_STDLIB_H 1
-#define HAVE_STRINGS_H 1
 #define HAVE_STRING_H 1
 #define HAVE_SYS_STAT_H 1
 #define HAVE_SYS_TYPES_H 1
@@ -510,10 +504,6 @@ void copy_block(char *buf, unsigned len, int header)
 	put_byte(*buf++);
     }
 }
-#ifdef RCSID
-static char rcsid[] = "$Id: crypt.c,v 0.6 1993/03/22 09:48:47 jloup Exp $";
-#endif
-
 
 #ifndef BITS
 #  define BITS 16
@@ -1012,9 +1002,7 @@ off_t deflate()
 # define _GETOPT_H 1
 #endif
 
-#ifdef	__cplusplus
 extern "C" {
-#endif
 
 extern char *optarg;
 extern int optind;
@@ -1701,20 +1689,11 @@ static char  *license_msg[] = {
 (char *)"under the terms of the GNU General Public License.",
 (char *)"For more information about these matters, see the file named COPYING.",
 0};
-
-
-#ifdef RCSID
-static char rcsid[] = "$Id: gzip.c,v 0.24 1993/06/24 10:52:07 jloup Exp $";
-#endif
-
-
 #define PATCHLEVEL 0
 #define REVDATE "2002-09-30"
 #ifdef LZW
 #  undef LZW
 #endif
-
-
 #  define NAMLEN(direct) strlen((direct)->d_name)
 #  define DIR_OPT "DIRENT"
 #ifndef NO_DIR
@@ -1890,12 +1869,8 @@ local void do_exit      OF((int exitcode));
       int main          OF((int argc, char **argv));
 int (*work) OF((int infile, int outfile)) = zip;
 
-#if ! NO_DIR
 local void treat_dir    OF((char *dir));
-#endif
-#ifdef HAVE_UTIME
 local void reset_times  OF((char *name, struct stat *statb));
-#endif
 
 #define strequ(s1, s2) (strcmp((s1),(s2)) == 0)
 
@@ -2022,7 +1997,7 @@ int main(int argc, char **argv)
         progname[proglen-4] = '\0';
     }
 
-    env = add_envopt(&argc, &argv, OPTIONS_VAR);
+    env = add_envopt(&argc, &argv, (char *)"GZIP");
     if (env != NULL) args = argv;
 
     foreground = signal(SIGINT, SIG_IGN) != SIG_IGN;
@@ -2034,14 +2009,10 @@ int main(int argc, char **argv)
 	(void) signal(SIGTERM, (sig_type)abort_gzip_signal);
     }
 #endif
-#ifdef SIGHUP
     if (signal(SIGHUP, SIG_IGN) != SIG_IGN) {
 	(void) signal(SIGHUP,  (sig_type)abort_gzip_signal);
     }
-#endif
 
-#ifndef GNU_STANDARD
-    
     if (  strncmp(progname, "un",  2) == 0     
        || strncmp(progname, "gun", 3) == 0) {  
 	decompress = 1;
@@ -2049,9 +2020,8 @@ int main(int argc, char **argv)
 	    || strequ(progname, "gzcat")) {   
 	decompress = to_stdout = 1;
     }
-#endif
 
-    z_suffix = Z_SUFFIX;
+    z_suffix = (char *)".gz";
     z_len = strlen(z_suffix);
 
     while ((optc = getopt_long (argc, argv, "ab:cdfhH?lLmMnNqrS:tvVZ123456789",
@@ -2301,9 +2271,7 @@ local void treat_file(char *iname)
 	    struct stat st;
 	    st = istat;
 	    treat_dir(iname);
-#  ifndef NO_UTIME
 	    reset_times (iname, &st);
-#  endif
 	} else
 #endif
 	WARN((stderr,"%s: %s is a directory -- ignored\n", progname, ifname));
@@ -2472,10 +2440,7 @@ local char *get_suffix(char *name)
     char suffix[MAX_SUFFIX+3];
     static char *known_suffixes[] =
        {NULL, (char *)".gz", (char *)".z", (char *)".taz", (char *)".tgz",
-        (char *)"-gz", "-z", "_z",
-#ifdef MAX_EXT_CHARS
-          (char *)"z",
-#endif
+        (char *)"-gz", (char *)"-z", (char *)"_z",
           NULL};
     char **suf = known_suffixes;
 
@@ -3036,7 +3001,6 @@ local int check_ofname()
 }
 
 
-#ifndef NO_UTIME
 local void reset_times (char *name, struct stat *statb)
 {
     struct utimbuf	timep;
@@ -3051,11 +3015,9 @@ local void reset_times (char *name, struct stat *statb)
 	}
     }
 }
-#endif
 
 local void copy_stat(struct stat *ifstat)
 {
-#ifndef NO_UTIME
     if (decompress && time_stamp != 0 && ifstat->st_mtime != time_stamp) {
 	ifstat->st_mtime = time_stamp;
 	if (verbose > 1) {
@@ -3063,7 +3025,6 @@ local void copy_stat(struct stat *ifstat)
 	}
     }
     reset_times(ofname, ifstat);
-#endif
     if (fchmod(ofd, ifstat->st_mode & 07777)) {
 	int e = errno;
 	WARN((stderr, "%s: ", progname));
@@ -3813,10 +3774,6 @@ int inflate()
   return 0;
 }
 
-#ifdef RCSID
-static char rcsid[] = "$Id: lzw.c,v 0.9 1993/06/10 13:27:31 jloup Exp $";
-#endif
-
 static int msg_done = 0;
 
 int lzw(int in, int out)
@@ -3830,18 +3787,13 @@ int lzw(int in, int out)
     return ERROR;
 }
 
-#ifdef RCSID
-static char rcsid[] = "$Id: trees.c,v 0.12 1993/06/10 13:27:54 jloup Exp $";
-#endif
-
-#define MAX_BITS 15
-#define MAX_BL_BITS 7
+static const uint8_t MAX_BITS = 15;
 #define LENGTH_CODES 29
 #define LITERALS  256
 #define END_BLOCK 256
 #define L_CODES (LITERALS+1+LENGTH_CODES)
-#define D_CODES   30
-#define BL_CODES  19
+static const uint8_t D_CODES = 30;
+static const uint8_t BL_CODES = 19;
 
 local int near extra_lbits[LENGTH_CODES]
    = {0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0};
@@ -3920,7 +3872,7 @@ local tree_desc near d_desc =
 {dyn_dtree, static_dtree, extra_dbits, 0,          D_CODES, MAX_BITS, 0};
 
 local tree_desc near bl_desc =
-{bl_tree, (ct_data near *)0, extra_blbits, 0,      BL_CODES, MAX_BL_BITS, 0};
+{bl_tree, (ct_data near *)0, extra_blbits, 0,      BL_CODES, 7, 0};
 
 
 local ush near bl_count[MAX_BITS+1];
