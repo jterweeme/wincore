@@ -2,7 +2,7 @@ all:
 	javac *.java
 
 clean:
-	rm -Rvf *.class *.mp3
+	@rm -Rvf *.class *.mp3
 
 test:
 	rm -f battery boston.mp3 dinges aquarius.mp3
@@ -13,11 +13,14 @@ test:
 	md5sum -c bunzip.md5
 
 testgz:
-	rm -f battery boston.mp3 dinges aquarius.mp3 cdrtools.tar
+	@rm -f battery boston.mp3 dinges aquarius.mp3 cdrtools.tar znew
 	java Gunzip boston.mp3.gz boston.mp3
 	java Gunzip cdrtools.tar.gz cdrtools.tar
+	java Gunzip znew.gz znew
 	md5sum -c data.md5
 
 rebuild: clean all
+
+testg: rebuild testgz
 
 

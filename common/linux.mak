@@ -2,7 +2,8 @@ CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = #valgrind $(VALFLAGS)
 
-TARGETS = base64 bunzip2 bzcat cat cp crc32 dd diff dos2unix grep gunzip jpg2tga kompakt md5s nl \
+TARGETS = base64 bunzip2 bzcat cat cp crc32 dd diff dos2unix grep gunzip gzip \
+    jpg2tga kompakt md5s nl \
     od tar test1 testbinp tr unix2dos uuidgen yes
 
 %.o: %.cpp
@@ -25,6 +26,7 @@ diff: diff.o
 dos2unix: dos2unix.o mystl.o
 grep: grep.o
 gunzip: gunzip.o
+gzip: gzip.o
 jpg2tga: jpg2tga.o
 kompakt: kompakt.o main.o mystl.o filesys.o
 md5s: md5s.o mystl.o hasher.o
@@ -51,6 +53,7 @@ dos2unix.o: dos2unix.cpp
 filesys.o: filesys.cpp filesys.h
 grep.o: grep.cpp
 gunzip.o: gunzip.cpp
+gzip.o: gzip.cpp
 hasher.o: hasher.cpp hasher.h
 jpg2tga.o: jpg2tga.cpp
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h mystl.tcc

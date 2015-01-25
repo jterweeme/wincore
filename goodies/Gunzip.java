@@ -1,15 +1,11 @@
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
 
 class GzipStream
 {
-    BitInput _bi;
-    GzipStream(InputStream is) { this(new BitInput(is)); }
+    private BitInput _bi;
     GzipStream(BitInput bi) { _bi = bi; }
 
-    void extractTo(OutputStream os) throws IOException
+    void extractTo(java.io.OutputStream os) throws IOException
     {
         byte[] x = new byte[10];
         _bi.read(x);
@@ -28,7 +24,7 @@ class GzipStream
         }
 
         if ((flags & 0x08) != 0)
-            System.out.println("File name: " + readNullTerminatedString());
+            System.out.println("File name: " + _readString());
 
         if ((flags & 0x02) != 0)
         {
@@ -38,13 +34,13 @@ class GzipStream
         }
 
         if ((flags & 0x10) != 0)
-            System.out.println("Comment: " + readNullTerminatedString());
+            System.out.println("Comment: " + _readString());
 
         Decompressor d = new Decompressor(_bi);
         d.extractTo(os);
     }
 
-    String readNullTerminatedString() throws IOException
+    private String _readString() throws IOException
     {
         StringBuilder sb = new StringBuilder();
         for (int c = _bi.readByte(); c != 0; c = _bi.readByte()) sb.append((char)c);
@@ -52,14 +48,47 @@ class GzipStream
     }
 }
 
+class Pair
+{
+    CodeTree a, b;
+    Pair(CodeTree a, CodeTree b) { this.a = a; this.b = b; }
+}
+
 class Decompressor
 {
-    BitInput _bi;
-    CircularDict _dict;
-    CodeTree _lit, _dist;
-    int[] _llcodelens = new int[288];
+    private BitInput _bi;
+    private CircularDict _dict;
+    private final CodeTree _lit, _dist;
 
-    void extractTo(OutputStream os) throws IOException
+    private CodeTree _toct(int[] cl)
+    {
+        java.util.List<Node> nodes = new java.util.ArrayList<Node>();
+
+        for (int i = _max(cl); i >= 1; i--)
+        {
+            java.util.List<Node> newNodes = new java.util.ArrayList<Node>();
+
+            for (int j = 0; j < cl.length; j++)
+                if (cl[j] == i)
+                    newNodes.add(new Node(j));
+
+            for (int j = 0; j < nodes.size(); j += 2)
+                newNodes.add(new Node(nodes.get(j), nodes.get(j + 1)));
+
+            nodes = newNodes;
+        }
+
+        return new CodeTree(new Node(nodes.get(0), nodes.get(1)), cl.length);
+    }
+
+    private int _max(int[] array)
+    {
+        int result = array[0];
+        for (int x : array) result = Math.max(x, result);
+        return result;
+    }
+
+    void extractTo(java.io.OutputStream os) throws IOException
     {
         for (boolean isFinal = false; !isFinal;)
         {
@@ -72,11 +101,11 @@ class Decompressor
                 _decRaw(os);
                 break;
             case 1:
-                _decHuff(_lit, _dist, os);
+                _decHuff(_lit.root, _dist.root, os);
                 break;
             case 2:
-                CodeTree[] temp = decodeHuffmanCodes();
-                _decHuff(temp[0], temp[1], os);
+                Pair temp = _makePair();
+                _decHuff(temp.a.root, temp.b.root, os);
                 break;
             default:
                 throw new AssertionError();
@@ -87,18 +116,19 @@ class Decompressor
     Decompressor(BitInput in) throws IOException
     {
         _dict = new CircularDict(32 * 1024);
-        Arrays.fill(_llcodelens,   0, 144, 8);
-        Arrays.fill(_llcodelens, 144, 256, 9);
-        Arrays.fill(_llcodelens, 256, 280, 7);
-        Arrays.fill(_llcodelens, 280, 288, 8);
-        _lit = new CanonicalCode(_llcodelens).toCodeTree();
+        int[] llcodelens = new int[288];
+        java.util.Arrays.fill(llcodelens,   0, 144, 8);
+        java.util.Arrays.fill(llcodelens, 144, 256, 9);
+        java.util.Arrays.fill(llcodelens, 256, 280, 7);
+        java.util.Arrays.fill(llcodelens, 280, 288, 8);
+        _lit = _toct(llcodelens);
         int[] distcodelens = new int[32];
-        Arrays.fill(distcodelens, 5);
-        _dist = new CanonicalCode(distcodelens).toCodeTree();
+        java.util.Arrays.fill(distcodelens, 5);
+        _dist = _toct(distcodelens);
         _bi = in;
     }
 
-    CodeTree[] decodeHuffmanCodes() throws IOException
+    private Pair _makePair() throws IOException
     {
         int nlit = _bi.readInt(5) + 257, ndist = _bi.readInt(5) + 1, ncode = _bi.readInt(4) + 4;
         int[] codeLenCodeLen = new int[19];
@@ -113,7 +143,7 @@ class Decompressor
             codeLenCodeLen[j] = _bi.readInt(3);
         }
 
-        CodeTree codeLenCode = new CanonicalCode(codeLenCodeLen).toCodeTree();
+        CodeTree codeLenCode = _toct(codeLenCodeLen);
         int[] codeLens = new int[nlit + ndist];
 
         for (int i = 0, runVal = -1, runLen = 0; i < codeLens.length; i++)
@@ -125,7 +155,7 @@ class Decompressor
             }
             else
             {
-                int sym = _decSym(codeLenCode);
+                int sym = _decSym(codeLenCode.root);
 
                 switch (sym)
                 {
@@ -150,9 +180,9 @@ class Decompressor
             }
         }
 
-        int[] litLenCodeLen = Arrays.copyOf(codeLens, nlit);
-        CodeTree litLenCode = new CanonicalCode(litLenCodeLen).toCodeTree();
-        int[] distCodeLen = Arrays.copyOfRange(codeLens, nlit, codeLens.length);
+        int[] litLenCodeLen = java.util.Arrays.copyOf(codeLens, nlit);
+        CodeTree litLenCode = _toct(litLenCodeLen);
+        int[] distCodeLen = java.util.Arrays.copyOfRange(codeLens, nlit, codeLens.length);
         CodeTree distCode;
 
         if (distCodeLen.length == 1 && distCodeLen[0] == 0)
@@ -168,17 +198,17 @@ class Decompressor
 
             if (oneCount == 1 && otherPositiveCount == 0)
             {
-                distCodeLen = Arrays.copyOf(distCodeLen, 32);
+                distCodeLen = java.util.Arrays.copyOf(distCodeLen, 32);
                 distCodeLen[31] = 1;
             }
 
-            distCode = new CanonicalCode(distCodeLen).toCodeTree();
+            distCode = _toct(distCodeLen);
         }
 
-        return new CodeTree[]{litLenCode, distCode};
+        return new Pair(litLenCode, distCode);
     }
 
-    private void _decRaw(OutputStream os) throws IOException
+    private void _decRaw(java.io.OutputStream os) throws IOException
     {
         _bi.ignoreBuf();
         int len = _bi.readInt(16);
@@ -192,7 +222,7 @@ class Decompressor
         }
     }
 
-    private void _decHuff(CodeTree lit, CodeTree dist, OutputStream os) throws IOException
+    private void _decHuff(Node lit, Node dist, java.io.OutputStream os) throws IOException
     {
         while (true)
         {
@@ -213,20 +243,15 @@ class Decompressor
             }
         }
     }
-	
-    private int _decSym(CodeTree code) throws IOException
-    {
-        return _decSym(code.root);
-    }
 
     private int _decSym(Node n) throws IOException
     {
-        for (;;)
-        {
-            Node next = _bi.readBool() ? n.right : n.left;
-            if (next.type == 2) return next.symbol;
-            n = next;
-        }
+        Node next = _bi.readBool() ? n.right : n.left;
+
+        for (n = next; next.type == 1; n = next)
+            next = _bi.readBool() ? n.right : n.left;
+
+        return next.symbol;
     }
 
     private int _decRll(int sym) throws IOException
@@ -241,61 +266,6 @@ class Decompressor
     {
         int i = sym / 2 - 1;
         return sym <= 3 ? sym + 1 : (sym % 2 + 2 << i) + 1 + _bi.readInt(i);
-    }
-}
-
-class CanonicalCode
-{	
-    private int[] _codeLengths;
-    CanonicalCode(int[] codeLengths) { _codeLengths = codeLengths.clone(); }
-	
-    CanonicalCode(CodeTree tree, int symbolLimit)
-    {
-        _codeLengths = new int[symbolLimit];
-        _buildCodeLengths(tree.root, 0);
-    }
-
-    private void _buildCodeLengths(Node node, int depth)
-    {
-        if (node.type == 1)
-        {
-            Node internalNode = node;
-            _buildCodeLengths(internalNode.left , depth + 1);
-            _buildCodeLengths(internalNode.right, depth + 1);
-        }
-        else if (node.type == 2)
-        {
-            int symbol = node.symbol;
-            _codeLengths[symbol] = depth;
-        }
-    }
-
-    CodeTree toCodeTree()
-    {
-        java.util.List<Node> nodes = new java.util.ArrayList<Node>();
-
-        for (int i = _max(_codeLengths); i >= 1; i--)
-        {
-            java.util.List<Node> newNodes = new java.util.ArrayList<Node>();
-
-            for (int j = 0; j < _codeLengths.length; j++)
-                if (_codeLengths[j] == i)
-                    newNodes.add(new Node(j));
-
-            for (int j = 0; j < nodes.size(); j += 2)
-                newNodes.add(new Node(nodes.get(j), nodes.get(j + 1)));
-
-            nodes = newNodes;
-        }
-
-        return new CodeTree(new Node(nodes.get(0), nodes.get(1)), _codeLengths.length);
-    }
-
-    private int _max(int[] array)
-    {
-        int result = array[0];
-        for (int x : array) result = Math.max(x, result);
-        return result;
     }
 }
 
@@ -353,7 +323,6 @@ class CodeTree
         _codes = new java.util.ArrayList<java.util.List<Integer>>();
         for (int i = 0; i < symbolLimit; i++) _codes.add(null);
         _buildCodeList(root, new java.util.ArrayList<Integer>());
-        //System.out.println("CodeTree constructor");
     }
 
     private void _buildCodeList(Node node, java.util.List<Integer> prefix)
@@ -435,9 +404,10 @@ public class Gunzip
 
         java.io.FileInputStream ifs = new java.io.FileInputStream(args[0]);
         java.io.BufferedInputStream bis = new java.io.BufferedInputStream(ifs, 16 * 1024);
-        OutputStream ofs = new java.io.FileOutputStream(args[1]);
+        java.io.OutputStream ofs = new java.io.FileOutputStream(args[1]);
         java.io.BufferedOutputStream bos = new java.io.BufferedOutputStream(ofs, 16 * 1024);
-        GzipStream gz = new GzipStream(bis);
+        BitInput bi = new BitInput(bis);
+        GzipStream gz = new GzipStream(bi);
         gz.extractTo(bos);
         bos.close();
         bis.close();
