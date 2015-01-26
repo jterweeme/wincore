@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.util.Arrays;
 
 class GzipStream
 {
@@ -11,27 +12,19 @@ class GzipStream
         _bi.read(x);
         byte flags = x[3];
 
-        if ((flags & 0x01) != 0)
-            System.out.println("Flag: Text");
-
-        if ((flags & 0x04) != 0)
+        if ((flags & 4) != 0)
         {
-            System.out.println("Flag: Extra");
             byte[] b = new byte[2];
             _bi.read(b);
             int len = b[0] & 0xFF | (b[1] & 0xFF) << 8;
             _bi.read(new byte[len]);
         }
 
-        if ((flags & 0x08) != 0)
+        if ((flags & 8) != 0)
             System.out.println("File name: " + _readString());
 
-        if ((flags & 0x02) != 0)
-        {
-            byte[] b = new byte[2];
-            _bi.read(b);
-            System.out.printf("Header CRC-16: %04X%n", b[0] & 0xFF | (b[1] & 0xFF) << 8);
-        }
+        if ((flags & 2) != 0)
+            _bi.ignoreBytes(2);
 
         if ((flags & 0x10) != 0)
             System.out.println("Comment: " + _readString());
@@ -48,6 +41,23 @@ class GzipStream
     }
 }
 
+class Nau
+{
+    int[] _a;
+    Nau(int[] a) { _a = a; }
+    Nau(int n) { _a = new int[n]; }
+    Nau(int n, int val) { _a = new int[n]; for (int i = 0; i < n; i++) _a[i] = val; }
+    void set(int i, int val) { _a[i] = val; }
+    int get(int i) { return _a[i]; }
+    Nau copyOf(int n) { return new Nau(java.util.Arrays.copyOf(_a, n)); }
+    Nau copyOfRange(int a, int b) { return new Nau(java.util.Arrays.copyOfRange(_a, a, b)); }
+    int length() { return _a.length; }
+    int oneCount() { int n = 0; for (int x : _a) if (x == 1) n++; return n; }
+    int otherPositive() { int n = 0; for (int x : _a) if (x > 1) n++; return n; }
+    int max() { int r = _a[0]; for (int x : _a) r = Math.max(x, r); return r; }
+    void shiftLeft(int val) { _a = Arrays.copyOf(_a, _a.length); _a[_a.length] = val; }
+}
+
 class Pair
 {
     CodeTree a, b;
@@ -57,19 +67,19 @@ class Pair
 class Decompressor
 {
     private BitInput _bi;
-    private CircularDict _dict;
+    private final CircularDict _dict;
     private final CodeTree _lit, _dist;
 
-    private CodeTree _toct(int[] cl)
+    private CodeTree _toct(Nau n)
     {
         java.util.List<Node> nodes = new java.util.ArrayList<Node>();
-
-        for (int i = _max(cl); i >= 1; i--)
+        
+        for (int i = n.max(); i >= 1; i--)
         {
             java.util.List<Node> newNodes = new java.util.ArrayList<Node>();
-
-            for (int j = 0; j < cl.length; j++)
-                if (cl[j] == i)
+            
+            for (int j = 0; j < n.length(); j++)
+                if (n.get(j) == i)
                     newNodes.add(new Node(j));
 
             for (int j = 0; j < nodes.size(); j += 2)
@@ -77,15 +87,7 @@ class Decompressor
 
             nodes = newNodes;
         }
-
-        return new CodeTree(new Node(nodes.get(0), nodes.get(1)), cl.length);
-    }
-
-    private int _max(int[] array)
-    {
-        int result = array[0];
-        for (int x : array) result = Math.max(x, result);
-        return result;
+        return new CodeTree(new Node(nodes.get(0), nodes.get(1)), n.length());
     }
 
     void extractTo(java.io.OutputStream os) throws IOException
@@ -113,7 +115,7 @@ class Decompressor
         }
     }
 
-    Decompressor(BitInput in) throws IOException
+    Decompressor(BitInput in)
     {
         _dict = new CircularDict(32 * 1024);
         int[] llcodelens = new int[288];
@@ -121,43 +123,41 @@ class Decompressor
         java.util.Arrays.fill(llcodelens, 144, 256, 9);
         java.util.Arrays.fill(llcodelens, 256, 280, 7);
         java.util.Arrays.fill(llcodelens, 280, 288, 8);
-        _lit = _toct(llcodelens);
-        int[] distcodelens = new int[32];
-        java.util.Arrays.fill(distcodelens, 5);
-        _dist = _toct(distcodelens);
+        Nau llcodeLens2 = new Nau(llcodelens);
+        _lit = _toct(llcodeLens2);
+        Nau distCodeLens2 = new Nau(32, 5);
+        _dist = _toct(distCodeLens2);
         _bi = in;
     }
 
     private Pair _makePair() throws IOException
     {
         int nlit = _bi.readInt(5) + 257, ndist = _bi.readInt(5) + 1, ncode = _bi.readInt(4) + 4;
-        int[] codeLenCodeLen = new int[19];
-        codeLenCodeLen[16] = _bi.readInt(3);
-        codeLenCodeLen[17] = _bi.readInt(3);
-        codeLenCodeLen[18] = _bi.readInt(3);
-        codeLenCodeLen[ 0] = _bi.readInt(3);
+        Nau a = new Nau(19);
+        a.set(16, _bi.readInt(3));
+        a.set(17, _bi.readInt(3));
+        a.set(18, _bi.readInt(3));
+        a.set(0, _bi.readInt(3));
 
         for (int i = 0; i < ncode - 4; i++)
         {
             int j = i % 2 == 0 ? 8 + i / 2 : 7 - i / 2;
-            codeLenCodeLen[j] = _bi.readInt(3);
+            a.set(j, _bi.readInt(3));
         }
 
-        CodeTree codeLenCode = _toct(codeLenCodeLen);
-        int[] codeLens = new int[nlit + ndist];
+        CodeTree b = _toct(a);
+        Nau c = new Nau(nlit + ndist);
 
-        for (int i = 0, runVal = -1, runLen = 0; i < codeLens.length; i++)
+        for (int i = 0, runVal = -1, runLen = 0, sym; i < c.length(); i++)
         {
             if (runLen > 0)
             {
-                codeLens[i] = runVal;
-                runLen--;	
+                c.set(i, runVal);
+                runLen--;
             }
             else
             {
-                int sym = _decSym(codeLenCode.root);
-
-                switch (sym)
+                switch (sym = _decSym(b.root))
                 {
                 case 16:
                     runLen = _bi.readInt(2) + 3;
@@ -174,33 +174,26 @@ class Decompressor
                     i--;
                     break;
                 default:
-                    codeLens[i] = sym;
+                    c.set(i, sym);
                     runVal = sym;
                 }
             }
         }
 
-        int[] litLenCodeLen = java.util.Arrays.copyOf(codeLens, nlit);
+        Nau litLenCodeLen = c.copyOf(nlit);
         CodeTree litLenCode = _toct(litLenCodeLen);
-        int[] distCodeLen = java.util.Arrays.copyOfRange(codeLens, nlit, codeLens.length);
+        Nau distCodeLen = c.copyOfRange(nlit, c.length());
         CodeTree distCode;
 
-        if (distCodeLen.length == 1 && distCodeLen[0] == 0)
+        if (distCodeLen.length() == 1 && distCodeLen.get(0) == 0)
         {
+            System.out.println("Onzin");
             distCode = null;
         }
         else
         {
-            int oneCount = 0, otherPositiveCount = 0;
-
-            for (int x : distCodeLen)
-                if (x == 1) oneCount++; else if (x > 1) otherPositiveCount++;
-
-            if (oneCount == 1 && otherPositiveCount == 0)
-            {
-                distCodeLen = java.util.Arrays.copyOf(distCodeLen, 32);
-                distCodeLen[31] = 1;
-            }
+            if (distCodeLen.oneCount() == 1 && distCodeLen.otherPositive() == 0)
+                distCodeLen.shiftLeft(1);
 
             distCode = _toct(distCodeLen);
         }
@@ -212,8 +205,8 @@ class Decompressor
     {
         _bi.ignoreBuf();
         int len = _bi.readInt(16);
-        _bi.ignore(16);
-		
+        _bi.ignoreBits(16);
+
         for (int i = 0; i < len; i++)
         {
             int temp = _bi.readByte();
@@ -247,10 +240,7 @@ class Decompressor
     private int _decSym(Node n) throws IOException
     {
         Node next = _bi.readBool() ? n.right : n.left;
-
-        for (n = next; next.type == 1; n = next)
-            next = _bi.readBool() ? n.right : n.left;
-
+        for (n = next; next.type == 1; n = next) next = _bi.readBool() ? n.right : n.left;
         return next.symbol;
     }
 
@@ -258,8 +248,7 @@ class Decompressor
     {
         int i = (sym - 261) / 4;
         if (sym <= 264) return sym - 254;
-        if (sym <= 284) return ((sym - 265) % 4 + 4 << i) + 3 + _bi.readInt(i);
-        return 258;
+        return sym <= 284 ? ((sym - 265) % 4 + 4 << i) + 3 + _bi.readInt(i) : 258;
     }
 
     private int _decDist(int sym) throws IOException
@@ -272,7 +261,8 @@ class Decompressor
 class CircularDict
 {
     private byte[] _data;
-    private int _index, _mask;
+    private int _index;
+    private final int _mask;
 
     CircularDict(int size)
     {
@@ -285,29 +275,24 @@ class CircularDict
     {
         _data[_index] = (byte)b;
         _index = _mask != 0 ? (_index + 1) & _mask : (_index + 1) % _data.length;
-	}
+    }
 
-    void copy(int dist, int len, java.io.OutputStream out) throws IOException
+    void copy(int d, int l, java.io.OutputStream out) throws IOException
     {
-        if (_mask != 0)
+        for (int ri = (_index - d + _data.length) & _mask; l > 0 && _mask != 0; l--)
         {
-            for (int i = 0, readIndex = (_index - dist + _data.length) & _mask; i < len; i++)
-            {
-                out.write(_data[readIndex]);
-                _data[_index] = _data[readIndex];
-                readIndex = (readIndex + 1) & _mask;
-                _index = (_index + 1) & _mask;
-            }
+            out.write(_data[ri]);
+            _data[_index] = _data[ri];
+            ri = (ri + 1) & _mask;
+            _index = (_index + 1) & _mask;
         }
-        else
+
+        for (int j = (_index - d + _data.length) % _data.length; l > 0 && _mask == 0; l--)
         {
-            for (int i = 0, j = (_index - dist + _data.length) % _data.length; i < len; i++)
-            {
-                out.write(_data[j]);
-                _data[_index] = _data[j];
-                j = (j + 1) % _data.length;
-                _index = (_index + 1) % _data.length;
-            }
+            out.write(_data[j]);
+            _data[_index] = _data[j];
+            j = (j + 1) % _data.length;
+            _index = (_index + 1) % _data.length;
         }
     }
 }
@@ -330,14 +315,15 @@ class CodeTree
         if (node.type == 1)
         {
             prefix.add(0);
-            _buildCodeList(node.left , prefix);
+            _buildCodeList(node.left, prefix);
             prefix.remove(prefix.size() - 1);
             prefix.add(1);
             _buildCodeList(node.right, prefix);
             prefix.remove(prefix.size() - 1);
+            return;
         }
-        else if (node.type == 2)
-            _codes.set(node.symbol, new java.util.ArrayList<Integer>(prefix));
+
+        _codes.set(node.symbol, new java.util.ArrayList<Integer>(prefix));
     }
 }
 
@@ -356,11 +342,12 @@ class BitInput
     int _getBitPos() { return _bitPos % 8; }
     BitInput(java.io.InputStream is) { _is = is; }
     boolean readBool() throws IOException { return readBit() == 1; }
-    void ignore(int n) throws IOException { while (n-- > 0) readBool(); }
-    void ignoreBuf() throws IOException { ignore(_getBitPos()); }
+    void ignoreBits(int n) throws IOException { while (n-- > 0) readBool(); }
+    void ignoreBuf() throws IOException { ignoreBits(_getBitPos()); }
+    void ignoreBytes(int n) throws IOException { while (n-- > 0) readByte(); }
     int readByte() throws IOException { return _is.read(); }
     int read(byte[] b) throws IOException { return _is.read(b); }
-    	
+
     int readBit() throws IOException
     {
         if (_bitPos == 8)
@@ -411,7 +398,7 @@ public class Gunzip
         gz.extractTo(bos);
         bos.close();
         bis.close();
-	}
+    }
 }
 
 

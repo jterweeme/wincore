@@ -27,6 +27,37 @@ public:
     int readInt(int n);
 };
 
+class Nau
+{
+    int _length;
+    int *_a;
+public:
+    Nau(int n) : _length(n), _a(new int[n]) { }
+    Nau(int n, int val) : _length(n), _a(new int[n]) { for (int i = 0; i < n; i++) _a[i] = val; }
+    void set(int i, int val) { _a[i] = val; }
+    int get(int i) const { return _a[i]; }
+    Nau copyOf(int n) const;
+    Nau copyOfRange(int a, int b) const;
+    int length() const { return _length; }
+    int oneCount();
+    int otherPositive();
+    int max() const { return *max_element(_a, _a + _length); }
+};
+
+Nau Nau::copyOf(int n) const
+{
+    Nau r(n);
+    for (int i = 0; i < n; i++) r.set(i, _a[i]);
+    return r;
+}
+
+Nau Nau::copyOfRange(int start, int end) const
+{
+    Nau r(end - start);
+    for (int i = 0; i < end - start; i++) r.set(i, _a[i + start]);
+    return r;
+}
+
 struct Node
 {
     Node *left, *right;
@@ -42,6 +73,7 @@ class CodeTree
 public:
     Node *root;
     CodeTree(Node *root, int symbolLimit);
+    CodeTree() { }
 };
 
 struct Pair
@@ -53,23 +85,12 @@ struct Pair
 class CircularDict
 {
     Vugt _data;
-    int _index = 0, _mask;
+    int _index = 0;
+    const int _mask;
 public:
-    CircularDict(int size);
+    CircularDict(int n) : _data(n), _mask(n > 0 && (n & (n - 1)) == 0 ? n - 1 : 0) { }
     void append(int b);
     void copy(int dist, int len, ostream &os);
-};
-
-class CanonicalCode
-{
-    Vint _codeLengths;
-    void _buildCodeLengths(Node *node, int depth);
-    int _max(Vint a) const { return *max_element(a.begin(), a.end()); }
-public:
-    CanonicalCode(Vint c) : _codeLengths(c) { }
-    CanonicalCode(Node *tree, int symbolLimit);
-    CanonicalCode(CodeTree tree, int symbolLimit) : CanonicalCode(tree.root, symbolLimit) { }
-    CodeTree toCodeTree();
 };
 
 class Decompressor
@@ -86,7 +107,8 @@ class Decompressor
     int _decDist(int sym);
     Pair _makePair();
     int _max(Vint a) const { return *max_element(a.begin(), a.end()); }
-    CodeTree _toct(Vint c);
+    CodeTree *_toct(Vint c);
+    CodeTree _toct(Nau &x);
 public:
     Decompressor(BitInput *bi);
     void extractTo(ostream &os);
@@ -137,14 +159,11 @@ void GzipStream::extractTo(ostream &os)
 string GzipStream::_readString()
 {
     string s;
-
-    for (int c = _bi->readByte(); c != 0; c = _bi->readByte())
-        s.push_back(c);
-
+    for (int c = _bi->readByte(); c != 0; c = _bi->readByte()) s.push_back(c);
     return s;
 }
 
-CodeTree Decompressor::_toct(Vint cl)
+CodeTree *Decompressor::_toct(Vint cl)
 {
     vector<Node> nodes;
 
@@ -152,15 +171,38 @@ CodeTree Decompressor::_toct(Vint cl)
     {
         vector<Node> newNodes;
 
-        for (int j = 0; j < cl.size(); j++)
+        for (uint32_t j = 0; j < cl.size(); j++)
             if (cl[j] == i)
                 newNodes.push_back(Node(j));
 
-        for (int j = 0; j < cl.size(); j += 2)
+        for (uint32_t j = 0; j < cl.size(); j += 2)
             newNodes.push_back(Node(&nodes[j], &nodes[j + 1]));
 
         nodes = newNodes;
     }
+
+    return new CodeTree(new Node(&nodes[0], &nodes[1]), cl.size());
+}
+
+CodeTree Decompressor::_toct(Nau &x)
+{
+    vector<Node> nodes;
+    
+    for (int i = x.max(); i >= 1; i--)
+    {
+        vector<Node> newNodes;
+        
+        for (int j = 0; j < x.length(); j++)
+            if (x.get(j) == i)
+                newNodes.push_back(Node(j));
+
+        for (uint32_t j = 0; j < nodes.size(); j+= 2)
+            newNodes.push_back(Node(&nodes[j], &nodes[j + 1]));
+
+        nodes = newNodes;
+    }
+
+    return CodeTree(new Node(&nodes[0], &nodes[1]), x.length());
 }
 
 void Decompressor::extractTo(ostream &os)
@@ -177,6 +219,15 @@ void Decompressor::extractTo(ostream &os)
             break;
         case 1:
             _decHuff(_lit, _dist, os);
+            break;
+        case 2:
+        {
+            Pair temp = _makePair();
+            _decHuff(temp.a.root, temp.b.root, os);
+        }
+            break;
+        default:
+            throw "Assertion Error";
         }
     }
 }
@@ -188,25 +239,66 @@ Decompressor::Decompressor(BitInput *bi) : _bi(bi), _dict(32 * 1024)
     fill_n(llcodelens.begin() + 144, 112, 9);
     fill_n(llcodelens.begin() + 256, 24, 7);
     fill_n(llcodelens.begin() + 280, 8, 8);
-
+    _lit = _toct(llcodelens);
+    Vint distcodelens(32, 5);
+    _dist = _toct(distcodelens);
 }
 
 Pair Decompressor::_makePair()
 {
     int nlit = _bi->readInt(5) + 257, ndist = _bi->readInt(5) + 1, ncode = _bi->readInt(4) + 4;
-    int codeLenCodeLen[19];
-    codeLenCodeLen[16] = _bi->readInt(3);
-    codeLenCodeLen[17] = _bi->readInt(3);
-    codeLenCodeLen[18] = _bi->readInt(3);
-    codeLenCodeLen[0] = _bi->readInt(3);
+    Nau a(19);
+    a.set(16, _bi->readInt(3));
+    a.set(17, _bi->readInt(3));
+    a.set(18, _bi->readInt(3));
+    a.set(0, _bi->readInt(3));
 
     for (int i = 0; i < ncode - 4; i++)
     {
         int j = i % 2 == 0 ? 8 + i / 2 : 7 - i / 2;
-        codeLenCodeLen[j] = _bi->readInt(3);
+        a.set(j, _bi->readInt(3));
     }
 
-    //CodeTree codeLenCode = 
+    CodeTree b = _toct(a);
+    Nau c(nlit + ndist);
+
+    for (int i = 0, runVal = -1, runLen = 0, sym; i < c.length(); i++)
+    {
+        if (runLen > 0)
+        {
+            c.set(i, runVal);
+            runLen--;
+        }
+        else
+        {
+            switch (sym = _decSym(b.root))
+            {
+            case 16:
+                runLen = _bi->readInt(2) + 3;
+                i--;
+                break;
+            case 17:
+                runVal = 0;
+                runLen = _bi->readInt(3) + 3;
+                i--;
+                break;
+            case 18:
+                runVal = 0;
+                runLen = _bi->readInt(7) + 11;
+                i--;
+                break;
+            default:
+                c.set(i, sym);
+                runVal = sym;
+            }
+        }
+    }
+
+    Nau litLenCodeLen = c.copyOf(nlit);
+    CodeTree litLenCode = _toct(litLenCodeLen);
+    Nau distCodeLen = c.copyOfRange(nlit, c.length());
+    CodeTree distCode = _toct(distCodeLen);
+    return Pair(litLenCode, distCode);
 }
 
 void Decompressor::_decRaw(ostream &os)
@@ -264,39 +356,6 @@ int Decompressor::_decDist(int sym)
     return sym <= 3 ? sym + 1 : (sym % 2 + 2 << i) + 1 + _bi->readInt(i);
 }
 
-CanonicalCode::CanonicalCode(Node *tree, int symbolLimit)
-{
-    
-}
-
-void CanonicalCode::_buildCodeLengths(Node *node, int depth)
-{
-    if (node->type == 1)
-    {
-        _buildCodeLengths(node->left, depth + 1);
-        _buildCodeLengths(node->right, depth + 1);
-        return;
-    }
-
-    _codeLengths[node->symbol] = depth;
-}
-
-CodeTree CanonicalCode::toCodeTree()
-{
-    vector<Node> nodes;
-
-    for (int i = _max(_codeLengths); i >= 1; i--)
-    {
-        
-    }
-
-}
-
-CircularDict::CircularDict(int n) : _data(8)
-{
-    _mask = n > 0 && (n & (n - 1)) == 0 ? n - 1 : 0;
-}
-
 void CircularDict::append(int b)
 {
     _data[_index] = (uint8_t)b;
@@ -305,35 +364,43 @@ void CircularDict::append(int b)
 
 void CircularDict::copy(int dist, int len, ostream &os)
 {
-    if (_mask != 0)
+    for (int readIndex = (_index - dist + _data.size()) & _mask; len > 0 && _mask != 0; len--)
     {
-        for (int i = 0, readIndex = (_index - dist + _data.size()) & _mask; i < len; i++)
-        {
-            os.put(_data[readIndex]);
-            _data[_index] = _data[readIndex];
-            readIndex = (readIndex + 1) & _mask;
-            _index = (_index + 1) & _mask;
-        }
+        os.put(_data[readIndex]);
+        _data[_index] = _data[readIndex];
+        readIndex = (readIndex + 1) & _mask;
+        _index = (_index + 1) & _mask;
     }
-    else
+
+    for (int j = (_index - dist + _data.size()) % _data.size(); len > 0 && _mask == 0; len--)
     {
-        for (int i = 0, j = (_index - dist + _data.size()) % _data.size(); i < len; i++)
-        {
-            os.put(_data[j]);
-            _data[_index] = _data[j];
-            j = (j + 1) % _data.size();
-            _index = (_index + 1) % _data.size();
-        }
+        os.put(_data[j]);
+        _data[_index] = _data[j];
+        j = (j + 1) % _data.size();
+        _index = (_index + 1) % _data.size();
     }
 }
 
 CodeTree::CodeTree(Node *root, int symbolLimit) : root(root)
 {
-    //for (int i = 0; i < symbolLimit; i++) _codes.push_back(0);
+    for (int i = 0; i < symbolLimit; i++) _codes.push_back(Vint());
+    _buildCodeList(root, new Vint());
 }
 
 void CodeTree::_buildCodeList(Node *node, Vint *prefix)
 {
+    if (node->type == 1)
+    {
+        prefix->push_back(0);
+        _buildCodeList(node->left, prefix);
+        prefix->pop_back();
+        prefix->push_back(1);
+        _buildCodeList(node->right, prefix);
+        prefix->pop_back();
+        return;
+    }
+
+    _codes[node->symbol] = *prefix;
 }
 
 uint32_t BitInput::readBit()
@@ -360,10 +427,6 @@ int App::run(int argc, char **argv)
     ifs.close();
     return 0;
 }
-
-
-
-
 
 int main(int argc, char **argv)
 {
