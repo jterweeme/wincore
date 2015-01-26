@@ -8,8 +8,6 @@ using namespace std;
 typedef vector<int> Vint;
 typedef vector<uint8_t> Vugt;
 
-
-
 class BitInput
 {
     istream *_is;
@@ -32,6 +30,7 @@ class Nau
     int _length;
     int *_a;
 public:
+    Nau(Vint a);
     Nau(int n) : _length(n), _a(new int[n]) { }
     Nau(int n, int val) : _length(n), _a(new int[n]) { for (int i = 0; i < n; i++) _a[i] = val; }
     void set(int i, int val) { _a[i] = val; }
@@ -42,7 +41,16 @@ public:
     int oneCount();
     int otherPositive();
     int max() const { return *max_element(_a, _a + _length); }
+    void dump(ostream &os) const { for (int i = 0; i < _length; i++) os << _a[i] << " "; }
 };
+
+Nau::Nau(Vint a) : _length(a.size()), _a(new int[_length])
+{
+    cerr << "Initialize Nau from Vint\n";
+
+    for (int i = 0; i < _length; i++)
+        _a[i] = a[i];
+}
 
 Nau Nau::copyOf(int n) const
 {
@@ -97,7 +105,7 @@ class Decompressor
 {
     BitInput *_bi;
     CircularDict _dict;
-    CodeTree *_lit, *_dist;
+    CodeTree _lit, _dist;
     void _decRaw(ostream &os);
     void _decHuff(Node *lit, Node *dist, ostream &os);
     void _decHuff(CodeTree *l, CodeTree *d, ostream &os) { _decHuff(l->root, d->root, os); }
@@ -107,7 +115,6 @@ class Decompressor
     int _decDist(int sym);
     Pair _makePair();
     int _max(Vint a) const { return *max_element(a.begin(), a.end()); }
-    CodeTree *_toct(Vint c);
     CodeTree _toct(Nau &x);
 public:
     Decompressor(BitInput *bi);
@@ -119,7 +126,7 @@ class GzipStream
     BitInput *_bi;
     string _readString();
 public:
-    GzipStream(BitInput *bi) : _bi(bi) { }
+    GzipStream(BitInput *bi) : _bi(bi) { cerr << "GzipStream constructor\n"; }
     void extractTo(ostream &os);
 };
 
@@ -131,6 +138,7 @@ public:
 
 void GzipStream::extractTo(ostream &os)
 {
+    cerr << "GzipStream::extractTo begin\n";
     uint8_t x[10];
     _bi->read(x, 10);
     uint8_t flags = x[3];
@@ -163,29 +171,9 @@ string GzipStream::_readString()
     return s;
 }
 
-CodeTree *Decompressor::_toct(Vint cl)
-{
-    vector<Node> nodes;
-
-    for (int i = _max(cl); i >= 1; i--)
-    {
-        vector<Node> newNodes;
-
-        for (uint32_t j = 0; j < cl.size(); j++)
-            if (cl[j] == i)
-                newNodes.push_back(Node(j));
-
-        for (uint32_t j = 0; j < cl.size(); j += 2)
-            newNodes.push_back(Node(&nodes[j], &nodes[j + 1]));
-
-        nodes = newNodes;
-    }
-
-    return new CodeTree(new Node(&nodes[0], &nodes[1]), cl.size());
-}
-
 CodeTree Decompressor::_toct(Nau &x)
 {
+    cerr << "Decompressor::_toct begin\n";
     vector<Node> nodes;
     
     for (int i = x.max(); i >= 1; i--)
@@ -207,6 +195,8 @@ CodeTree Decompressor::_toct(Nau &x)
 
 void Decompressor::extractTo(ostream &os)
 {
+    cerr << "Decompressor::extractTo begin\n";
+
     for (bool isFinal = false; !isFinal;)
     {
         isFinal = _bi->readBool();
@@ -218,7 +208,7 @@ void Decompressor::extractTo(ostream &os)
             _decRaw(os);
             break;
         case 1:
-            _decHuff(_lit, _dist, os);
+            _decHuff(&_lit, &_dist, os);
             break;
         case 2:
         {
@@ -234,13 +224,17 @@ void Decompressor::extractTo(ostream &os)
 
 Decompressor::Decompressor(BitInput *bi) : _bi(bi), _dict(32 * 1024)
 {
-    Vint llcodelens;
+    cerr << "Decompressor constructor begin\n";
+    Vint llcodelens(288);
     fill_n(llcodelens.begin(), 144, 8);
     fill_n(llcodelens.begin() + 144, 112, 9);
     fill_n(llcodelens.begin() + 256, 24, 7);
     fill_n(llcodelens.begin() + 280, 8, 8);
-    _lit = _toct(llcodelens);
-    Vint distcodelens(32, 5);
+    Nau llcodeLens2(llcodelens);
+    llcodeLens2.dump(cerr);
+    cerr << "\n";
+    _lit = _toct(llcodeLens2);
+    Nau distcodelens(32, 5);
     _dist = _toct(distcodelens);
 }
 
@@ -383,14 +377,18 @@ void CircularDict::copy(int dist, int len, ostream &os)
 
 CodeTree::CodeTree(Node *root, int symbolLimit) : root(root)
 {
+    cerr << "CodeTree constructor\n";
     for (int i = 0; i < symbolLimit; i++) _codes.push_back(Vint());
     _buildCodeList(root, new Vint());
 }
 
 void CodeTree::_buildCodeList(Node *node, Vint *prefix)
 {
+    cerr << "BuildCodeList begin\n";
+
     if (node->type == 1)
     {
+        cerr << "BuildCodeList type 1\n";
         prefix->push_back(0);
         _buildCodeList(node->left, prefix);
         prefix->pop_back();
@@ -401,6 +399,7 @@ void CodeTree::_buildCodeList(Node *node, Vint *prefix)
     }
 
     _codes[node->symbol] = *prefix;
+    cerr << "BuildCodeList end\n";
 }
 
 uint32_t BitInput::readBit()

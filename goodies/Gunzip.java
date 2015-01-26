@@ -20,15 +20,9 @@ class GzipStream
             _bi.read(new byte[len]);
         }
 
-        if ((flags & 8) != 0)
-            System.out.println("File name: " + _readString());
-
-        if ((flags & 2) != 0)
-            _bi.ignoreBytes(2);
-
-        if ((flags & 0x10) != 0)
-            System.out.println("Comment: " + _readString());
-
+        if ((flags & 8) != 0) System.out.println("File name: " + _readString());
+        if ((flags & 2) != 0)  _bi.ignoreBytes(2);
+        if ((flags & 0x10) != 0) System.out.println("Comment: " + _readString());
         Decompressor d = new Decompressor(_bi);
         d.extractTo(os);
     }
@@ -52,25 +46,24 @@ class Nau
     Nau copyOf(int n) { return new Nau(java.util.Arrays.copyOf(_a, n)); }
     Nau copyOfRange(int a, int b) { return new Nau(java.util.Arrays.copyOfRange(_a, a, b)); }
     int length() { return _a.length; }
-    int oneCount() { int n = 0; for (int x : _a) if (x == 1) n++; return n; }
-    int otherPositive() { int n = 0; for (int x : _a) if (x > 1) n++; return n; }
     int max() { int r = _a[0]; for (int x : _a) r = Math.max(x, r); return r; }
     void shiftLeft(int val) { _a = Arrays.copyOf(_a, _a.length); _a[_a.length] = val; }
+    void dump(java.io.PrintStream p) { for (int x : _a) p.format("%d ", x); }
 }
 
-class Pair
+class Pair2
 {
-    CodeTree a, b;
-    Pair(CodeTree a, CodeTree b) { this.a = a; this.b = b; }
+    Node a, b;
+    Pair2(Node a, Node b) { this.a = a; this.b = b; }
 }
 
 class Decompressor
 {
     private BitInput _bi;
     private final CircularDict _dict;
-    private final CodeTree _lit, _dist;
+    private final Node _lit, _dist;
 
-    private CodeTree _toct(Nau n)
+    private Node _toct2(Nau n)
     {
         java.util.List<Node> nodes = new java.util.ArrayList<Node>();
         
@@ -87,7 +80,7 @@ class Decompressor
 
             nodes = newNodes;
         }
-        return new CodeTree(new Node(nodes.get(0), nodes.get(1)), n.length());
+        return new Node(nodes.get(0), nodes.get(1));
     }
 
     void extractTo(java.io.OutputStream os) throws IOException
@@ -103,11 +96,11 @@ class Decompressor
                 _decRaw(os);
                 break;
             case 1:
-                _decHuff(_lit.root, _dist.root, os);
+                _decHuff(_lit, _dist, os);
                 break;
             case 2:
-                Pair temp = _makePair();
-                _decHuff(temp.a.root, temp.b.root, os);
+                Pair2 temp = _makePair();
+                _decHuff(temp.a, temp.b, os);
                 break;
             default:
                 throw new AssertionError();
@@ -124,13 +117,13 @@ class Decompressor
         java.util.Arrays.fill(llcodelens, 256, 280, 7);
         java.util.Arrays.fill(llcodelens, 280, 288, 8);
         Nau llcodeLens2 = new Nau(llcodelens);
-        _lit = _toct(llcodeLens2);
+        _lit = _toct2(llcodeLens2);
         Nau distCodeLens2 = new Nau(32, 5);
-        _dist = _toct(distCodeLens2);
+        _dist = _toct2(distCodeLens2);
         _bi = in;
     }
 
-    private Pair _makePair() throws IOException
+    private Pair2 _makePair() throws IOException
     {
         int nlit = _bi.readInt(5) + 257, ndist = _bi.readInt(5) + 1, ncode = _bi.readInt(4) + 4;
         Nau a = new Nau(19);
@@ -140,12 +133,9 @@ class Decompressor
         a.set(0, _bi.readInt(3));
 
         for (int i = 0; i < ncode - 4; i++)
-        {
-            int j = i % 2 == 0 ? 8 + i / 2 : 7 - i / 2;
-            a.set(j, _bi.readInt(3));
-        }
+            a.set(i % 2 == 0 ? 8 + i / 2 : 7 - i / 2, _bi.readInt(3));
 
-        CodeTree b = _toct(a);
+        Node b = _toct2(a);
         Nau c = new Nau(nlit + ndist);
 
         for (int i = 0, runVal = -1, runLen = 0, sym; i < c.length(); i++)
@@ -157,7 +147,7 @@ class Decompressor
             }
             else
             {
-                switch (sym = _decSym(b.root))
+                switch (sym = _decSym(b))
                 {
                 case 16:
                     runLen = _bi.readInt(2) + 3;
@@ -181,24 +171,8 @@ class Decompressor
         }
 
         Nau litLenCodeLen = c.copyOf(nlit);
-        CodeTree litLenCode = _toct(litLenCodeLen);
         Nau distCodeLen = c.copyOfRange(nlit, c.length());
-        CodeTree distCode;
-
-        if (distCodeLen.length() == 1 && distCodeLen.get(0) == 0)
-        {
-            System.out.println("Onzin");
-            distCode = null;
-        }
-        else
-        {
-            if (distCodeLen.oneCount() == 1 && distCodeLen.otherPositive() == 0)
-                distCodeLen.shiftLeft(1);
-
-            distCode = _toct(distCodeLen);
-        }
-
-        return new Pair(litLenCode, distCode);
+        return new Pair2(_toct2(litLenCodeLen), _toct2(distCodeLen));
     }
 
     private void _decRaw(java.io.OutputStream os) throws IOException
@@ -294,36 +268,6 @@ class CircularDict
             j = (j + 1) % _data.length;
             _index = (_index + 1) % _data.length;
         }
-    }
-}
-
-class CodeTree
-{
-    final Node root;
-    private java.util.List<java.util.List<Integer>> _codes;
-
-    CodeTree(Node root, int symbolLimit)
-    {
-        this.root = root;
-        _codes = new java.util.ArrayList<java.util.List<Integer>>();
-        for (int i = 0; i < symbolLimit; i++) _codes.add(null);
-        _buildCodeList(root, new java.util.ArrayList<Integer>());
-    }
-
-    private void _buildCodeList(Node node, java.util.List<Integer> prefix)
-    {
-        if (node.type == 1)
-        {
-            prefix.add(0);
-            _buildCodeList(node.left, prefix);
-            prefix.remove(prefix.size() - 1);
-            prefix.add(1);
-            _buildCodeList(node.right, prefix);
-            prefix.remove(prefix.size() - 1);
-            return;
-        }
-
-        _codes.set(node.symbol, new java.util.ArrayList<Integer>(prefix));
     }
 }
 
