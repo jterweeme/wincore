@@ -33,23 +33,21 @@ class Nau
     int _length;
     int *_a;
 public:
-    Nau(Vint a);
     Nau(int n) : _length(n), _a(new int[n]) { }
-    Nau(int n, int val) : _length(n), _a(new int[n]) { for (int i = 0; i < n; i++) _a[i] = val; }
+    Nau(Vint a) : Nau(a.size()) { for (int i = 0; i < _length; i++) _a[i] = a[i]; }
+    Nau(int n, int val) : Nau(n) { for (int i = 0; i < n; i++) _a[i] = val; }
+    ~Nau() { delete[] _a; }
     void set(int i, int val) { _a[i] = val; }
     int get(int i) const { return _a[i]; }
-    Nau copyOf(int n) const;
     Nau copyOfRange(int a, int b) const;
+    Nau copyOf(int n) const { return copyOfRange(0, n); }
     int length() const { return _length; }
     int max() const { return *max_element(_a, _a + _length); }
-
-    void dump(ostream &os) const
-    {
-        os << "Length: " << _length << ", Max: " << max() << "\n";
-        for (int i = 0; i < _length; i++) os << _a[i] << " ";
-    }
-
-    string toString() const { ostringstream o; dump(o); return o.str(); }
+    void summary(ostream &os) const { os << "Length: " << _length << ", Max: " << max(); }
+    string summary() const { ostringstream o; summary(o); return o.str(); }
+    void dumpCompleet(ostream &os) const { summary(os); os << "\n"; dump(os); }
+    void dump(ostream &os) const { for (int i = 0; i < _length; i++) os << _a[i] << " "; }
+    string toString() const { ostringstream o; dumpCompleet(o); return o.str(); }
 };
 
 struct Node
@@ -59,6 +57,15 @@ struct Node
     Node() { }
     Node(Node *l, Node *r) : left(l), right(r), type(1) { }
     Node(int s) : symbol(s), type(2) { }
+};
+
+class CodeTree
+{
+    Node _root;
+    vector<Node> _nodes;
+public:
+    void import(Nau &x);
+    CodeTree(Node root) : _root(root) { }
 };
 
 class Pair2
@@ -86,6 +93,7 @@ class Decompressor
     BitInput *_bi;
     CircularDict _dict;
     Node _lit, _dist;
+    vector<Node> _nodeDump;
     void _decRaw(ostream &os);
     void _decHuff(Node lit, Node dist, ostream &os);
     int _decSym(Node *code);

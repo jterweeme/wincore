@@ -34,10 +34,17 @@ string GzipStream::_readString()
     return s;
 }
 
+void CodeTree::import(Nau &x)
+{
+    for (int i = x.max(); i >= 1; i--)
+    {
+        
+    }
+}
+
 Node Decompressor::_toct(Nau &x)
 {
     //cout << x.toString() << "\n";
-    
     vector<Node *> nodes;
     
     for (int i = x.max(); i >= 1; i--)
@@ -45,15 +52,32 @@ Node Decompressor::_toct(Nau &x)
         vector<Node *> newNodes;
         
         for (int j = 0; j < x.length(); j++)
+        {
             if (x.get(j) == i)
+            {
+#if 1
+                _nodeDump.push_back(Node(j));
+                newNodes.push_back(&_nodeDump.back());
+#else
                 newNodes.push_back(new Node(j));
+#endif
+            }
+        }
 
         for (uint32_t j = 0; j < nodes.size(); j+= 2)
+        {
+#if 1
+            _nodeDump.push_back(Node(nodes[j], nodes[j + 1]));
+            newNodes.push_back(&_nodeDump.back());
+#else
             newNodes.push_back(new Node(nodes[j], nodes[j + 1]));
+#endif
+        }
 
         nodes = newNodes;
     }
 
+    CodeTree t(Node(nodes[0], nodes[1]));
     return Node(nodes[0], nodes[1]);
 }
 
@@ -83,6 +107,8 @@ void Decompressor::extractTo(ostream &os)
         default:
             throw "Assertion Error";
         }
+
+        _nodeDump.clear();
     }
 }
 
@@ -259,19 +285,6 @@ int App::run(int argc, char **argv)
     ofs.close();
     ifs.close();
     return 0;
-}
-
-Nau::Nau(Vint a) : _length(a.size()), _a(new int[_length])
-{
-    for (int i = 0; i < _length; i++)
-        _a[i] = a[i];
-}
-
-Nau Nau::copyOf(int n) const
-{
-    Nau r(n);
-    for (int i = 0; i < n; i++) r.set(i, _a[i]);
-    return r;
 }
 
 Nau Nau::copyOfRange(int start, int end) const

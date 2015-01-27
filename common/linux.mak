@@ -1,6 +1,6 @@
 CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
-VALGRIND = #valgrind $(VALFLAGS)
+VALGRIND = valgrind $(VALFLAGS)
 
 TARGETS = base64 bunzip2 bzcat cat cp crc32 dd diff dos2unix grep gunzip gzip \
     jpg2tga kompakt md5s nl \
