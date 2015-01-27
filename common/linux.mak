@@ -4,7 +4,7 @@ VALGRIND = #valgrind $(VALFLAGS)
 
 TARGETS = base64 bunzip2 bzcat cat cp crc32 dd diff dos2unix grep gunzip gzip \
     jpg2tga kompakt md5s nl \
-    od tar test1 testbinp tr unix2dos uuidgen yes
+    od tar test1 testbinp tgunzip1 tr unix2dos uuidgen yes
 
 %.o: %.cpp
 	@g++ $(CXXFLAGS) -c -o $@ $<
@@ -25,7 +25,7 @@ dd: dd.o
 diff: diff.o
 dos2unix: dos2unix.o mystl.o
 grep: grep.o
-gunzip: gunzip.o
+gunzip: gunzip.o gunzipm.o
 gzip: gzip.o
 jpg2tga: jpg2tga.o
 kompakt: kompakt.o main.o mystl.o filesys.o
@@ -35,6 +35,7 @@ od: od.o mystl.o odmain.o
 tar: tar.o
 test1: test1.o mystl.o hasher.o
 testbinp: testbinp.o bitinput.o
+tgunzip1: tgunzip1.o gunzip.o
 tr: tr.o
 unix2dos: unix2dos.o mystl.o
 uuidgen: uuidgen.o
@@ -52,7 +53,8 @@ diff.o: diff.cpp
 dos2unix.o: dos2unix.cpp
 filesys.o: filesys.cpp filesys.h
 grep.o: grep.cpp
-gunzip.o: gunzip.cpp
+gunzip.o: gunzip.cpp gunzip.h
+gunzipm.o: gunzipm.cpp gunzip.h
 gzip.o: gzip.cpp
 hasher.o: hasher.cpp hasher.h
 jpg2tga.o: jpg2tga.cpp
@@ -65,13 +67,19 @@ odmain.o: odmain.cpp
 tar.o: tar.cpp
 test1.o: test1.cpp
 testbinp.o: testbinp.cpp
+tgunzip1.o: tgunzip1.cpp
 tr.o: tr.cpp
 unix2dos.o: unix2dos.cpp
 uuidgen.o: uuidgen.cpp
 yes.o: yes.cpp
 
-test:
+test1go: test1
 	$(VALGRIND) ./test1
+
+tgunzip1go: tgunzip1
+	$(VALGRIND) ./tgunzip1
+
+test: test1go tgunzip1go
 	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
 	$(VALGRIND) ./od zero.dat | ./diff -s zero.od -

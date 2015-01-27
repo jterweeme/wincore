@@ -47,7 +47,6 @@ class Nau
     Nau copyOfRange(int a, int b) { return new Nau(java.util.Arrays.copyOfRange(_a, a, b)); }
     int length() { return _a.length; }
     int max() { int r = _a[0]; for (int x : _a) r = Math.max(x, r); return r; }
-    void shiftLeft(int val) { _a = Arrays.copyOf(_a, _a.length); _a[_a.length] = val; }
     void dump(java.io.PrintStream p) { for (int x : _a) p.format("%d ", x); }
 }
 
@@ -65,6 +64,9 @@ class Decompressor
 
     private Node _toct2(Nau n)
     {
+        System.out.format("_toct2 begin %d %d\n", n.length(), n.max());
+        n.dump(System.out);
+        System.out.print("\n");
         java.util.List<Node> nodes = new java.util.ArrayList<Node>();
         
         for (int i = n.max(); i >= 1; i--)
@@ -89,6 +91,8 @@ class Decompressor
         {
             isFinal = _bi.readBool();
             int type = _bi.readInt(2);
+
+            System.out.format("Type: %d\n", type);
 
             switch (type)
             {
@@ -177,6 +181,7 @@ class Decompressor
 
     private void _decRaw(java.io.OutputStream os) throws IOException
     {
+        System.out.println("Decraw begin");
         _bi.ignoreBuf();
         int len = _bi.readInt(16);
         _bi.ignoreBits(16);
@@ -191,6 +196,7 @@ class Decompressor
 
     private void _decHuff(Node lit, Node dist, java.io.OutputStream os) throws IOException
     {
+        System.out.println("Dechuff begin");
         while (true)
         {
             int sym = _decSym(lit);
