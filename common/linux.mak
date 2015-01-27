@@ -3,7 +3,7 @@ VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = valgrind $(VALFLAGS)
 
 TARGETS = base64 bunzip2 bzcat cat cp crc32 dd diff dos2unix grep gunzip gzip \
-    jpg2tga kompakt md5s nl \
+    jpg2tga kompakt ls md5s nl \
     od tar test1 testbinp tgunzip1 tr unix2dos uuidgen yes
 
 %.o: %.cpp
@@ -29,6 +29,7 @@ gunzip: gunzip.o gunzipm.o
 gzip: gzip.o
 jpg2tga: jpg2tga.o
 kompakt: kompakt.o main.o mystl.o filesys.o
+ls: ls.o
 md5s: md5s.o mystl.o hasher.o
 nl: nl.o
 od: od.o mystl.o odmain.o
@@ -59,6 +60,7 @@ gzip.o: gzip.cpp
 hasher.o: hasher.cpp hasher.h
 jpg2tga.o: jpg2tga.cpp
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h mystl.tcc
+ls.o: ls.cpp
 main.o: main.cpp
 mystl.o: mystl.cpp
 nl.o: nl.cpp
