@@ -79,7 +79,13 @@ test1go: test1
 tgunzip1go: tgunzip1
 	$(VALGRIND) ./tgunzip1
 
-test: test1go tgunzip1go
+testgunzip2:
+	rm -f znew.txt
+	$(VALGRIND) ./gunzip znew.gz znew.txt
+	$(VALGRIND) ./md5s -c znew.md5
+	rm -f znew.txt
+
+test: testgunzip2 test1go tgunzip1go
 	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
 	$(VALGRIND) ./od zero.dat | ./diff -s zero.od -
@@ -88,8 +94,6 @@ test: test1go tgunzip1go
 	$(VALGRIND) ./md5s -c data.md5
 	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s | ./diff -s kompakt1.out -
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
-	$(VALGRIND) ./gzip boston.mp3
-	gunzip boston.mp3.gz
 	$(VALGRIND) ./md5s -c data.md5
 
 clean:

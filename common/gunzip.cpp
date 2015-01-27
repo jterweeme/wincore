@@ -2,7 +2,6 @@
 
 void GzipStream::extractTo(ostream &os)
 {
-    cerr << "GzipStream::extractTo begin\n";
     uint8_t x[10];
     _bi->read(x, 10);
     uint8_t flags = x[3];
@@ -16,13 +15,13 @@ void GzipStream::extractTo(ostream &os)
     }
 
     if (flags & 8)
-        cerr << _readString();
+        cout << _readString();
 
     if (flags & 2)
         _bi->ignoreBytes(2);
 
     if (flags & 0x10)
-        cerr << _readString();
+        cout << _readString();
 
     Decompressor d(_bi);
     d.extractTo(os);
@@ -35,10 +34,9 @@ string GzipStream::_readString()
     return s;
 }
 
-Node Decompressor::_toct3(Nau &x)
+Node Decompressor::_toct(Nau &x)
 {
-    cerr << "Decompressor::_toct3 begin " << x.length() << " " << x.max() << "\n";
-    cerr << x.toString() << "\n";
+    //cout << x.toString() << "\n";
     
     vector<Node *> nodes;
     
@@ -61,14 +59,12 @@ Node Decompressor::_toct3(Nau &x)
 
 void Decompressor::extractTo(ostream &os)
 {
-    cerr << "Decompressor::extractTo begin\n";
-
     for (bool isFinal = false; !isFinal;)
     {
         isFinal = _bi->readBool();
         int type = _bi->readInt(2);
 
-        cerr << "Type: " << type << "\n";
+        //cout << "Type: " << type << "\n";
 
         switch (type)
         {
@@ -98,16 +94,13 @@ Decompressor::Decompressor(BitInput *bi) : _bi(bi), _dict(32 * 1024)
     fill_n(llcodelens.begin() + 256, 24, 7);
     fill_n(llcodelens.begin() + 280, 8, 8);
     Nau llcodeLens2(llcodelens);
-    llcodeLens2.dump(cerr);
-    cerr << "\n";
-    _lit = _toct3(llcodeLens2);
+    _lit = _toct(llcodeLens2);
     Nau distcodelens(32, 5);
-    _dist = _toct3(distcodelens);
+    _dist = _toct(distcodelens);
 }
 
 Pair2 Decompressor::_makePair()
 {
-    cerr << "Decompressor::_makePair\n";
     int nlit = _bi->readInt(5) + 257, ndist = _bi->readInt(5) + 1, ncode = _bi->readInt(4) + 4;
     Nau a(19, 0);
     a.set(16, _bi->readInt(3));
@@ -122,7 +115,7 @@ Pair2 Decompressor::_makePair()
         a.set(j, x);
     }
 
-    Node b = _toct3(a);
+    Node b = _toct(a);
     Nau c(nlit + ndist, 0);
 
     for (int i = 0, runVal = -1, runLen = 0, sym; i < c.length(); i++)
@@ -158,15 +151,15 @@ Pair2 Decompressor::_makePair()
     }
 
     Nau litLenCodeLen = c.copyOf(nlit);
-    Node litLenCode = _toct3(litLenCodeLen);
+    Node litLenCode = _toct(litLenCodeLen);
     Nau distCodeLen = c.copyOfRange(nlit, c.length());
-    Node distCode = _toct3(distCodeLen);
+    Node distCode = _toct(distCodeLen);
     return Pair2(litLenCode, distCode);
 }
 
 void Decompressor::_decRaw(ostream &os)
 {
-    cerr << "Decraw begin\n";
+    //cout << "Decraw begin\n";
     _bi->ignoreBuf();
     int len = _bi->readInt(16);
     _bi->ignore(16);
@@ -181,17 +174,17 @@ void Decompressor::_decRaw(ostream &os)
 
 void Decompressor::_decHuff(Node lit, Node dist, ostream &os)
 {
-    while (true)
+    for (int sym; (sym = _decSym(&lit)) != 256;)
     {
-        int sym = _decSym(&lit);
-        
-        if (sym == 256)
-            break;
-        
         if (sym < 256)
         {
             os.put(sym);
             _dict.append(sym);
+        }
+        else
+        {
+            int len = _decRll(sym), distSym = _decSym(&dist);
+            _dict.copy(_decDist(distSym), len, os);
         }
     }
 }
@@ -199,10 +192,8 @@ void Decompressor::_decHuff(Node lit, Node dist, ostream &os)
 int Decompressor::_decSym(Node *n)
 {
     Node *next = _bi->readBool() ? n->right : n->left;
-
-    for (n = next; next->type == 1; n = next)
-        next = _bi->readBool() ? n->right : n->left;
-
+    for (n = next; next->type == 1; n = next) next = _bi->readBool() ? n->right : n->left;
+    //cout << "_decSym: " << next->symbol << "\n";
     return next->symbol;
 }
 

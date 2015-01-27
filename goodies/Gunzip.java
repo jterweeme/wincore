@@ -47,7 +47,12 @@ class Nau
     Nau copyOfRange(int a, int b) { return new Nau(java.util.Arrays.copyOfRange(_a, a, b)); }
     int length() { return _a.length; }
     int max() { int r = _a[0]; for (int x : _a) r = Math.max(x, r); return r; }
-    void dump(java.io.PrintStream p) { for (int x : _a) p.format("%d ", x); }
+
+    void dump(java.io.PrintStream p)
+    {
+        p.format("Length: %d, Max: %d\n", _a.length, max());
+        for (int x : _a) p.format("%d ", x);
+    }
 }
 
 class Pair2
@@ -62,9 +67,8 @@ class Decompressor
     private final CircularDict _dict;
     private final Node _lit, _dist;
 
-    private Node _toct2(Nau n)
+    private Node _toct(Nau n)
     {
-        System.out.format("_toct2 begin %d %d\n", n.length(), n.max());
         n.dump(System.out);
         System.out.print("\n");
         java.util.List<Node> nodes = new java.util.ArrayList<Node>();
@@ -121,9 +125,9 @@ class Decompressor
         java.util.Arrays.fill(llcodelens, 256, 280, 7);
         java.util.Arrays.fill(llcodelens, 280, 288, 8);
         Nau llcodeLens2 = new Nau(llcodelens);
-        _lit = _toct2(llcodeLens2);
+        _lit = _toct(llcodeLens2);
         Nau distCodeLens2 = new Nau(32, 5);
-        _dist = _toct2(distCodeLens2);
+        _dist = _toct(distCodeLens2);
         _bi = in;
     }
 
@@ -139,7 +143,7 @@ class Decompressor
         for (int i = 0; i < ncode - 4; i++)
             a.set(i % 2 == 0 ? 8 + i / 2 : 7 - i / 2, _bi.readInt(3));
 
-        Node b = _toct2(a);
+        Node b = _toct(a);
         Nau c = new Nau(nlit + ndist);
 
         for (int i = 0, runVal = -1, runLen = 0, sym; i < c.length(); i++)
@@ -176,7 +180,7 @@ class Decompressor
 
         Nau litLenCodeLen = c.copyOf(nlit);
         Nau distCodeLen = c.copyOfRange(nlit, c.length());
-        return new Pair2(_toct2(litLenCodeLen), _toct2(distCodeLen));
+        return new Pair2(_toct(litLenCodeLen), _toct(distCodeLen));
     }
 
     private void _decRaw(java.io.OutputStream os) throws IOException
@@ -196,13 +200,9 @@ class Decompressor
 
     private void _decHuff(Node lit, Node dist, java.io.OutputStream os) throws IOException
     {
-        System.out.println("Dechuff begin");
-        while (true)
+        for (int sym; (sym = _decSym(lit)) != 256;)
         {
-            int sym = _decSym(lit);
-
-            if (sym == 256)
-                break;
+            System.out.format("%d ", sym);
 
             if (sym < 256)
             {
@@ -215,6 +215,7 @@ class Decompressor
                 _dict.copy(_decDist(distSym), len, os);
             }
         }
+        System.out.print("\n");
     }
 
     private int _decSym(Node n) throws IOException

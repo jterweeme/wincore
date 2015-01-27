@@ -42,7 +42,13 @@ public:
     Nau copyOfRange(int a, int b) const;
     int length() const { return _length; }
     int max() const { return *max_element(_a, _a + _length); }
-    void dump(ostream &os) const { for (int i = 0; i < _length; i++) os << _a[i] << " "; }
+
+    void dump(ostream &os) const
+    {
+        os << "Length: " << _length << ", Max: " << max() << "\n";
+        for (int i = 0; i < _length; i++) os << _a[i] << " ";
+    }
+
     string toString() const { ostringstream o; dump(o); return o.str(); }
 };
 
@@ -86,7 +92,7 @@ class Decompressor
     int _decRll(int sym);
     int _decDist(int sym);
     Pair2 _makePair();
-    Node _toct3(Nau &x);
+    Node _toct(Nau &x);
 public:
     Decompressor(BitInput *bi);
     void extractTo(ostream &os);
@@ -97,7 +103,7 @@ class GzipStream
     BitInput *_bi;
     string _readString();
 public:
-    GzipStream(BitInput *bi) : _bi(bi) { cerr << "GzipStream constructor\n"; }
+    GzipStream(BitInput *bi) : _bi(bi) { }
     void extractTo(ostream &os);
 };
 
