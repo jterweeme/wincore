@@ -23,7 +23,7 @@ void GzipStream::extractTo(ostream &os)
     if (flags & 0x10)
         cout << _readString();
 
-    Decompressor d(_bi);
+    Inflate d(_bi);
     d.extractTo(os);
 }
 
@@ -42,7 +42,7 @@ void CodeTree::import(Nau &x)
     }
 }
 
-Node Decompressor::_toct(Nau &x)
+Node Inflate::_toct(Nau &x)
 {
     //cout << x.toString() << "\n";
     vector<Node *> nodes;
@@ -81,7 +81,7 @@ Node Decompressor::_toct(Nau &x)
     return Node(nodes[0], nodes[1]);
 }
 
-void Decompressor::extractTo(ostream &os)
+void Inflate::extractTo(ostream &os)
 {
     for (bool isFinal = false; !isFinal;)
     {
@@ -112,7 +112,7 @@ void Decompressor::extractTo(ostream &os)
     }
 }
 
-Decompressor::Decompressor(BitInput *bi) : _bi(bi), _dict(32 * 1024)
+Inflate::Inflate(BitInput *bi) : _bi(bi), _dict(32 * 1024)
 {
     Vint llcodelens(288);
     fill_n(llcodelens.begin(), 144, 8);
@@ -125,7 +125,7 @@ Decompressor::Decompressor(BitInput *bi) : _bi(bi), _dict(32 * 1024)
     _dist = _toct(distcodelens);
 }
 
-Pair2 Decompressor::_makePair()
+Pair2 Inflate::_makePair()
 {
     int nlit = _bi->readInt(5) + 257, ndist = _bi->readInt(5) + 1, ncode = _bi->readInt(4) + 4;
     Nau a(19, 0);
@@ -183,7 +183,7 @@ Pair2 Decompressor::_makePair()
     return Pair2(litLenCode, distCode);
 }
 
-void Decompressor::_decRaw(ostream &os)
+void Inflate::_decRaw(ostream &os)
 {
     //cout << "Decraw begin\n";
     _bi->ignoreBuf();
@@ -198,7 +198,7 @@ void Decompressor::_decRaw(ostream &os)
     }
 }
 
-void Decompressor::_decHuff(Node lit, Node dist, ostream &os)
+void Inflate::_decHuff(Node lit, Node dist, ostream &os)
 {
     for (int sym; (sym = _decSym(&lit)) != 256;)
     {
@@ -215,7 +215,7 @@ void Decompressor::_decHuff(Node lit, Node dist, ostream &os)
     }
 }
 
-int Decompressor::_decSym(Node *n)
+int Inflate::_decSym(Node *n)
 {
     Node *next = _bi->readBool() ? n->right : n->left;
     for (n = next; next->type == 1; n = next) next = _bi->readBool() ? n->right : n->left;
@@ -223,7 +223,7 @@ int Decompressor::_decSym(Node *n)
     return next->symbol;
 }
 
-int Decompressor::_decRll(int sym)
+int Inflate::_decRll(int sym)
 {
     int i = (sym - 261) / 4;
     if (sym <= 264) return sym - 254;
@@ -231,7 +231,7 @@ int Decompressor::_decRll(int sym)
     return 258;
 }
 
-int Decompressor::_decDist(int sym)
+int Inflate::_decDist(int sym)
 {
     int i = sym / 2 - 1;
     return sym <= 3 ? sym + 1 : (sym % 2 + 2 << i) + 1 + _bi->readInt(i);
@@ -273,18 +273,6 @@ int BitInput::readInt(int n)
     int r = 0;
     for (int i = 0; i < n; i++) r |= readBit() << i;
     return r;
-}
-
-int App::run(int argc, char **argv)
-{
-    ifstream ifs(argv[1]);
-    ofstream ofs(argv[2]);
-    BitInput bi(&ifs);
-    GzipStream gz(&bi);
-    gz.extractTo(ofs);
-    ofs.close();
-    ifs.close();
-    return 0;
 }
 
 Nau Nau::copyOfRange(int start, int end) const

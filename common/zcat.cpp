@@ -1,26 +1,24 @@
 #include "gunzip.h"
 
-class AppGunzip
+class AppZcat
 {
 public:
     int run(int argc, char **argv);
 };
 
-int AppGunzip::run(int argc, char **argv)
+int AppZcat::run(int argc, char **argv)
 {
     ifstream ifs(argv[1]);
-    ofstream ofs(argv[2]);
     BitInput bi(&ifs);
     GzipStream gz(&bi);
-    gz.extractTo(ofs);
-    ofs.close();
+    gz.extractTo(cout);
     ifs.close();
     return 0;
 }
 
 int main(int argc, char **argv)
 {
-    AppGunzip app;
+    AppZcat app;
     return app.run(argc, argv);
 }
 

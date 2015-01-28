@@ -70,6 +70,9 @@ string Options::nextFileName()
 
 void Options::parse(const int argc, char **argv)
 {
+    if (argc <= 1)
+        _cin = true;
+
     for (int i = 1; i < argc; i++)
     {
         if (argv[i][0] == '-')
