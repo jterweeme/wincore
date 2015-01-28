@@ -1,13 +1,25 @@
 #include "gunzip.h"
 
+class Options
+{
+public:
+    void parse(int argc, char **argv);
+};
+
 class AppGunzip
 {
+    Options _options;
 public:
     int run(int argc, char **argv);
 };
 
+void Options::parse(int argc, char **argv)
+{
+}
+
 int AppGunzip::run(int argc, char **argv)
 {
+    _options.parse(argc, argv);
     ifstream ifs(argv[1]);
     ofstream ofs(argv[2]);
     BitInput bi(&ifs);

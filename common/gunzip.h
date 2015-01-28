@@ -2,7 +2,7 @@
 #define _GUNZIP_H_
 #include "inflate.h"
 
-class GzipStream
+class GzipStream : public istream
 {
     BitInput *_bi;
     string _readString();
