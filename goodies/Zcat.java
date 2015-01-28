@@ -1,9 +1,8 @@
 import java.io.IOException;
 import java.util.Arrays;
 
-public class Gunzip
+public class Zcat
 {
-
     class GzipStream
     {
         private BitInput _bi;
@@ -23,9 +22,9 @@ public class Gunzip
                 _bi.read(new byte[len]);
             }
 
-            if ((flags & 8) != 0) System.out.println("File name: " + _readString());
+            if ((flags & 8) != 0) System.err.println("File name: " + _readString());
             if ((flags & 2) != 0)  _bi.ignoreBytes(2);
-            if ((flags & 0x10) != 0) System.out.println("Comment: " + _readString());
+            if ((flags & 0x10) != 0) System.err.println("Comment: " + _readString());
             Decompressor d = new Decompressor(_bi);
             d.extractTo(os);
         }
@@ -72,8 +71,6 @@ public class Gunzip
 
         private Node _toct(Nau n)
         {
-            n.dump(System.out);
-            System.out.print("\n");
             java.util.List<Node> nodes = new java.util.ArrayList<Node>();
         
             for (int i = n.max(); i >= 1; i--)
@@ -98,8 +95,6 @@ public class Gunzip
         {
             isFinal = _bi.readBool();
             int type = _bi.readInt(2);
-
-            System.out.format("Type: %d\n", type);
 
             switch (type)
             {
@@ -188,7 +183,6 @@ public class Gunzip
 
     private void _decRaw(java.io.OutputStream os) throws IOException
     {
-        System.out.println("Decraw begin");
         _bi.ignoreBuf();
         int len = _bi.readInt(16);
         _bi.ignoreBits(16);
@@ -205,8 +199,6 @@ public class Gunzip
     {
         for (int sym; (sym = _decSym(lit)) != 256;)
         {
-            System.out.format("%d ", sym);
-
             if (sym < 256)
             {
                 os.write(sym);
@@ -218,7 +210,6 @@ public class Gunzip
                 _dict.copy(_decDist(distSym), len, os);
             }
         }
-        System.out.print("\n");
     }
 
     private int _decSym(Node n) throws IOException
@@ -261,11 +252,11 @@ public class Gunzip
             _index = _mask != 0 ? (_index + 1) & _mask : (_index + 1) % _data.length;
         }
 
-        void copy(int d, int l, java.io.OutputStream out) throws IOException
+        void copy(int d, int l, java.io.OutputStream os) throws IOException
         {
             for (int ri = (_index - d + _data.length) & _mask; l > 0 && _mask != 0; l--)
             {
-                out.write(_data[ri]);
+                os.write(_data[ri]);
                 _data[_index] = _data[ri];
                 ri = (ri + 1) & _mask;
                 _index = (_index + 1) & _mask;
@@ -273,7 +264,7 @@ public class Gunzip
 
             for (int j = (_index - d + _data.length) % _data.length; l > 0 && _mask == 0; l--)
             {
-                out.write(_data[j]);
+                os.write(_data[j]);
                 _data[_index] = _data[j];
                 j = (j + 1) % _data.length;
                 _index = (_index + 1) % _data.length;
@@ -323,7 +314,7 @@ public class Gunzip
 
     public static void main(String[] args)
     {
-        Gunzip g = new Gunzip();
+        Zcat g = new Zcat();
 
         try
         {
@@ -338,17 +329,11 @@ public class Gunzip
 
     void run(String[] args) throws Exception
     {
-        if (args.length != 2)
-            throw new Exception("Usage: java GzipDecompress InputFile OutputFile");
-
         java.io.FileInputStream ifs = new java.io.FileInputStream(args[0]);
         java.io.BufferedInputStream bis = new java.io.BufferedInputStream(ifs, 16 * 1024);
-        java.io.OutputStream ofs = new java.io.FileOutputStream(args[1]);
-        java.io.BufferedOutputStream bos = new java.io.BufferedOutputStream(ofs, 16 * 1024);
         BitInput bi = new BitInput(bis);
         GzipStream gz = new GzipStream(bi);
-        gz.extractTo(bos);
-        bos.close();
+        gz.extractTo(System.out);
         bis.close();
     }
 }

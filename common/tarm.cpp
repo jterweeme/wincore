@@ -120,7 +120,7 @@ void Options::parse(int argc, char **argv)
 int AppTar::run(int argc, char **argv)
 {
     Options o(argc, argv);
-    istream *_is;
+    istream *is;
     
     
     if (o.table())
