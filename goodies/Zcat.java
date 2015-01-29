@@ -312,22 +312,7 @@ public class Zcat
         }
     }
 
-    public static void main(String[] args)
-    {
-        Zcat g = new Zcat();
-
-        try
-        {
-            g.run(args);
-        }
-        catch (Exception e)
-        {
-            System.err.println(e.getMessage());
-            System.exit(1);
-        }
-    }
-
-    void run(String[] args) throws Exception
+    public void run(String[] args) throws Exception
     {
         java.io.FileInputStream ifs = new java.io.FileInputStream(args[0]);
         java.io.BufferedInputStream bis = new java.io.BufferedInputStream(ifs, 16 * 1024);
@@ -336,6 +321,8 @@ public class Zcat
         gz.extractTo(System.out);
         bis.close();
     }
+
+    public static void main(String[] args) throws Exception { new Zcat().run(args); }
 }
 
 

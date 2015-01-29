@@ -88,7 +88,7 @@ test1go: test1
 	$(VALGRIND) ./test1
 
 tgunzip1go: tgunzip1
-	$(VALGRIND) ./tgunzip1
+	$(VALGRIND) ./tgunzip1 > /dev/null
 
 testgunzip2:
 	rm -f znew.txt

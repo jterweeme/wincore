@@ -1,26 +1,18 @@
 #include "hasher.h"
 
+typedef vector<string> Vest;
+
 class Options
 {
-    bool _check;
-    bool _cin;
+    bool _check = false;
+    bool _cin = false;
     bool _help;
-    int _argc;
-    char **_argv;
-    int _argp;
+    Vest _files;
 public:
-    Options(int argc, char **argv)
-      : _check(false), _cin(false), _argc(argc), _argv(argv), _argp(0)
-    { }
-
+    Vest files() const { return _files; }
     bool check() const { return _check; }
     void parse(int argc, char **argv);
-    void parse() { parse(_argc, _argv); }
-    void dump(ostream &os) const;
     bool cin() const { return _cin; }
-    bool isFile(char *arg) const { return arg[0] != '-'; }
-    bool hasNextFileName() const;
-    string nextFileName();
 };
 
 class Paar
@@ -33,40 +25,20 @@ public:
     void read(istream &is) const;
     Hash hash() const { return _hash; }
     string fn() const { return _fn; }
-    void dump(ostream &os) const;
 };
 
-class App
+class AppMD5Sum
 {
     Hasher _hasher;
-    Options _options;
-    void checkFile2(const char *fn);
-    void checkPaar(Paar &paar);
+    void _hashStream(istream &is, const char *name, ostream &os);
+    void _hashCin(ostream &os) { _hashStream(cin, "-", os); }
+    void _hashFile(const char *fn, ostream &os);
+    void _hashFile(string fn, ostream &os) { _hashFile(fn.c_str(), os); }
+    void _checkFile(string fn, ostream &os);
+    void _checkPaar(Paar &paar, ostream &os);
 public:
-    App(int argc, char **argv) : _options(argc, argv) { }
-    int run();
+    int run(int argc, char **argv);
 };
-
-bool Options::hasNextFileName() const
-{
-    for (int i = _argp + 1; i < _argc; i++)
-        if (isFile(_argv[i]))
-            return true;
-
-    return false;
-}
-
-void Paar::dump(ostream &os) const
-{
-    _hash.dump(os);
-    os << "  " << _fn << "\n";
-}
-
-string Options::nextFileName()
-{
-    while (!isFile(_argv[++_argp]));
-    return string(_argv[_argp]);
-}
 
 void Options::parse(const int argc, char **argv)
 {
@@ -87,16 +59,20 @@ void Options::parse(const int argc, char **argv)
                 break;
             }
         }
+        else
+        {
+            _files.push_back(argv[i]);
+        }
     }
 }
 
-void Options::dump(ostream &os) const
+void AppMD5Sum::_hashStream(istream &is, const char *name, ostream &os)
 {
-    if (_cin)
-        os << "Standard Input\n";
+    _hasher.stream(is);
+    os << _hasher.hash().toString() << "  " << name << "\n";
 }
 
-void App::checkFile2(const char *fn)
+void AppMD5Sum::_hashFile(const char *fn, ostream &os)
 {
     _hasher.reset();
     ifstream file;
@@ -105,10 +81,8 @@ void App::checkFile2(const char *fn)
     if (!file.is_open())
         throw "Cannot open file";
 
-    _hasher.stream(file);
+    _hashStream(file, fn, os);
     file.close();
-    _hasher.hash().dump(cout);
-    cout << "  " << fn << "\n";
 }
 
 void Paar::read(istream &is) const
@@ -117,45 +91,47 @@ void Paar::read(istream &is) const
     is.getline(line, sizeof(line));
 }
 
-int App::run()
+void AppMD5Sum::_checkFile(string fn, ostream &os)
 {
-    _options.parse();
-
-    if (_options.cin())
-    {
-        _hasher.stream(cin);
-        _hasher.hash().dump(cout);
-        cout << "  -\n";
-    }
-
-    while (_options.hasNextFileName() && !_options.check())
-        checkFile2(_options.nextFileName().c_str());
+    ifstream foo;
+    char line[255] = {0};
+    foo.open(fn.c_str(), fstream::in);
     
-    while (_options.hasNextFileName() && _options.check())
+    while (foo)
     {
-        ifstream foo;
-        char line[255] = {0};
-        foo.open(_options.nextFileName().c_str(), fstream::in);
-        
-        while (foo)
+        foo.getline(line, sizeof(line));
+
+        if (foo)
         {
-            foo.getline(line, sizeof(line));
-
-            if (foo)
-            {
-                Hash hash(line);
-                string fn = string(line + 34);
-                Paar paar(hash, fn);
-                checkPaar(paar);
-            }
+            Hash hash(line);
+            string fn = string(line + 34);
+            Paar paar(hash, fn);
+            _checkPaar(paar, os);
         }
-        foo.close();
     }
+    foo.close();
+}
 
+int AppMD5Sum::run(int argc, char **argv)
+{
+    Options options;
+    options.parse(argc, argv);
+
+    if (options.cin())
+        _hashCin(cout);
+
+    Vest files = options.files();
+
+    for (Vest::iterator it = files.begin(); !options.check() && it != files.end(); it++)
+        _hashFile(*it, cout);
+
+    for (Vest::iterator it = files.begin(); options.check() && it != files.end(); it++)
+        _checkFile(*it, cout);
+    
     return 0;
 }
 
-void App::checkPaar(Paar &paar)
+void AppMD5Sum::_checkPaar(Paar &paar, ostream &os)
 {
     ifstream file;
     file.open(paar.fn().c_str(), fstream::in | fstream::binary);
@@ -164,15 +140,15 @@ void App::checkPaar(Paar &paar)
     Hash hash2 = _hasher.hash();
 
     if (paar.hash().isEqual(hash2))
-        cout << "\e[1;32m" << paar.fn() << ": OK\e[0m\n";
+        os << "\e[1;32m" << paar.fn() << ": OK\e[0m\n";
     else
-        cout << paar.fn() << ": FAILED\n";
+        os << paar.fn() << ": FAILED\n";
 }
 
 int main(const int argc, char **argv)
 {
-    App app(argc, argv);
-    return app.run();
+    AppMD5Sum app;
+    return app.run(argc, argv);
 }
 
 

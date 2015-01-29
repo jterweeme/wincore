@@ -1,29 +1,20 @@
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
-class Bunzip2
+class Bzcat
 {
     class BitInput
     {
-        final InputStream _inputStream;
+        final java.io.InputStream _is;
         int _bitBuffer, _bitCount;
         public int readInt() throws IOException { return readBits(16) << 16 | readBits(16); }
-        public BitInput(final InputStream inputStream) { _inputStream = inputStream; }
+        public BitInput(final java.io.InputStream is) { _is = is; }
         public boolean readBool() throws IOException { return readBits(1) == 0 ? false : true; }
         public int readUnary() throws IOException { int u = 0; while (readBool()) u++; return u; }
         public void ignore(int n) throws IOException { while (n-- > 0) readBool(); }
         
         public int readBits(int n) throws IOException
         {
-            for (; _bitCount < n; _bitCount += 8)
-                _bitBuffer = _bitBuffer << 8 | _inputStream.read();
-            
+            for (; _bitCount < n; _bitCount += 8) _bitBuffer = _bitBuffer << 8 | _is.read();
             _bitCount -= n;
             return _bitBuffer >>> _bitCount & (1 << n) - 1;
         }
@@ -75,7 +66,6 @@ class Bunzip2
 
         int _nextSymbol(BitInput bi, byte[] selectors) throws IOException
         {
-
             if (++_grpPos % 50 == 0)
                 _curTbl = selectors[++_grpIdx];
 
@@ -292,10 +282,12 @@ class Bunzip2
         boolean _streamComplete = false;
         Block _bd;
         
-        public void extractTo(OutputStream o) throws IOException
+        public void extractTo(java.io.OutputStream o) throws IOException
         {
             for (int b = _read(); b != -1; b = _read())
                 o.write(b);
+
+            o.flush();
         }
 
         int _read() throws IOException
@@ -338,37 +330,22 @@ class Bunzip2
     public void run(String[] args) throws IOException
     {
         if (args.length == 0)
-        {
-            System.err.println("Demonstration BZip2 decompressor\n");
-            System.err.println("Usage:\n  java demo.Decompress <filename>\n");
-            System.exit(1);
-		}
+            throw new Error("Usage:\n  java demo.Decompress <filename>\n");
         
-        File inputFile = new File(args[0]);
-        System.out.println(args[0]);
+        java.io.File inputFile = new java.io.File(args[0]);
+        System.err.println(args[0]);
         
         if (!inputFile.exists() || !inputFile.canRead() || !args[0].endsWith(".bz2"))
             throw new Error("Cannot read file " + inputFile.getPath());
         
-		File outputFile = new File(args[0].substring (0, args[0].length() - 4));
-        
-		if (outputFile.exists())
-            throw new Error("File " + outputFile.getPath() + " already exists");
-        
-        FileInputStream fis = new FileInputStream(inputFile);
+        java.io.FileInputStream fis = new java.io.FileInputStream(inputFile);
         BitInput bis = new BitInput(fis);
         DecStream is = new DecStream(bis);
-        OutputStream f = new FileOutputStream(outputFile);
-        is.extractTo(f);
-        f.close();
+        is.extractTo(System.out);
         fis.close();
     }
     
-	public static void main(String[] args) throws IOException
-    {
-        Bunzip2 d = new Bunzip2();
-        d.run(args);
-	}
+	public static void main(String[] args) throws IOException { new Bzcat().run(args); }
 }
 
 
