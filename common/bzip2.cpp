@@ -1,69 +1,8 @@
-/*-------------------------------------------------------------*/
-/*--- Public header file for the library.                   ---*/
-/*---                                               bzlib.h ---*/
-/*-------------------------------------------------------------*/
-
-/*--
-  This file is a part of bzip2 and/or libbzip2, a program and
-  library for lossless, block-sorting data compression.
-
-  Copyright (C) 1996-2002 Julian R Seward.  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions
-  are met:
-
-  1. Redistributions of source code must retain the above copyright
-     notice, this list of conditions and the following disclaimer.
-
-  2. The origin of this software must not be misrepresented; you must 
-     not claim that you wrote the original software.  If you use this 
-     software in a product, an acknowledgment in the product 
-     documentation would be appreciated but is not required.
-
-  3. Altered source versions must be plainly marked as such, and must
-     not be misrepresented as being the original software.
-
-  4. The name of the author may not be used to endorse or promote 
-     products derived from this software without specific prior written 
-     permission.
-
-  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS
-  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-  ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-  GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-  Julian Seward, Cambridge, UK.
-  jseward@acm.org
-  bzip2/libbzip2 version 1.0 of 21 March 2000
-
-  This program is based on (at least) the work of:
-     Mike Burrows
-     David Wheeler
-     Peter Fenwick
-     Alistair Moffat
-     Radford Neal
-     Ian H. Witten
-     Robert Sedgewick
-     Jon L. Bentley
-
-  For more information on these sources, see the manual.
---*/
-
-
+#include <stdint.h>
 #ifndef _BZLIB_H
 #define _BZLIB_H
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 #define BZ_RUN               0
 #define BZ_FLUSH             1
@@ -109,20 +48,17 @@ typedef
 #define BZ_EXPORT
 #endif
 
-/* Need a definitition for FILE */
 #include <stdio.h>
 
 #ifdef _WIN32
 #   include <windows.h>
 #   ifdef small
-      /* windows.h define small to char */
 #      undef small
 #   endif
 #   ifdef BZ_EXPORT
 #   define BZ_API(func) WINAPI func
 #   define BZ_EXTERN extern
 #   else
-   /* import windows dll dynamically */
 #   define BZ_API(func) (WINAPI * func)
 #   define BZ_EXTERN
 #   endif
@@ -131,8 +67,6 @@ typedef
 #   define BZ_EXTERN extern
 #endif
 
-
-/*-- Core (low-level) library functions --*/
 
 BZ_EXTERN int BZ_API(BZ2_bzCompressInit) ( 
       bz_stream* strm, 
@@ -165,8 +99,6 @@ BZ_EXTERN int BZ_API(BZ2_bzDecompressEnd) (
    );
 
 
-
-/*-- High(er) level library functions --*/
 
 #ifndef BZ_NO_STDIO
 #define BZ_MAX_UNUSED 5000
@@ -236,8 +168,6 @@ BZ_EXTERN void BZ_API(BZ2_bzWriteClose64) (
 #endif
 
 
-/*-- Utility functions --*/
-
 BZ_EXTERN int BZ_API(BZ2_bzBuffToBuffCompress) ( 
       char*         dest, 
       unsigned int* destLen,
@@ -257,16 +187,6 @@ BZ_EXTERN int BZ_API(BZ2_bzBuffToBuffDecompress) (
       int           verbosity 
    );
 
-
-/*--
-   Code contributed by Yoshioka Tsuneo
-   (QWF00133@niftyserve.or.jp/tsuneo-y@is.aist-nara.ac.jp),
-   to support better zlib compatibility.
-   This code is not _officially_ part of libbzip2 (yet);
-   I haven't tested it, documented it, or considered the
-   threading-safeness of it.
-   If this code breaks, please contact both Yoshioka and me.
---*/
 
 BZ_EXTERN const char * BZ_API(BZ2_bzlibVersion) (
       void
@@ -309,19 +229,9 @@ BZ_EXTERN const char * BZ_API(BZ2_bzerror) (
    );
 #endif
 
-#ifdef __cplusplus
 }
-#endif
 
 #endif
-
-/*-------------------------------------------------------------*/
-/*--- end                                           bzlib.h ---*/
-/*-------------------------------------------------------------*/
-/*-------------------------------------------------------------*/
-/*--- Private header file for the library.                  ---*/
-/*---                                       bzlib_private.h ---*/
-/*-------------------------------------------------------------*/
 
 #ifndef _BZLIB_PRIVATE_H
 #define _BZLIB_PRIVATE_H
@@ -334,24 +244,20 @@ BZ_EXTERN const char * BZ_API(BZ2_bzerror) (
 #include <string.h>
 #endif
 
-
-/*-- General stuff. --*/
-
 #define BZ_VERSION  "1.0.2, 30-Dec-2001"
 
 typedef char            Char;
-typedef unsigned char   Bool;
 typedef unsigned char   UChar;
 typedef int             Int32;
 typedef unsigned int    UInt32;
 typedef short           Int16;
 typedef unsigned short  UInt16;
 
-#define True  ((Bool)1)
-#define False ((Bool)0)
+#define True  ((uint8_t)1)
+#define False ((uint8_t)0)
 
 #ifndef __GNUC__
-#define __inline__  /* */
+#define __inline__  
 #endif 
 
 #ifndef BZ_NO_STDIO
@@ -398,14 +304,10 @@ extern void bz_internal_error ( int errcode );
 #define BZFREE(ppp)  (strm->bzfree)(strm->opaque,(ppp))
 
 
-/*-- Header bytes. --*/
-
 #define BZ_HDR_B 0x42   /* 'B' */
 #define BZ_HDR_Z 0x5a   /* 'Z' */
 #define BZ_HDR_h 0x68   /* 'h' */
 #define BZ_HDR_0 0x30   /* '0' */
-  
-/*-- Constants for the back end. --*/
 
 #define BZ_MAX_ALPHA_SIZE 258
 #define BZ_MAX_CODE_LEN    23
@@ -416,12 +318,7 @@ extern void bz_internal_error ( int errcode );
 #define BZ_N_GROUPS 6
 #define BZ_G_SIZE   50
 #define BZ_N_ITERS  4
-
 #define BZ_MAX_SELECTORS (2 + (900000 / BZ_G_SIZE))
-
-
-
-/*-- Stuff for randomising repetitive blocks. --*/
 
 extern Int32 BZ2_rNums[512];
 
@@ -443,11 +340,7 @@ extern Int32 BZ2_rNums[512];
    }                                           \
    s->rNToGo--;
 
-
-
-/*-- Stuff for doing CRCs. --*/
-
-extern UInt32 BZ2_crc32Table[256];
+extern unsigned BZ2_crc32Table[256];
 
 #define BZ_INITIALISE_CRC(crcVar)              \
 {                                              \
@@ -463,12 +356,8 @@ extern UInt32 BZ2_crc32Table[256];
 {                                              \
    crcVar = (crcVar << 8) ^                    \
             BZ2_crc32Table[(crcVar >> 24) ^    \
-                           ((UChar)cha)];      \
+                           ((uint8_t)cha)];      \
 }
-
-
-
-/*-- States and modes for compression. --*/
 
 #define BZ_M_IDLE      1
 #define BZ_M_RUNNING   2
@@ -483,78 +372,46 @@ extern UInt32 BZ2_crc32Table[256];
 #define BZ_N_SHELL 18
 #define BZ_N_OVERSHOOT (BZ_N_RADIX + BZ_N_QSORT + BZ_N_SHELL + 2)
 
-
-
-
-/*-- Structure holding all the compression-side stuff. --*/
-
 typedef
    struct {
-      /* pointer back to the struct bz_stream */
       bz_stream* strm;
 
-      /* mode this stream is in, and whether inputting */
-      /* or outputting data */
       Int32    mode;
       Int32    state;
-
-      /* remembers avail_in when flush/finish requested */
-      UInt32   avail_in_expect;
-
-      /* for doing the block sorting */
-      UInt32*  arr1;
-      UInt32*  arr2;
+      unsigned   avail_in_expect;
+      unsigned*  arr1;
+      unsigned*  arr2;
       UInt32*  ftab;
       Int32    origPtr;
-
-      /* aliases for arr1 and arr2 */
       UInt32*  ptr;
-      UChar*   block;
+      uint8_t*   block;
       UInt16*  mtfv;
-      UChar*   zbits;
-
-      /* for deciding when to use the fallback sorting algorithm */
+      uint8_t*   zbits;
       Int32    workFactor;
-
-      /* run-length-encoding of the input */
       UInt32   state_in_ch;
       Int32    state_in_len;
       BZ_RAND_DECLS;
-
-      /* input and output limits and current posns */
       Int32    nblock;
       Int32    nblockMAX;
       Int32    numZ;
       Int32    state_out_pos;
-
-      /* map of bytes used in block */
       Int32    nInUse;
-      Bool     inUse[256];
-      UChar    unseqToSeq[256];
-
-      /* the buffer for bit stream creation */
+      uint8_t     inUse[256];
+      uint8_t    unseqToSeq[256];
       UInt32   bsBuff;
       Int32    bsLive;
-
-      /* block and combined CRCs */
       UInt32   blockCRC;
       UInt32   combinedCRC;
-
-      /* misc administratium */
       Int32    verbosity;
       Int32    blockNo;
       Int32    blockSize100k;
-
-      /* stuff for coding the MTF values */
       Int32    nMTF;
       Int32    mtfFreq    [BZ_MAX_ALPHA_SIZE];
-      UChar    selector   [BZ_MAX_SELECTORS];
-      UChar    selectorMtf[BZ_MAX_SELECTORS];
-
-      UChar    len     [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+      uint8_t    selector   [BZ_MAX_SELECTORS];
+      uint8_t    selectorMtf[BZ_MAX_SELECTORS];
+      uint8_t  len     [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
       Int32    code    [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
       Int32    rfreq   [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-      /* second dimension: only 3 needed; 4 makes index calculations faster */
       UInt32   len_pack[BZ_MAX_ALPHA_SIZE][4];
 
    }
@@ -562,26 +419,13 @@ typedef
 
 
 
-/*-- externs for compression. --*/
-
-extern void 
-BZ2_blockSort ( EState* );
-
-extern void 
-BZ2_compressBlock ( EState*, Bool );
-
-extern void 
-BZ2_bsInitWrite ( EState* );
-
-extern void 
-BZ2_hbAssignCodes ( Int32*, UChar*, Int32, Int32, Int32 );
-
-extern void 
-BZ2_hbMakeCodeLengths ( UChar*, Int32*, Int32, Int32 );
+extern void BZ2_blockSort(EState*);
+extern void BZ2_compressBlock(EState*, uint8_t);
+extern void BZ2_bsInitWrite ( EState* );
+extern void BZ2_hbAssignCodes ( Int32*, uint8_t*, Int32, Int32, Int32 );
+extern void BZ2_hbMakeCodeLengths ( uint8_t*, Int32*, Int32, Int32 );
 
 
-
-/*-- states for decompression. --*/
 
 #define BZ_X_IDLE        1
 #define BZ_X_OUTPUT      2
@@ -628,42 +472,25 @@ BZ2_hbMakeCodeLengths ( UChar*, Int32*, Int32, Int32 );
 #define BZ_X_CCRC_3      49
 #define BZ_X_CCRC_4      50
 
-
-
-/*-- Constants for the fast MTF decoder. --*/
-
 #define MTFA_SIZE 4096
 #define MTFL_SIZE 16
 
 
 
-/*-- Structure holding all the decompression-side stuff. --*/
-
 typedef
    struct {
-      /* pointer back to the struct bz_stream */
       bz_stream* strm;
-
-      /* state indicator for this stream */
       Int32    state;
-
-      /* for doing the final run-length decoding */
-      UChar    state_out_ch;
+      uint8_t    state_out_ch;
       Int32    state_out_len;
-      Bool     blockRandomised;
+      uint8_t     blockRandomised;
       BZ_RAND_DECLS;
-
-      /* the buffer for bit stream reading */
       UInt32   bsBuff;
       Int32    bsLive;
-
-      /* misc administratium */
       Int32    blockSize100k;
-      Bool     smallDecompress;
+      uint8_t     smallDecompress;
       Int32    currBlockNo;
       Int32    verbosity;
-
-      /* for undoing the Burrows-Wheeler transform */
       Int32    origPtr;
       UInt32   tPos;
       Int32    k0;
@@ -671,39 +498,26 @@ typedef
       Int32    nblock_used;
       Int32    cftab[257];
       Int32    cftabCopy[257];
-
-      /* for undoing the Burrows-Wheeler transform (FAST) */
       UInt32   *tt;
-
-      /* for undoing the Burrows-Wheeler transform (SMALL) */
       UInt16   *ll16;
-      UChar    *ll4;
-
-      /* stored and calculated CRCs */
+      uint8_t    *ll4;
       UInt32   storedBlockCRC;
       UInt32   storedCombinedCRC;
       UInt32   calculatedBlockCRC;
       UInt32   calculatedCombinedCRC;
-
-      /* map of bytes used in block */
       Int32    nInUse;
-      Bool     inUse[256];
-      Bool     inUse16[16];
-      UChar    seqToUnseq[256];
-
-      /* for decoding the MTF values */
-      UChar    mtfa   [MTFA_SIZE];
+      uint8_t     inUse[256];
+      uint8_t     inUse16[16];
+      uint8_t    seqToUnseq[256];
+      uint8_t    mtfa   [MTFA_SIZE];
       Int32    mtfbase[256 / MTFL_SIZE];
-      UChar    selector   [BZ_MAX_SELECTORS];
-      UChar    selectorMtf[BZ_MAX_SELECTORS];
-      UChar    len  [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-
+      uint8_t    selector   [BZ_MAX_SELECTORS];
+      uint8_t    selectorMtf[BZ_MAX_SELECTORS];
+      uint8_t    len  [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
       Int32    limit  [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
       Int32    base   [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
       Int32    perm   [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
       Int32    minLens[BZ_N_GROUPS];
-
-      /* save area for scalars in the main decompress code */
       Int32    save_i;
       Int32    save_j;
       Int32    save_t;
@@ -728,22 +542,17 @@ typedef
       Int32*   save_gLimit;
       Int32*   save_gBase;
       Int32*   save_gPerm;
-
    }
    DState;
 
-
-
-/*-- Macros for decompression. --*/
-
 #define BZ_GET_FAST(cccc)                     \
     s->tPos = s->tt[s->tPos];                 \
-    cccc = (UChar)(s->tPos & 0xff);           \
+    cccc = (uint8_t)(s->tPos & 0xff);           \
     s->tPos >>= 8;
 
 #define BZ_GET_FAST_C(cccc)                   \
     c_tPos = c_tt[c_tPos];                    \
-    cccc = (UChar)(c_tPos & 0xff);            \
+    cccc = (uint8_t)(c_tPos & 0xff);            \
     c_tPos >>= 8;
 
 #define SET_LL4(i,n)                                          \
@@ -767,9 +576,6 @@ typedef
       cccc = BZ2_indexIntoF ( s->tPos, s->cftab );    \
       s->tPos = GET_LL(s->tPos);
 
-
-/*-- externs for decompression. --*/
-
 extern Int32 
 BZ2_indexIntoF ( Int32, Int32* );
 
@@ -777,14 +583,12 @@ extern Int32
 BZ2_decompress ( DState* );
 
 extern void 
-BZ2_hbCreateDecodeTables ( Int32*, Int32*, Int32*, UChar*,
+BZ2_hbCreateDecodeTables ( Int32*, Int32*, Int32*, uint8_t*,
                            Int32,  Int32, Int32 );
 
 
 #endif
 
-
-/*-- BZ_NO_STDIO seems to make NULL disappear on some platforms. --*/
 
 #ifdef BZ_NO_STDIO
 #ifndef NULL
@@ -792,24 +596,6 @@ BZ2_hbCreateDecodeTables ( Int32*, Int32*, Int32*, UChar*,
 #endif
 #endif
 
-
-/*-------------------------------------------------------------*/
-/*--- end                                   bzlib_private.h ---*/
-/*-------------------------------------------------------------*/
-
-
-
-/*-------------------------------------------------------------*/
-/*--- Block sorting machinery                               ---*/
-/*---                                           blocksort.c ---*/
-/*-------------------------------------------------------------*/
-
-/*---------------------------------------------*/
-/*--- Fallback O(N log(N)^2) sorting        ---*/
-/*--- algorithm, for repetitive blocks      ---*/
-/*---------------------------------------------*/
-
-/*---------------------------------------------*/
 static 
 __inline__
 void fallbackSimpleSort ( UInt32* fmap, 
@@ -971,20 +757,6 @@ void fallbackQSort3 ( UInt32* fmap,
 #undef FALLBACK_QSORT_STACK_SIZE
 
 
-/*---------------------------------------------*/
-/* Pre:
-      nblock > 0
-      eclass exists for [0 .. nblock-1]
-      ((UChar*)eclass) [0 .. nblock-1] holds block
-      ptr exists for [0 .. nblock-1]
-
-   Post:
-      ((UChar*)eclass) [0 .. nblock-1] holds block
-      All other areas of eclass destroyed
-      fmap [0 .. nblock-1] holds sorted order
-      bhtab [ 0 .. 2+(nblock/32) ] destroyed
-*/
-
 #define       SET_BH(zz)  bhtab[(zz) >> 5] |= (1 << ((zz) & 31))
 #define     CLEAR_BH(zz)  bhtab[(zz) >> 5] &= ~(1 << ((zz) & 31))
 #define     ISSET_BH(zz)  (bhtab[(zz) >> 5] & (1 << ((zz) & 31)))
@@ -1003,12 +775,8 @@ void fallbackSort ( UInt32* fmap,
    Int32 H, i, j, k, l, r, cc, cc1;
    Int32 nNotDone;
    Int32 nBhtab;
-   UChar* eclass8 = (UChar*)eclass;
+   uint8_t* eclass8 = (uint8_t*)eclass;
 
-   /*--
-      Initial 1-char radix sort to generate
-      initial fmap and initial BH bits.
-   --*/
    if (verb >= 4)
       VPrintf0 ( "        bucket sorting ...\n" );
    for (i = 0; i < 257;    i++) ftab[i] = 0;
@@ -1095,18 +863,13 @@ void fallbackSort ( UInt32* fmap,
       if (H > nblock || nNotDone == 0) break;
    }
 
-   /*-- 
-      Reconstruct the original block in
-      eclass8 [0 .. nblock-1], since the
-      previous phase destroyed it.
-   --*/
    if (verb >= 4)
       VPrintf0 ( "        reconstructing block ...\n" );
    j = 0;
    for (i = 0; i < nblock; i++) {
       while (ftabCopy[j] == 0) j++;
       ftabCopy[j]--;
-      eclass8[fmap[i]] = (UChar)j;
+      eclass8[fmap[i]] = (uint8_t)j;
    }
    AssertH ( j < 256, 1005 );
 }
@@ -1117,25 +880,16 @@ void fallbackSort ( UInt32* fmap,
 #undef      WORD_BH
 #undef UNALIGNED_BH
 
-
-/*---------------------------------------------*/
-/*--- The main, O(N^2 log(N)) sorting       ---*/
-/*--- algorithm.  Faster for "normal"       ---*/
-/*--- non-repetitive blocks.                ---*/
-/*---------------------------------------------*/
-
-/*---------------------------------------------*/
 static
-__inline__
-Bool mainGtU ( UInt32  i1, 
+uint8_t mainGtU ( UInt32  i1, 
                UInt32  i2,
-               UChar*  block, 
+               uint8_t*  block, 
                UInt16* quadrant,
                UInt32  nblock,
                Int32*  budget )
 {
    Int32  k;
-   UChar  c1, c2;
+   uint8_t c1, c2;
    UInt16 s1, s2;
 
    AssertD ( i1 != i2, "mainGtU" );
@@ -1266,7 +1020,7 @@ Int32 incs[14] = { 1, 4, 13, 40, 121, 364, 1093, 3280,
 
 static
 void mainSimpleSort ( UInt32* ptr,
-                      UChar*  block,
+                      uint8_t*  block,
                       UInt16* quadrant,
                       Int32   nblock,
                       Int32   lo, 
@@ -1290,7 +1044,6 @@ void mainSimpleSort ( UInt32* ptr,
       i = lo + h;
       while (True) {
 
-         /*-- copy 1 --*/
          if (i > hi) break;
          v = ptr[i];
          j = i;
@@ -1304,7 +1057,6 @@ void mainSimpleSort ( UInt32* ptr,
          ptr[j] = v;
          i++;
 
-         /*-- copy 2 --*/
          if (i > hi) break;
          v = ptr[i];
          j = i;
@@ -1318,7 +1070,6 @@ void mainSimpleSort ( UInt32* ptr,
          ptr[j] = v;
          i++;
 
-         /*-- copy 3 --*/
          if (i > hi) break;
          v = ptr[i];
          j = i;
@@ -1337,16 +1088,6 @@ void mainSimpleSort ( UInt32* ptr,
    }
 }
 
-
-/*---------------------------------------------*/
-/*--
-   The following is an implementation of
-   an elegant 3-way quicksort for strings,
-   described in a paper "Fast Algorithms for
-   Sorting and Searching Strings", by Robert
-   Sedgewick and Jon L. Bentley.
---*/
-
 #define mswap(zz1, zz2) \
    { Int32 zztmp = zz1; zz1 = zz2; zz2 = zztmp; }
 
@@ -1362,10 +1103,9 @@ void mainSimpleSort ( UInt32* ptr,
 }
 
 static 
-__inline__
-UChar mmed3 ( UChar a, UChar b, UChar c )
+uint8_t mmed3 (uint8_t a, uint8_t b, uint8_t c )
 {
-   UChar t;
+   uint8_t t;
    if (a > b) { t = a; a = b; b = t; };
    if (b > c) { 
       b = c;
@@ -1401,8 +1141,8 @@ UChar mmed3 ( UChar a, UChar b, UChar c )
 #define MAIN_QSORT_STACK_SIZE 100
 
 static
-void mainQSort3 ( UInt32* ptr,
-                  UChar*  block,
+void mainQSort3(UInt32* ptr,
+                  uint8_t*  block,
                   UInt16* quadrant,
                   Int32   nblock,
                   Int32   loSt, 
@@ -1510,29 +1250,13 @@ void mainQSort3 ( UInt32* ptr,
 #undef MAIN_QSORT_DEPTH_THRESH
 #undef MAIN_QSORT_STACK_SIZE
 
-
-/*---------------------------------------------*/
-/* Pre:
-      nblock > N_OVERSHOOT
-      block32 exists for [0 .. nblock-1 +N_OVERSHOOT]
-      ((UChar*)block32) [0 .. nblock-1] holds block
-      ptr exists for [0 .. nblock-1]
-
-   Post:
-      ((UChar*)block32) [0 .. nblock-1] holds block
-      All other areas of block32 destroyed
-      ftab [0 .. 65536 ] destroyed
-      ptr [0 .. nblock-1] holds sorted order
-      if (*budget < 0), sorting was abandoned
-*/
-
 #define BIGFREQ(b) (ftab[((b)+1) << 8] - ftab[(b) << 8])
 #define SETMASK (1 << 21)
 #define CLEARMASK (~(SETMASK))
 
 static
 void mainSort ( UInt32* ptr, 
-                UChar*  block,
+                uint8_t*  block,
                 UInt16* quadrant, 
                 UInt32* ftab,
                 Int32   nblock,
@@ -1541,15 +1265,14 @@ void mainSort ( UInt32* ptr,
 {
    Int32  i, j, k, ss, sb;
    Int32  runningOrder[256];
-   Bool   bigDone[256];
+   uint8_t   bigDone[256];
    Int32  copyStart[256];
    Int32  copyEnd  [256];
-   UChar  c1;
+   uint8_t  c1;
    Int32  numQSorted;
    UInt16 s;
    if (verb >= 4) VPrintf0 ( "        main sort initialise ...\n" );
 
-   /*-- set up the 2-byte frequency table --*/
    for (i = 65536; i >= 0; i--) ftab[i] = 0;
 
    j = block[0] << 8;
@@ -1612,11 +1335,6 @@ void mainSort ( UInt32* ptr,
       ptr[j] = i;
    }
 
-   /*--
-      Now ftab contains the first loc of every small bucket.
-      Calculate the running order, from smallest to largest
-      big bucket.
-   --*/
    for (i = 0; i <= 255; i++) {
       bigDone     [i] = False;
       runningOrder[i] = i;
@@ -1690,14 +1408,6 @@ void mainSort ( UInt32* ptr,
       }
 
       AssertH ( !bigDone[ss], 1006 );
-
-      /*--
-         Step 2:
-         Now scan this big bucket [ss] so as to synthesise the
-         sorted order for small buckets [t, ss] for all t,
-         including, magically, the bucket [ss,ss] too.
-         This will avoid doing Real Work in subsequent Step 1's.
-      --*/
       {
          for (j = 0; j <= 255; j++) {
             copyStart[j] =  ftab[(j << 8) + ss]     & CLEARMASK;
@@ -1719,54 +1429,12 @@ void mainSort ( UInt32* ptr,
 
       AssertH ( (copyStart[ss]-1 == copyEnd[ss])
                 || 
-                /* Extremely rare case missing in bzip2-1.0.0 and 1.0.1.
-                   Necessity for this case is demonstrated by compressing 
-                   a sequence of approximately 48.5 million of character 
-                   251; 1.0.0/1.0.1 will then die here. */
+      
                 (copyStart[ss] == 0 && copyEnd[ss] == nblock-1),
                 1007 )
 
       for (j = 0; j <= 255; j++) ftab[(j << 8) + ss] |= SETMASK;
 
-      /*--
-         Step 3:
-         The [ss] big bucket is now done.  Record this fact,
-         and update the quadrant descriptors.  Remember to
-         update quadrants in the overshoot area too, if
-         necessary.  The "if (i < 255)" test merely skips
-         this updating for the last bucket processed, since
-         updating for the last bucket is pointless.
-
-         The quadrant array provides a way to incrementally
-         cache sort orderings, as they appear, so as to 
-         make subsequent comparisons in fullGtU() complete
-         faster.  For repetitive blocks this makes a big
-         difference (but not big enough to be able to avoid
-         the fallback sorting mechanism, exponential radix sort).
-
-         The precise meaning is: at all times:
-
-            for 0 <= i < nblock and 0 <= j <= nblock
-
-            if block[i] != block[j], 
-
-               then the relative values of quadrant[i] and 
-                    quadrant[j] are meaningless.
-
-               else {
-                  if quadrant[i] < quadrant[j]
-                     then the string starting at i lexicographically
-                     precedes the string starting at j
-
-                  else if quadrant[i] > quadrant[j]
-                     then the string starting at j lexicographically
-                     precedes the string starting at i
-
-                  else
-                     the relative ordering of the strings starting
-                     at i and j has not yet been determined.
-               }
-      --*/
       bigDone[ss] = True;
 
       if (i < 255) {
@@ -1797,24 +1465,10 @@ void mainSort ( UInt32* ptr,
 #undef SETMASK
 #undef CLEARMASK
 
-
-/*---------------------------------------------*/
-/* Pre:
-      nblock > 0
-      arr2 exists for [0 .. nblock-1 +N_OVERSHOOT]
-      ((UChar*)arr2)  [0 .. nblock-1] holds block
-      arr1 exists for [0 .. nblock-1]
-
-   Post:
-      ((UChar*)arr2) [0 .. nblock-1] holds block
-      All other areas of block destroyed
-      ftab [ 0 .. 65536 ] destroyed
-      arr1 [0 .. nblock-1] holds sorted order
-*/
-void BZ2_blockSort ( EState* s )
+void BZ2_blockSort(EState* s)
 {
    UInt32* ptr    = s->ptr; 
-   UChar*  block  = s->block;
+   uint8_t*  block  = s->block;
    UInt32* ftab   = s->ftab;
    Int32   nblock = s->nblock;
    Int32   verb   = s->verbosity;
@@ -1827,22 +1481,9 @@ void BZ2_blockSort ( EState* s )
    if (nblock < 10000) {
       fallbackSort ( s->arr1, s->arr2, ftab, nblock, verb );
    } else {
-      /* Calculate the location for quadrant, remembering to get
-         the alignment right.  Assumes that &(block[0]) is at least
-         2-byte aligned -- this should be ok since block is really
-         the first section of arr2.
-      */
       i = nblock+BZ_N_OVERSHOOT;
       if (i & 1) i++;
       quadrant = (UInt16*)(&(block[i]));
-
-      /* (wfact-1) / 3 puts the default-factor-30
-         transition point at very roughly the same place as 
-         with v0.1 and v0.9.0.  
-         Not that it particularly matters any more, since the
-         resulting compressed stream is now the same regardless
-         of whether or not we use the main sort or fallback sort.
-      */
       if (wfact < 1  ) wfact = 1;
       if (wfact > 100) wfact = 100;
       budgetInit = nblock * ((wfact-1) / 3);
@@ -1920,18 +1561,13 @@ void BZ2_blockSort ( EState* s )
 }
 
 
-/*---------------------------------------------------*/
-void BZ2_hbMakeCodeLengths ( UChar *len, 
-                             Int32 *freq,
-                             Int32 alphaSize,
-                             Int32 maxLen )
+void BZ2_hbMakeCodeLengths(uint8_t *len, 
+                           Int32 *freq,
+                           Int32 alphaSize,
+                           Int32 maxLen )
 {
-   /*--
-      Nodes and heap entries run from 1.  Entry 0
-      for both the heap and nodes is a sentinel.
-   --*/
    Int32 nNodes, nHeap, n1, n2, i, j, k;
-   Bool  tooLong;
+   uint8_t  tooLong;
 
    Int32 heap   [ BZ_MAX_ALPHA_SIZE + 2 ];
    Int32 weight [ BZ_MAX_ALPHA_SIZE * 2 ];
@@ -1991,10 +1627,8 @@ void BZ2_hbMakeCodeLengths ( UChar *len,
    }
 }
 
-
-/*---------------------------------------------------*/
-void BZ2_hbAssignCodes ( Int32 *code,
-                         UChar *length,
+void BZ2_hbAssignCodes(Int32 *code,
+                         uint8_t *length,
                          Int32 minLen,
                          Int32 maxLen,
                          Int32 alphaSize )
@@ -2009,12 +1643,10 @@ void BZ2_hbAssignCodes ( Int32 *code,
    }
 }
 
-
-/*---------------------------------------------------*/
 void BZ2_hbCreateDecodeTables ( Int32 *limit,
                                 Int32 *base,
                                 Int32 *perm,
-                                UChar *length,
+                                uint8_t *length,
                                 Int32 minLen,
                                 Int32 maxLen,
                                 Int32 alphaSize )
@@ -2198,48 +1830,28 @@ Int32 BZ2_rNums[512] = {
    936, 638
 };
 
-
-/*-------------------------------------------------------------*/
-/*--- end                                       randtable.c ---*/
-/*-------------------------------------------------------------*/
-
-/*-------------------------------------------------------------*/
-/*--- Compression machinery (not incl block sorting)        ---*/
-/*---                                            compress.c ---*/
-/*-------------------------------------------------------------*/
-
-
-/*---------------------------------------------------*/
-/*--- Bit stream I/O                              ---*/
-/*---------------------------------------------------*/
-
-/*---------------------------------------------------*/
 void BZ2_bsInitWrite ( EState* s )
 {
    s->bsLive = 0;
    s->bsBuff = 0;
 }
 
-
-/*---------------------------------------------------*/
 static
 void bsFinishWrite ( EState* s )
 {
    while (s->bsLive > 0) {
-      s->zbits[s->numZ] = (UChar)(s->bsBuff >> 24);
+      s->zbits[s->numZ] = (uint8_t)(s->bsBuff >> 24);
       s->numZ++;
       s->bsBuff <<= 8;
       s->bsLive -= 8;
    }
 }
 
-
-/*---------------------------------------------------*/
 #define bsNEEDW(nz)                           \
 {                                             \
    while (s->bsLive >= 8) {                   \
       s->zbits[s->numZ]                       \
-         = (UChar)(s->bsBuff >> 24);          \
+         = (uint8_t)(s->bsBuff >> 24);          \
       s->numZ++;                              \
       s->bsBuff <<= 8;                        \
       s->bsLive -= 8;                         \
@@ -2268,22 +1880,12 @@ void bsPutUInt32 ( EState* s, UInt32 u )
    bsW ( s, 8,  u        & 0xffL );
 }
 
-
-/*---------------------------------------------------*/
-static
-void bsPutUChar ( EState* s, UChar c )
+static void bsPutUChar(EState* s, uint8_t c)
 {
    bsW( s, 8, (UInt32)c );
 }
 
-
-/*---------------------------------------------------*/
-/*--- The back end proper                         ---*/
-/*---------------------------------------------------*/
-
-/*---------------------------------------------------*/
-static
-void makeMaps_e ( EState* s )
+static void makeMaps_e ( EState* s )
 {
    Int32 i;
    s->nInUse = 0;
@@ -2294,41 +1896,15 @@ void makeMaps_e ( EState* s )
       }
 }
 
-
-/*---------------------------------------------------*/
-static
-void generateMTFValues ( EState* s )
+static void generateMTFValues ( EState* s )
 {
-   UChar   yy[256];
+    uint8_t  yy[256];
    Int32   i, j;
    Int32   zPend;
    Int32   wr;
    Int32   EOB;
-
-   /* 
-      After sorting (eg, here),
-         s->arr1 [ 0 .. s->nblock-1 ] holds sorted order,
-         and
-         ((UChar*)s->arr2) [ 0 .. s->nblock-1 ] 
-         holds the original block data.
-
-      The first thing to do is generate the MTF values,
-      and put them in
-         ((UInt16*)s->arr1) [ 0 .. s->nblock-1 ].
-      Because there are strictly fewer or equal MTF values
-      than block values, ptr values in this area are overwritten
-      with MTF values only when they are no longer needed.
-
-      The final compressed bitstream is generated into the
-      area starting at
-         (UChar*) (&((UChar*)s->arr2)[s->nblock])
-
-      These storage aliases are set up in bzCompressInit(),
-      except for the last one, which is arranged in 
-      compressBlock().
-   */
    UInt32* ptr   = s->ptr;
-   UChar* block  = s->block;
+   uint8_t* block  = s->block;
    UInt16* mtfv  = s->mtfv;
 
    makeMaps_e ( s );
@@ -2338,10 +1914,10 @@ void generateMTFValues ( EState* s )
 
    wr = 0;
    zPend = 0;
-   for (i = 0; i < s->nInUse; i++) yy[i] = (UChar) i;
+   for (i = 0; i < s->nInUse; i++) yy[i] = (uint8_t)i;
 
    for (i = 0; i < s->nblock; i++) {
-      UChar ll_i;
+      uint8_t ll_i;
       AssertD ( wr <= i, "generateMTFValues(1)" );
       j = ptr[i]-1; if (j < 0) j += s->nblock;
       ll_i = s->unseqToSeq[block[j]];
@@ -2367,15 +1943,15 @@ void generateMTFValues ( EState* s )
             zPend = 0;
          }
          {
-            register UChar  rtmp;
-            register UChar* ryy_j;
-            register UChar  rll_i;
+            register uint8_t rtmp;
+            register uint8_t* ryy_j;
+            register uint8_t  rll_i;
             rtmp  = yy[1];
             yy[1] = yy[0];
             ryy_j = &(yy[1]);
             rll_i = ll_i;
             while ( rll_i != rtmp ) {
-               register UChar rtmp2;
+               register uint8_t rtmp2;
                ryy_j++;
                rtmp2  = rtmp;
                rtmp   = *ryy_j;
@@ -2410,8 +1986,6 @@ void generateMTFValues ( EState* s )
    s->nMTF = wr;
 }
 
-
-/*---------------------------------------------------*/
 #define BZ_LESSER_ICOST  0
 #define BZ_GREATER_ICOST 15
 
@@ -2421,17 +1995,6 @@ void sendMTFValues ( EState* s )
    Int32 v, t, i, j, gs, ge, totc, bt, bc, iter;
    Int32 nSelectors, alphaSize, minLen, maxLen, selCtr;
    Int32 nGroups, nBytes;
-
-   /*--
-   UChar  len [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-   is a global since the decoder also needs it.
-
-   Int32  code[BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-   Int32  rfreq[BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-   are also globals only used in this proc.
-   Made global to keep stack frame size small.
-   --*/
-
 
    UInt16 cost[BZ_N_GROUPS];
    Int32  fave[BZ_N_GROUPS];
@@ -2448,7 +2011,6 @@ void sendMTFValues ( EState* s )
       for (v = 0; v < alphaSize; v++)
          s->len[t][v] = BZ_GREATER_ICOST;
 
-   /*--- Decide how many coding tables to use ---*/
    AssertH ( s->nMTF > 0, 3001 );
    if (s->nMTF < 200)  nGroups = 2; else
    if (s->nMTF < 600)  nGroups = 3; else
@@ -2456,7 +2018,6 @@ void sendMTFValues ( EState* s )
    if (s->nMTF < 2400) nGroups = 5; else
                        nGroups = 6;
 
-   /*--- Generate an initial set of coding tables ---*/
    { 
       Int32 nPart, remF, tFreq, aFreq;
 
@@ -2638,7 +2199,7 @@ void sendMTFValues ( EState* s )
 
    /*--- Compute MTF values for the selectors. ---*/
    {
-      UChar pos[BZ_N_GROUPS], ll_i, tmp2, tmp;
+      uint8_t pos[BZ_N_GROUPS], ll_i, tmp2, tmp;
       for (i = 0; i < nGroups; i++) pos[i] = i;
       for (i = 0; i < nSelectors; i++) {
          ll_i = s->selector[i];
@@ -2669,9 +2230,8 @@ void sendMTFValues ( EState* s )
                           minLen, maxLen, alphaSize );
    }
 
-   /*--- Transmit the mapping table. ---*/
    { 
-      Bool inUse16[16];
+      uint8_t inUse16[16];
       for (i = 0; i < 16; i++) {
           inUse16[i] = False;
           for (j = 0; j < 16; j++)
@@ -2732,7 +2292,7 @@ void sendMTFValues ( EState* s )
       if (nGroups == 6 && 50 == ge-gs+1) {
             /*--- fast track the common case ---*/
             UInt16 mtfv_i;
-            UChar* s_len_sel_selCtr 
+            uint8_t* s_len_sel_selCtr 
                = &(s->len[s->selector[selCtr]][0]);
             Int32* s_code_sel_selCtr
                = &(s->code[s->selector[selCtr]][0]);
@@ -2776,8 +2336,7 @@ void sendMTFValues ( EState* s )
 }
 
 
-/*---------------------------------------------------*/
-void BZ2_compressBlock ( EState* s, Bool is_last_block )
+void BZ2_compressBlock(EState* s, uint8_t is_last_block)
 {
    if (s->nblock > 0) {
 
@@ -2794,15 +2353,14 @@ void BZ2_compressBlock ( EState* s, Bool is_last_block )
       BZ2_blockSort ( s );
    }
 
-   s->zbits = (UChar*) (&((UChar*)s->arr2)[s->nblock]);
+   s->zbits = (uint8_t*) (&((uint8_t*)s->arr2)[s->nblock]);
 
-   /*-- If this is the first block, create the stream header. --*/
    if (s->blockNo == 1) {
       BZ2_bsInitWrite ( s );
       bsPutUChar ( s, BZ_HDR_B );
       bsPutUChar ( s, BZ_HDR_Z );
       bsPutUChar ( s, BZ_HDR_h );
-      bsPutUChar ( s, (UChar)(BZ_HDR_0 + s->blockSize100k) );
+      bsPutUChar ( s, (uint8_t)(BZ_HDR_0 + s->blockSize100k) );
    }
 
    if (s->nblock > 0) {
@@ -2810,28 +2368,13 @@ void BZ2_compressBlock ( EState* s, Bool is_last_block )
       bsPutUChar ( s, 0x31 ); bsPutUChar ( s, 0x41 );
       bsPutUChar ( s, 0x59 ); bsPutUChar ( s, 0x26 );
       bsPutUChar ( s, 0x53 ); bsPutUChar ( s, 0x59 );
-
-      /*-- Now the block's CRC, so it is in a known place. --*/
       bsPutUInt32 ( s, s->blockCRC );
-
-      /*-- 
-         Now a single bit indicating (non-)randomisation. 
-         As of version 0.9.5, we use a better sorting algorithm
-         which makes randomisation unnecessary.  So always set
-         the randomised bit to 'no'.  Of course, the decoder
-         still needs to be able to handle randomised blocks
-         so as to maintain backwards compatibility with
-         older versions of bzip2.
-      --*/
       bsW(s,1,0);
-
       bsW ( s, 24, s->origPtr );
       generateMTFValues ( s );
       sendMTFValues ( s );
    }
 
-
-   /*-- If this is the last block, add the stream trailer. --*/
    if (is_last_block) {
 
       bsPutUChar ( s, 0x17 ); bsPutUChar ( s, 0x72 );
@@ -2888,7 +2431,7 @@ void makeMaps_d ( DState* s )
       s->bsBuff                                   \
          = (s->bsBuff << 8) |                     \
            ((UInt32)                              \
-              (*((UChar*)(s->strm->next_in))));   \
+              (*((uint8_t*)(s->strm->next_in))));   \
       s->bsLive += 8;                             \
       s->strm->next_in++;                         \
       s->strm->avail_in--;                        \
@@ -2938,7 +2481,7 @@ void makeMaps_d ( DState* s )
 /*---------------------------------------------------*/
 Int32 BZ2_decompress ( DState* s )
 {
-   UChar      uc;
+   uint8_t     uc;
    Int32      retVal;
    Int32      minLen, maxLen;
    bz_stream* strm = s->strm;
@@ -3042,13 +2585,13 @@ Int32 BZ2_decompress ( DState* s )
       s->blockSize100k -= BZ_HDR_0;
 
       if (s->smallDecompress) {
-         s->ll16 = BZALLOC( s->blockSize100k * 100000 * sizeof(UInt16) );
-         s->ll4  = BZALLOC( 
-                      ((1 + s->blockSize100k * 100000) >> 1) * sizeof(UChar) 
+         s->ll16 = (unsigned short *)BZALLOC( s->blockSize100k * 100000 * sizeof(UInt16) );
+         s->ll4  = (uint8_t *)BZALLOC( 
+                      ((1 + s->blockSize100k * 100000) >> 1) * sizeof(uint8_t) 
                    );
          if (s->ll16 == NULL || s->ll4 == NULL) RETURN(BZ_MEM_ERROR);
       } else {
-         s->tt  = BZALLOC( s->blockSize100k * 100000 * sizeof(Int32) );
+         s->tt  = (unsigned *)BZALLOC( s->blockSize100k * 100000 * sizeof(Int32) );
          if (s->tt == NULL) RETURN(BZ_MEM_ERROR);
       }
 
@@ -3132,9 +2675,8 @@ Int32 BZ2_decompress ( DState* s )
          s->selectorMtf[i] = j;
       }
 
-      /*--- Undo the MTF values for the selectors. ---*/
       {
-         UChar pos[BZ_N_GROUPS], tmp, v;
+         uint8_t pos[BZ_N_GROUPS], tmp, v;
          for (v = 0; v < nGroups; v++) pos[v] = v;
    
          for (i = 0; i < nSelectors; i++) {
@@ -3194,7 +2736,7 @@ Int32 BZ2_decompress ( DState* s )
          kk = MTFA_SIZE-1;
          for (ii = 256 / MTFL_SIZE - 1; ii >= 0; ii--) {
             for (jj = MTFL_SIZE-1; jj >= 0; jj--) {
-               s->mtfa[kk] = (UChar)(ii * MTFL_SIZE + jj);
+               s->mtfa[kk] = (uint8_t)(ii * MTFL_SIZE + jj);
                kk--;
             }
             s->mtfbase[ii] = kk + 1;
@@ -3329,18 +2871,12 @@ Int32 BZ2_decompress ( DState* s )
       for (i = 1; i <= 256; i++) s->cftab[i] += s->cftab[i-1];
 
       if (s->smallDecompress) {
-
-         /*-- Make a copy of cftab, used in generation of T --*/
          for (i = 0; i <= 256; i++) s->cftabCopy[i] = s->cftab[i];
-
-         /*-- compute the T vector --*/
          for (i = 0; i < nblock; i++) {
-            uc = (UChar)(s->ll16[i]);
+            uc = (uint8_t)(s->ll16[i]);
             SET_LL(i, s->cftabCopy[uc]);
             s->cftabCopy[uc]++;
          }
-
-         /*-- Compute T^(-1) by pointer reversal on T --*/
          i = s->origPtr;
          j = GET_LL(i);
          do {
@@ -3365,7 +2901,7 @@ Int32 BZ2_decompress ( DState* s )
 
          /*-- compute the T^(-1) vector --*/
          for (i = 0; i < nblock; i++) {
-            uc = (UChar)(s->tt[i] & 0xff);
+            uc = (uint8_t)(s->tt[i] & 0xff);
             s->tt[s->cftab[uc]] |= (i << 8);
             s->cftab[uc]++;
          }
@@ -3522,8 +3058,6 @@ int bz_config_ok ( void )
    return 1;
 }
 
-
-/*---------------------------------------------------*/
 static
 void* default_bzalloc ( void* opaque, Int32 items, Int32 size )
 {
@@ -3537,8 +3071,6 @@ void default_bzfree ( void* opaque, void* addr )
    if (addr != NULL) free ( addr );
 }
 
-
-/*---------------------------------------------------*/
 static
 void prepare_new_block ( EState* s )
 {
@@ -3551,8 +3083,6 @@ void prepare_new_block ( EState* s )
    s->blockNo++;
 }
 
-
-/*---------------------------------------------------*/
 static
 void init_RL ( EState* s )
 {
@@ -3561,16 +3091,13 @@ void init_RL ( EState* s )
 }
 
 
-static
-Bool isempty_RL ( EState* s )
+static uint8_t isempty_RL ( EState* s )
 {
    if (s->state_in_ch < 256 && s->state_in_len > 0)
       return False; else
       return True;
 }
 
-
-/*---------------------------------------------------*/
 int BZ_API(BZ2_bzCompressInit) 
                     ( bz_stream* strm, 
                      int        blockSize100k,
@@ -3591,7 +3118,7 @@ int BZ_API(BZ2_bzCompressInit)
    if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
 
-   s = BZALLOC( sizeof(EState) );
+   s = (EState *)BZALLOC( sizeof(EState) );
    if (s == NULL) return BZ_MEM_ERROR;
    s->strm = strm;
 
@@ -3600,9 +3127,9 @@ int BZ_API(BZ2_bzCompressInit)
    s->ftab = NULL;
 
    n       = 100000 * blockSize100k;
-   s->arr1 = BZALLOC( n                  * sizeof(UInt32) );
-   s->arr2 = BZALLOC( (n+BZ_N_OVERSHOOT) * sizeof(UInt32) );
-   s->ftab = BZALLOC( 65537              * sizeof(UInt32) );
+   s->arr1 = (unsigned *)BZALLOC( n                  * sizeof(UInt32) );
+   s->arr2 = (unsigned *)BZALLOC( (n+BZ_N_OVERSHOOT) * sizeof(UInt32) );
+   s->ftab = (unsigned *)BZALLOC( 65537              * sizeof(UInt32) );
 
    if (s->arr1 == NULL || s->arr2 == NULL || s->ftab == NULL) {
       if (s->arr1 != NULL) BZFREE(s->arr1);
@@ -3621,7 +3148,7 @@ int BZ_API(BZ2_bzCompressInit)
    s->verbosity         = verbosity;
    s->workFactor        = workFactor;
 
-   s->block             = (UChar*)s->arr2;
+   s->block             = (uint8_t*)s->arr2;
    s->mtfv              = (UInt16*)s->arr1;
    s->zbits             = NULL;
    s->ptr               = (UInt32*)s->arr1;
@@ -3642,31 +3169,31 @@ static
 void add_pair_to_block ( EState* s )
 {
    Int32 i;
-   UChar ch = (UChar)(s->state_in_ch);
+   uint8_t ch = (uint8_t)(s->state_in_ch);
    for (i = 0; i < s->state_in_len; i++) {
       BZ_UPDATE_CRC( s->blockCRC, ch );
    }
    s->inUse[s->state_in_ch] = True;
    switch (s->state_in_len) {
       case 1:
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
          break;
       case 2:
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
          break;
       case 3:
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
          break;
       default:
          s->inUse[s->state_in_len-4] = True;
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
-         s->block[s->nblock] = (UChar)ch; s->nblock++;
-         s->block[s->nblock] = ((UChar)(s->state_in_len-4));
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
+         s->block[s->nblock] = (uint8_t)ch; s->nblock++;
+         s->block[s->nblock] = ((uint8_t)(s->state_in_len-4));
          s->nblock++;
          break;
    }
@@ -3710,22 +3237,17 @@ void flush_RL ( EState* s )
 }
 
 
-/*---------------------------------------------------*/
-static
-Bool copy_input_until_stop ( EState* s )
+static uint8_t copy_input_until_stop(EState* s)
 {
-   Bool progress_in = False;
+   uint8_t progress_in = False;
 
    if (s->mode == BZ_M_RUNNING) {
 
-      /*-- fast track the common case --*/
       while (True) {
-         /*-- block full? --*/
          if (s->nblock >= s->nblockMAX) break;
-         /*-- no input? --*/
          if (s->strm->avail_in == 0) break;
          progress_in = True;
-         ADD_CHAR_TO_BLOCK ( s, (UInt32)(*((UChar*)(s->strm->next_in))) ); 
+         ADD_CHAR_TO_BLOCK ( s, (UInt32)(*((uint8_t*)(s->strm->next_in))) ); 
          s->strm->next_in++;
          s->strm->avail_in--;
          s->strm->total_in_lo32++;
@@ -3734,16 +3256,12 @@ Bool copy_input_until_stop ( EState* s )
 
    } else {
 
-      /*-- general, uncommon case --*/
       while (True) {
-         /*-- block full? --*/
          if (s->nblock >= s->nblockMAX) break;
-         /*-- no input? --*/
          if (s->strm->avail_in == 0) break;
-         /*-- flush/finish end? --*/
          if (s->avail_in_expect == 0) break;
          progress_in = True;
-         ADD_CHAR_TO_BLOCK ( s, (UInt32)(*((UChar*)(s->strm->next_in))) ); 
+         ADD_CHAR_TO_BLOCK ( s, (UInt32)(*((uint8_t*)(s->strm->next_in))) ); 
          s->strm->next_in++;
          s->strm->avail_in--;
          s->strm->total_in_lo32++;
@@ -3754,19 +3272,14 @@ Bool copy_input_until_stop ( EState* s )
    return progress_in;
 }
 
-
-/*---------------------------------------------------*/
-static
-Bool copy_output_until_stop ( EState* s )
+static uint8_t copy_output_until_stop ( EState* s )
 {
-   Bool progress_out = False;
+    uint8_t progress_out = False;
 
-   while (True) {
+    while (True) {
 
-      /*-- no output space? --*/
       if (s->strm->avail_out == 0) break;
 
-      /*-- block done? --*/
       if (s->state_out_pos >= s->numZ) break;
 
       progress_out = True;
@@ -3781,14 +3294,12 @@ Bool copy_output_until_stop ( EState* s )
    return progress_out;
 }
 
-
-/*---------------------------------------------------*/
 static
-Bool handle_compress ( bz_stream* strm )
+uint8_t handle_compress ( bz_stream* strm )
 {
-   Bool progress_in  = False;
-   Bool progress_out = False;
-   EState* s = strm->state;
+   uint8_t progress_in  = False;
+   uint8_t progress_out = False;
+   EState* s = (EState *)strm->state;
    
    while (True) {
 
@@ -3809,7 +3320,7 @@ Bool handle_compress ( bz_stream* strm )
          progress_in |= copy_input_until_stop ( s );
          if (s->mode != BZ_M_RUNNING && s->avail_in_expect == 0) {
             flush_RL ( s );
-            BZ2_compressBlock ( s, (Bool)(s->mode == BZ_M_FINISHING) );
+            BZ2_compressBlock ( s, (uint8_t)(s->mode == BZ_M_FINISHING) );
             s->state = BZ_S_OUTPUT;
          }
          else
@@ -3828,14 +3339,12 @@ Bool handle_compress ( bz_stream* strm )
    return progress_in || progress_out;
 }
 
-
-/*---------------------------------------------------*/
 int BZ_API(BZ2_bzCompress) ( bz_stream *strm, int action )
 {
-   Bool progress;
+   uint8_t progress;
    EState* s;
    if (strm == NULL) return BZ_PARAM_ERROR;
-   s = strm->state;
+   s = (EState *)strm->state;
    if (s == NULL) return BZ_PARAM_ERROR;
    if (s->strm != strm) return BZ_PARAM_ERROR;
 
@@ -3895,7 +3404,7 @@ int BZ_API(BZ2_bzCompressEnd)  ( bz_stream *strm )
 {
    EState* s;
    if (strm == NULL) return BZ_PARAM_ERROR;
-   s = strm->state;
+   s = (EState *)strm->state;
    if (s == NULL) return BZ_PARAM_ERROR;
    if (s->strm != strm) return BZ_PARAM_ERROR;
 
@@ -3931,7 +3440,7 @@ int BZ_API(BZ2_bzDecompressInit)
    if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
 
-   s = BZALLOC( sizeof(DState) );
+   s = (DState *)BZALLOC( sizeof(DState) );
    if (s == NULL) return BZ_MEM_ERROR;
    s->strm                  = strm;
    strm->state              = s;
@@ -3943,7 +3452,7 @@ int BZ_API(BZ2_bzDecompressInit)
    strm->total_in_hi32      = 0;
    strm->total_out_lo32     = 0;
    strm->total_out_hi32     = 0;
-   s->smallDecompress       = (Bool)small;
+   s->smallDecompress       = (uint8_t)small;
    s->ll4                   = NULL;
    s->ll16                  = NULL;
    s->tt                    = NULL;
@@ -3958,7 +3467,7 @@ int BZ_API(BZ2_bzDecompressInit)
 static
 void unRLE_obuf_to_output_FAST ( DState* s )
 {
-   UChar k1;
+   uint8_t k1;
 
    if (s->blockRandomised) {
 
@@ -3967,7 +3476,7 @@ void unRLE_obuf_to_output_FAST ( DState* s )
          while (True) {
             if (s->strm->avail_out == 0) return;
             if (s->state_out_len == 0) break;
-            *( (UChar*)(s->strm->next_out) ) = s->state_out_ch;
+            *( (uint8_t*)(s->strm->next_out) ) = s->state_out_ch;
             BZ_UPDATE_CRC ( s->calculatedBlockCRC, s->state_out_ch );
             s->state_out_len--;
             s->strm->next_out++;
@@ -4010,7 +3519,7 @@ void unRLE_obuf_to_output_FAST ( DState* s )
 
       /* restore */
       UInt32        c_calculatedBlockCRC = s->calculatedBlockCRC;
-      UChar         c_state_out_ch       = s->state_out_ch;
+      uint8_t         c_state_out_ch       = s->state_out_ch;
       Int32         c_state_out_len      = s->state_out_len;
       Int32         c_nblock_used        = s->nblock_used;
       Int32         c_k0                 = s->k0;
@@ -4031,7 +3540,7 @@ void unRLE_obuf_to_output_FAST ( DState* s )
             while (True) {
                if (cs_avail_out == 0) goto return_notr;
                if (c_state_out_len == 1) break;
-               *( (UChar*)(cs_next_out) ) = c_state_out_ch;
+               *( (uint8_t*)(cs_next_out) ) = c_state_out_ch;
                BZ_UPDATE_CRC ( c_calculatedBlockCRC, c_state_out_ch );
                c_state_out_len--;
                cs_next_out++;
@@ -4042,7 +3551,7 @@ void unRLE_obuf_to_output_FAST ( DState* s )
                if (cs_avail_out == 0) { 
                   c_state_out_len = 1; goto return_notr;
                };
-               *( (UChar*)(cs_next_out) ) = c_state_out_ch;
+               *( (uint8_t*)(cs_next_out) ) = c_state_out_ch;
                BZ_UPDATE_CRC ( c_calculatedBlockCRC, c_state_out_ch );
                cs_next_out++;
                cs_avail_out--;
@@ -4116,7 +3625,7 @@ Int32 BZ2_indexIntoF ( Int32 indx, Int32 *cftab )
 static
 void unRLE_obuf_to_output_SMALL ( DState* s )
 {
-   UChar k1;
+   uint8_t k1;
 
    if (s->blockRandomised) {
 
@@ -4125,7 +3634,7 @@ void unRLE_obuf_to_output_SMALL ( DState* s )
          while (True) {
             if (s->strm->avail_out == 0) return;
             if (s->state_out_len == 0) break;
-            *( (UChar*)(s->strm->next_out) ) = s->state_out_ch;
+            *( (uint8_t*)(s->strm->next_out) ) = s->state_out_ch;
             BZ_UPDATE_CRC ( s->calculatedBlockCRC, s->state_out_ch );
             s->state_out_len--;
             s->strm->next_out++;
@@ -4171,7 +3680,7 @@ void unRLE_obuf_to_output_SMALL ( DState* s )
          while (True) {
             if (s->strm->avail_out == 0) return;
             if (s->state_out_len == 0) break;
-            *( (UChar*)(s->strm->next_out) ) = s->state_out_ch;
+            *( (uint8_t*)(s->strm->next_out) ) = s->state_out_ch;
             BZ_UPDATE_CRC ( s->calculatedBlockCRC, s->state_out_ch );
             s->state_out_len--;
             s->strm->next_out++;
@@ -4213,7 +3722,7 @@ int BZ_API(BZ2_bzDecompress) ( bz_stream *strm )
 {
    DState* s;
    if (strm == NULL) return BZ_PARAM_ERROR;
-   s = strm->state;
+   s = (DState *)strm->state;
    if (s == NULL) return BZ_PARAM_ERROR;
    if (s->strm != strm) return BZ_PARAM_ERROR;
 
@@ -4256,16 +3765,14 @@ int BZ_API(BZ2_bzDecompress) ( bz_stream *strm )
 
    AssertH ( 0, 6001 );
 
-   return 0;  /*NOTREACHED*/
+   return 0;
 }
 
-
-/*---------------------------------------------------*/
 int BZ_API(BZ2_bzDecompressEnd)  ( bz_stream *strm )
 {
    DState* s;
    if (strm == NULL) return BZ_PARAM_ERROR;
-   s = strm->state;
+   s = (DState *)strm->state;
    if (s == NULL) return BZ_PARAM_ERROR;
    if (s->strm != strm) return BZ_PARAM_ERROR;
 
@@ -4281,9 +3788,6 @@ int BZ_API(BZ2_bzDecompressEnd)  ( bz_stream *strm )
 
 
 #ifndef BZ_NO_STDIO
-/*---------------------------------------------------*/
-/*--- File I/O stuff                              ---*/
-/*---------------------------------------------------*/
 
 #define BZ_SETERR(eee)                    \
 {                                         \
@@ -4294,18 +3798,18 @@ int BZ_API(BZ2_bzDecompressEnd)  ( bz_stream *strm )
 typedef 
    struct {
       FILE*     handle;
-      Char      buf[BZ_MAX_UNUSED];
+      char      buf[BZ_MAX_UNUSED];
       Int32     bufN;
-      Bool      writing;
+      uint8_t      writing;
       bz_stream strm;
       Int32     lastErr;
-      Bool      initialisedOk;
+      uint8_t      initialisedOk;
    }
    bzFile;
 
 
 /*---------------------------------------------*/
-static Bool myfeof ( FILE* f )
+static uint8_t myfeof ( FILE* f )
 {
    Int32 c = fgetc ( f );
    if (c == EOF) return True;
@@ -4336,7 +3840,7 @@ BZFILE* BZ_API(BZ2_bzWriteOpen)
    if (ferror(f))
       { BZ_SETERR(BZ_IO_ERROR); return NULL; };
 
-   bzf = malloc ( sizeof(bzFile) );
+   bzf = (bzFile *)malloc ( sizeof(bzFile) );
    if (bzf == NULL)
       { BZ_SETERR(BZ_MEM_ERROR); return NULL; };
 
@@ -4384,7 +3888,7 @@ void BZ_API(BZ2_bzWrite)
       { BZ_SETERR(BZ_OK); return; };
 
    bzf->strm.avail_in = len;
-   bzf->strm.next_in  = buf;
+   bzf->strm.next_in  = (char *)buf;
 
    while (True) {
       bzf->strm.avail_out = BZ_MAX_UNUSED;
@@ -4395,7 +3899,7 @@ void BZ_API(BZ2_bzWrite)
 
       if (bzf->strm.avail_out < BZ_MAX_UNUSED) {
          n = BZ_MAX_UNUSED - bzf->strm.avail_out;
-         n2 = fwrite ( (void*)(bzf->buf), sizeof(UChar), 
+         n2 = fwrite ( (void*)(bzf->buf), sizeof(uint8_t), 
                        n, bzf->handle );
          if (n != n2 || ferror(bzf->handle))
             { BZ_SETERR(BZ_IO_ERROR); return; };
@@ -4454,7 +3958,7 @@ void BZ_API(BZ2_bzWriteClose64)
 
          if (bzf->strm.avail_out < BZ_MAX_UNUSED) {
             n = BZ_MAX_UNUSED - bzf->strm.avail_out;
-            n2 = fwrite ( (void*)(bzf->buf), sizeof(UChar), 
+            n2 = fwrite ( (void*)(bzf->buf), sizeof(uint8_t), 
                           n, bzf->handle );
             if (n != n2 || ferror(bzf->handle))
                { BZ_SETERR(BZ_IO_ERROR); return; };
@@ -4484,8 +3988,6 @@ void BZ_API(BZ2_bzWriteClose64)
    free ( bzf );
 }
 
-
-/*---------------------------------------------------*/
 BZFILE* BZ_API(BZ2_bzReadOpen) 
                    ( int*  bzerror, 
                      FILE* f, 
@@ -4509,7 +4011,7 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
    if (ferror(f))
       { BZ_SETERR(BZ_IO_ERROR); return NULL; };
 
-   bzf = malloc ( sizeof(bzFile) );
+   bzf = (bzFile *)malloc ( sizeof(bzFile) );
    if (bzf == NULL) 
       { BZ_SETERR(BZ_MEM_ERROR); return NULL; };
 
@@ -4524,8 +4026,8 @@ BZFILE* BZ_API(BZ2_bzReadOpen)
    bzf->strm.opaque   = NULL;
    
    while (nUnused > 0) {
-      bzf->buf[bzf->bufN] = *((UChar*)(unused)); bzf->bufN++;
-      unused = ((void*)( 1 + ((UChar*)(unused))  ));
+      bzf->buf[bzf->bufN] = *((uint8_t*)(unused)); bzf->bufN++;
+      unused = ((void*)( 1 + ((uint8_t*)(unused))  ));
       nUnused--;
    }
 
@@ -4581,7 +4083,7 @@ int BZ_API(BZ2_bzRead)
       { BZ_SETERR(BZ_OK); return 0; };
 
    bzf->strm.avail_out = len;
-   bzf->strm.next_out = buf;
+   bzf->strm.next_out = (char *)buf;
 
    while (True) {
 
@@ -4589,7 +4091,7 @@ int BZ_API(BZ2_bzRead)
          { BZ_SETERR(BZ_IO_ERROR); return 0; };
 
       if (bzf->strm.avail_in == 0 && !myfeof(bzf->handle)) {
-         n = fread ( bzf->buf, sizeof(UChar), 
+         n = fread ( bzf->buf, sizeof(uint8_t), 
                      BZ_MAX_UNUSED, bzf->handle );
          if (ferror(bzf->handle))
             { BZ_SETERR(BZ_IO_ERROR); return 0; };
@@ -4930,7 +4432,7 @@ void BZ_API(BZ2_bzclose) (BZFILE* b)
 /*--
    return last error code 
 --*/
-static char *bzerrorstrings[] = {
+static const char *bzerrorstrings[] = {
        "OK"
       ,"SEQUENCE_ERROR"
       ,"PARAM_ERROR"
@@ -5154,31 +4656,19 @@ const char * BZ_API(BZ2_bzerror) (BZFILE *b, int *errnum)
          ERROR_IF_MINUS_ONE ( retVal );               \
       } while ( 0 )
 
-#endif /* BZ_LCCWIN32 */
+#endif 
 
 
-/*---------------------------------------------*/
-/*--
-  Some more stuff for all platforms :-)
---*/
                                        
-#define True  ((Bool)1)
-#define False ((Bool)0)
+#define True  ((uint8_t)1)
+#define False ((uint8_t)0)
 
-/*--
-  IntNative is your platform's `native' int size.
-  Only here to avoid probs with 64-bit platforms.
---*/
 typedef int IntNative;
 
 
-/*---------------------------------------------------*/
-/*--- Misc (file handling) data decls             ---*/
-/*---------------------------------------------------*/
-
 Int32   verbosity;
-Bool    keepInputFiles, smallMode, deleteOutputOnInterrupt;
-Bool    forceOverwrite, testFailsExist, unzFailsExist, noisy;
+uint8_t    keepInputFiles, smallMode, deleteOutputOnInterrupt;
+uint8_t    forceOverwrite, testFailsExist, unzFailsExist, noisy;
 Int32   numFileNames, numFilesProcessed, blockSize100k;
 Int32   exitValue;
 
@@ -5198,34 +4688,28 @@ Int32   srcMode;
 #define FILE_NAME_LEN 1034
 
 Int32   longestFileName;
-Char    inName [FILE_NAME_LEN];
-Char    outName[FILE_NAME_LEN];
-Char    tmpName[FILE_NAME_LEN];
-Char    *progName;
-Char    progNameReally[FILE_NAME_LEN];
+char    inName [FILE_NAME_LEN];
+char    outName[FILE_NAME_LEN];
+char    tmpName[FILE_NAME_LEN];
+char    *progName;
+char    progNameReally[FILE_NAME_LEN];
 FILE    *outputHandleJustInCase;
 Int32   workFactor;
 
-static void    panic                 ( Char* )   NORETURN;
+static void panic(const char *) NORETURN;
 static void    ioError               ( void )    NORETURN;
 static void    outOfMemory           ( void )    NORETURN;
 static void    configError           ( void )    NORETURN;
 static void    crcError              ( void )    NORETURN;
 static void    cleanUpAndFail        ( Int32 )   NORETURN;
 static void    compressedStreamEOF   ( void )    NORETURN;
-
-static void    copyFileName ( Char*, Char* );
+static void    copyFileName(char*, const char*);
 static void*   myMalloc     ( Int32 );
 
-
-
-/*---------------------------------------------------*/
-/*--- An implementation of 64-bit ints.  Sigh.    ---*/
-/*--- Roll on widespread deployment of ANSI C9X ! ---*/
-/*---------------------------------------------------*/
+void panic(const char *) { }
 
 typedef
-   struct { UChar b[8]; } 
+   struct { uint8_t b[8]; } 
    UInt64;
 
 
@@ -5258,7 +4742,7 @@ double uInt64_to_double ( UInt64* n )
 
 
 static
-Bool uInt64_isZero ( UInt64* n )
+uint8_t uInt64_isZero ( UInt64* n )
 {
    Int32 i;
    for (i = 0; i < 8; i++)
@@ -5266,8 +4750,6 @@ Bool uInt64_isZero ( UInt64* n )
    return 1;
 }
 
-
-/* Divide *n by 10, and return the remainder.  */
 static 
 Int32 uInt64_qrm10 ( UInt64* n )
 {
@@ -5283,14 +4765,11 @@ Int32 uInt64_qrm10 ( UInt64* n )
 }
 
 
-/* ... and the Whole Entire Point of all this UInt64 stuff is
-   so that we can supply the following function.
-*/
 static
 void uInt64_toAscii ( char* outbuf, UInt64* n )
 {
    Int32  i, q;
-   UChar  buf[32];
+   uint8_t  buf[32];
    Int32  nBuf   = 0;
    UInt64 n_copy = *n;
    do {
@@ -5303,14 +4782,6 @@ void uInt64_toAscii ( char* outbuf, UInt64* n )
       outbuf[i] = buf[nBuf-i-1];
 }
 
-
-/*---------------------------------------------------*/
-/*--- Processing of complete files and streams    ---*/
-/*---------------------------------------------------*/
-
-/*---------------------------------------------*/
-
-/*---------------------------------------------*/
 static 
 void compressStream ( FILE *stream, FILE *zStream )
 {
@@ -5409,18 +4880,15 @@ void compressStream ( FILE *stream, FILE *zStream )
    /*notreached*/
 }
 
-
-
-/*---------------------------------------------*/
 static 
-Bool uncompressStream ( FILE *zStream, FILE *stream )
+uint8_t uncompressStream ( FILE *zStream, FILE *stream )
 {
    BZFILE* bzf = NULL;
    Int32   bzerr, bzerr_dummy, ret, nread, streamNo, i;
-   UChar   obuf[5000];
-   UChar   unused[BZ_MAX_UNUSED];
+   uint8_t   obuf[5000];
+   uint8_t   unused[BZ_MAX_UNUSED];
    Int32   nUnused;
-   UChar*  unusedTmp;
+   uint8_t*  unusedTmp;
 
    nUnused = 0;
    streamNo = 0;
@@ -5524,18 +4992,15 @@ Bool uncompressStream ( FILE *zStream, FILE *stream )
    return True; /*notreached*/
 }
 
-
-/*---------------------------------------------*/
 static 
-Bool testStream ( FILE *zStream )
+uint8_t testStream ( FILE *zStream )
 {
    BZFILE* bzf = NULL;
    Int32   bzerr, bzerr_dummy, ret, nread, streamNo, i;
-   UChar   obuf[5000];
-   UChar   unused[BZ_MAX_UNUSED];
+   uint8_t   obuf[5000];
+   uint8_t   unused[BZ_MAX_UNUSED];
    Int32   nUnused;
-   UChar*  unusedTmp;
-
+   uint8_t*  unusedTmp;
    nUnused = 0;
    streamNo = 0;
 
@@ -5616,11 +5081,6 @@ Bool testStream ( FILE *zStream )
 }
 
 
-/*---------------------------------------------------*/
-/*--- Error [non-] handling grunge                ---*/
-/*---------------------------------------------------*/
-
-/*---------------------------------------------*/
 static
 void setExit ( Int32 v )
 {
@@ -5714,10 +5174,7 @@ void cleanUpAndFail ( Int32 ec )
    exit(exitValue);
 }
 
-
-/*---------------------------------------------*/
-static 
-void panic ( Char* s )
+static void panic(char *s)
 {
    fprintf ( stderr,
              "\n%s: PANIC -- internal consistency error:\n"
@@ -5729,8 +5186,6 @@ void panic ( Char* s )
    cleanUpAndFail( 3 );
 }
 
-
-/*---------------------------------------------*/
 static 
 void crcError ( void )
 {
@@ -5742,8 +5197,6 @@ void crcError ( void )
    cleanUpAndFail( 2 );
 }
 
-
-/*---------------------------------------------*/
 static 
 void compressedStreamEOF ( void )
 {
@@ -5890,7 +5343,7 @@ void pad ( Char *s )
 
 /*---------------------------------------------*/
 static 
-void copyFileName ( Char* to, Char* from ) 
+void copyFileName(char* to, const char* from ) 
 {
    if ( strlen(from) > FILE_NAME_LEN-10 )  {
       fprintf (
@@ -5908,29 +5361,16 @@ void copyFileName ( Char* to, Char* from )
   to[FILE_NAME_LEN-10]='\0';
 }
 
-
-/*---------------------------------------------*/
 static 
-Bool fileExists ( Char* name )
+uint8_t fileExists(char* name )
 {
    FILE *tmp   = fopen ( name, "rb" );
-   Bool exists = (tmp != NULL);
+   uint8_t exists = (tmp != NULL);
    if (tmp != NULL) fclose ( tmp );
    return exists;
 }
 
-
-/*---------------------------------------------*/
-/* Open an output file safely with O_EXCL and good permissions.
-   This avoids a race condition in versions < 1.0.2, in which
-   the file was first opened and then had its interim permissions
-   set safely.  We instead use open() to create the file with
-   the interim permissions required. (--- --- rw-).
-
-   For non-Unix platforms, if we are not worrying about
-   security issues, simple this simply behaves like fopen.
-*/
-FILE* fopen_output_safely ( Char* name, const char* mode )
+FILE* fopen_output_safely(char* name, const char* mode )
 {
 #  if BZ_UNIX
    FILE*     fp;
@@ -5945,13 +5385,7 @@ FILE* fopen_output_safely ( Char* name, const char* mode )
 #  endif
 }
 
-
-/*---------------------------------------------*/
-/*--
-  if in doubt, return True
---*/
-static 
-Bool notAStandardFile ( Char* name )
+static uint8_t notAStandardFile (char* name )
 {
    IntNative      i;
    struct MY_STAT statBuf;
@@ -5962,11 +5396,6 @@ Bool notAStandardFile ( Char* name )
    return True;
 }
 
-
-/*---------------------------------------------*/
-/*--
-  rac 11/21/98 see if file has hard links to it
---*/
 static 
 Int32 countHardLinks ( Char* name )
 {  
@@ -5978,30 +5407,6 @@ Int32 countHardLinks ( Char* name )
    return (statBuf.st_nlink - 1);
 }
 
-
-/*---------------------------------------------*/
-/* Copy modification date, access date, permissions and owner from the
-   source to destination file.  We have to copy this meta-info off
-   into fileMetaInfo before starting to compress / decompress it,
-   because doing it afterwards means we get the wrong access time.
-
-   To complicate matters, in compress() and decompress() below, the
-   sequence of tests preceding the call to saveInputFileMetaInfo()
-   involves calling fileExists(), which in turn establishes its result
-   by attempting to fopen() the file, and if successful, immediately
-   fclose()ing it again.  So we have to assume that the fopen() call
-   does not cause the access time field to be updated.
-
-   Reading of the man page for stat() (man 2 stat) on RedHat 7.2 seems
-   to imply that merely doing open() will not affect the access time.
-   Therefore we merely need to hope that the C library only does
-   open() as a result of fopen(), and not any kind of read()-ahead
-   cleverness.
-
-   It sounds pretty fragile to me.  Whether this carries across
-   robustly to arbitrary Unix-like platforms (or even works robustly
-   on this one, RedHat 7.2) is unknown to me.  Nevertheless ...  
-*/
 #if BZ_UNIX
 static 
 struct MY_STAT fileMetaInfo;
@@ -6044,8 +5449,7 @@ void applySavedMetaInfoToOutputFile ( Char *dstName )
 
 
 /*---------------------------------------------*/
-static 
-Bool containsDubiousChars ( Char* name )
+static uint8_t containsDubiousChars(char* name )
 {
 #  if BZ_UNIX
    /* On unix, files can contain any characters and the file expansion
@@ -6066,13 +5470,12 @@ Bool containsDubiousChars ( Char* name )
 /*---------------------------------------------*/
 #define BZ_N_SUFFIX_PAIRS 4
 
-Char* zSuffix[BZ_N_SUFFIX_PAIRS] 
+const char* zSuffix[BZ_N_SUFFIX_PAIRS] 
    = { ".bz2", ".bz", ".tbz2", ".tbz" };
-Char* unzSuffix[BZ_N_SUFFIX_PAIRS] 
+const char* unzSuffix[BZ_N_SUFFIX_PAIRS] 
    = { "", "", ".tar", ".tar" };
 
-static 
-Bool hasSuffix ( Char* s, Char* suffix )
+static uint8_t hasSuffix(const char* s, const char* suffix )
 {
    Int32 ns = strlen(s);
    Int32 nx = strlen(suffix);
@@ -6081,9 +5484,7 @@ Bool hasSuffix ( Char* s, Char* suffix )
    return False;
 }
 
-static 
-Bool mapSuffix ( Char* name, 
-                 Char* oldSuffix, Char* newSuffix )
+static uint8_t mapSuffix(char* name, const char* oldSuffix, const char* newSuffix )
 {
    if (!hasSuffix(name,oldSuffix)) return False;
    name[strlen(name)-strlen(oldSuffix)] = 0;
@@ -6091,10 +5492,7 @@ Bool mapSuffix ( Char* name,
    return True;
 }
 
-
-/*---------------------------------------------*/
-static 
-void compress ( Char *name )
+static void compress(char *name )
 {
    FILE  *inStr;
    FILE  *outStr;
@@ -6272,16 +5670,13 @@ void compress ( Char *name )
    deleteOutputOnInterrupt = False;
 }
 
-
-/*---------------------------------------------*/
-static 
-void uncompress ( Char *name )
+static void uncompress(char *name )
 {
    FILE  *inStr;
    FILE  *outStr;
    Int32 n, i;
-   Bool  magicNumberOK;
-   Bool  cantGuess;
+   uint8_t  magicNumberOK;
+   uint8_t  cantGuess;
    struct MY_STAT statBuf;
 
    deleteOutputOnInterrupt = False;
@@ -6476,7 +5871,7 @@ static
 void testf ( Char *name )
 {
    FILE *inStr;
-   Bool allOK;
+   uint8_t allOK;
    struct MY_STAT statBuf;
 
    deleteOutputOnInterrupt = False;
@@ -6628,8 +6023,6 @@ void usage ( Char *fullProgName )
    );
 }
 
-
-/*---------------------------------------------*/
 static 
 void redundant ( Char* flag )
 {
@@ -6639,22 +6032,6 @@ void redundant ( Char* flag )
       progName, flag );
 }
 
-
-/*---------------------------------------------*/
-/*--
-  All the garbage from here to main() is purely to
-  implement a linked list of command-line arguments,
-  into which main() copies argv[1 .. argc-1].
-
-  The purpose of this exercise is to facilitate 
-  the expansion of wildcard characters * and ? in 
-  filenames for OSs which don't know how to do it
-  themselves, like MSDOS, Windows 95 and NT.
-
-  The actual Dirty Work is done by the platform-
-  specific macro APPEND_FILESPEC.
---*/
-
 typedef
    struct zzzz {
       Char        *name;
@@ -6662,8 +6039,6 @@ typedef
    }
    Cell;
 
-
-/*---------------------------------------------*/
 static 
 void *myMalloc ( Int32 n )
 {
@@ -6674,10 +6049,7 @@ void *myMalloc ( Int32 n )
    return p;
 }
 
-
-/*---------------------------------------------*/
-static 
-Cell *mkCell ( void )
+static  Cell *mkCell ( void )
 {
    Cell *c;
 
@@ -6687,10 +6059,8 @@ Cell *mkCell ( void )
    return c;
 }
 
-
-/*---------------------------------------------*/
 static 
-Cell *snocString ( Cell *root, Char *name )
+Cell *snocString( Cell *root, char *name)
 {
    if (root == NULL) {
       Cell *tmp = mkCell();
@@ -6705,10 +6075,8 @@ Cell *snocString ( Cell *root, Char *name )
    }
 }
 
-
-/*---------------------------------------------*/
 static 
-void addFlagsFromEnvVar ( Cell** argList, Char* varName ) 
+void addFlagsFromEnvVar ( Cell** argList, const char* varName ) 
 {
    Int32 i, j, k;
    Char *envbase, *p;
@@ -6743,7 +6111,7 @@ IntNative main ( IntNative argc, Char *argv[] )
    Char   *tmp;
    Cell   *argList;
    Cell   *aa;
-   Bool   decode;
+   uint8_t   decode;
 
    /*-- Be really really really paranoid :-) --*/
    if (sizeof(Int32) != 4 || sizeof(UInt32) != 4  ||
@@ -6785,17 +6153,12 @@ IntNative main ( IntNative argc, Char *argv[] )
       if (*tmp == PATH_SEP) progName = tmp + 1;
 
 
-   /*-- Copy flags from env var BZIP2, and 
-        expand filename wildcards in arg list.
-   --*/
    argList = NULL;
    addFlagsFromEnvVar ( &argList,  "BZIP2" );
    addFlagsFromEnvVar ( &argList,  "BZIP" );
    for (i = 1; i <= argc-1; i++)
       APPEND_FILESPEC(argList, argv[i]);
 
-
-   /*-- Find the length of the longest filename --*/
    longestFileName = 7;
    numFileNames    = 0;
    decode          = True;
@@ -6978,9 +6341,6 @@ IntNative main ( IntNative argc, Char *argv[] )
       }
    }
 
-   /* Free the argument list memory to mollify leak detectors 
-      (eg) Purify, Checker.  Serves no other useful purpose.
-   */
    aa = argList;
    while (aa != NULL) {
       Cell* aa2 = aa->link;
@@ -6993,6 +6353,3 @@ IntNative main ( IntNative argc, Char *argv[] )
 }
 
 
-/*-----------------------------------------------------------*/
-/*--- end                                         bzip2.c ---*/
-/*-----------------------------------------------------------*/
