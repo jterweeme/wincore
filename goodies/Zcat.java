@@ -27,6 +27,7 @@ public class Zcat
             if ((flags & 0x10) != 0) System.err.println("Comment: " + _readString());
             Decompressor d = new Decompressor(_bi);
             d.extractTo(os);
+            os.flush();
         }
 
         private String _readString() throws IOException
