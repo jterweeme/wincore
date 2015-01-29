@@ -219,16 +219,16 @@ static const int8_t BZ_CONFIG_ERROR     = -9;
 
 
 extern void BZ2_bz__AssertH__fail(int errcode);
-#define AssertH(cond,errcode) { if (!(cond)) BZ2_bz__AssertH__fail ( errcode ); }
+
 int VPrintf0(const char *zf) { return ::fprintf(stderr, zf); }
 
 #define BZALLOC(nnn) (strm->bzalloc)(strm->opaque,(nnn),1)
 #define BZFREE(ppp)  (strm->bzfree)(strm->opaque,(ppp))
 
 
-#define BZ_HDR_B 0x42  
-#define BZ_HDR_Z 0x5a  
-#define BZ_HDR_h 0x68  
+static const uint8_t BZ_HDR_B = 0x42;
+static const uint8_t BZ_HDR_Z = 0x5a;
+static const uint8_t BZ_HDR_h = 0x68;
 static const uint8_t BZ_HDR_0 = 0x30;
 static const uint16_t BZ_MAX_ALPHA_SIZE = 258;
 static const uint8_t BZ_MAX_CODE_LEN = 23;
@@ -237,7 +237,7 @@ static const uint8_t BZ_RUNB = 1;
 static const uint8_t BZ_N_GROUPS = 6;
 #define BZ_G_SIZE   50
 #define BZ_N_ITERS  4
-#define BZ_MAX_SELECTORS (2 + (900000 / BZ_G_SIZE))
+#define BZ_MAX_SELECTORS (2 + (900000 / 50))
 
 extern int32_t BZ2_rNums[512];
 
@@ -309,8 +309,8 @@ typedef
 extern void BZ2_blockSort(EState*);
 extern void BZ2_compressBlock(EState*, uint8_t);
 extern void BZ2_bsInitWrite ( EState* );
-extern void BZ2_hbAssignCodes ( Int32*, uint8_t*, Int32, Int32, Int32 );
-extern void BZ2_hbMakeCodeLengths ( uint8_t*, Int32*, Int32, Int32 );
+extern void BZ2_hbAssignCodes ( int32_t*, uint8_t*, int32_t, int32_t, int32_t );
+extern void BZ2_hbMakeCodeLengths ( uint8_t*, int32_t*, int32_t, int32_t );
 
 
 #define BZ_M_IDLE      1
@@ -523,15 +523,18 @@ void fallbackSimpleSort(uint32_t* fmap,
 
 #define fmin(a,b) ((a) < (b)) ? (a) : (b)
 
-#define fpush(lz,hz) { stackLo[sp] = lz; \
-                       stackHi[sp] = hz; \
-                       sp++; }
+#define fpush(lz,hz) { stackLo[sp] = lz; stackHi[sp] = hz; sp++; }
 
 #define fpop(lz,hz) { sp--; lz = stackLo[sp]; hz = stackHi[sp]; }
 
 static const uint8_t FALLBACK_QSORT_SMALL_THRESH = 10;
 static const uint8_t FALLBACK_QSORT_STACK_SIZE =  100;
 
+void AssertH(bool cond, uint32_t errcode)
+{
+    if (!cond)
+        BZ2_bz__AssertH__fail(errcode);
+}
 
 static
 void fallbackQSort3 (uint32_t* fmap, 
@@ -1224,7 +1227,7 @@ void mainSort ( UInt32* ptr,
                 || 
       
                 (copyStart[ss] == 0 && copyEnd[ss] == nblock-1),
-                1007 )
+                1007 );
 
       for (j = 0; j <= 255; j++) ftab[(j << 8) + ss] |= SETMASK;
 
@@ -1426,15 +1429,15 @@ void BZ2_hbAssignCodes(Int32 *code,
    }
 }
 
-void BZ2_hbCreateDecodeTables ( Int32 *limit,
-                                Int32 *base,
-                                Int32 *perm,
+void BZ2_hbCreateDecodeTables ( int32_t *limit,
+                                int32_t *base,
+                                int32_t *perm,
                                 uint8_t *length,
-                                Int32 minLen,
-                                Int32 maxLen,
-                                Int32 alphaSize )
+                                int32_t minLen,
+                                int32_t maxLen,
+                                int32_t alphaSize )
 {
-   Int32 pp, i, j, vec;
+   int32_t pp, i, j, vec;
 
    pp = 0;
    for (i = minLen; i <= maxLen; i++)
@@ -1728,37 +1731,34 @@ static void generateMTFValues ( EState* s )
 
 static const uint8_t BZ_GREATER_ICOST = 15;
 
-static
-void sendMTFValues ( EState* s )
+static void sendMTFValues(EState* s)
 {
-   Int32 v, t, i, j, gs, ge, totc, bt, bc, iter;
-   Int32 nSelectors, alphaSize, minLen, maxLen, selCtr;
-   Int32 nGroups, nBytes;
+    int32_t v, t, i, j, gs, ge, totc, bt, bc, iter;
+    int32_t nSelectors, alphaSize, minLen, maxLen, selCtr;
+    int32_t nGroups, nBytes;
+    uint16_t cost[BZ_N_GROUPS];
+    int32_t  fave[BZ_N_GROUPS];
+    uint16_t *mtfv = s->mtfv;
 
-   UInt16 cost[BZ_N_GROUPS];
-   Int32  fave[BZ_N_GROUPS];
-
-   UInt16* mtfv = s->mtfv;
-
-   if (s->verbosity >= 3)
-      fprintf(stderr, "      %d in block, %d after MTF & 1-2 coding, "
+    if (s->verbosity >= 3)
+        fprintf(stderr, "      %d in block, %d after MTF & 1-2 coding, "
                 "%d+2 syms in use\n", 
                 s->nblock, s->nMTF, s->nInUse );
 
-   alphaSize = s->nInUse+2;
-   for (t = 0; t < BZ_N_GROUPS; t++)
-      for (v = 0; v < alphaSize; v++)
-         s->len[t][v] = BZ_GREATER_ICOST;
+    alphaSize = s->nInUse+2;
+    for (t = 0; t < BZ_N_GROUPS; t++)
+        for (v = 0; v < alphaSize; v++)
+            s->len[t][v] = BZ_GREATER_ICOST;
 
-   AssertH ( s->nMTF > 0, 3001 );
-   if (s->nMTF < 200)  nGroups = 2; else
-   if (s->nMTF < 600)  nGroups = 3; else
-   if (s->nMTF < 1200) nGroups = 4; else
-   if (s->nMTF < 2400) nGroups = 5; else
+    AssertH ( s->nMTF > 0, 3001 );
+    if (s->nMTF < 200)  nGroups = 2; else
+    if (s->nMTF < 600)  nGroups = 3; else
+    if (s->nMTF < 1200) nGroups = 4; else
+    if (s->nMTF < 2400) nGroups = 5; else
                        nGroups = 6;
 
-   { 
-      Int32 nPart, remF, tFreq, aFreq;
+    { 
+      int32_t nPart, remF, tFreq, aFreq;
 
       nPart = nGroups;
       remF  = s->nMTF;
@@ -1824,26 +1824,19 @@ void sendMTFValues ( EState* s )
          for (t = 0; t < nGroups; t++) cost[t] = 0;
 
          if (nGroups == 6 && 50 == ge-gs+1) {
-            register UInt32 cost01, cost23, cost45;
-            register UInt16 icv;
+            register uint32_t cost01, cost23, cost45;
+            register uint16_t icv;
             cost01 = cost23 = cost45 = 0;
 
-#define BZ_ITER(nn)                \
-               icv = mtfv[gs+(nn)];           \
-               cost01 += s->len_pack[icv][0]; \
-               cost23 += s->len_pack[icv][1]; \
-               cost45 += s->len_pack[icv][2]; \
 
-            BZ_ITER(0);  BZ_ITER(1);  BZ_ITER(2);  BZ_ITER(3);  BZ_ITER(4);
-            BZ_ITER(5);  BZ_ITER(6);  BZ_ITER(7);  BZ_ITER(8);  BZ_ITER(9);
-            BZ_ITER(10); BZ_ITER(11); BZ_ITER(12); BZ_ITER(13); BZ_ITER(14);
-            BZ_ITER(15); BZ_ITER(16); BZ_ITER(17); BZ_ITER(18); BZ_ITER(19);
-            BZ_ITER(20); BZ_ITER(21); BZ_ITER(22); BZ_ITER(23); BZ_ITER(24);
-            BZ_ITER(25); BZ_ITER(26); BZ_ITER(27); BZ_ITER(28); BZ_ITER(29);
-            BZ_ITER(30); BZ_ITER(31); BZ_ITER(32); BZ_ITER(33); BZ_ITER(34);
-            BZ_ITER(35); BZ_ITER(36); BZ_ITER(37); BZ_ITER(38); BZ_ITER(39);
-            BZ_ITER(40); BZ_ITER(41); BZ_ITER(42); BZ_ITER(43); BZ_ITER(44);
-            BZ_ITER(45); BZ_ITER(46); BZ_ITER(47); BZ_ITER(48); BZ_ITER(49);
+        for (uint8_t i = 0; i <= 49; i++)
+        {
+               icv = mtfv[gs+(i)];           
+               cost01 += s->len_pack[icv][0]; 
+               cost23 += s->len_pack[icv][1]; 
+               cost45 += s->len_pack[icv][2]; 
+
+        }
 
             cost[0] = cost01 & 0xffff; cost[1] = cost01 >> 16;
             cost[2] = cost23 & 0xffff; cost[3] = cost23 >> 16;
@@ -1864,20 +1857,11 @@ void sendMTFValues ( EState* s )
          s->selector[nSelectors] = bt;
          nSelectors++;
 
-         if (nGroups == 6 && 50 == ge-gs+1) {
+         if (nGroups == 6 && 50 == ge-gs+1)
+         {
 
-#define BZ_ITUR(nn) s->rfreq[bt][ mtfv[gs+(nn)] ]++
-
-            BZ_ITUR(0);  BZ_ITUR(1);  BZ_ITUR(2);  BZ_ITUR(3);  BZ_ITUR(4);
-            BZ_ITUR(5);  BZ_ITUR(6);  BZ_ITUR(7);  BZ_ITUR(8);  BZ_ITUR(9);
-            BZ_ITUR(10); BZ_ITUR(11); BZ_ITUR(12); BZ_ITUR(13); BZ_ITUR(14);
-            BZ_ITUR(15); BZ_ITUR(16); BZ_ITUR(17); BZ_ITUR(18); BZ_ITUR(19);
-            BZ_ITUR(20); BZ_ITUR(21); BZ_ITUR(22); BZ_ITUR(23); BZ_ITUR(24);
-            BZ_ITUR(25); BZ_ITUR(26); BZ_ITUR(27); BZ_ITUR(28); BZ_ITUR(29);
-            BZ_ITUR(30); BZ_ITUR(31); BZ_ITUR(32); BZ_ITUR(33); BZ_ITUR(34);
-            BZ_ITUR(35); BZ_ITUR(36); BZ_ITUR(37); BZ_ITUR(38); BZ_ITUR(39);
-            BZ_ITUR(40); BZ_ITUR(41); BZ_ITUR(42); BZ_ITUR(43); BZ_ITUR(44);
-            BZ_ITUR(45); BZ_ITUR(46); BZ_ITUR(47); BZ_ITUR(48); BZ_ITUR(49);
+            for (uint8_t i = 0; i <= 49; i++)
+                s->rfreq[bt][mtfv[gs+i]]++;
 
          } else {
             for (i = gs; i <= ge; i++)
@@ -2124,8 +2108,6 @@ static void makeMaps_d(DState* s)
          s->strm->total_in_hi32++;                \
    }
 
-#define GET_BIT(lll,uuu) GET_BITS(lll,uuu,1)
-
 #define GET_MTF_VAL(label1,label2,lval)           \
 {                                                 \
    if (groupPos == 0) {                           \
@@ -2147,7 +2129,7 @@ static void makeMaps_d(DState* s)
          RETURN(BZ_DATA_ERROR);                   \
       if (zvec <= gLimit[zn]) break;              \
       zn++;                                       \
-      GET_BIT(label2, zj);                        \
+      GET_BITS(label2, zj, 1);                        \
       zvec = (zvec << 1) | zj;                    \
    };                                             \
    if (zvec - gBase[zn] < 0                       \
@@ -2156,7 +2138,7 @@ static void makeMaps_d(DState* s)
    lval = gPerm[zvec - gBase[zn]];                \
 }
 
-#define BZ_INITIALISE_CRC(crcVar) { crcVar = 0xffffffffL; }
+void BZ_INITIALISE_CRC(uint32_t &crcVar) { crcVar = 0xffffffff; }
 
 int32_t BZ2_decompress(DState* s)
 {
@@ -2316,7 +2298,7 @@ int32_t BZ2_decompress(DState* s)
          RETURN(BZ_DATA_ERROR);
 
       for (i = 0; i < 16; i++) {
-         GET_BIT(BZ_X_MAPPING_1, uc);
+         GET_BITS(BZ_X_MAPPING_1, uc, 1);
          if (uc == 1) 
             s->inUse16[i] = 1; else 
             s->inUse16[i] = 0;
@@ -2327,7 +2309,7 @@ int32_t BZ2_decompress(DState* s)
       for (i = 0; i < 16; i++)
          if (s->inUse16[i])
             for (j = 0; j < 16; j++) {
-               GET_BIT(BZ_X_MAPPING_2, uc);
+               GET_BITS(BZ_X_MAPPING_2, uc, 1);
                if (uc == 1) s->inUse[i * 16 + j] = 1;
             }
       makeMaps_d ( s );
@@ -2341,7 +2323,7 @@ int32_t BZ2_decompress(DState* s)
       for (i = 0; i < nSelectors; i++) {
          j = 0;
          while (1) {
-            GET_BIT(BZ_X_SELECTOR_3, uc);
+            GET_BITS(BZ_X_SELECTOR_3, uc, 1);
             if (uc == 0) break;
             j++;
             if (j >= nGroups) RETURN(BZ_DATA_ERROR);
@@ -2367,9 +2349,9 @@ int32_t BZ2_decompress(DState* s)
          for (i = 0; i < alphaSize; i++) {
             while (1) {
                if (curr < 1 || curr > 20) RETURN(BZ_DATA_ERROR);
-               GET_BIT(BZ_X_CODING_2, uc);
+               GET_BITS(BZ_X_CODING_2, uc, 1);
                if (uc == 0) break;
-               GET_BIT(BZ_X_CODING_3, uc);
+               GET_BITS(BZ_X_CODING_3, uc, 1);
                if (uc == 0) curr++; else curr--;
             }
             s->len[t][i] = curr;
@@ -2789,9 +2771,9 @@ int BZ2_bzCompressInit
    s->workFactor        = workFactor;
 
    s->block             = (uint8_t*)s->arr2;
-   s->mtfv              = (UInt16*)s->arr1;
+   s->mtfv              = (uint16_t*)s->arr1;
    s->zbits             = NULL;
-   s->ptr               = (UInt32*)s->arr1;
+   s->ptr               = (uint32_t*)s->arr1;
 
    strm->state          = s;
    strm->total_in_lo32  = 0;
@@ -3492,9 +3474,7 @@ BZFILE* BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k, int verbosity,
    return bzf;   
 }
 
-#define BZ_SETERR(eee) {                  \
-   if (bzerror != NULL) *bzerror = eee;   \
-   if (bzf != NULL) bzf->lastErr = eee;  }
+
 
 
 void BZ2_bzWrite
@@ -3503,41 +3483,75 @@ void BZ2_bzWrite
                void*   buf, 
                int     len )
 {
-   int32_t n, n2, ret;
-   bzFile* bzf = (bzFile*)b;
+    int32_t n, n2, ret;
+    bzFile* bzf = (bzFile*)b;
 
-   if (bzerror != NULL) *bzerror = BZ_OK;
-   if (bzf != NULL) bzf->lastErr = BZ_OK;
-   if (bzf == NULL || buf == NULL || len < 0)
-      { BZ_SETERR(BZ_PARAM_ERROR); return; };
-   if (!(bzf->writing))
-      { BZ_SETERR(BZ_SEQUENCE_ERROR); return; };
-   if (ferror(bzf->handle))
-      { BZ_SETERR(BZ_IO_ERROR); return; };
+    if (bzerror != NULL) *bzerror = BZ_OK;
+    if (bzf != NULL) bzf->lastErr = BZ_OK;
 
-   if (len == 0)
-      { BZ_SETERR(BZ_OK); return; };
+    if (bzf == NULL || buf == NULL || len < 0)
+    {
+        if (bzerror != NULL) *bzerror = BZ_PARAM_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_PARAM_ERROR;
+        return;
+    };
 
-   bzf->strm.avail_in = len;
-   bzf->strm.next_in  = (char *)buf;
+    if (!(bzf->writing))
+    {
+        if (bzerror != NULL) *bzerror = BZ_SEQUENCE_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_SEQUENCE_ERROR;
+        return;
+    };
 
-   while (1) {
-      bzf->strm.avail_out = BZ_MAX_UNUSED;
-      bzf->strm.next_out = bzf->buf;
-      ret = BZ2_bzCompress ( &(bzf->strm), BZ_RUN );
-      if (ret != BZ_RUN_OK)
-         { BZ_SETERR(ret); return; };
+    if (ferror(bzf->handle))
+    {
+        if (bzerror != NULL) *bzerror = BZ_IO_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_IO_ERROR;
+        return;
+    };
 
-      if (bzf->strm.avail_out < BZ_MAX_UNUSED) {
+    if (len == 0)
+    {
+        if (bzerror != NULL) *bzerror = BZ_OK;
+        if (bzf != NULL) bzf->lastErr = BZ_OK;
+        return;
+    };
+
+    bzf->strm.avail_in = len;
+    bzf->strm.next_in  = (char *)buf;
+
+    while (1)
+    {
+        bzf->strm.avail_out = BZ_MAX_UNUSED;
+        bzf->strm.next_out = bzf->buf;
+        ret = BZ2_bzCompress ( &(bzf->strm), BZ_RUN );
+
+        if (ret != BZ_RUN_OK)
+        {
+        if (bzerror != NULL) *bzerror = ret;
+        if (bzf != NULL) bzf->lastErr = ret;
+            return;
+        };
+
+        if (bzf->strm.avail_out < BZ_MAX_UNUSED)
+        {
          n = BZ_MAX_UNUSED - bzf->strm.avail_out;
          n2 = fwrite ( (void*)(bzf->buf), sizeof(uint8_t), 
                        n, bzf->handle );
          if (n != n2 || ferror(bzf->handle))
-            { BZ_SETERR(BZ_IO_ERROR); return; };
+         {
+        if (bzerror != NULL) *bzerror = BZ_IO_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_IO_ERROR;
+            return;
+         };
       }
 
-      if (bzf->strm.avail_in == 0)
-         { BZ_SETERR(BZ_OK); return; };
+         if (bzf->strm.avail_in == 0)
+         {
+        if (bzerror != NULL) *bzerror = BZ_OK;
+        if (bzf != NULL) bzf->lastErr = BZ_OK;
+            return;
+         };
    }
 }
 
@@ -3563,46 +3577,75 @@ void BZ2_bzWriteClose64
                     unsigned int* nbytes_out_lo32,
                     unsigned int* nbytes_out_hi32 )
 {
-   Int32   n, n2, ret;
-   bzFile* bzf = (bzFile*)b;
+    int32_t   n, n2, ret;
+    bzFile* bzf = (bzFile*)b;
 
-   if (bzf == NULL)
-      { BZ_SETERR(BZ_OK); return; };
-   if (!(bzf->writing))
-      { BZ_SETERR(BZ_SEQUENCE_ERROR); return; };
-   if (ferror(bzf->handle))
-      { BZ_SETERR(BZ_IO_ERROR); return; };
+    if (bzf == NULL)
+    {
+        if (bzerror != NULL) *bzerror = BZ_OK;
+        if (bzf != NULL) bzf->lastErr = BZ_OK;
+        return;
+    };
+    if (!(bzf->writing))
+    {
+        if (bzerror != NULL) *bzerror = BZ_SEQUENCE_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_SEQUENCE_ERROR;
+        return;
+    };
+    if (ferror(bzf->handle))
+    {
+        if (bzerror != NULL) *bzerror = BZ_IO_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_IO_ERROR;
+        return;
+    };
 
-   if (nbytes_in_lo32 != NULL) *nbytes_in_lo32 = 0;
-   if (nbytes_in_hi32 != NULL) *nbytes_in_hi32 = 0;
-   if (nbytes_out_lo32 != NULL) *nbytes_out_lo32 = 0;
-   if (nbytes_out_hi32 != NULL) *nbytes_out_hi32 = 0;
+    if (nbytes_in_lo32 != NULL) *nbytes_in_lo32 = 0;
+    if (nbytes_in_hi32 != NULL) *nbytes_in_hi32 = 0;
+    if (nbytes_out_lo32 != NULL) *nbytes_out_lo32 = 0;
+    if (nbytes_out_hi32 != NULL) *nbytes_out_hi32 = 0;
 
-   if ((!abandon) && bzf->lastErr == BZ_OK) {
-      while (1) {
-         bzf->strm.avail_out = BZ_MAX_UNUSED;
-         bzf->strm.next_out = bzf->buf;
-         ret = BZ2_bzCompress ( &(bzf->strm), BZ_FINISH );
-         if (ret != BZ_FINISH_OK && ret != BZ_STREAM_END)
-            { BZ_SETERR(ret); return; };
+    if ((!abandon) && bzf->lastErr == BZ_OK)
+    {
+        while (1)
+        {
+            bzf->strm.avail_out = BZ_MAX_UNUSED;
+            bzf->strm.next_out = bzf->buf;
+            ret = BZ2_bzCompress ( &(bzf->strm), BZ_FINISH );
 
-         if (bzf->strm.avail_out < BZ_MAX_UNUSED) {
-            n = BZ_MAX_UNUSED - bzf->strm.avail_out;
-            n2 = fwrite ( (void*)(bzf->buf), sizeof(uint8_t), 
+            if (ret != BZ_FINISH_OK && ret != BZ_STREAM_END)
+            {
+                if (bzerror != NULL) *bzerror = ret;
+                if (bzf != NULL) bzf->lastErr = ret;
+                return;
+            };
+
+            if (bzf->strm.avail_out < BZ_MAX_UNUSED)
+            {
+                n = BZ_MAX_UNUSED - bzf->strm.avail_out;
+                n2 = fwrite ( (void*)(bzf->buf), sizeof(uint8_t), 
                           n, bzf->handle );
-            if (n != n2 || ferror(bzf->handle))
-               { BZ_SETERR(BZ_IO_ERROR); return; };
-         }
+                if (n != n2 || ferror(bzf->handle))
+                {
+                    if (bzerror != NULL) *bzerror = BZ_IO_ERROR;
+                    if (bzf != NULL) bzf->lastErr = BZ_IO_ERROR;
+                    return;
+                };
+            }
 
-         if (ret == BZ_STREAM_END) break;
-      }
-   }
+            if (ret == BZ_STREAM_END) break;
+        }
+    }
 
-   if ( !abandon && !ferror ( bzf->handle ) ) {
-      fflush ( bzf->handle );
-      if (ferror(bzf->handle))
-         { BZ_SETERR(BZ_IO_ERROR); return; };
-   }
+    if ( !abandon && !ferror ( bzf->handle ) )
+    {
+        fflush ( bzf->handle );
+        if (ferror(bzf->handle))
+        {
+            if (bzerror != NULL) *bzerror = BZ_IO_ERROR;
+            if (bzf != NULL) bzf->lastErr = BZ_IO_ERROR;
+            return;
+        };
+    }
 
    if (nbytes_in_lo32 != NULL)
       *nbytes_in_lo32 = bzf->strm.total_in_lo32;
@@ -3620,6 +3663,9 @@ void BZ2_bzWriteClose64
    free ( bzf );
 }
 
+
+
+
 BZFILE* BZ2_bzReadOpen
                    ( int*  bzerror, 
                      FILE* f, 
@@ -3628,47 +3674,67 @@ BZFILE* BZ2_bzReadOpen
                      void* unused,
                      int   nUnused )
 {
-   bzFile* bzf = NULL;
-   int     ret;
+    bzFile* bzf = NULL;
+    int     ret;
 
-   if (bzerror != NULL) *bzerror = BZ_OK;
-   if (bzf != NULL) bzf->lastErr = BZ_OK;
+    if (bzerror != NULL) *bzerror = BZ_OK;
+    if (bzf != NULL) bzf->lastErr = BZ_OK;
 
-   if (f == NULL || 
+    if (f == NULL || 
        (small != 0 && small != 1) ||
        (verbosity < 0 || verbosity > 4) ||
        (unused == NULL && nUnused != 0) ||
        (unused != NULL && (nUnused < 0 || nUnused > BZ_MAX_UNUSED)))
-      { BZ_SETERR(BZ_PARAM_ERROR); return NULL; };
+    {
+        if (bzerror != NULL) *bzerror = BZ_PARAM_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_PARAM_ERROR;
+        return NULL;
+    };
 
-   if (ferror(f))
-      { BZ_SETERR(BZ_IO_ERROR); return NULL; };
+    if (ferror(f))
+    {
+        if (bzerror != NULL) *bzerror = BZ_IO_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_IO_ERROR;
+        return NULL;
+    };
 
-   bzf = (bzFile *)malloc ( sizeof(bzFile) );
-   if (bzf == NULL) 
-      { BZ_SETERR(BZ_MEM_ERROR); return NULL; };
+    bzf = (bzFile *)malloc ( sizeof(bzFile) );
 
-   if (bzerror != NULL) *bzerror = BZ_OK;
-   if (bzf != NULL) bzf->lastErr = BZ_OK;
+    if (bzf == NULL) 
+    {
+        if (bzerror != NULL) *bzerror = BZ_MEM_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_MEM_ERROR;
+        return NULL;
+    };
+
+    if (bzerror != NULL) *bzerror = BZ_OK;
+    if (bzf != NULL) bzf->lastErr = BZ_OK;
 
 
-   bzf->initialisedOk = 0;
-   bzf->handle        = f;
-   bzf->bufN          = 0;
-   bzf->writing       = 0;
-   bzf->strm.bzalloc  = NULL;
-   bzf->strm.bzfree   = NULL;
-   bzf->strm.opaque   = NULL;
+    bzf->initialisedOk = 0;
+    bzf->handle        = f;
+    bzf->bufN          = 0;
+    bzf->writing       = 0;
+    bzf->strm.bzalloc  = NULL;
+    bzf->strm.bzfree   = NULL;
+    bzf->strm.opaque   = NULL;
    
-   while (nUnused > 0) {
-      bzf->buf[bzf->bufN] = *((uint8_t*)(unused)); bzf->bufN++;
-      unused = ((void*)( 1 + ((uint8_t*)(unused))  ));
-      nUnused--;
-   }
+    while (nUnused > 0)
+    {
+        bzf->buf[bzf->bufN] = *((uint8_t*)(unused)); bzf->bufN++;
+        unused = ((void*)( 1 + ((uint8_t*)(unused))  ));
+        nUnused--;
+    }
 
-   ret = BZ2_bzDecompressInit ( &(bzf->strm), verbosity, small );
-   if (ret != BZ_OK)
-      { BZ_SETERR(ret); free(bzf); return NULL; };
+    ret = BZ2_bzDecompressInit ( &(bzf->strm), verbosity, small );
+
+    if (ret != BZ_OK)
+    {
+        if (bzerror != NULL) *bzerror = ret;
+        if (bzf != NULL) bzf->lastErr = ret;
+        free(bzf);
+        return NULL;
+    };
 
    bzf->strm.avail_in = bzf->bufN;
    bzf->strm.next_in  = bzf->buf;
@@ -3680,21 +3746,31 @@ BZFILE* BZ2_bzReadOpen
 
 void BZ2_bzReadClose ( int *bzerror, BZFILE *b )
 {
-   bzFile* bzf = (bzFile*)b;
+    bzFile* bzf = (bzFile*)b;
 
-   if (bzerror != NULL) *bzerror = BZ_OK;
-   if (bzf != NULL) bzf->lastErr = BZ_OK;
+    if (bzerror != NULL) *bzerror = BZ_OK;
+    if (bzf != NULL) bzf->lastErr = BZ_OK;
 
-   if (bzf == NULL)
-      { BZ_SETERR(BZ_OK); return; };
+    if (bzf == NULL)
+    {
+        if (bzerror != NULL) *bzerror = BZ_OK;
+        if (bzf != NULL) bzf->lastErr = BZ_OK;
+        return;
+    };
 
-   if (bzf->writing)
-      { BZ_SETERR(BZ_SEQUENCE_ERROR); return; };
+    if (bzf->writing)
+    {
+        if (bzerror != NULL) *bzerror = BZ_SEQUENCE_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_SEQUENCE_ERROR;
+        return;
+    };
 
-   if (bzf->initialisedOk)
-      (void)BZ2_bzDecompressEnd ( &(bzf->strm) );
-   free ( bzf );
+    if (bzf->initialisedOk)
+        (void)BZ2_bzDecompressEnd ( &(bzf->strm) );
+
+    free ( bzf );
 }
+
 
 
 int BZ2_bzRead
@@ -3703,76 +3779,124 @@ int BZ2_bzRead
              void*   buf, 
              int     len )
 {
-   Int32   n, ret;
-   bzFile* bzf = (bzFile*)b;
+    int32_t   n, ret;
+    bzFile* bzf = (bzFile*)b;
 
-   if (bzerror != NULL) *bzerror = BZ_OK;
-   if (bzf != NULL) bzf->lastErr = BZ_OK;
+    if (bzerror != NULL) *bzerror = BZ_OK;
+    if (bzf != NULL) bzf->lastErr = BZ_OK;
 
-   if (bzf == NULL || buf == NULL || len < 0)
-      { BZ_SETERR(BZ_PARAM_ERROR); return 0; };
+    if (bzf == NULL || buf == NULL || len < 0)
+    {
+        if (bzerror != NULL) *bzerror = BZ_PARAM_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_PARAM_ERROR;
+        return 0;
+    };
 
-   if (bzf->writing)
-      { BZ_SETERR(BZ_SEQUENCE_ERROR); return 0; };
+    if (bzf->writing)
+    {
+        if (bzerror != NULL) *bzerror = BZ_SEQUENCE_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_SEQUENCE_ERROR;
+        return 0;
+    };
 
-   if (len == 0)
-      { BZ_SETERR(BZ_OK); return 0; };
+    if (len == 0)
+    {
+        if (bzerror != NULL) *bzerror = BZ_OK;
+        if (bzf != NULL) bzf->lastErr = BZ_OK;
+        return 0;
+    };
 
-   bzf->strm.avail_out = len;
-   bzf->strm.next_out = (char *)buf;
+    bzf->strm.avail_out = len;
+    bzf->strm.next_out = (char *)buf;
 
-   while (1) {
+    while (1)
+    {
+        if (ferror(bzf->handle)) 
+        {
+            if (bzerror != NULL) *bzerror = BZ_IO_ERROR;
+            if (bzf != NULL) bzf->lastErr = BZ_IO_ERROR;
+            return 0;
+        };
 
-      if (ferror(bzf->handle)) 
-         { BZ_SETERR(BZ_IO_ERROR); return 0; };
+        if (bzf->strm.avail_in == 0 && !myfeof(bzf->handle))
+        {
+            n = fread(bzf->buf, sizeof(uint8_t), BZ_MAX_UNUSED, bzf->handle);
 
-      if (bzf->strm.avail_in == 0 && !myfeof(bzf->handle)) {
-         n = fread ( bzf->buf, sizeof(uint8_t), 
-                     BZ_MAX_UNUSED, bzf->handle );
-         if (ferror(bzf->handle))
-            { BZ_SETERR(BZ_IO_ERROR); return 0; };
-         bzf->bufN = n;
-         bzf->strm.avail_in = bzf->bufN;
-         bzf->strm.next_in = bzf->buf;
-      }
+            if (ferror(bzf->handle))
+            {
+                if (bzerror != NULL) *bzerror = BZ_IO_ERROR;
+                if (bzf != NULL) bzf->lastErr = BZ_IO_ERROR;
+                return 0;
+            };
 
-      ret = BZ2_bzDecompress ( &(bzf->strm) );
+            bzf->bufN = n;
+            bzf->strm.avail_in = bzf->bufN;
+            bzf->strm.next_in = bzf->buf;
+        }
 
-      if (ret != BZ_OK && ret != BZ_STREAM_END)
-         { BZ_SETERR(ret); return 0; };
+        ret = BZ2_bzDecompress ( &(bzf->strm) );
 
-      if (ret == BZ_OK && myfeof(bzf->handle) && 
-          bzf->strm.avail_in == 0 && bzf->strm.avail_out > 0)
-         { BZ_SETERR(BZ_UNEXPECTED_EOF); return 0; };
+        if (ret != BZ_OK && ret != BZ_STREAM_END)
+        {
+                if (bzerror != NULL) *bzerror = ret;
+                if (bzf != NULL) bzf->lastErr = ret;
+            return 0;
+        };
 
-      if (ret == BZ_STREAM_END)
-         { BZ_SETERR(BZ_STREAM_END);
-           return len - bzf->strm.avail_out; };
-      if (bzf->strm.avail_out == 0)
-         { BZ_SETERR(BZ_OK); return len; };
-      
+        if (ret == BZ_OK && myfeof(bzf->handle) && 
+            bzf->strm.avail_in == 0 && bzf->strm.avail_out > 0)
+        {
+            if (bzerror != NULL) *bzerror = BZ_UNEXPECTED_EOF;
+            if (bzf != NULL) bzf->lastErr = BZ_UNEXPECTED_EOF;
+            return 0;
+        };
+
+        if (ret == BZ_STREAM_END)
+        {
+            if (bzerror != NULL) *bzerror = BZ_STREAM_END;
+            if (bzf != NULL) bzf->lastErr = BZ_STREAM_END;
+            return len - bzf->strm.avail_out;
+        };
+
+        if (bzf->strm.avail_out == 0)
+        {
+            if (bzerror != NULL) *bzerror = BZ_OK;
+            if (bzf != NULL) bzf->lastErr = BZ_OK;
+            return len;
+        };
    }
 
    return 0;
 }
 
-void BZ2_bzReadGetUnused
-                     ( int*    bzerror, 
-                       BZFILE* b, 
-                       void**  unused, 
-                       int*    nUnused )
+void BZ2_bzReadGetUnused(int *bzerror, BZFILE* b, void **unused, int *nUnused)
 {
-   bzFile* bzf = (bzFile*)b;
-   if (bzf == NULL)
-      { BZ_SETERR(BZ_PARAM_ERROR); return; };
-   if (bzf->lastErr != BZ_STREAM_END)
-      { BZ_SETERR(BZ_SEQUENCE_ERROR); return; };
-   if (unused == NULL || nUnused == NULL)
-      { BZ_SETERR(BZ_PARAM_ERROR); return; };
+    bzFile* bzf = (bzFile*)b;
 
-   BZ_SETERR(BZ_OK);
-   *nUnused = bzf->strm.avail_in;
-   *unused = bzf->strm.next_in;
+    if (bzf == NULL)
+    {
+        if (bzerror != NULL) *bzerror = BZ_PARAM_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_PARAM_ERROR;
+        return;
+    };
+
+    if (bzf->lastErr != BZ_STREAM_END)
+    {
+        if (bzerror != NULL) *bzerror = BZ_SEQUENCE_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_SEQUENCE_ERROR;
+        return;
+    };
+    if (unused == NULL || nUnused == NULL)
+    {
+        if (bzerror != NULL) *bzerror = BZ_PARAM_ERROR;
+        if (bzf != NULL) bzf->lastErr = BZ_PARAM_ERROR;
+        return;
+    };
+
+    if (bzerror != NULL) *bzerror = BZ_OK;
+    if (bzf != NULL) bzf->lastErr = BZ_OK;
+    *nUnused = bzf->strm.avail_in;
+    *unused = bzf->strm.next_in;
 }
 
 int BZ2_bzBuffToBuffCompress
@@ -3784,10 +3908,10 @@ int BZ2_bzBuffToBuffCompress
                            int           verbosity, 
                            int           workFactor )
 {
-   bz_stream strm;
-   int ret;
+    bz_stream strm;
+    int ret;
 
-   if (dest == NULL || destLen == NULL || 
+    if (dest == NULL || destLen == NULL || 
        source == NULL ||
        blockSize100k < 1 || blockSize100k > 9 ||
        verbosity < 0 || verbosity > 4 ||
@@ -4120,17 +4244,17 @@ static double uInt64_to_double(UInt64* n)
 static
 uint8_t uInt64_isZero ( UInt64* n )
 {
-   Int32 i;
+   int32_t i;
    for (i = 0; i < 8; i++)
       if (n->b[i] != 0) return 0;
    return 1;
 }
 
 static 
-Int32 uInt64_qrm10 ( UInt64* n )
+int32_t uInt64_qrm10 ( UInt64* n )
 {
-   UInt32 rem, tmp;
-   Int32  i;
+   uint32_t rem, tmp;
+   int32_t  i;
    rem = 0;
    for (i = 7; i >= 0; i--) {
       tmp = rem * 256 + n->b[i];
@@ -4141,12 +4265,11 @@ Int32 uInt64_qrm10 ( UInt64* n )
 }
 
 
-static
-void uInt64_toAscii ( char* outbuf, UInt64* n )
+static void uInt64_toAscii(char* outbuf, UInt64* n)
 {
-   Int32  i, q;
+   int32_t  i, q;
    uint8_t  buf[32];
-   Int32  nBuf   = 0;
+   int32_t  nBuf   = 0;
    UInt64 n_copy = *n;
    do {
       q = uInt64_qrm10 ( &n_copy );
