@@ -3,7 +3,6 @@ import java.util.Arrays;
 
 public class Gunzip
 {
-
     class GzipStream
     {
         private BitInput _bi;
@@ -72,8 +71,6 @@ public class Gunzip
 
         private Node _toct(Nau n)
         {
-            n.dump(System.out);
-            System.out.print("\n");
             java.util.List<Node> nodes = new java.util.ArrayList<Node>();
         
             for (int i = n.max(); i >= 1; i--)
@@ -98,8 +95,6 @@ public class Gunzip
         {
             isFinal = _bi.readBool();
             int type = _bi.readInt(2);
-
-            System.out.format("Type: %d\n", type);
 
             switch (type)
             {
@@ -181,14 +176,12 @@ public class Gunzip
             }
         }
 
-        Nau litLenCodeLen = c.copyOf(nlit);
-        Nau distCodeLen = c.copyOfRange(nlit, c.length());
+        Nau litLenCodeLen = c.copyOf(nlit), distCodeLen = c.copyOfRange(nlit, c.length());
         return new Pair2(_toct(litLenCodeLen), _toct(distCodeLen));
     }
 
     private void _decRaw(java.io.OutputStream os) throws IOException
     {
-        System.out.println("Decraw begin");
         _bi.ignoreBuf();
         int len = _bi.readInt(16);
         _bi.ignoreBits(16);
@@ -205,8 +198,6 @@ public class Gunzip
     {
         for (int sym; (sym = _decSym(lit)) != 256;)
         {
-            System.out.format("%d ", sym);
-
             if (sym < 256)
             {
                 os.write(sym);
@@ -218,7 +209,6 @@ public class Gunzip
                 _dict.copy(_decDist(distSym), len, os);
             }
         }
-        System.out.print("\n");
     }
 
     private int _decSym(Node n) throws IOException
@@ -321,20 +311,7 @@ public class Gunzip
         }
     }
 
-    public static void main(String[] args)
-    {
-        Gunzip g = new Gunzip();
-
-        try
-        {
-            g.run(args);
-        }
-        catch (Exception e)
-        {
-            System.err.println(e.getMessage());
-            System.exit(1);
-        }
-    }
+    public static void main(String[] args) throws Exception { new Gunzip().run(args); }
 
     void run(String[] args) throws Exception
     {
