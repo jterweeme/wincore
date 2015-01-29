@@ -222,8 +222,6 @@ extern void BZ2_bz__AssertH__fail(int errcode);
 
 int VPrintf0(const char *zf) { return ::fprintf(stderr, zf); }
 
-#define BZALLOC(nnn) (strm->bzalloc)(strm->opaque,(nnn),1)
-#define BZFREE(ppp)  (strm->bzfree)(strm->opaque,(ppp))
 
 
 static const uint8_t BZ_HDR_B = 0x42;
@@ -235,21 +233,13 @@ static const uint8_t BZ_MAX_CODE_LEN = 23;
 static const uint8_t BZ_RUNA = 0;
 static const uint8_t BZ_RUNB = 1;
 static const uint8_t BZ_N_GROUPS = 6;
-#define BZ_G_SIZE   50
-#define BZ_N_ITERS  4
-#define BZ_MAX_SELECTORS (2 + (900000 / 50))
+
+
 
 extern int32_t BZ2_rNums[512];
 
-#define BZ_RAND_MASK ((s->rNToGo == 1) ? 1 : 0)
 
-#define BZ_RAND_UPD_MASK                       \
-   if (s->rNToGo == 0) {                       \
-      s->rNToGo = BZ2_rNums[s->rTPos];         \
-      s->rTPos++;                              \
-      if (s->rTPos == 512) s->rTPos = 0;       \
-   }                                           \
-   s->rNToGo--;
+
 
 extern unsigned BZ2_crc32Table[256];
 
@@ -258,6 +248,8 @@ void BZ_UPDATE_CRC(uint32_t &crcVar, uint8_t &cha)
 {
     crcVar = (crcVar << 8) ^ BZ2_crc32Table[(crcVar >> 24) ^ ((uint8_t)cha)];
 }
+
+static const uint16_t BZ_MAX_SELECTORS = 18002;
 
 typedef
    struct {
@@ -313,65 +305,62 @@ extern void BZ2_hbAssignCodes ( int32_t*, uint8_t*, int32_t, int32_t, int32_t );
 extern void BZ2_hbMakeCodeLengths ( uint8_t*, int32_t*, int32_t, int32_t );
 
 
-#define BZ_M_IDLE      1
-#define BZ_M_RUNNING   2
-#define BZ_M_FLUSHING  3
-#define BZ_M_FINISHING 4
+static const uint8_t BZ_M_IDLE = 1;
+static const uint8_t BZ_M_RUNNING = 2;
+static const uint8_t BZ_M_FLUSHING = 3;
+static const uint8_t BZ_M_FINISHING = 4;
 
-#define BZ_S_OUTPUT    1
-#define BZ_S_INPUT     2
+static const uint8_t BZ_S_OUTPUT = 1;
+static const uint8_t BZ_S_INPUT = 2;
 
-#define BZ_N_RADIX 2
-#define BZ_N_QSORT 12
-#define BZ_N_SHELL 18
-#define BZ_N_OVERSHOOT (BZ_N_RADIX + BZ_N_QSORT + BZ_N_SHELL + 2)
+static const uint8_t BZ_N_OVERSHOOT = 34;
 
 
 
-#define BZ_X_IDLE        1
-#define BZ_X_OUTPUT      2
+static const uint8_t BZ_X_IDLE = 1;
+static const uint8_t BZ_X_OUTPUT = 2;
 
-#define BZ_X_MAGIC_1     10
-#define BZ_X_MAGIC_2     11
-#define BZ_X_MAGIC_3     12
-#define BZ_X_MAGIC_4     13
-#define BZ_X_BLKHDR_1    14
-#define BZ_X_BLKHDR_2    15
-#define BZ_X_BLKHDR_3    16
-#define BZ_X_BLKHDR_4    17
-#define BZ_X_BLKHDR_5    18
-#define BZ_X_BLKHDR_6    19
-#define BZ_X_BCRC_1      20
-#define BZ_X_BCRC_2      21
-#define BZ_X_BCRC_3      22
-#define BZ_X_BCRC_4      23
-#define BZ_X_RANDBIT     24
-#define BZ_X_ORIGPTR_1   25
-#define BZ_X_ORIGPTR_2   26
-#define BZ_X_ORIGPTR_3   27
-#define BZ_X_MAPPING_1   28
-#define BZ_X_MAPPING_2   29
-#define BZ_X_SELECTOR_1  30
-#define BZ_X_SELECTOR_2  31
-#define BZ_X_SELECTOR_3  32
-#define BZ_X_CODING_1    33
-#define BZ_X_CODING_2    34
-#define BZ_X_CODING_3    35
-#define BZ_X_MTF_1       36
-#define BZ_X_MTF_2       37
-#define BZ_X_MTF_3       38
-#define BZ_X_MTF_4       39
-#define BZ_X_MTF_5       40
-#define BZ_X_MTF_6       41
-#define BZ_X_ENDHDR_2    42
-#define BZ_X_ENDHDR_3    43
-#define BZ_X_ENDHDR_4    44
-#define BZ_X_ENDHDR_5    45
-#define BZ_X_ENDHDR_6    46
-#define BZ_X_CCRC_1      47
-#define BZ_X_CCRC_2      48
-#define BZ_X_CCRC_3      49
-#define BZ_X_CCRC_4      50
+static const uint8_t BZ_X_MAGIC_1 = 10;
+static const uint8_t BZ_X_MAGIC_2 = 11;
+static const uint8_t BZ_X_MAGIC_3 = 12;
+static const uint8_t BZ_X_MAGIC_4 = 13;
+static const uint8_t BZ_X_BLKHDR_1  =  14;
+static const uint8_t BZ_X_BLKHDR_2  =  15;
+static const uint8_t BZ_X_BLKHDR_3  =  16;
+static const uint8_t BZ_X_BLKHDR_4  =  17;
+static const uint8_t BZ_X_BLKHDR_5  =  18;
+static const uint8_t BZ_X_BLKHDR_6  =  19;
+static const uint8_t BZ_X_BCRC_1    =  20;
+static const uint8_t BZ_X_BCRC_2    =  21;
+static const uint8_t BZ_X_BCRC_3    =  22;
+static const uint8_t BZ_X_BCRC_4    =  23;
+static const uint8_t BZ_X_RANDBIT  = 24;
+static const uint8_t BZ_X_ORIGPTR_1  = 25;
+static const uint8_t BZ_X_ORIGPTR_2  = 26;
+static const uint8_t BZ_X_ORIGPTR_3  = 27;
+static const uint8_t BZ_X_MAPPING_1  = 28;
+static const uint8_t BZ_X_MAPPING_2  = 29;
+static const uint8_t BZ_X_SELECTOR_1 = 30;
+static const uint8_t BZ_X_SELECTOR_2 = 31;
+static const uint8_t BZ_X_SELECTOR_3 = 32;
+static const uint8_t BZ_X_CODING_1   = 33;
+static const uint8_t BZ_X_CODING_2   = 34;
+static const uint8_t BZ_X_CODING_3   = 35;
+static const uint8_t BZ_X_MTF_1 = 36;
+static const uint8_t BZ_X_MTF_2 = 37;
+static const uint8_t BZ_X_MTF_3 = 38;
+static const uint8_t BZ_X_MTF_4 = 39;
+static const uint8_t BZ_X_MTF_5 = 40;
+static const uint8_t BZ_X_MTF_6 = 41;
+static const uint8_t BZ_X_ENDHDR_2   = 42;
+static const uint8_t BZ_X_ENDHDR_3   = 43;
+static const uint8_t BZ_X_ENDHDR_4   = 44;
+static const uint8_t BZ_X_ENDHDR_5   = 45;
+static const uint8_t BZ_X_ENDHDR_6   = 46;
+static const uint8_t BZ_X_CCRC_1     = 47;
+static const uint8_t BZ_X_CCRC_2     = 48;
+static const uint8_t BZ_X_CCRC_3     = 49;
+static const uint8_t BZ_X_CCRC_4     = 50;
 
 static const uint16_t MTFA_SIZE = 4096;
 static const uint16_t MTFL_SIZE = 16;
@@ -445,31 +434,8 @@ typedef
    }
    DState;
 
-#define BZ_GET_FAST(cccc) s->tPos = s->tt[s->tPos]; cccc = (uint8_t)(s->tPos & 0xff); s->tPos >>= 8;
 
-#define BZ_GET_FAST_C(cccc)                   \
-    c_tPos = c_tt[c_tPos];                    \
-    cccc = (uint8_t)(c_tPos & 0xff);            \
-    c_tPos >>= 8;
 
-#define SET_LL4(i,n)                                          \
-   { if (((i) & 0x1) == 0)                                    \
-        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0xf0) | (n); else    \
-        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0x0f) | ((n) << 4);  \
-   }
-
-#define GET_LL4(i) ((((UInt32)(s->ll4[(i) >> 1])) >> (((i) << 2) & 0x4)) & 0xF)
-
-#define SET_LL(i,n)                          \
-   { s->ll16[i] = (UInt16)(n & 0x0000ffff);  \
-     SET_LL4(i, n >> 16);                    \
-   }
-
-#define GET_LL(i) (((UInt32)s->ll16[i]) | (GET_LL4(i) << 16))
-
-#define BZ_GET_SMALL(cccc)                            \
-      cccc = BZ2_indexIntoF ( s->tPos, s->cftab );    \
-      s->tPos = GET_LL(s->tPos);
 
 extern int32_t BZ2_indexIntoF(int32_t, int32_t*);
 
@@ -477,6 +443,9 @@ extern int32_t BZ2_decompress(DState*);
 
 extern void BZ2_hbCreateDecodeTables(int32_t*, int32_t*, int32_t*, uint8_t*,
                            int32_t, int32_t, int32_t);
+
+
+
 static 
 void fallbackSimpleSort(uint32_t* fmap, 
                           uint32_t* eclass, 
@@ -507,25 +476,10 @@ void fallbackSimpleSort(uint32_t* fmap,
    }
 }
 
-#define fswap(zz1, zz2) { Int32 zztmp = zz1; zz1 = zz2; zz2 = zztmp; }
-
-#define fvswap(zzp1, zzp2, zzn)       \
-{                                     \
-   Int32 yyp1 = (zzp1);               \
-   Int32 yyp2 = (zzp2);               \
-   Int32 yyn  = (zzn);                \
-   while (yyn > 0) {                  \
-      fswap(fmap[yyp1], fmap[yyp2]);  \
-      yyp1++; yyp2++; yyn--;          \
-   }                                  \
-}
 
 
-#define fmin(a,b) ((a) < (b)) ? (a) : (b)
 
-#define fpush(lz,hz) { stackLo[sp] = lz; stackHi[sp] = hz; sp++; }
 
-#define fpop(lz,hz) { sp--; lz = stackLo[sp]; hz = stackHi[sp]; }
 
 static const uint8_t FALLBACK_QSORT_SMALL_THRESH = 10;
 static const uint8_t FALLBACK_QSORT_STACK_SIZE =  100;
@@ -536,48 +490,63 @@ void AssertH(bool cond, uint32_t errcode)
         BZ2_bz__AssertH__fail(errcode);
 }
 
-static
-void fallbackQSort3 (uint32_t* fmap, 
-                      uint32_t* eclass,
-                      int32_t   loSt, 
-                      int32_t   hiSt )
+
+
+
+
+
+
+
+void fswap(uint32_t &zz1, uint32_t &zz2)
 {
-   Int32 unLo, unHi, ltLo, gtHi, n, m;
-   Int32 sp, lo, hi;
-   UInt32 med, r, r3;
-   Int32 stackLo[FALLBACK_QSORT_STACK_SIZE];
-   Int32 stackHi[FALLBACK_QSORT_STACK_SIZE];
+    int32_t zztmp = zz1;
+    zz1 = zz2;
+    zz2 = zztmp;
+}
 
-   r = 0;
+static void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32_t hiSt)
+{
+    int32_t unLo, unHi, ltLo, gtHi, n, m;
+    int32_t sp, lo, hi;
+    uint32_t med, r, r3;
+    int32_t stackLo[FALLBACK_QSORT_STACK_SIZE];
+    int32_t stackHi[FALLBACK_QSORT_STACK_SIZE];
+    r = 0;
+    sp = 0;
 
-   sp = 0;
-   fpush ( loSt, hiSt );
+    stackLo[sp] = loSt;
+    stackHi[sp] = hiSt;
+    sp++;
 
-   while (sp > 0) {
+    while (sp > 0)
+    {
+        AssertH(sp < FALLBACK_QSORT_STACK_SIZE, 1004);
+        sp--;
+        lo = stackLo[sp];
+        hi = stackHi[sp];
 
-      AssertH ( sp < FALLBACK_QSORT_STACK_SIZE, 1004 );
+        if (hi - lo < FALLBACK_QSORT_SMALL_THRESH)
+        {
+            fallbackSimpleSort ( fmap, eclass, lo, hi );
+            continue;
+        }
 
-      fpop ( lo, hi );
-      if (hi - lo < FALLBACK_QSORT_SMALL_THRESH) {
-         fallbackSimpleSort ( fmap, eclass, lo, hi );
-         continue;
-      }
-
-      r = ((r * 7621) + 1) % 32768;
-      r3 = r % 3;
-      if (r3 == 0) med = eclass[fmap[lo]]; else
-      if (r3 == 1) med = eclass[fmap[(lo+hi)>>1]]; else
+        r = ((r * 7621) + 1) % 32768;
+        r3 = r % 3;
+        if (r3 == 0) med = eclass[fmap[lo]]; else
+        if (r3 == 1) med = eclass[fmap[(lo+hi)>>1]]; else
                    med = eclass[fmap[hi]];
 
-      unLo = ltLo = lo;
-      unHi = gtHi = hi;
+        unLo = ltLo = lo;
+        unHi = gtHi = hi;
 
-      while (1) {
+        while (1) {
          while (1) {
             if (unLo > unHi) break;
-            n = (Int32)eclass[fmap[unLo]] - (Int32)med;
-            if (n == 0) { 
-               fswap(fmap[unLo], fmap[ltLo]); 
+            n = (int32_t)eclass[fmap[unLo]] - (Int32)med;
+            if (n == 0)
+            {
+                uint32_t zztmp = fmap[unLo]; fmap[unLo] = fmap[ltLo]; fmap[ltLo] = zztmp;
                ltLo++; unLo++; 
                continue; 
             };
@@ -586,7 +555,7 @@ void fallbackQSort3 (uint32_t* fmap,
          }
          while (1) {
             if (unLo > unHi) break;
-            n = (Int32)eclass[fmap[unHi]] - (Int32)med;
+            n = (int32_t)eclass[fmap[unHi]] - (Int32)med;
             if (n == 0) { 
                fswap(fmap[unHi], fmap[gtHi]); 
                gtHi--; unHi--; 
@@ -602,27 +571,51 @@ void fallbackQSort3 (uint32_t* fmap,
 
       if (gtHi < ltLo) continue;
 
-      n = fmin(ltLo-lo, unLo-ltLo); fvswap(lo, unLo-n, n);
-      m = fmin(hi-gtHi, gtHi-unHi); fvswap(unLo, hi-m+1, m);
+        n = ((ltLo-lo) < (unLo-ltLo)) ? (ltLo-lo) : (unLo-ltLo);
 
-      n = lo + unLo - ltLo - 1;
-      m = hi - (gtHi - unHi) + 1;
+        for (int32_t yyp1 = lo, yyp2 = unLo - n, yyn = n; yyn > 0;)
+        {
+            fswap(fmap[yyp1], fmap[yyp2]);
+            yyp1++; yyp2++; yyn--;
+        }
 
-      if (n - lo > hi - m) {
-         fpush ( lo, n );
-         fpush ( m, hi );
-      } else {
-         fpush ( m, hi );
-         fpush ( lo, n );
-      }
-   }
+
+        m = ((hi-gtHi) < (gtHi-unHi)) ? (hi-gtHi) : (gtHi-unHi);
+
+        for (int32_t yyp1 = unLo, yyp2 = hi - m + 1, yyn = m; yyn > 0;)
+        {
+            fswap(fmap[yyp1], fmap[yyp2]);
+            yyp1++; yyp2++; yyn--;
+        }
+
+
+        n = lo + unLo - ltLo - 1;
+        m = hi - (gtHi - unHi) + 1;
+
+
+        if (n - lo > hi - m)
+        {
+            stackLo[sp] = lo;
+            stackHi[sp] = n;
+            sp++;
+
+            stackLo[sp] = m;
+            stackHi[sp] = hi;
+            sp++;
+        }
+        else
+        {
+            stackLo[sp] = m;
+            stackHi[sp] = hi;
+            sp++;
+
+            stackLo[sp] = lo;
+            stackHi[sp] = n;
+            sp++;
+        }
+    }
 }
 
-#undef fmin
-#undef fpush
-#undef fpop
-#undef fswap
-#undef fvswap
 
 
 #define       SET_BH(zz)  bhtab[(zz) >> 5] |= (1 << ((zz) & 31))
@@ -631,18 +624,14 @@ void fallbackQSort3 (uint32_t* fmap,
 #define      WORD_BH(zz)  bhtab[(zz) >> 5]
 #define UNALIGNED_BH(zz)  ((zz) & 0x01f)
 
-static
-void fallbackSort ( UInt32* fmap, 
-                    UInt32* eclass, 
-                    UInt32* bhtab,
-                    Int32   nblock,
-                    Int32   verb )
+static void fallbackSort(uint32_t* fmap, uint32_t* eclass, 
+                    uint32_t *bhtab, int32_t nblock, int32_t verb)
 {
-   Int32 ftab[257];
-   Int32 ftabCopy[256];
-   Int32 H, i, j, k, l, r, cc, cc1;
-   Int32 nNotDone;
-   Int32 nBhtab;
+   int32_t ftab[257];
+   int32_t ftabCopy[256];
+   int32_t H, i, j, k, l, r, cc, cc1;
+   int32_t nNotDone;
+   int32_t nBhtab;
    uint8_t* eclass8 = (uint8_t*)eclass;
 
    if (verb >= 4)
@@ -731,11 +720,6 @@ void fallbackSort ( UInt32* fmap,
    AssertH ( j < 256, 1005 );
 }
 
-#undef       SET_BH
-#undef     CLEAR_BH
-#undef     ISSET_BH
-#undef      WORD_BH
-#undef UNALIGNED_BH
 
 static uint8_t mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* quadrant,
                uint32_t nblock, int32_t* budget)
@@ -836,22 +820,22 @@ static uint8_t mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* quad
 }
 
 static
-Int32 incs[14] = { 1, 4, 13, 40, 121, 364, 1093, 3280,
+int32_t incs[14] = { 1, 4, 13, 40, 121, 364, 1093, 3280,
                    9841, 29524, 88573, 265720,
                    797161, 2391484 };
 
 static
-void mainSimpleSort ( UInt32* ptr,
-                      uint8_t*  block,
-                      UInt16* quadrant,
-                      Int32   nblock,
-                      Int32   lo, 
-                      Int32   hi, 
-                      Int32   d,
-                      Int32*  budget )
+void mainSimpleSort(uint32_t *ptr,
+                      uint8_t *block,
+                      uint16_t *quadrant,
+                      int32_t   nblock,
+                      int32_t   lo, 
+                      int32_t   hi, 
+                      int32_t   d,
+                      int32_t *budget )
 {
-   Int32 i, j, h, bigN, hp;
-   UInt32 v;
+   int32_t i, j, h, bigN, hp;
+   uint32_t v;
 
    bigN = hi - lo + 1;
    if (bigN < 2) return;
@@ -910,8 +894,7 @@ void mainSimpleSort ( UInt32* ptr,
    }
 }
 
-#define mswap(zz1, zz2) \
-   { Int32 zztmp = zz1; zz1 = zz2; zz2 = zztmp; }
+#define mswap(zz1, zz2) { int32_t zztmp = zz1; zz1 = zz2; zz2 = zztmp; }
 
 #define mvswap(zzp1, zzp2, zzn)       \
 {                                     \
@@ -924,8 +907,7 @@ void mainSimpleSort ( UInt32* ptr,
    }                                  \
 }
 
-static 
-uint8_t mmed3 (uint8_t a, uint8_t b, uint8_t c )
+static uint8_t mmed3 (uint8_t a, uint8_t b, uint8_t c )
 {
    uint8_t t;
    if (a > b) { t = a; a = b; b = t; };
@@ -937,49 +919,37 @@ uint8_t mmed3 (uint8_t a, uint8_t b, uint8_t c )
 }
 
 #define mmin(a,b) ((a) < (b)) ? (a) : (b)
-
-#define mpush(lz,hz,dz) { stackLo[sp] = lz; \
-                          stackHi[sp] = hz; \
-                          stackD [sp] = dz; \
-                          sp++; }
-
-#define mpop(lz,hz,dz) { sp--;             \
-                         lz = stackLo[sp]; \
-                         hz = stackHi[sp]; \
-                         dz = stackD [sp]; }
-
-
+#define mpush(lz,hz,dz) { stackLo[sp] = lz; stackHi[sp] = hz; stackD [sp] = dz; sp++; }
 #define mnextsize(az) (nextHi[az]-nextLo[az])
 
 #define mnextswap(az,bz)                                        \
-   { Int32 tz;                                                  \
+   { int32_t tz;                                                  \
      tz = nextLo[az]; nextLo[az] = nextLo[bz]; nextLo[bz] = tz; \
      tz = nextHi[az]; nextHi[az] = nextHi[bz]; nextHi[bz] = tz; \
      tz = nextD [az]; nextD [az] = nextD [bz]; nextD [bz] = tz; }
 
 
-#define MAIN_QSORT_SMALL_THRESH 20
-#define MAIN_QSORT_DEPTH_THRESH (BZ_N_RADIX + BZ_N_QSORT)
-#define MAIN_QSORT_STACK_SIZE 100
+static const uint8_t MAIN_QSORT_SMALL_THRESH = 20;
+static const uint8_t MAIN_QSORT_DEPTH_THRESH = 14;
+static const uint8_t MAIN_QSORT_STACK_SIZE = 100;
 
 static void mainQSort3(uint32_t* ptr,
                   uint8_t*  block,
-                  UInt16* quadrant,
-                  Int32   nblock,
-                  Int32   loSt, 
-                  Int32   hiSt, 
-                  Int32   dSt,
-                  Int32*  budget )
+                  uint16_t* quadrant,
+                  int32_t   nblock,
+                  int32_t   loSt, 
+                  int32_t   hiSt, 
+                  int32_t   dSt,
+                  int32_t*  budget )
 {
-   int32 unLo, unHi, ltLo, gtHi, n, m, med;
-   int32 sp, lo, hi, d;
-   int32 stackLo[MAIN_QSORT_STACK_SIZE];
-   int32 stackHi[MAIN_QSORT_STACK_SIZE];
-   int32 stackD [MAIN_QSORT_STACK_SIZE];
-   int32 nextLo[3];
-   int32 nextHi[3];
-   int32 nextD [3];
-
+   int32_t unLo, unHi, ltLo, gtHi, n, m, med;
+   int32_t sp, lo, hi, d;
+   int32_t stackLo[MAIN_QSORT_STACK_SIZE];
+   int32_t stackHi[MAIN_QSORT_STACK_SIZE];
+   int32_t stackD [MAIN_QSORT_STACK_SIZE];
+   int32_t nextLo[3];
+   int32_t nextHi[3];
+   int32_t nextD [3];
    sp = 0;
    mpush ( loSt, hiSt, dSt );
 
@@ -987,7 +957,7 @@ static void mainQSort3(uint32_t* ptr,
 
       AssertH ( sp < MAIN_QSORT_STACK_SIZE, 1001 );
 
-      mpop ( lo, hi, d );
+        sp--; lo = stackLo[sp]; hi = stackHi[sp]; d = stackD[sp];
       if (hi - lo < MAIN_QSORT_SMALL_THRESH || 
           d > MAIN_QSORT_DEPTH_THRESH) {
          mainSimpleSort ( ptr, block, quadrant, nblock, lo, hi, d, budget );
@@ -1055,38 +1025,27 @@ static void mainQSort3(uint32_t* ptr,
    }
 }
 
-#undef mswap
-#undef mvswap
-#undef mpush
-#undef mpop
-#undef mmin
-#undef mnextsize
-#undef mnextswap
-#undef MAIN_QSORT_SMALL_THRESH
-#undef MAIN_QSORT_DEPTH_THRESH
-#undef MAIN_QSORT_STACK_SIZE
 
 #define BIGFREQ(b) (ftab[((b)+1) << 8] - ftab[(b) << 8])
 #define SETMASK (1 << 21)
 #define CLEARMASK (~(SETMASK))
 
-static
-void mainSort ( UInt32* ptr, 
-                uint8_t*  block,
-                UInt16* quadrant, 
-                UInt32* ftab,
-                Int32   nblock,
-                Int32   verb,
-                Int32*  budget )
+static void mainSort(uint32_t *ptr, 
+                uint8_t *block,
+                uint16_t *quadrant, 
+                uint32_t *ftab,
+                int32_t nblock,
+                int32_t verb,
+                int32_t *budget )
 {
-   int32_t  i, j, k, ss, sb;
-   int32_t  runningOrder[256];
-   uint8_t   bigDone[256];
-   int32_t  copyStart[256];
-   int32_t  copyEnd  [256];
-   uint8_t  c1;
-   Int32  numQSorted;
-   UInt16 s;
+   int32_t i, j, k, ss, sb;
+   int32_t runningOrder[256];
+   uint8_t bigDone[256];
+   int32_t copyStart[256];
+   int32_t copyEnd  [256];
+   uint8_t c1;
+   int32_t numQSorted;
+   uint16_t s;
    if (verb >= 4) VPrintf0 ( "        main sort initialise ...\n" );
 
    for (i = 65536; i >= 0; i--) ftab[i] = 0;
@@ -1193,7 +1152,7 @@ void mainSort ( UInt32* ptr,
                                 ss, j, numQSorted, hi - lo + 1 );
                   mainQSort3 ( 
                      ptr, block, quadrant, nblock, 
-                     lo, hi, BZ_N_RADIX, budget 
+                     lo, hi, 2, budget 
                   );   
                   numQSorted += (hi - lo + 1);
                   if (*budget < 0) return;
@@ -1257,29 +1216,25 @@ void mainSort ( UInt32* ptr,
                  nblock, numQSorted, nblock - numQSorted );
 }
 
-#undef BIGFREQ
-#undef SETMASK
-#undef CLEARMASK
-
 void BZ2_blockSort(EState* s)
 {
-   UInt32* ptr    = s->ptr; 
-   uint8_t*  block  = s->block;
-   UInt32* ftab   = s->ftab;
-   Int32   nblock = s->nblock;
-   Int32   verb   = s->verbosity;
-   Int32   wfact  = s->workFactor;
-   UInt16* quadrant;
-   Int32   budget;
-   Int32   budgetInit;
-   Int32   i;
+   uint32_t *ptr    = s->ptr; 
+   uint8_t *block  = s->block;
+   uint32_t *ftab   = s->ftab;
+   int32_t nblock = s->nblock;
+   int32_t verb   = s->verbosity;
+   int32_t wfact  = s->workFactor;
+   uint16_t *quadrant;
+   int32_t budget;
+   int32_t budgetInit;
+   int32_t i;
 
    if (nblock < 10000) {
       fallbackSort ( s->arr1, s->arr2, ftab, nblock, verb );
    } else {
       i = nblock+BZ_N_OVERSHOOT;
       if (i & 1) i++;
-      quadrant = (UInt16*)(&(block[i]));
+      quadrant = (uint16_t*)(&(block[i]));
       if (wfact < 1  ) wfact = 1;
       if (wfact > 100) wfact = 100;
       budgetInit = nblock * ((wfact-1) / 3);
@@ -1796,7 +1751,7 @@ static void sendMTFValues(EState* s)
       }
    }
 
-   for (iter = 0; iter < BZ_N_ITERS; iter++) {
+   for (iter = 0; iter < 4; iter++) {
 
       for (t = 0; t < nGroups; t++) fave[t] = 0;
 
@@ -1818,7 +1773,7 @@ static void sendMTFValues(EState* s)
       while (1) {
 
          if (gs >= s->nMTF) break;
-         ge = gs + BZ_G_SIZE - 1; 
+         ge = gs + 50 - 1; 
          if (ge >= s->nMTF) ge = s->nMTF-1;
 
          for (t = 0; t < nGroups; t++) cost[t] = 0;
@@ -1886,7 +1841,7 @@ static void sendMTFValues(EState* s)
 
    AssertH( nGroups < 8, 3002 );
    AssertH( nSelectors < 32768 &&
-            nSelectors <= (2 + (900000 / BZ_G_SIZE)),
+            nSelectors <= (2 + (900000 / 50)),
             3003 );
 
    {
@@ -1972,7 +1927,7 @@ static void sendMTFValues(EState* s)
    gs = 0;
    while (1) {
       if (gs >= s->nMTF) break;
-      ge = gs + BZ_G_SIZE - 1; 
+      ge = gs + 50 - 1; 
       if (ge >= s->nMTF) ge = s->nMTF-1;
       AssertH ( s->selector[selCtr] < nGroups, 3006 );
 
@@ -1983,20 +1938,12 @@ static void sendMTFValues(EState* s)
             Int32* s_code_sel_selCtr
                = &(s->code[s->selector[selCtr]][0]);
 
-#define BZ_ITAH(nn)                      \
-               mtfv_i = mtfv[gs+(nn)];              \
-               bsW ( s, s_len_sel_selCtr[mtfv_i], s_code_sel_selCtr[mtfv_i] )
+        for (uint8_t i = 0; i <= 49; i++)
+        {
+            mtfv_i = mtfv[gs+(i)];
+            bsW ( s, s_len_sel_selCtr[mtfv_i], s_code_sel_selCtr[mtfv_i] );
 
-            BZ_ITAH(0);  BZ_ITAH(1);  BZ_ITAH(2);  BZ_ITAH(3);  BZ_ITAH(4);
-            BZ_ITAH(5);  BZ_ITAH(6);  BZ_ITAH(7);  BZ_ITAH(8);  BZ_ITAH(9);
-            BZ_ITAH(10); BZ_ITAH(11); BZ_ITAH(12); BZ_ITAH(13); BZ_ITAH(14);
-            BZ_ITAH(15); BZ_ITAH(16); BZ_ITAH(17); BZ_ITAH(18); BZ_ITAH(19);
-            BZ_ITAH(20); BZ_ITAH(21); BZ_ITAH(22); BZ_ITAH(23); BZ_ITAH(24);
-            BZ_ITAH(25); BZ_ITAH(26); BZ_ITAH(27); BZ_ITAH(28); BZ_ITAH(29);
-            BZ_ITAH(30); BZ_ITAH(31); BZ_ITAH(32); BZ_ITAH(33); BZ_ITAH(34);
-            BZ_ITAH(35); BZ_ITAH(36); BZ_ITAH(37); BZ_ITAH(38); BZ_ITAH(39);
-            BZ_ITAH(40); BZ_ITAH(41); BZ_ITAH(42); BZ_ITAH(43); BZ_ITAH(44);
-            BZ_ITAH(45); BZ_ITAH(46); BZ_ITAH(47); BZ_ITAH(48); BZ_ITAH(49);
+        }
 
       } else {
          for (i = gs; i <= ge; i++) {
@@ -2031,7 +1978,7 @@ void BZ2_compressBlock(EState* s, uint8_t is_last_block)
                    "combined CRC = 0x%8x, size = %d\n",
                    s->blockNo, s->blockCRC, s->combinedCRC, s->nblock );
 
-      BZ2_blockSort ( s );
+      BZ2_blockSort(s);
    }
 
    s->zbits = (uint8_t*) (&((uint8_t*)s->arr2)[s->nblock]);
@@ -2114,7 +2061,7 @@ static void makeMaps_d(DState* s)
       groupNo++;                                  \
       if (groupNo >= nSelectors)                  \
          RETURN(BZ_DATA_ERROR);                   \
-      groupPos = BZ_G_SIZE;                       \
+      groupPos = 50;                       \
       gSel = s->selector[groupNo];                \
       gMinlen = s->minLens[gSel];                 \
       gLimit = &(s->limit[gSel][0]);              \
@@ -2138,7 +2085,34 @@ static void makeMaps_d(DState* s)
    lval = gPerm[zvec - gBase[zn]];                \
 }
 
+
+#define BZ_RAND_UPD_MASK                       \
+   if (s->rNToGo == 0) {                       \
+      s->rNToGo = BZ2_rNums[s->rTPos];         \
+      s->rTPos++;                              \
+      if (s->rTPos == 512) s->rTPos = 0;       \
+   }                                           \
+   s->rNToGo--;
+
+#define GET_LL4(i) ((((UInt32)(s->ll4[(i) >> 1])) >> (((i) << 2) & 0x4)) & 0xF)
+#define GET_LL(i) (((UInt32)s->ll16[i]) | (GET_LL4(i) << 16))
+
+
+#define BZ_GET_SMALL(cccc) cccc = BZ2_indexIntoF ( s->tPos, s->cftab );    \
+      s->tPos = GET_LL(s->tPos);
+
+#define SET_LL4(i,n) { if (((i) & 0x1) == 0) \
+        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0xf0) | (n); else \
+        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0x0f) | ((n) << 4); }
+
+
 void BZ_INITIALISE_CRC(uint32_t &crcVar) { crcVar = 0xffffffff; }
+
+#define BZALLOC(nnn) (strm->bzalloc)(strm->opaque,(nnn),1)
+#define BZFREE(ppp)  (strm->bzfree)(strm->opaque,(ppp))
+#define BZ_RAND_MASK ((s->rNToGo == 1) ? 1 : 0)
+#define SET_LL(i,n) { s->ll16[i] = (UInt16)(n & 0x0000ffff); SET_LL4(i, n >> 16); }
+
 
 int32_t BZ2_decompress(DState* s)
 {
@@ -2522,7 +2496,7 @@ int32_t BZ2_decompress(DState* s)
          i = s->origPtr;
          j = GET_LL(i);
          do {
-            Int32 tmp = GET_LL(j);
+            int32_t tmp = GET_LL(j);
             SET_LL(j, i);
             i = j;
             j = tmp;
@@ -2552,10 +2526,21 @@ int32_t BZ2_decompress(DState* s)
          if (s->blockRandomised) {
             s->rNToGo = 0;
             s->rTPos  = 0;
-            BZ_GET_FAST(s->k0); s->nblock_used++;
+
+
+
+            s->tPos = s->tt[s->tPos];
+            s->k0 = (uint8_t)(s->tPos & 0xff);
+            s->tPos >>= 8;
+
+            s->nblock_used++;
             BZ_RAND_UPD_MASK; s->k0 ^= BZ_RAND_MASK; 
          } else {
-            BZ_GET_FAST(s->k0); s->nblock_used++;
+            s->tPos = s->tt[s->tPos];
+            s->k0 = (uint8_t)(s->tPos & 0xff);
+            s->tPos >>= 8;
+
+            s->nblock_used++;
          }
 
       }
@@ -2696,7 +2681,7 @@ void default_bzfree ( void* opaque, void* addr )
 static
 void prepare_new_block ( EState* s )
 {
-   Int32 i;
+   int32_t i;
    s->nblock = 0;
    s->numZ = 0;
    s->state_out_pos = 0;
@@ -2726,7 +2711,7 @@ int BZ2_bzCompressInit
                      int        verbosity,
                      int        workFactor )
 {
-   Int32   n;
+   int32_t   n;
    EState* s;
 
    if (!bz_config_ok()) return BZ_CONFIG_ERROR;
@@ -3085,8 +3070,11 @@ int BZ2_bzDecompressInit
    return BZ_OK;
 }
 
-static
-void unRLE_obuf_to_output_FAST ( DState* s )
+#define BZ_GET_FAST_C(cccc) c_tPos = c_tt[c_tPos]; \
+    cccc = (uint8_t)(c_tPos & 0xff); c_tPos >>= 8;
+
+
+static void unRLE_obuf_to_output_FAST(DState* s)
 {
    uint8_t k1;
 
@@ -3110,28 +3098,51 @@ void unRLE_obuf_to_output_FAST ( DState* s )
    
          s->state_out_len = 1;
          s->state_out_ch = s->k0;
-         BZ_GET_FAST(k1); BZ_RAND_UPD_MASK; 
+
+        s->tPos = s->tt[s->tPos];
+        k1 = (uint8_t)(s->tPos & 0xff);
+        s->tPos >>= 8;
+
+         BZ_RAND_UPD_MASK; 
          k1 ^= BZ_RAND_MASK; s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
    
          s->state_out_len = 2;
-         BZ_GET_FAST(k1); BZ_RAND_UPD_MASK; 
+
+        s->tPos = s->tt[s->tPos];
+        k1 = (uint8_t)(s->tPos & 0xff);
+        s->tPos >>= 8;
+
+        BZ_RAND_UPD_MASK; 
          k1 ^= BZ_RAND_MASK; s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
    
          s->state_out_len = 3;
-         BZ_GET_FAST(k1); BZ_RAND_UPD_MASK; 
+
+        s->tPos = s->tt[s->tPos];
+        k1 = (uint8_t)(s->tPos & 0xff);
+        s->tPos >>= 8;
+        BZ_RAND_UPD_MASK; 
          k1 ^= BZ_RAND_MASK; s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
-   
-         BZ_GET_FAST(k1); BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK; s->nblock_used++;
+         s->tPos = s->tt[s->tPos];
+        k1 = (uint8_t)(s->tPos & 0xff);
+        s->tPos >>= 8;  
+        BZ_RAND_UPD_MASK; 
+         k1 ^= BZ_RAND_MASK;
+        s->nblock_used++;
          s->state_out_len = ((Int32)k1) + 4;
-         BZ_GET_FAST(s->k0); BZ_RAND_UPD_MASK; 
-         s->k0 ^= BZ_RAND_MASK; s->nblock_used++;
+
+        s->tPos = s->tt[s->tPos];
+        s->k0 = (uint8_t)(s->tPos & 0xff);
+        s->tPos >>= 8;
+
+        BZ_RAND_UPD_MASK; 
+         s->k0 ^= BZ_RAND_MASK;
+        s->nblock_used++;
       }
 
    } else {
@@ -3216,7 +3227,7 @@ void unRLE_obuf_to_output_FAST ( DState* s )
 
 int32_t BZ2_indexIntoF(int32_t indx, int32_t *cftab )
 {
-   Int32 nb, na, mid;
+   int32_t nb, na, mid;
    nb = 0;
    na = 256;
    do {
