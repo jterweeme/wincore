@@ -16,8 +16,8 @@ TARGETS = base64 bunzip2 bzcat cat cp crc32 dd diff dos2unix grep gunzip gzip \
 
 all: $(TARGETS)
 base64: base64.o
-bunzip2: bunzip2.o bitinput.o bzip2.o
-bzcat: bzcat.o bitinput.o bzip2.o
+bunzip2: bunzip2m.o bunzip2.o bitinput.o
+bzcat: bzcat.o bitinput.o bunzip2.o
 cat: cat.o
 cp: cp.o
 crc32: crc32.o
@@ -47,9 +47,9 @@ yes: yes.o
 zcat: zcat.o gunzip.o
 base64.o: base64.cpp
 bitinput.o: bitinput.cpp bitinput.h
-bunzip2.o: bunzip2.cpp bzip2.h bitinput.h
-bzcat.o: bzcat.cpp bzip2.h bitinput.h
-bzip2.o: bzip2.cpp bzip2.h bitinput.h
+bunzip2.o: bunzip2.cpp bunzip2.h bitinput.h
+bzcat.o: bzcat.cpp bunzip2.h bitinput.h
+bzip2.o: bunzip2.cpp bunzip2.h bitinput.h
 cat.o: cat.cpp
 cp.o: cp.cpp
 crc32.o: crc32.cpp

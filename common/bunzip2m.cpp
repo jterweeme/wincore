@@ -11,10 +11,14 @@ public:
 
 int App::run(int argc, char **argv)
 {
+    cout << argv[1] << "\n";
     ifstream ifs(argv[1]);
     BitInput bi(&ifs);
     DecStream ds(&bi);
-    ds.extractTo(cout);
+    ofstream ofs(argv[2]);
+    ds.extractTo(ofs);
+    ofs.close();
+    ifs.close();
     return 0;
 }
 
