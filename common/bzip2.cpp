@@ -619,42 +619,44 @@ static void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32
 
 
 #define       SET_BH(zz)  bhtab[(zz) >> 5] |= (1 << ((zz) & 31))
-#define     CLEAR_BH(zz)  bhtab[(zz) >> 5] &= ~(1 << ((zz) & 31))
 #define     ISSET_BH(zz)  (bhtab[(zz) >> 5] & (1 << ((zz) & 31)))
-#define      WORD_BH(zz)  bhtab[(zz) >> 5]
-#define UNALIGNED_BH(zz)  ((zz) & 0x01f)
+
 
 static void fallbackSort(uint32_t* fmap, uint32_t* eclass, 
                     uint32_t *bhtab, int32_t nblock, int32_t verb)
 {
-   int32_t ftab[257];
-   int32_t ftabCopy[256];
-   int32_t H, i, j, k, l, r, cc, cc1;
-   int32_t nNotDone;
-   int32_t nBhtab;
-   uint8_t* eclass8 = (uint8_t*)eclass;
+    int32_t ftab[257];
+    int32_t ftabCopy[256];
+    int32_t H, i, j, k, l, r, cc, cc1;
+    int32_t nNotDone;
+    int32_t nBhtab;
+    uint8_t* eclass8 = (uint8_t*)eclass;
 
-   if (verb >= 4)
-      fprintf(stderr, "        bucket sorting ...\n" );
-   for (i = 0; i < 257;    i++) ftab[i] = 0;
-   for (i = 0; i < nblock; i++) ftab[eclass8[i]]++;
-   for (i = 0; i < 256;    i++) ftabCopy[i] = ftab[i];
-   for (i = 1; i < 257;    i++) ftab[i] += ftab[i-1];
+    if (verb >= 4)
+        fprintf(stderr, "        bucket sorting ...\n" );
+    for (i = 0; i < 257;    i++) ftab[i] = 0;
+    for (i = 0; i < nblock; i++) ftab[eclass8[i]]++;
+    for (i = 0; i < 256;    i++) ftabCopy[i] = ftab[i];
+    for (i = 1; i < 257;    i++) ftab[i] += ftab[i-1];
 
-   for (i = 0; i < nblock; i++) {
-      j = eclass8[i];
-      k = ftab[j] - 1;
-      ftab[j] = k;
-      fmap[k] = i;
-   }
+    for (i = 0; i < nblock; i++)
+    {
+        j = eclass8[i];
+        k = ftab[j] - 1;
+        ftab[j] = k;
+        fmap[k] = i;
+    }
 
    nBhtab = 2 + (nblock / 32);
    for (i = 0; i < nBhtab; i++) bhtab[i] = 0;
    for (i = 0; i < 256; i++) SET_BH(ftab[i]);
 
-   for (i = 0; i < 32; i++) { 
+   for (i = 0; i < 32; i++)
+  { 
       SET_BH(nblock + 2*i);
-      CLEAR_BH(nblock + 2*i + 1);
+
+      int32_t x = nblock + 2 * i + 1;
+      bhtab[x >> 5] &= ~(1 << (x & 31));
    }
 
    H = 1;
@@ -672,19 +674,20 @@ static void fallbackSort(uint32_t* fmap, uint32_t* eclass,
 
       nNotDone = 0;
       r = -1;
-      while (1) {
-
+      while (1)
+      {
          k = r + 1;
-         while (ISSET_BH(k) && UNALIGNED_BH(k)) k++;
+         while (ISSET_BH(k) && (k & 0x01f))
+            k++;
          if (ISSET_BH(k)) {
-            while (WORD_BH(k) == 0xffffffff) k += 32;
+            while ((bhtab[(k) >> 5])  == 0xffffffff) k += 32;
             while (ISSET_BH(k)) k++;
          }
          l = k - 1;
          if (l >= nblock) break;
-         while (!ISSET_BH(k) && UNALIGNED_BH(k)) k++;
+         while (!ISSET_BH(k) && (k & 0x01f)) k++;
          if (!ISSET_BH(k)) {
-            while (WORD_BH(k) == 0x00000000) k += 32;
+            while (  (bhtab[(k) >> 5])  == 0x00000000) k += 32;
             while (!ISSET_BH(k)) k++;
          }
          r = k - 1;
@@ -918,7 +921,6 @@ static uint8_t mmed3 (uint8_t a, uint8_t b, uint8_t c )
    return b;
 }
 
-#define mmin(a,b) ((a) < (b)) ? (a) : (b)
 #define mpush(lz,hz,dz) { stackLo[sp] = lz; stackHi[sp] = hz; stackD [sp] = dz; sp++; }
 #define mnextsize(az) (nextHi[az]-nextLo[az])
 
@@ -933,48 +935,42 @@ static const uint8_t MAIN_QSORT_SMALL_THRESH = 20;
 static const uint8_t MAIN_QSORT_DEPTH_THRESH = 14;
 static const uint8_t MAIN_QSORT_STACK_SIZE = 100;
 
-static void mainQSort3(uint32_t* ptr,
-                  uint8_t*  block,
-                  uint16_t* quadrant,
-                  int32_t   nblock,
-                  int32_t   loSt, 
-                  int32_t   hiSt, 
-                  int32_t   dSt,
-                  int32_t*  budget )
+static void mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
+               int32_t nblock, int32_t loSt, int32_t hiSt, int32_t dSt, int32_t *budget)
 {
-   int32_t unLo, unHi, ltLo, gtHi, n, m, med;
-   int32_t sp, lo, hi, d;
-   int32_t stackLo[MAIN_QSORT_STACK_SIZE];
-   int32_t stackHi[MAIN_QSORT_STACK_SIZE];
-   int32_t stackD [MAIN_QSORT_STACK_SIZE];
-   int32_t nextLo[3];
-   int32_t nextHi[3];
-   int32_t nextD [3];
-   sp = 0;
-   mpush ( loSt, hiSt, dSt );
+    int32_t unLo, unHi, ltLo, gtHi, n, m, med;
+    int32_t sp, lo, hi, d;
+    int32_t stackLo[MAIN_QSORT_STACK_SIZE];
+    int32_t stackHi[MAIN_QSORT_STACK_SIZE];
+    int32_t stackD [MAIN_QSORT_STACK_SIZE];
+    int32_t nextLo[3];
+    int32_t nextHi[3];
+    int32_t nextD [3];
+    sp = 0;
+    mpush ( loSt, hiSt, dSt );
 
-   while (sp > 0) {
-
-      AssertH ( sp < MAIN_QSORT_STACK_SIZE, 1001 );
-
+    while (sp > 0)
+    {
+        AssertH ( sp < MAIN_QSORT_STACK_SIZE, 1001 );
         sp--; lo = stackLo[sp]; hi = stackHi[sp]; d = stackD[sp];
-      if (hi - lo < MAIN_QSORT_SMALL_THRESH || 
-          d > MAIN_QSORT_DEPTH_THRESH) {
-         mainSimpleSort ( ptr, block, quadrant, nblock, lo, hi, d, budget );
-         if (*budget < 0) return;
-         continue;
-      }
 
-      med = (Int32) 
-            mmed3 ( block[ptr[ lo         ]+d],
+        if (hi - lo < MAIN_QSORT_SMALL_THRESH || d > MAIN_QSORT_DEPTH_THRESH)
+        {
+            mainSimpleSort ( ptr, block, quadrant, nblock, lo, hi, d, budget );
+            if (*budget < 0) return;
+            continue;
+        }
+
+        med = (int32_t)mmed3 ( block[ptr[ lo         ]+d],
                     block[ptr[ hi         ]+d],
                     block[ptr[ (lo+hi)>>1 ]+d] );
 
-      unLo = ltLo = lo;
-      unHi = gtHi = hi;
+        unLo = ltLo = lo;
+        unHi = gtHi = hi;
 
-      while (1) {
-         while (1) {
+        while (1)
+        {
+            while (1) {
             if (unLo > unHi) break;
             n = ((Int32)block[ptr[unLo]+d]) - med;
             if (n == 0) { 
@@ -999,30 +995,37 @@ static void mainQSort3(uint32_t* ptr,
       }
 
 
-      if (gtHi < ltLo) {
-         mpush(lo, hi, d+1 );
-         continue;
-      }
+        if (gtHi < ltLo)
+        {
+            mpush(lo, hi, d+1 );
+            continue;
+        }
 
-      n = mmin(ltLo-lo, unLo-ltLo); mvswap(lo, unLo-n, n);
-      m = mmin(hi-gtHi, gtHi-unHi); mvswap(unLo, hi-m+1, m);
+#define mmin(a,b) ((a) < (b)) ? (a) : (b)
 
-      n = lo + unLo - ltLo - 1;
-      m = hi - (gtHi - unHi) + 1;
-
-      nextLo[0] = lo;  nextHi[0] = n;   nextD[0] = d;
-      nextLo[1] = m;   nextHi[1] = hi;  nextD[1] = d;
-      nextLo[2] = n+1; nextHi[2] = m-1; nextD[2] = d+1;
-
-      if (mnextsize(0) < mnextsize(1)) mnextswap(0,1);
-      if (mnextsize(1) < mnextsize(2)) mnextswap(1,2);
-      if (mnextsize(0) < mnextsize(1)) mnextswap(0,1);
+        n = mmin(ltLo-lo, unLo-ltLo);
 
 
-      mpush (nextLo[0], nextHi[0], nextD[0]);
-      mpush (nextLo[1], nextHi[1], nextD[1]);
-      mpush (nextLo[2], nextHi[2], nextD[2]);
-   }
+        mvswap(lo, unLo-n, n);
+        m = mmin(hi-gtHi, gtHi-unHi);
+        mvswap(unLo, hi-m+1, m);
+
+        n = lo + unLo - ltLo - 1;
+        m = hi - (gtHi - unHi) + 1;
+
+        nextLo[0] = lo;  nextHi[0] = n;   nextD[0] = d;
+        nextLo[1] = m;   nextHi[1] = hi;  nextD[1] = d;
+        nextLo[2] = n+1; nextHi[2] = m-1; nextD[2] = d+1;
+
+        if (mnextsize(0) < mnextsize(1)) mnextswap(0,1);
+        if (mnextsize(1) < mnextsize(2)) mnextswap(1,2);
+        if (mnextsize(0) < mnextsize(1)) mnextswap(0,1);
+
+
+        mpush (nextLo[0], nextHi[0], nextD[0]);
+        mpush (nextLo[1], nextHi[1], nextD[1]);
+        mpush (nextLo[2], nextHi[2], nextD[2]);
+    }
 }
 
 
