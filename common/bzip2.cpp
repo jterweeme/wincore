@@ -616,12 +616,6 @@ static void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32
     }
 }
 
-
-
-#define       SET_BH(zz)  bhtab[(zz) >> 5] |= (1 << ((zz) & 31))
-#define     ISSET_BH(zz)  (bhtab[(zz) >> 5] & (1 << ((zz) & 31)))
-
-
 static void fallbackSort(uint32_t* fmap, uint32_t* eclass, 
                     uint32_t *bhtab, int32_t nblock, int32_t verb)
 {
@@ -647,48 +641,72 @@ static void fallbackSort(uint32_t* fmap, uint32_t* eclass,
         fmap[k] = i;
     }
 
-   nBhtab = 2 + (nblock / 32);
-   for (i = 0; i < nBhtab; i++) bhtab[i] = 0;
-   for (i = 0; i < 256; i++) SET_BH(ftab[i]);
 
-   for (i = 0; i < 32; i++)
-  { 
-      SET_BH(nblock + 2*i);
 
-      int32_t x = nblock + 2 * i + 1;
-      bhtab[x >> 5] &= ~(1 << (x & 31));
-   }
+    nBhtab = 2 + (nblock / 32);
 
-   H = 1;
-   while (1) {
+    for (i = 0; i < nBhtab; i++)
+        bhtab[i] = 0;
 
-      if (verb >= 4) 
-         fprintf(stderr, "        depth %6d has ", H );
+    for (i = 0; i < 256; i++)
+        bhtab[(ftab[i]) >> 5] |= (1 << ((ftab[i]) & 31));
 
-      j = 0;
-      for (i = 0; i < nblock; i++) {
-         if (ISSET_BH(i)) j = i;
-         k = fmap[i] - H; if (k < 0) k += nblock;
-         eclass[k] = j;
-      }
+    for (i = 0; i < 32; i++)
+    {
+        int32_t w = nblock + 2 * i;
+        bhtab[(w) >> 5] |= (1 << (w & 31));
+        int32_t x = nblock + 2 * i + 1;
+        bhtab[x >> 5] &= ~(1 << (x & 31));
+    }
 
-      nNotDone = 0;
-      r = -1;
-      while (1)
-      {
-         k = r + 1;
-         while (ISSET_BH(k) && (k & 0x01f))
-            k++;
-         if (ISSET_BH(k)) {
-            while ((bhtab[(k) >> 5])  == 0xffffffff) k += 32;
-            while (ISSET_BH(k)) k++;
-         }
-         l = k - 1;
-         if (l >= nblock) break;
-         while (!ISSET_BH(k) && (k & 0x01f)) k++;
-         if (!ISSET_BH(k)) {
-            while (  (bhtab[(k) >> 5])  == 0x00000000) k += 32;
-            while (!ISSET_BH(k)) k++;
+    H = 1;
+    while (1)
+    {
+
+        if (verb >= 4) 
+            fprintf(stderr, "        depth %6d has ", H );
+
+        j = 0;
+
+        for (i = 0; i < nblock; i++)
+        {
+            if (bhtab[(i) >> 5] & (1 << ((i) & 31)))
+                j = i;
+
+            k = fmap[i] - H; if (k < 0) k += nblock;
+            eclass[k] = j;
+        }
+
+        nNotDone = 0;
+        r = -1;
+
+        while (1)
+        {
+            k = r + 1;
+
+            while (bhtab[(k) >> 5] & (1 << ((k) & 31))    && (k & 0x01f))
+                k++;
+
+            if (bhtab[(k) >> 5] & (1 << ((k) & 31)))
+            {
+                while ((bhtab[(k) >> 5])  == 0xffffffff)
+                    k += 32;
+
+                while (bhtab[(k) >> 5] & (1 << ((k) & 31)))
+                    k++;
+            }
+            l = k - 1;
+
+            if (l >= nblock)
+                break;
+
+            while (!(bhtab[(k) >> 5] & (1 << ((k) & 31)))        && (k & 0x01f))
+                k++;
+
+            if (  !(bhtab[(k) >> 5] & (1 << ((k) & 31)))           )
+            {
+                while (  (bhtab[(k) >> 5])  == 0x00000000) k += 32;
+                while (!(bhtab[(k) >> 5] & (1 << ((k) & 31))) ) k++;
          }
          r = k - 1;
          if (r >= nblock) break;
@@ -697,30 +715,38 @@ static void fallbackSort(uint32_t* fmap, uint32_t* eclass,
             nNotDone += (r - l + 1);
             fallbackQSort3 ( fmap, eclass, l, r );
 
-            cc = -1;
-            for (i = l; i <= r; i++) {
-               cc1 = eclass[fmap[i]];
-               if (cc != cc1) { SET_BH(i); cc = cc1; };
+                cc = -1;
+                for (i = l; i <= r; i++)
+                {
+                    cc1 = eclass[fmap[i]];
+                    if (cc != cc1)
+                    {
+                        bhtab[(i) >> 5] |= (1 << ((i) & 31));
+                        cc = cc1;
+                    };
+                }
             }
-         }
-      }
+        }
 
-      if (verb >= 4) 
-         fprintf(stderr, "%6d unresolved strings\n", nNotDone );
+        if (verb >= 4) 
+            fprintf(stderr, "%6d unresolved strings\n", nNotDone );
 
-      H *= 2;
-      if (H > nblock || nNotDone == 0) break;
-   }
+        H *= 2;
+        if (H > nblock || nNotDone == 0)
+            break;
+    }
 
-   if (verb >= 4)
-      VPrintf0 ( "        reconstructing block ...\n" );
-   j = 0;
-   for (i = 0; i < nblock; i++) {
-      while (ftabCopy[j] == 0) j++;
-      ftabCopy[j]--;
-      eclass8[fmap[i]] = (uint8_t)j;
-   }
-   AssertH ( j < 256, 1005 );
+    if (verb >= 4)
+        VPrintf0 ( "        reconstructing block ...\n" );
+
+    j = 0;
+    for (i = 0; i < nblock; i++)
+    {
+        while (ftabCopy[j] == 0) j++;
+        ftabCopy[j]--;
+        eclass8[fmap[i]] = (uint8_t)j;
+    }
+    AssertH ( j < 256, 1005 );
 }
 
 
@@ -897,19 +923,6 @@ void mainSimpleSort(uint32_t *ptr,
    }
 }
 
-#define mswap(zz1, zz2) { int32_t zztmp = zz1; zz1 = zz2; zz2 = zztmp; }
-
-#define mvswap(zzp1, zzp2, zzn)       \
-{                                     \
-   Int32 yyp1 = (zzp1);               \
-   Int32 yyp2 = (zzp2);               \
-   Int32 yyn  = (zzn);                \
-   while (yyn > 0) {                  \
-      mswap(ptr[yyp1], ptr[yyp2]);    \
-      yyp1++; yyp2++; yyn--;          \
-   }                                  \
-}
-
 static uint8_t mmed3 (uint8_t a, uint8_t b, uint8_t c )
 {
    uint8_t t;
@@ -921,19 +934,14 @@ static uint8_t mmed3 (uint8_t a, uint8_t b, uint8_t c )
    return b;
 }
 
-#define mpush(lz,hz,dz) { stackLo[sp] = lz; stackHi[sp] = hz; stackD [sp] = dz; sp++; }
-#define mnextsize(az) (nextHi[az]-nextLo[az])
-
-#define mnextswap(az,bz)                                        \
-   { int32_t tz;                                                  \
-     tz = nextLo[az]; nextLo[az] = nextLo[bz]; nextLo[bz] = tz; \
-     tz = nextHi[az]; nextHi[az] = nextHi[bz]; nextHi[bz] = tz; \
-     tz = nextD [az]; nextD [az] = nextD [bz]; nextD [bz] = tz; }
 
 
 static const uint8_t MAIN_QSORT_SMALL_THRESH = 20;
 static const uint8_t MAIN_QSORT_DEPTH_THRESH = 14;
 static const uint8_t MAIN_QSORT_STACK_SIZE = 100;
+
+
+
 
 static void mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
                int32_t nblock, int32_t loSt, int32_t hiSt, int32_t dSt, int32_t *budget)
@@ -947,7 +955,12 @@ static void mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
     int32_t nextHi[3];
     int32_t nextD [3];
     sp = 0;
-    mpush ( loSt, hiSt, dSt );
+
+
+    stackLo[sp] = loSt;
+    stackHi[sp] = hiSt;
+    stackD[sp] = dSt;
+    sp++;
 
     while (sp > 0)
     {
@@ -968,13 +981,19 @@ static void mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
         unLo = ltLo = lo;
         unHi = gtHi = hi;
 
+
+
+
         while (1)
         {
             while (1) {
             if (unLo > unHi) break;
-            n = ((Int32)block[ptr[unLo]+d]) - med;
-            if (n == 0) { 
-               mswap(ptr[unLo], ptr[ltLo]); 
+            n = ((int32_t)block[ptr[unLo]+d]) - med;
+            if (n == 0)
+            {
+                int32_t zztmp = ptr[unLo];
+                ptr[unLo] = ptr[ltLo];
+                ptr[ltLo] = zztmp;
                ltLo++; unLo++; continue; 
             };
             if (n >  0) break;
@@ -982,33 +1001,53 @@ static void mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
          }
          while (1) {
             if (unLo > unHi) break;
-            n = ((Int32)block[ptr[unHi]+d]) - med;
-            if (n == 0) { 
-               mswap(ptr[unHi], ptr[gtHi]); 
+            n = ((int32_t)block[ptr[unHi]+d]) - med;
+            if (n == 0) {
+                int32_t zztmp = ptr[unHi];
+                ptr[unHi] = ptr[gtHi];
+                ptr[gtHi] = zztmp;
                gtHi--; unHi--; continue; 
             };
             if (n <  0) break;
             unHi--;
          }
          if (unLo > unHi) break;
-         mswap(ptr[unLo], ptr[unHi]); unLo++; unHi--;
+        int32_t zztmp = ptr[unLo];
+        ptr[unLo] = ptr[unHi];
+        ptr[unHi] = zztmp;
+        unLo++; unHi--;
       }
 
 
         if (gtHi < ltLo)
         {
-            mpush(lo, hi, d+1 );
+            stackLo[sp] = lo;
+            stackHi[sp] = hi;
+            stackD[sp] = d + 1;
+            sp++;
             continue;
         }
 
-#define mmin(a,b) ((a) < (b)) ? (a) : (b)
-
-        n = mmin(ltLo-lo, unLo-ltLo);
+        n = ((ltLo-lo) < (unLo-ltLo)) ? (ltLo-lo) : (unLo-ltLo);
 
 
-        mvswap(lo, unLo-n, n);
-        m = mmin(hi-gtHi, gtHi-unHi);
-        mvswap(unLo, hi-m+1, m);
+        for (int32_t yyp1 = lo, yyp2 = unLo - n, yyn = n; yyn > 0;)
+        {
+            int32_t zztmp = ptr[yyp1];
+            ptr[yyp1] = ptr[yyp2];
+            ptr[yyp2] = zztmp;
+            yyp1++; yyp2++; yyn--;
+        }
+
+        m = ((hi-gtHi) < (gtHi-unHi)) ? (hi-gtHi) : (gtHi-unHi);
+
+        for (int32_t yyp1 = unLo, yyp2 = hi - m + 1, yyn = m; yyn > 0;)
+        {
+            int32_t zztmp = ptr[yyp1];
+            ptr[yyp1] = ptr[yyp2];
+            ptr[yyp2] = zztmp;
+            yyp1++; yyp2++; yyn--;
+        }
 
         n = lo + unLo - ltLo - 1;
         m = hi - (gtHi - unHi) + 1;
@@ -1017,21 +1056,53 @@ static void mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
         nextLo[1] = m;   nextHi[1] = hi;  nextD[1] = d;
         nextLo[2] = n+1; nextHi[2] = m-1; nextD[2] = d+1;
 
-        if (mnextsize(0) < mnextsize(1)) mnextswap(0,1);
-        if (mnextsize(1) < mnextsize(2)) mnextswap(1,2);
-        if (mnextsize(0) < mnextsize(1)) mnextswap(0,1);
+        if ((nextHi[0] - nextLo[0]) < (nextHi[1] - nextLo[1]))
+        {
+            int32_t tz;
+            tz = nextLo[0]; nextLo[0] = nextLo[1]; nextLo[1] = tz;
+            tz = nextHi[0]; nextHi[0] = nextHi[1]; nextHi[1] = tz;
+            tz = nextD[0]; nextD[0] = nextD[1]; nextD[1] = tz;
+        }
+
+        if ((nextHi[1] - nextLo[1]) < (nextHi[2] - nextLo[2]))
+        {
+            int32_t tz;
+            tz = nextLo[1]; nextLo[1] = nextLo[2]; nextLo[2] = tz;
+            tz = nextHi[1]; nextHi[1] = nextHi[2]; nextHi[2] = tz;
+            tz = nextD[1]; nextD[1] = nextD[2]; nextD[2] = tz;
+        }
+
+        if ((nextHi[0] - nextLo[0]) < (nextHi[1] - nextLo[1]))
+        {
+            int32_t tz;
+            tz = nextLo[0]; nextLo[0] = nextLo[1]; nextLo[1] = tz;
+            tz = nextHi[0]; nextHi[0] = nextHi[1]; nextHi[1] = tz;
+            tz = nextD[0]; nextD[0] = nextD[1]; nextD[1] = tz;
+        }
+
+        stackLo[sp] = nextLo[0];
+        stackHi[sp] = nextHi[0];
+        stackD[sp] = nextD[0];
+        sp++;
+
+        stackLo[sp] = nextLo[1];
+        stackHi[sp] = nextHi[1];
+        stackD[sp] = nextD[1];
+        sp++;
+
+        stackLo[sp] = nextLo[2];
+        stackHi[sp] = nextHi[2];
+        stackD[sp] = nextD[2];
+        sp++;
 
 
-        mpush (nextLo[0], nextHi[0], nextD[0]);
-        mpush (nextLo[1], nextHi[1], nextD[1]);
-        mpush (nextLo[2], nextHi[2], nextD[2]);
     }
 }
 
 
-#define BIGFREQ(b) (ftab[((b)+1) << 8] - ftab[(b) << 8])
-#define SETMASK (1 << 21)
-#define CLEARMASK (~(SETMASK))
+
+static const uint32_t SETMASK = 1 << 21;
+static const uint32_t CLEARMASK = ~(1<<21);
 
 static void mainSort(uint32_t *ptr, 
                 uint8_t *block,
@@ -1057,21 +1128,21 @@ static void mainSort(uint32_t *ptr,
    i = nblock-1;
    for (; i >= 3; i -= 4) {
       quadrant[i] = 0;
-      j = (j >> 8) | ( ((UInt16)block[i]) << 8);
+      j = (j >> 8) | ( ((uint16_t)block[i]) << 8);
       ftab[j]++;
       quadrant[i-1] = 0;
-      j = (j >> 8) | ( ((UInt16)block[i-1]) << 8);
+      j = (j >> 8) | ( ((uint16_t)block[i-1]) << 8);
       ftab[j]++;
       quadrant[i-2] = 0;
-      j = (j >> 8) | ( ((UInt16)block[i-2]) << 8);
+      j = (j >> 8) | ( ((uint16_t)block[i-2]) << 8);
       ftab[j]++;
       quadrant[i-3] = 0;
-      j = (j >> 8) | ( ((UInt16)block[i-3]) << 8);
+      j = (j >> 8) | ( ((uint16_t)block[i-3]) << 8);
       ftab[j]++;
    }
    for (; i >= 0; i--) {
       quadrant[i] = 0;
-      j = (j >> 8) | ( ((UInt16)block[i]) << 8);
+      j = (j >> 8) | ( ((uint16_t)block[i]) << 8);
       ftab[j]++;
    }
 
@@ -1111,21 +1182,24 @@ static void mainSort(uint32_t *ptr,
       ptr[j] = i;
    }
 
-   for (i = 0; i <= 255; i++) {
+    for (i = 0; i <= 255; i++)
+    {
       bigDone     [i] = 0;
       runningOrder[i] = i;
-   }
+    }
 
    {
-      Int32 vv;
-      Int32 h = 1;
+      int32_t vv;
+      int32_t h = 1;
       do h = 3 * h + 1; while (h <= 256);
       do {
          h = h / 3;
          for (i = h; i <= 255; i++) {
             vv = runningOrder[i];
             j = i;
-            while ( BIGFREQ(runningOrder[j-h]) > BIGFREQ(vv) ) {
+            while ((ftab[((runningOrder[j-h]) + 1) << 8] - ftab[(runningOrder[j-h]) << 8])
+                    >  (ftab[((vv)+1) << 8] - ftab[(vv) << 8]))
+            {
                runningOrder[j] = runningOrder[j-h];
                j = j - h;
                if (j <= (h - 1)) goto zero;
@@ -1221,27 +1295,27 @@ static void mainSort(uint32_t *ptr,
 
 void BZ2_blockSort(EState* s)
 {
-   uint32_t *ptr    = s->ptr; 
-   uint8_t *block  = s->block;
-   uint32_t *ftab   = s->ftab;
-   int32_t nblock = s->nblock;
-   int32_t verb   = s->verbosity;
-   int32_t wfact  = s->workFactor;
-   uint16_t *quadrant;
-   int32_t budget;
-   int32_t budgetInit;
-   int32_t i;
+    uint32_t *ptr    = s->ptr; 
+    uint8_t *block  = s->block;
+    uint32_t *ftab   = s->ftab;
+    int32_t nblock = s->nblock;
+    int32_t verb   = s->verbosity;
+    int32_t wfact  = s->workFactor;
+    uint16_t *quadrant;
+    int32_t budget;
+    int32_t budgetInit;
+    int32_t i;
 
-   if (nblock < 10000) {
-      fallbackSort ( s->arr1, s->arr2, ftab, nblock, verb );
-   } else {
-      i = nblock+BZ_N_OVERSHOOT;
-      if (i & 1) i++;
-      quadrant = (uint16_t*)(&(block[i]));
-      if (wfact < 1  ) wfact = 1;
-      if (wfact > 100) wfact = 100;
-      budgetInit = nblock * ((wfact-1) / 3);
-      budget = budgetInit;
+    if (nblock < 10000) {
+        fallbackSort ( s->arr1, s->arr2, ftab, nblock, verb );
+    } else {
+        i = nblock+BZ_N_OVERSHOOT;
+        if (i & 1) i++;
+        quadrant = (uint16_t*)(&(block[i]));
+        if (wfact < 1  ) wfact = 1;
+        if (wfact > 100) wfact = 100;
+        budgetInit = nblock * ((wfact-1) / 3);
+        budget = budgetInit;
 
       mainSort ( ptr, block, quadrant, ftab, nblock, verb, &budget );
       if (verb >= 3) 
@@ -1256,101 +1330,123 @@ void BZ2_blockSort(EState* s)
                        " sorting algorithm\n" );
          fallbackSort ( s->arr1, s->arr2, ftab, nblock, verb );
       }
-   }
+    }
 
-   s->origPtr = -1;
-   for (i = 0; i < s->nblock; i++)
-      if (ptr[i] == 0)
+    s->origPtr = -1;
+    for (i = 0; i < s->nblock; i++)
+        if (ptr[i] == 0)
          { s->origPtr = i; break; };
 
-   AssertH( s->origPtr != -1, 1003 );
+    AssertH( s->origPtr != -1, 1003 );
 }
 
 
-
-#define WEIGHTOF(zz4)  ((zz4) & 0xffffff00)
-#define DEPTHOF(zz1)   ((zz1) & 0x000000ff)
-#define MYMAX(zz2,zz3) ((zz2) > (zz3) ? (zz2) : (zz3))
-
-#define ADDWEIGHTS(zw1,zw2)                           \
-   (WEIGHTOF(zw1)+WEIGHTOF(zw2)) |                    \
-   (1 + MYMAX(DEPTHOF(zw1),DEPTHOF(zw2)))
-
-#define UPHEAP(z)                                     \
-{                                                     \
-   Int32 zz, tmp;                                     \
-   zz = z; tmp = heap[zz];                            \
-   while (weight[tmp] < weight[heap[zz >> 1]]) {      \
-      heap[zz] = heap[zz >> 1];                       \
-      zz >>= 1;                                       \
-   }                                                  \
-   heap[zz] = tmp;                                    \
-}
-
-#define DOWNHEAP(z)                                   \
-{                                                     \
-   Int32 zz, yy, tmp;                                 \
-   zz = z; tmp = heap[zz];                            \
-   while (1) {                                     \
-      yy = zz << 1;                                   \
-      if (yy > nHeap) break;                          \
-      if (yy < nHeap &&                               \
-          weight[heap[yy+1]] < weight[heap[yy]])      \
-         yy++;                                        \
-      if (weight[tmp] < weight[heap[yy]]) break;      \
-      heap[zz] = heap[yy];                            \
-      zz = yy;                                        \
-   }                                                  \
-   heap[zz] = tmp;                                    \
-}
-
-
-void BZ2_hbMakeCodeLengths(uint8_t *len, 
-                           int32_t *freq,
-                           int32_t alphaSize,
-                           int32_t maxLen )
+int32_t MYMAX(int32_t zz2, int32_t zz3)
 {
-   int32_t nNodes, nHeap, n1, n2, i, j, k;
-   uint8_t  tooLong;
+    return zz2 > zz3 ? zz2 : zz3;
+}
 
-   int32_t heap   [ BZ_MAX_ALPHA_SIZE + 2 ];
-   int32_t weight [ BZ_MAX_ALPHA_SIZE * 2 ];
-   int32_t parent [ BZ_MAX_ALPHA_SIZE * 2 ]; 
+void BZ2_hbMakeCodeLengths(uint8_t *len, int32_t *freq, int32_t alphaSize, int32_t maxLen)
+{
+    int32_t nNodes, nHeap, n1, n2, i, j, k;
+    uint8_t tooLong;
 
-   for (i = 0; i < alphaSize; i++)
-      weight[i+1] = (freq[i] == 0 ? 1 : freq[i]) << 8;
+    int32_t heap   [ BZ_MAX_ALPHA_SIZE + 2 ];
+    int32_t weight [ BZ_MAX_ALPHA_SIZE * 2 ];
+    int32_t parent [ BZ_MAX_ALPHA_SIZE * 2 ]; 
 
-   while (1) {
+    for (i = 0; i < alphaSize; i++)
+        weight[i+1] = (freq[i] == 0 ? 1 : freq[i]) << 8;
 
-      nNodes = alphaSize;
-      nHeap = 0;
+    while (1)
+    {
+        nNodes = alphaSize;
+        nHeap = 0;
 
-      heap[0] = 0;
-      weight[0] = 0;
-      parent[0] = -2;
+        heap[0] = 0;
+        weight[0] = 0;
+        parent[0] = -2;
 
-      for (i = 1; i <= alphaSize; i++) {
-         parent[i] = -1;
-         nHeap++;
-         heap[nHeap] = i;
-         UPHEAP(nHeap);
-      }
+        for (i = 1; i <= alphaSize; i++)
+        {
+            parent[i] = -1;
+            nHeap++;
+            heap[nHeap] = i;
 
-      AssertH( nHeap < (BZ_MAX_ALPHA_SIZE+2), 2001 );
+            int32_t zz, tmp;
+            zz = nHeap;
+            tmp = heap[zz];
+            while (weight[tmp] < weight[heap[zz >> 1]]) {
+                heap[zz] = heap[zz >> 1];
+                zz >>= 1;
+            }
+            heap[zz] = tmp;
+
+        }
+
+        AssertH( nHeap < (BZ_MAX_ALPHA_SIZE+2), 2001 );
    
-      while (nHeap > 1) {
-         n1 = heap[1]; heap[1] = heap[nHeap]; nHeap--; DOWNHEAP(1);
-         n2 = heap[1]; heap[1] = heap[nHeap]; nHeap--; DOWNHEAP(1);
-         nNodes++;
-         parent[n1] = parent[n2] = nNodes;
-         weight[nNodes] = ADDWEIGHTS(weight[n1], weight[n2]);
-         parent[nNodes] = -1;
-         nHeap++;
-         heap[nHeap] = nNodes;
-         UPHEAP(nHeap);
-      }
+        while (nHeap > 1)
+        {
+            n1 = heap[1]; heap[1] = heap[nHeap]; nHeap--;
 
-      AssertH( nNodes < (BZ_MAX_ALPHA_SIZE * 2), 2002 );
+            {
+                int32_t zz, yy, tmp;
+                zz = 1; tmp = heap[zz];
+
+                while (1)
+                {
+                    yy = zz << 1;
+                    if (yy > nHeap) break;
+                    if (yy < nHeap && weight[heap[yy+1]] < weight[heap[yy]]) yy++;
+                    if (weight[tmp] < weight[heap[yy]]) break;
+                    heap[zz] = heap[yy];
+                    zz = yy;
+                }
+
+                heap[zz] = tmp;
+            }
+
+            n2 = heap[1]; heap[1] = heap[nHeap]; nHeap--;
+
+            {
+                int32_t zz, yy, tmp;
+                zz = 1; tmp = heap[zz];
+
+                while (1)
+                {
+                    yy = zz << 1;
+                    if (yy > nHeap) break;
+                    if (yy < nHeap && weight[heap[yy+1]] < weight[heap[yy]]) yy++;
+                    if (weight[tmp] < weight[heap[yy]]) break;
+                    heap[zz] = heap[yy];
+                    zz = yy;
+                }
+
+                heap[zz] = tmp;
+            }
+
+
+            nNodes++;
+            parent[n1] = parent[n2] = nNodes;
+
+            weight[nNodes] = ( (weight[n1] & 0xffffff00)+ (weight[n2] & 0xffffff00)) |
+                    (1 + MYMAX(weight[n1] & 0x000000ff, weight[n2] & 0x000000ff));
+
+            parent[nNodes] = -1;
+            nHeap++;
+            heap[nHeap] = nNodes;
+            int32_t zz, tmp;
+            zz = nHeap;
+            tmp = heap[zz];
+            while (weight[tmp] < weight[heap[zz >> 1]]) {
+                heap[zz] = heap[zz >> 1];
+                zz >>= 1;
+            }
+            heap[zz] = tmp;
+        }
+
+        AssertH( nNodes < (BZ_MAX_ALPHA_SIZE * 2), 2002 );
 
       tooLong = 0;
       for (i = 1; i <= alphaSize; i++) {
@@ -1371,13 +1467,13 @@ void BZ2_hbMakeCodeLengths(uint8_t *len,
    }
 }
 
-void BZ2_hbAssignCodes(Int32 *code,
+void BZ2_hbAssignCodes(int32_t *code,
                          uint8_t *length,
-                         Int32 minLen,
-                         Int32 maxLen,
-                         Int32 alphaSize )
+                         int32_t minLen,
+                         int32_t maxLen,
+                         int32_t alphaSize)
 {
-   Int32 n, vec, i;
+   int32_t n, vec, i;
 
    vec = 0;
    for (n = minLen; n <= maxLen; n++) {
@@ -1387,20 +1483,15 @@ void BZ2_hbAssignCodes(Int32 *code,
    }
 }
 
-void BZ2_hbCreateDecodeTables ( int32_t *limit,
-                                int32_t *base,
-                                int32_t *perm,
-                                uint8_t *length,
-                                int32_t minLen,
-                                int32_t maxLen,
-                                int32_t alphaSize )
+void BZ2_hbCreateDecodeTables(int32_t *limit, int32_t *base, int32_t *perm, uint8_t *length,
+                              int32_t minLen, int32_t maxLen, int32_t alphaSize)
 {
-   int32_t pp, i, j, vec;
+    int32_t pp, i, j, vec;
+    pp = 0;
 
-   pp = 0;
-   for (i = minLen; i <= maxLen; i++)
-      for (j = 0; j < alphaSize; j++)
-         if (length[j] == i) { perm[pp] = j; pp++; };
+    for (i = minLen; i <= maxLen; i++)
+        for (j = 0; j < alphaSize; j++)
+            if (length[j] == i) { perm[pp] = j; pp++; };
 
    for (i = 0; i < BZ_MAX_CODE_LEN; i++) base[i] = 0;
    for (i = 0; i < alphaSize; i++) base[length[i]+1]++;
@@ -2032,123 +2123,57 @@ static void makeMaps_d(DState* s)
       }
 }
 
-#define RETURN(rrr) { retVal = rrr; goto save_state_and_return; };
-
-#define GET_BITS(lll,vvv,nnn)                     \
-   case lll: s->state = lll;                      \
-   while (1) {                                 \
-      if (s->bsLive >= nnn) {                     \
-         UInt32 v;                                \
-         v = (s->bsBuff >>                        \
-             (s->bsLive-nnn)) & ((1 << nnn)-1);   \
-         s->bsLive -= nnn;                        \
-         vvv = v;                                 \
-         break;                                   \
-      }                                           \
-      if (s->strm->avail_in == 0) RETURN(0);  \
-      s->bsBuff                                   \
-         = (s->bsBuff << 8) |                     \
-           ((UInt32)                              \
-              (*((uint8_t*)(s->strm->next_in))));   \
-      s->bsLive += 8;                             \
-      s->strm->next_in++;                         \
-      s->strm->avail_in--;                        \
-      s->strm->total_in_lo32++;                   \
-      if (s->strm->total_in_lo32 == 0)            \
-         s->strm->total_in_hi32++;                \
-   }
-
-#define GET_MTF_VAL(label1,label2,lval)           \
-{                                                 \
-   if (groupPos == 0) {                           \
-      groupNo++;                                  \
-      if (groupNo >= nSelectors)                  \
-         RETURN(BZ_DATA_ERROR);                   \
-      groupPos = 50;                       \
-      gSel = s->selector[groupNo];                \
-      gMinlen = s->minLens[gSel];                 \
-      gLimit = &(s->limit[gSel][0]);              \
-      gPerm = &(s->perm[gSel][0]);                \
-      gBase = &(s->base[gSel][0]);                \
-   }                                              \
-   groupPos--;                                    \
-   zn = gMinlen;                                  \
-   GET_BITS(label1, zvec, zn);                    \
-   while (1) {                                    \
-      if (zn > 20 )         \
-         RETURN(BZ_DATA_ERROR);                   \
-      if (zvec <= gLimit[zn]) break;              \
-      zn++;                                       \
-      GET_BITS(label2, zj, 1);                        \
-      zvec = (zvec << 1) | zj;                    \
-   };                                             \
-   if (zvec - gBase[zn] < 0                       \
-       || zvec - gBase[zn] >= BZ_MAX_ALPHA_SIZE)  \
-      RETURN(BZ_DATA_ERROR);                      \
-   lval = gPerm[zvec - gBase[zn]];                \
-}
 
 
-#define BZ_RAND_UPD_MASK                       \
-   if (s->rNToGo == 0) {                       \
-      s->rNToGo = BZ2_rNums[s->rTPos];         \
-      s->rTPos++;                              \
-      if (s->rTPos == 512) s->rTPos = 0;       \
-   }                                           \
-   s->rNToGo--;
-
-#define GET_LL4(i) ((((UInt32)(s->ll4[(i) >> 1])) >> (((i) << 2) & 0x4)) & 0xF)
-#define GET_LL(i) (((UInt32)s->ll16[i]) | (GET_LL4(i) << 16))
 
 
-#define BZ_GET_SMALL(cccc) cccc = BZ2_indexIntoF ( s->tPos, s->cftab );    \
-      s->tPos = GET_LL(s->tPos);
 
-#define SET_LL4(i,n) { if (((i) & 0x1) == 0) \
-        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0xf0) | (n); else \
-        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0x0f) | ((n) << 4); }
+
+
+
+
+
+
+
+
 
 
 void BZ_INITIALISE_CRC(uint32_t &crcVar) { crcVar = 0xffffffff; }
 
-#define BZALLOC(nnn) (strm->bzalloc)(strm->opaque,(nnn),1)
-#define BZFREE(ppp)  (strm->bzfree)(strm->opaque,(ppp))
-#define BZ_RAND_MASK ((s->rNToGo == 1) ? 1 : 0)
-#define SET_LL(i,n) { s->ll16[i] = (UInt16)(n & 0x0000ffff); SET_LL4(i, n >> 16); }
 
 
 int32_t BZ2_decompress(DState* s)
 {
-   uint8_t     uc;
-   int32_t      retVal;
-   int32_t      minLen, maxLen;
-   bz_stream* strm = s->strm;
-   int32_t  i;
-   int32_t  j;
-   int32_t  t;
-   int32_t  alphaSize;
-   int32_t  nGroups;
-   int32_t  nSelectors;
-   int32_t  EOB;
-   int32_t  groupNo;
-   int32_t  groupPos;
-   int32_t  nextSym;
-   int32_t  nblockMAX;
-   int32_t  nblock;
-   int32_t  es;
-   int32_t  N;
-   int32_t  curr;
-   int32_t  zt;
-   int32_t  zn; 
-   int32_t  zvec;
-   int32_t  zj;
-   int32_t  gSel;
-   int32_t  gMinlen;
-   int32_t* gLimit;
-   int32_t* gBase;
-   int32_t* gPerm;
+    uint8_t uc;
+    int32_t retVal;
+    int32_t minLen, maxLen;
+    bz_stream* strm = s->strm;
+    int32_t  i;
+    int32_t  j;
+    int32_t  t;
+    int32_t  alphaSize;
+    int32_t  nGroups;
+    int32_t  nSelectors;
+    int32_t  EOB;
+    int32_t  groupNo;
+    int32_t  groupPos;
+    int32_t  nextSym;
+    int32_t  nblockMAX;
+    int32_t  nblock;
+    int32_t  es;
+    int32_t  N;
+    int32_t  curr;
+    int32_t  zt;
+    int32_t  zn; 
+    int32_t  zvec;
+    int32_t  zj;
+    int32_t  gSel;
+    int32_t  gMinlen;
+    int32_t* gLimit;
+    int32_t* gBase;
+    int32_t* gPerm;
 
-   if (s->state == BZ_X_MAGIC_1)
+    if (s->state == BZ_X_MAGIC_1)
     {
       s->save_i           = 0;
       s->save_j           = 0;
@@ -2174,105 +2199,127 @@ int32_t BZ2_decompress(DState* s)
       s->save_gLimit      = NULL;
       s->save_gBase       = NULL;
       s->save_gPerm       = NULL;
-   }
+    }
 
-   i           = s->save_i;
-   j           = s->save_j;
-   t           = s->save_t;
-   alphaSize   = s->save_alphaSize;
-   nGroups     = s->save_nGroups;
-   nSelectors  = s->save_nSelectors;
-   EOB         = s->save_EOB;
-   groupNo     = s->save_groupNo;
-   groupPos    = s->save_groupPos;
-   nextSym     = s->save_nextSym;
-   nblockMAX   = s->save_nblockMAX;
-   nblock      = s->save_nblock;
-   es          = s->save_es;
-   N           = s->save_N;
-   curr        = s->save_curr;
-   zt          = s->save_zt;
-   zn          = s->save_zn; 
-   zvec        = s->save_zvec;
-   zj          = s->save_zj;
-   gSel        = s->save_gSel;
-   gMinlen     = s->save_gMinlen;
-   gLimit      = s->save_gLimit;
-   gBase       = s->save_gBase;
-   gPerm       = s->save_gPerm;
+    i           = s->save_i;
+    j           = s->save_j;
+    t           = s->save_t;
+    alphaSize   = s->save_alphaSize;
+    nGroups     = s->save_nGroups;
+    nSelectors  = s->save_nSelectors;
+    EOB         = s->save_EOB;
+    groupNo     = s->save_groupNo;
+    groupPos    = s->save_groupPos;
+    nextSym     = s->save_nextSym;
+    nblockMAX   = s->save_nblockMAX;
+    nblock      = s->save_nblock;
+    es          = s->save_es;
+    N           = s->save_N;
+    curr        = s->save_curr;
+    zt          = s->save_zt;
+    zn          = s->save_zn; 
+    zvec        = s->save_zvec;
+    zj          = s->save_zj;
+    gSel        = s->save_gSel;
+    gMinlen     = s->save_gMinlen;
+    gLimit      = s->save_gLimit;
+    gBase       = s->save_gBase;
+    gPerm       = s->save_gPerm;
 
-   retVal = BZ_OK;
+    retVal = BZ_OK;
 
-   switch (s->state) {
 
-      GET_BITS(BZ_X_MAGIC_1, uc, 8);
-      if (uc != BZ_HDR_B) RETURN(BZ_DATA_ERROR_MAGIC);
 
-      GET_BITS(BZ_X_MAGIC_2, uc, 8);
-      if (uc != BZ_HDR_Z) RETURN(BZ_DATA_ERROR_MAGIC);
+#define GET_BITS(lll,vvv,nnn) \
+   case lll: s->state = lll; \
+   while (1) { \
+      if (s->bsLive >= nnn) { \
+         uint32_t v; \
+         v = (s->bsBuff >> (s->bsLive-nnn)) & ((1 << nnn)-1); \
+         s->bsLive -= nnn; \
+         vvv = v; \
+         break; } \
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; \
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); \
+      s->bsLive += 8; \
+      s->strm->next_in++; \
+      s->strm->avail_in--; \
+      s->strm->total_in_lo32++; \
+      if (s->strm->total_in_lo32 == 0) \
+         s->strm->total_in_hi32++; }
 
-      GET_BITS(BZ_X_MAGIC_3, uc, 8)
-      if (uc != BZ_HDR_h) RETURN(BZ_DATA_ERROR_MAGIC);
 
-      GET_BITS(BZ_X_MAGIC_4, s->blockSize100k, 8)
-      if (s->blockSize100k < (BZ_HDR_0 + 1) || 
-          s->blockSize100k > (BZ_HDR_0 + 9)) RETURN(BZ_DATA_ERROR_MAGIC);
-      s->blockSize100k -= BZ_HDR_0;
+    switch (s->state)
+    {
+        GET_BITS(BZ_X_MAGIC_1, uc, 8);
+        if (uc != BZ_HDR_B) { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
 
-      if (s->smallDecompress) {
-         s->ll16 = (unsigned short *)BZALLOC( s->blockSize100k * 100000 * sizeof(UInt16) );
-         s->ll4  = (uint8_t *)BZALLOC( 
-                      ((1 + s->blockSize100k * 100000) >> 1) * sizeof(uint8_t) 
-                   );
-         if (s->ll16 == NULL || s->ll4 == NULL) RETURN(BZ_MEM_ERROR);
-      } else {
-         s->tt  = (unsigned *)BZALLOC( s->blockSize100k * 100000 * sizeof(Int32) );
-         if (s->tt == NULL) RETURN(BZ_MEM_ERROR);
-      }
+        GET_BITS(BZ_X_MAGIC_2, uc, 8);
+        if (uc != BZ_HDR_Z) { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
 
-      GET_BITS(BZ_X_BLKHDR_1, uc, 8);
+        GET_BITS(BZ_X_MAGIC_3, uc, 8)
+        if (uc != BZ_HDR_h) { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
 
-      if (uc == 0x17) goto endhdr_2;
-      if (uc != 0x31) RETURN(BZ_DATA_ERROR);
-      GET_BITS(BZ_X_BLKHDR_2, uc, 8);
-      if (uc != 0x41) RETURN(BZ_DATA_ERROR);
-      GET_BITS(BZ_X_BLKHDR_3, uc, 8);
-      if (uc != 0x59) RETURN(BZ_DATA_ERROR);
-      GET_BITS(BZ_X_BLKHDR_4, uc, 8);
-      if (uc != 0x26) RETURN(BZ_DATA_ERROR);
-      GET_BITS(BZ_X_BLKHDR_5, uc, 8);
-      if (uc != 0x53) RETURN(BZ_DATA_ERROR);
-      GET_BITS(BZ_X_BLKHDR_6, uc, 8);
-      if (uc != 0x59) RETURN(BZ_DATA_ERROR);
+        GET_BITS(BZ_X_MAGIC_4, s->blockSize100k, 8)
+        if (s->blockSize100k < (BZ_HDR_0 + 1) || s->blockSize100k > (BZ_HDR_0 + 9))
+        { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
+        s->blockSize100k -= BZ_HDR_0;
 
-      s->currBlockNo++;
-      if (s->verbosity >= 2)
-         fprintf(stderr, "\n    [%d: huff+mtf ", s->currBlockNo );
- 
-      s->storedBlockCRC = 0;
-      GET_BITS(BZ_X_BCRC_1, uc, 8);
-      s->storedBlockCRC = (s->storedBlockCRC << 8) | ((UInt32)uc);
-      GET_BITS(BZ_X_BCRC_2, uc, 8);
-      s->storedBlockCRC = (s->storedBlockCRC << 8) | ((UInt32)uc);
-      GET_BITS(BZ_X_BCRC_3, uc, 8);
-      s->storedBlockCRC = (s->storedBlockCRC << 8) | ((UInt32)uc);
-      GET_BITS(BZ_X_BCRC_4, uc, 8);
-      s->storedBlockCRC = (s->storedBlockCRC << 8) | ((UInt32)uc);
+#define BZALLOC(nnn) (strm->bzalloc)(strm->opaque,(nnn),1)
 
-      GET_BITS(BZ_X_RANDBIT, s->blockRandomised, 1);
 
-      s->origPtr = 0;
-      GET_BITS(BZ_X_ORIGPTR_1, uc, 8);
-      s->origPtr = (s->origPtr << 8) | ((Int32)uc);
-      GET_BITS(BZ_X_ORIGPTR_2, uc, 8);
-      s->origPtr = (s->origPtr << 8) | ((Int32)uc);
-      GET_BITS(BZ_X_ORIGPTR_3, uc, 8);
-      s->origPtr = (s->origPtr << 8) | ((Int32)uc);
+        if (s->smallDecompress)
+        {
+            s->ll16 = (unsigned short *)BZALLOC(s->blockSize100k * 100000 * sizeof(uint16_t));
+            s->ll4 = (uint8_t *)BZALLOC(((1 + s->blockSize100k * 100000) >> 1) * sizeof(uint8_t));
+            if (s->ll16 == NULL || s->ll4 == NULL)
+            { retVal = BZ_MEM_ERROR; goto save_state_and_return; };
+        }
+        else
+        {
+            s->tt = (unsigned *)BZALLOC( s->blockSize100k * 100000 * sizeof(int32_t) );
+            if (s->tt == NULL) { retVal = BZ_MEM_ERROR; goto save_state_and_return; };
+        }
 
-      if (s->origPtr < 0)
-         RETURN(BZ_DATA_ERROR);
-      if (s->origPtr > 10 + 100000*s->blockSize100k) 
-         RETURN(BZ_DATA_ERROR);
+
+
+        GET_BITS(BZ_X_BLKHDR_1, uc, 8);
+        if (uc == 0x17) goto endhdr_2;
+        if (uc != 0x31) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
+        GET_BITS(BZ_X_BLKHDR_2, uc, 8);
+        if (uc != 0x41) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
+        GET_BITS(BZ_X_BLKHDR_3, uc, 8);
+        if (uc != 0x59) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
+        GET_BITS(BZ_X_BLKHDR_4, uc, 8);
+        if (uc != 0x26) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
+        GET_BITS(BZ_X_BLKHDR_5, uc, 8);
+        if (uc != 0x53) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
+        GET_BITS(BZ_X_BLKHDR_6, uc, 8);
+        if (uc != 0x59) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
+        s->currBlockNo++;
+        if (s->verbosity >= 2) fprintf(stderr, "\n    [%d: huff+mtf ", s->currBlockNo );
+        s->storedBlockCRC = 0;
+        GET_BITS(BZ_X_BCRC_1, uc, 8);
+        s->storedBlockCRC = (s->storedBlockCRC << 8) | ((uint32_t)uc);
+        GET_BITS(BZ_X_BCRC_2, uc, 8);
+        s->storedBlockCRC = (s->storedBlockCRC << 8) | ((uint32_t)uc);
+        GET_BITS(BZ_X_BCRC_3, uc, 8);
+        s->storedBlockCRC = (s->storedBlockCRC << 8) | ((uint32_t)uc);
+        GET_BITS(BZ_X_BCRC_4, uc, 8);
+        s->storedBlockCRC = (s->storedBlockCRC << 8) | ((uint32_t)uc);
+        GET_BITS(BZ_X_RANDBIT, s->blockRandomised, 1);
+        s->origPtr = 0;
+        GET_BITS(BZ_X_ORIGPTR_1, uc, 8);
+        s->origPtr = (s->origPtr << 8) | ((int32_t)uc);
+        GET_BITS(BZ_X_ORIGPTR_2, uc, 8);
+        s->origPtr = (s->origPtr << 8) | ((int32_t)uc);
+        GET_BITS(BZ_X_ORIGPTR_3, uc, 8);
+        s->origPtr = (s->origPtr << 8) | ((int32_t)uc);
+
+        if (s->origPtr < 0) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
+
+        if (s->origPtr > 10 + 100000*s->blockSize100k)
+        { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
 
       for (i = 0; i < 16; i++) {
          GET_BITS(BZ_X_MAPPING_1, uc, 1);
@@ -2282,6 +2329,8 @@ int32_t BZ2_decompress(DState* s)
       }
 
       for (i = 0; i < 256; i++) s->inUse[i] = 0;
+
+#define RETURN(rrr) { retVal = rrr; goto save_state_and_return; };
 
       for (i = 0; i < 16; i++)
          if (s->inUse16[i])
@@ -2371,6 +2420,30 @@ int32_t BZ2_decompress(DState* s)
          }
       }
 
+#define GET_MTF_VAL(label1,label2,lval) { \
+   if (groupPos == 0) { \
+      groupNo++; \
+      if (groupNo >= nSelectors) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; \
+      groupPos = 50; \
+      gSel = s->selector[groupNo]; \
+      gMinlen = s->minLens[gSel]; \
+      gLimit = &(s->limit[gSel][0]); \
+      gPerm = &(s->perm[gSel][0]); \
+      gBase = &(s->base[gSel][0]); } \
+   groupPos--; \
+   zn = gMinlen; \
+   GET_BITS(label1, zvec, zn); \
+   while (1) { \
+      if (zn > 20 ) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; \
+      if (zvec <= gLimit[zn]) break; \
+      zn++; \
+      GET_BITS(label2, zj, 1); \
+      zvec = (zvec << 1) | zj; }; \
+   if (zvec - gBase[zn] < 0 || zvec - gBase[zn] >= BZ_MAX_ALPHA_SIZE) \
+      { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; \
+   lval = gPerm[zvec - gBase[zn]]; }
+
+
       nblock = 0;
       GET_MTF_VAL(BZ_X_MTF_1, BZ_X_MTF_2, nextSym);
 
@@ -2416,8 +2489,8 @@ int32_t BZ2_decompress(DState* s)
             if (nblock >= nblockMAX) RETURN(BZ_DATA_ERROR);
 
             {
-               Int32 ii, jj, kk, pp, lno, off;
-               UInt32 nn;
+               int32_t ii, jj, kk, pp, lno, off;
+               uint32_t nn;
                nn = (UInt32)(nextSym - 1);
 
                if (nn < MTFL_SIZE) {
@@ -2489,6 +2562,13 @@ int32_t BZ2_decompress(DState* s)
       for (i = 1; i <= 256; i++) s->cftab[i] = s->unzftab[i-1];
       for (i = 1; i <= 256; i++) s->cftab[i] += s->cftab[i-1];
 
+#define SET_LL4(i,n) { if (((i) & 0x1) == 0) \
+        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0xf0) | (n); else \
+        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0x0f) | ((n) << 4); }
+
+
+#define SET_LL(i,n) { s->ll16[i] = (UInt16)(n & 0x0000ffff); SET_LL4(i, n >> 16); }
+
       if (s->smallDecompress) {
          for (i = 0; i <= 256; i++) s->cftabCopy[i] = s->cftab[i];
          for (i = 0; i < nblock; i++) {
@@ -2496,6 +2576,10 @@ int32_t BZ2_decompress(DState* s)
             SET_LL(i, s->cftabCopy[uc]);
             s->cftabCopy[uc]++;
          }
+
+#define GET_LL4(i) ((((uint32_t)(s->ll4[(i) >> 1])) >> (((i) << 2) & 0x4)) & 0xF)
+#define GET_LL(i) (((uint32_t)s->ll16[i]) | (GET_LL4(i) << 16))
+
          i = s->origPtr;
          j = GET_LL(i);
          do {
@@ -2506,13 +2590,20 @@ int32_t BZ2_decompress(DState* s)
          }
             while (i != s->origPtr);
 
+#define BZ_GET_SMALL(x) x = BZ2_indexIntoF ( s->tPos, s->cftab ); s->tPos = GET_LL(s->tPos);
+
+
+#define BZ_RAND_UPD_MASK if (s->rNToGo == 0) { \
+      s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++; \
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
          s->tPos = s->origPtr;
          s->nblock_used = 0;
          if (s->blockRandomised) {
             s->rNToGo = 0;
             s->rTPos  = 0;
             BZ_GET_SMALL(s->k0); s->nblock_used++;
-            BZ_RAND_UPD_MASK; s->k0 ^= BZ_RAND_MASK;   
+            BZ_RAND_UPD_MASK; s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
          } else {
             BZ_GET_SMALL(s->k0); s->nblock_used++;
          }
@@ -2537,7 +2628,7 @@ int32_t BZ2_decompress(DState* s)
             s->tPos >>= 8;
 
             s->nblock_used++;
-            BZ_RAND_UPD_MASK; s->k0 ^= BZ_RAND_MASK; 
+            BZ_RAND_UPD_MASK; s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
          } else {
             s->tPos = s->tt[s->tPos];
             s->k0 = (uint8_t)(s->tPos & 0xff);
@@ -2740,6 +2831,8 @@ int BZ2_bzCompressInit
    s->arr1 = (unsigned *)BZALLOC( n                  * sizeof(UInt32) );
    s->arr2 = (unsigned *)BZALLOC( (n+BZ_N_OVERSHOOT) * sizeof(UInt32) );
    s->ftab = (unsigned *)BZALLOC( 65537              * sizeof(UInt32) );
+
+#define BZFREE(ppp) (strm->bzfree)(strm->opaque,(ppp))
 
    if (s->arr1 == NULL || s->arr2 == NULL || s->ftab == NULL) {
       if (s->arr1 != NULL) BZFREE(s->arr1);
@@ -3035,46 +3128,36 @@ int BZ2_bzCompressEnd  ( bz_stream *strm )
    return BZ_OK;
 }
 
-int BZ2_bzDecompressInit
-                     ( bz_stream* strm, 
-                       int        verbosity,
-                       int        small )
+int BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
 {
-   DState* s;
-
-   if (!bz_config_ok()) return BZ_CONFIG_ERROR;
-
-   if (strm == NULL) return BZ_PARAM_ERROR;
-   if (small != 0 && small != 1) return BZ_PARAM_ERROR;
-   if (verbosity < 0 || verbosity > 4) return BZ_PARAM_ERROR;
-
-   if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
-   if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
-
-   s = (DState *)BZALLOC( sizeof(DState) );
-   if (s == NULL) return BZ_MEM_ERROR;
-   s->strm                  = strm;
-   strm->state              = s;
-   s->state                 = BZ_X_MAGIC_1;
-   s->bsLive                = 0;
-   s->bsBuff                = 0;
-   s->calculatedCombinedCRC = 0;
-   strm->total_in_lo32      = 0;
-   strm->total_in_hi32      = 0;
-   strm->total_out_lo32     = 0;
-   strm->total_out_hi32     = 0;
-   s->smallDecompress       = (uint8_t)small;
-   s->ll4                   = NULL;
-   s->ll16                  = NULL;
-   s->tt                    = NULL;
-   s->currBlockNo           = 0;
-   s->verbosity             = verbosity;
-
-   return BZ_OK;
+    DState* s;
+    if (!bz_config_ok()) return BZ_CONFIG_ERROR;
+    if (strm == NULL) return BZ_PARAM_ERROR;
+    if (small != 0 && small != 1) return BZ_PARAM_ERROR;
+    if (verbosity < 0 || verbosity > 4) return BZ_PARAM_ERROR;
+    if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
+    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
+    s = (DState *)BZALLOC( sizeof(DState) );
+    if (s == NULL) return BZ_MEM_ERROR;
+    s->strm                  = strm;
+    strm->state              = s;
+    s->state                 = BZ_X_MAGIC_1;
+    s->bsLive                = 0;
+    s->bsBuff                = 0;
+    s->calculatedCombinedCRC = 0;
+    strm->total_in_lo32      = 0;
+    strm->total_in_hi32      = 0;
+    strm->total_out_lo32     = 0;
+    strm->total_out_hi32     = 0;
+    s->smallDecompress       = (uint8_t)small;
+    s->ll4                   = NULL;
+    s->ll16                  = NULL;
+    s->tt                    = NULL;
+    s->currBlockNo           = 0;
+    s->verbosity             = verbosity;
+    return BZ_OK;
 }
 
-#define BZ_GET_FAST_C(cccc) c_tPos = c_tt[c_tPos]; \
-    cccc = (uint8_t)(c_tPos & 0xff); c_tPos >>= 8;
 
 
 static void unRLE_obuf_to_output_FAST(DState* s)
@@ -3106,8 +3189,11 @@ static void unRLE_obuf_to_output_FAST(DState* s)
         k1 = (uint8_t)(s->tPos & 0xff);
         s->tPos >>= 8;
 
+
+
          BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK; s->nblock_used++;
+         k1 ^= ((s->rNToGo == 1) ? 1 : 0);
+        s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
    
@@ -3118,33 +3204,37 @@ static void unRLE_obuf_to_output_FAST(DState* s)
         s->tPos >>= 8;
 
         BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK; s->nblock_used++;
+         k1 ^= ((s->rNToGo == 1) ? 1 : 0);
+        s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
    
          s->state_out_len = 3;
 
+
+
         s->tPos = s->tt[s->tPos];
         k1 = (uint8_t)(s->tPos & 0xff);
         s->tPos >>= 8;
         BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK; s->nblock_used++;
+         k1 ^= ((s->rNToGo == 1) ? 1 : 0);
+        s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
          s->tPos = s->tt[s->tPos];
         k1 = (uint8_t)(s->tPos & 0xff);
         s->tPos >>= 8;  
         BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK;
+         k1 ^= ((s->rNToGo == 1) ? 1 : 0);
         s->nblock_used++;
-         s->state_out_len = ((Int32)k1) + 4;
+         s->state_out_len = ((int32_t)k1) + 4;
 
         s->tPos = s->tt[s->tPos];
         s->k0 = (uint8_t)(s->tPos & 0xff);
         s->tPos >>= 8;
 
         BZ_RAND_UPD_MASK; 
-         s->k0 ^= BZ_RAND_MASK;
+         s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
         s->nblock_used++;
       }
 
@@ -3183,111 +3273,154 @@ static void unRLE_obuf_to_output_FAST(DState* s)
                cs_next_out++;
                cs_avail_out--;
             }
-         }   
-         if (c_nblock_used == s_save_nblockPP) {
-            c_state_out_len = 0; goto return_notr;
-         };   
-         c_state_out_ch = c_k0;
-         BZ_GET_FAST_C(k1); c_nblock_used++;
-         if (k1 != c_k0) { 
-            c_k0 = k1; goto s_state_out_len_eq_one; 
-         };
-         if (c_nblock_used == s_save_nblockPP) 
-            goto s_state_out_len_eq_one;
-   
-         c_state_out_len = 2;
-         BZ_GET_FAST_C(k1); c_nblock_used++;
-         if (c_nblock_used == s_save_nblockPP) continue;
-         if (k1 != c_k0) { c_k0 = k1; continue; };
-   
-         c_state_out_len = 3;
-         BZ_GET_FAST_C(k1); c_nblock_used++;
-         if (c_nblock_used == s_save_nblockPP) continue;
-         if (k1 != c_k0) { c_k0 = k1; continue; };
-   
-         BZ_GET_FAST_C(k1); c_nblock_used++;
-         c_state_out_len = ((Int32)k1) + 4;
-         BZ_GET_FAST_C(c_k0); c_nblock_used++;
-      }
+         }
 
-      return_notr:
-      total_out_lo32_old = s->strm->total_out_lo32;
-      s->strm->total_out_lo32 += (avail_out_INIT - cs_avail_out);
-      if (s->strm->total_out_lo32 < total_out_lo32_old)
-         s->strm->total_out_hi32++;
+            if (c_nblock_used == s_save_nblockPP)
+            {
+                c_state_out_len = 0;
+                goto return_notr;
+            };
 
-      s->calculatedBlockCRC = c_calculatedBlockCRC;
-      s->state_out_ch       = c_state_out_ch;
-      s->state_out_len      = c_state_out_len;
-      s->nblock_used        = c_nblock_used;
-      s->k0                 = c_k0;
-      s->tt                 = c_tt;
-      s->tPos               = c_tPos;
-      s->strm->next_out     = cs_next_out;
-      s->strm->avail_out    = cs_avail_out;
-   }
+            c_state_out_ch = c_k0;
+            c_tPos = c_tt[c_tPos];
+            k1 = (uint8_t)(c_tPos & 0xff);
+            c_tPos >>= 8;
+            c_nblock_used++;
+
+            if (k1 != c_k0)
+            {
+                c_k0 = k1;
+                goto s_state_out_len_eq_one; 
+            };
+
+            if (c_nblock_used == s_save_nblockPP) 
+                goto s_state_out_len_eq_one;
+   
+            c_state_out_len = 2;
+
+            c_tPos = c_tt[c_tPos];
+            k1 = (uint8_t)(c_tPos & 0xff);
+            c_tPos >>= 8;
+
+            c_nblock_used++;
+            if (c_nblock_used == s_save_nblockPP) continue;
+            if (k1 != c_k0) { c_k0 = k1; continue; };
+            c_state_out_len = 3;
+
+            c_tPos = c_tt[c_tPos];
+            k1 = (uint8_t)(c_tPos & 0xff);
+            c_tPos >>= 8;
+
+            c_nblock_used++;
+            if (c_nblock_used == s_save_nblockPP) continue;
+            if (k1 != c_k0) { c_k0 = k1; continue; };
+
+            c_tPos = c_tt[c_tPos];
+            k1 = (uint8_t)(c_tPos & 0xff);
+            c_tPos >>= 8;
+
+            c_nblock_used++;
+            c_state_out_len = ((int32_t)k1) + 4;
+
+            c_tPos = c_tt[c_tPos];
+            c_k0 = (uint8_t)(c_tPos & 0xff);
+            c_tPos >>= 8;
+
+            c_nblock_used++;
+        }
+
+return_notr:
+        total_out_lo32_old = s->strm->total_out_lo32;
+        s->strm->total_out_lo32 += (avail_out_INIT - cs_avail_out);
+
+        if (s->strm->total_out_lo32 < total_out_lo32_old)
+            s->strm->total_out_hi32++;
+
+        s->calculatedBlockCRC = c_calculatedBlockCRC;
+        s->state_out_ch       = c_state_out_ch;
+        s->state_out_len      = c_state_out_len;
+        s->nblock_used        = c_nblock_used;
+        s->k0                 = c_k0;
+        s->tt                 = c_tt;
+        s->tPos               = c_tPos;
+        s->strm->next_out     = cs_next_out;
+        s->strm->avail_out    = cs_avail_out;
+    }
 }
 
 int32_t BZ2_indexIntoF(int32_t indx, int32_t *cftab )
 {
-   int32_t nb, na, mid;
-   nb = 0;
-   na = 256;
-   do {
-      mid = (nb + na) >> 1;
-      if (indx >= cftab[mid]) nb = mid; else na = mid;
-   }
-   while (na - nb != 1);
-   return nb;
+    int32_t nb, na, mid;
+    nb = 0;
+    na = 256;
+    do
+    {
+        mid = (nb + na) >> 1;
+
+        if (indx >= cftab[mid])
+            nb = mid;
+        else
+            na = mid;
+    }
+    while (na - nb != 1);
+    return nb;
 }
 
 static
 void unRLE_obuf_to_output_SMALL(DState* s)
 {
-   uint8_t k1;
+    uint8_t k1;
 
-   if (s->blockRandomised) {
+    if (s->blockRandomised)
+    {
+        while (1)
+        {
+            while (1)
+            {
+                if (s->strm->avail_out == 0) return;
+                if (s->state_out_len == 0) break;
+                *( (uint8_t*)(s->strm->next_out) ) = s->state_out_ch;
+                BZ_UPDATE_CRC ( s->calculatedBlockCRC, s->state_out_ch );
+                s->state_out_len--;
+                s->strm->next_out++;
+                s->strm->avail_out--;
+                s->strm->total_out_lo32++;
+                if (s->strm->total_out_lo32 == 0) s->strm->total_out_hi32++;
+            }
 
-      while (1) {
-         while (1) {
-            if (s->strm->avail_out == 0) return;
-            if (s->state_out_len == 0) break;
-            *( (uint8_t*)(s->strm->next_out) ) = s->state_out_ch;
-            BZ_UPDATE_CRC ( s->calculatedBlockCRC, s->state_out_ch );
-            s->state_out_len--;
-            s->strm->next_out++;
-            s->strm->avail_out--;
-            s->strm->total_out_lo32++;
-            if (s->strm->total_out_lo32 == 0) s->strm->total_out_hi32++;
-         }
-         if (s->nblock_used == s->save_nblock+1) return;
+            if (s->nblock_used == s->save_nblock+1) return;
                
+            s->state_out_len = 1;
+            s->state_out_ch = s->k0;
+            BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
+            k1 ^= ((s->rNToGo == 1) ? 1 : 0);
+            s->nblock_used++;
+            if (s->nblock_used == s->save_nblock+1) continue;
+            if (k1 != s->k0) { s->k0 = k1; continue; };
    
-         s->state_out_len = 1;
-         s->state_out_ch = s->k0;
-         BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK; s->nblock_used++;
-         if (s->nblock_used == s->save_nblock+1) continue;
-         if (k1 != s->k0) { s->k0 = k1; continue; };
+            s->state_out_len = 2;
+            BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
+            k1 ^= ((s->rNToGo == 1) ? 1 : 0);
+            s->nblock_used++;
+            if (s->nblock_used == s->save_nblock+1) continue;
+            if (k1 != s->k0) { s->k0 = k1; continue; };
    
-         s->state_out_len = 2;
-         BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK; s->nblock_used++;
-         if (s->nblock_used == s->save_nblock+1) continue;
-         if (k1 != s->k0) { s->k0 = k1; continue; };
+            s->state_out_len = 3;
+            BZ_GET_SMALL(k1);
+            BZ_RAND_UPD_MASK; 
+            k1 ^= ((s->rNToGo == 1) ? 1 : 0);
+            s->nblock_used++;
+            if (s->nblock_used == s->save_nblock+1) continue;
+            if (k1 != s->k0) { s->k0 = k1; continue; };
    
-         s->state_out_len = 3;
-         BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK; s->nblock_used++;
-         if (s->nblock_used == s->save_nblock+1) continue;
-         if (k1 != s->k0) { s->k0 = k1; continue; };
-   
-         BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
-         k1 ^= BZ_RAND_MASK; s->nblock_used++;
-         s->state_out_len = ((Int32)k1) + 4;
-         BZ_GET_SMALL(s->k0); BZ_RAND_UPD_MASK; 
-         s->k0 ^= BZ_RAND_MASK; s->nblock_used++;
-      }
+            BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
+            k1 ^= ((s->rNToGo == 1) ? 1 : 0);
+            s->nblock_used++;
+            s->state_out_len = ((Int32)k1) + 4;
+            BZ_GET_SMALL(s->k0); BZ_RAND_UPD_MASK; 
+            s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
+            s->nblock_used++;
+        }
 
    } else {
 
@@ -4618,8 +4751,7 @@ void showFileNames ( void )
    );
 }
 
-static 
-void cleanUpAndFail ( Int32 ec )
+static void cleanUpAndFail(int32_t ec)
 {
    IntNative      retVal;
    struct stat statBuf;
