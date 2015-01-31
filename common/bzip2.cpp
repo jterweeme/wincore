@@ -14,57 +14,22 @@
 #include <sys/stat.h>
 #include <sys/times.h>
 
-extern "C" {
-
 typedef 
    struct {
       char *next_in;
       unsigned int avail_in;
       unsigned int total_in_lo32;
       unsigned int total_in_hi32;
-
       char *next_out;
       unsigned int avail_out;
       unsigned int total_out_lo32;
       unsigned int total_out_hi32;
-
       void *state;
-
       void *(*bzalloc)(void *,int,int);
       void (*bzfree)(void *,void *);
       void *opaque;
    } 
    bz_stream;
-
-extern int BZ2_bzCompressInit ( 
-      bz_stream* strm, 
-      int        blockSize100k, 
-      int        verbosity, 
-      int        workFactor 
-   );
-
-extern int BZ2_bzCompress ( 
-      bz_stream* strm, 
-      int action 
-   );
-
-extern int BZ2_bzCompressEnd ( 
-      bz_stream* strm 
-   );
-
-extern int BZ2_bzDecompressInit ( 
-      bz_stream *strm, 
-      int       verbosity, 
-      int       small
-   );
-
-extern int BZ2_bzDecompress ( 
-      bz_stream* strm 
-   );
-
-extern int BZ2_bzDecompressEnd ( 
-      bz_stream *strm 
-   );
 
 static const uint16_t BZ_MAX_UNUSED = 5000;
 
@@ -79,39 +44,6 @@ extern BZFILE* BZ2_bzReadOpen (
       int   nUnused 
    );
 
-extern void BZ2_bzReadClose ( 
-      int*    bzerror, 
-      BZFILE* b 
-   );
-
-extern void BZ2_bzReadGetUnused ( 
-      int*    bzerror, 
-      BZFILE* b, 
-      void**  unused,  
-      int*    nUnused 
-   );
-
-extern int BZ2_bzRead ( 
-      int*    bzerror, 
-      BZFILE* b, 
-      void*   buf, 
-      int     len 
-   );
-
-extern BZFILE* BZ2_bzWriteOpen ( 
-      int*  bzerror,      
-      FILE* f, 
-      int   blockSize100k, 
-      int   verbosity, 
-      int   workFactor 
-   );
-
-extern void BZ2_bzWrite ( 
-      int*    bzerror, 
-      BZFILE* b, 
-      void*   buf, 
-      int     len 
-   );
 
 extern void BZ2_bzWriteClose ( 
       int*          bzerror, 
@@ -152,25 +84,10 @@ extern int BZ2_bzBuffToBuffDecompress (
    );
 
 
-extern const char * BZ2_bzlibVersion(
-      void
-   );
-
-extern BZFILE * BZ2_bzopen (
-      const char *path,
-      const char *mode
-   );
-
-extern BZFILE * BZ2_bzdopen (
-      int        fd,
-      const char *mode
-   );
-         
-extern int BZ2_bzread (
-      BZFILE* b, 
-      void* buf, 
-      int len 
-   );
+extern const char * BZ2_bzlibVersion(void);
+extern BZFILE *BZ2_bzopen(const char *path, const char *mode);
+extern BZFILE *BZ2_bzdopen(int fd, const char *mode);
+extern int BZ2_bzread(BZFILE* b, void* buf, int len);
 
 extern int BZ2_bzwrite (
       BZFILE* b, 
@@ -187,17 +104,6 @@ extern void BZ2_bzclose (
    );
 
 extern const char * BZ2_bzerror(BZFILE *b, int *errnum);
-
-}
-
-typedef int32_t Int32;
-typedef int32_t int32;
-typedef uint32_t UInt32;
-typedef uint32_t uint32;
-typedef int16_t Int16;
-typedef int16_t int16;
-typedef uint16_t UInt16;
-typedef uint16_t uint16;
 
 static const uint8_t BZ_RUN = 0;
 static const uint8_t BZ_FLUSH = 1;
@@ -435,29 +341,22 @@ typedef
    DState;
 
 
-
-
 extern int32_t BZ2_indexIntoF(int32_t, int32_t*);
-
 extern int32_t BZ2_decompress(DState*);
 
 extern void BZ2_hbCreateDecodeTables(int32_t*, int32_t*, int32_t*, uint8_t*,
-                           int32_t, int32_t, int32_t);
+                int32_t, int32_t, int32_t);
 
 
 
-static 
-void fallbackSimpleSort(uint32_t* fmap, 
-                          uint32_t* eclass, 
-                          int32_t   lo, 
-                          int32_t   hi)
+static void fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, int32_t hi)
 {
-   int32_t i, j, tmp;
-   uint32_t ec_tmp;
+    int32_t i, j, tmp;
+    uint32_t ec_tmp;
 
-   if (lo == hi) return;
+    if (lo == hi) return;
 
-   if (hi - lo > 3) {
+    if (hi - lo > 3) {
       for ( i = hi-4; i >= lo; i-- ) {
          tmp = fmap[i];
          ec_tmp = eclass[tmp];
@@ -465,15 +364,18 @@ void fallbackSimpleSort(uint32_t* fmap,
             fmap[j-4] = fmap[j];
          fmap[j-4] = tmp;
       }
-   }
+    }
 
-   for ( i = hi-1; i >= lo; i-- ) {
-      tmp = fmap[i];
-      ec_tmp = eclass[tmp];
-      for ( j = i+1; j <= hi && ec_tmp > eclass[fmap[j]]; j++ )
-         fmap[j-1] = fmap[j];
-      fmap[j-1] = tmp;
-   }
+    for ( i = hi-1; i >= lo; i-- )
+    {
+        tmp = fmap[i];
+        ec_tmp = eclass[tmp];
+
+        for ( j = i+1; j <= hi && ec_tmp > eclass[fmap[j]]; j++ )
+            fmap[j-1] = fmap[j];
+
+        fmap[j-1] = tmp;
+    }
 }
 
 
@@ -503,6 +405,8 @@ void fswap(uint32_t &zz1, uint32_t &zz2)
     zz1 = zz2;
     zz2 = zztmp;
 }
+
+
 
 static void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32_t hiSt)
 {
@@ -543,7 +447,7 @@ static void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32
         while (1) {
          while (1) {
             if (unLo > unHi) break;
-            n = (int32_t)eclass[fmap[unLo]] - (Int32)med;
+            n = (int32_t)eclass[fmap[unLo]] - (int32_t)med;
             if (n == 0)
             {
                 uint32_t zztmp = fmap[unLo]; fmap[unLo] = fmap[ltLo]; fmap[ltLo] = zztmp;
@@ -555,7 +459,7 @@ static void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32
          }
          while (1) {
             if (unLo > unHi) break;
-            n = (int32_t)eclass[fmap[unHi]] - (Int32)med;
+            n = (int32_t)eclass[fmap[unHi]] - (int32_t)med;
             if (n == 0) { 
                fswap(fmap[unHi], fmap[gtHi]); 
                gtHi--; unHi--; 
@@ -615,6 +519,14 @@ static void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32
         }
     }
 }
+
+typedef int32_t Int32;
+typedef int32_t int32;
+typedef uint32_t uint32;
+typedef int16_t Int16;
+typedef int16_t int16;
+typedef uint16_t UInt16;
+typedef uint16_t uint16;
 
 static void fallbackSort(uint32_t* fmap, uint32_t* eclass, 
                     uint32_t *bhtab, int32_t nblock, int32_t verb)
@@ -684,7 +596,7 @@ static void fallbackSort(uint32_t* fmap, uint32_t* eclass,
         {
             k = r + 1;
 
-            while (bhtab[(k) >> 5] & (1 << ((k) & 31))    && (k & 0x01f))
+            while (bhtab[(k) >> 5] & (1 << ((k) & 31)) && (k & 0x01f))
                 k++;
 
             if (bhtab[(k) >> 5] & (1 << ((k) & 31)))
@@ -1277,8 +1189,8 @@ static void mainSort(uint32_t *ptr,
          while ((bbSize >> shifts) > 65534) shifts++;
 
          for (j = bbSize-1; j >= 0; j--) {
-            Int32 a2update     = ptr[bbStart + j];
-            UInt16 qVal        = (UInt16)(j >> shifts);
+            int32_t a2update     = ptr[bbStart + j];
+            uint16_t qVal        = (uint16_t)(j >> shifts);
             quadrant[a2update] = qVal;
             if (a2update < BZ_N_OVERSHOOT)
                quadrant[a2update + nblock] = qVal;
@@ -1510,7 +1422,7 @@ void BZ2_hbCreateDecodeTables(int32_t *limit, int32_t *base, int32_t *perm, uint
       base[i] = ((limit[i-1] + 1) << 1) - base[i];
 }
 
-UInt32 BZ2_crc32Table[256] = {
+uint32_t BZ2_crc32Table[256] = {
 
    0x00000000L, 0x04c11db7L, 0x09823b6eL, 0x0d4326d9L,
    0x130476dcL, 0x17c56b6bL, 0x1a864db2L, 0x1e475005L,
@@ -1639,19 +1551,18 @@ void BZ2_bsInitWrite ( EState* s )
    s->bsBuff = 0;
 }
 
-static
-void bsFinishWrite ( EState* s )
+static void bsFinishWrite(EState* s)
 {
-   while (s->bsLive > 0) {
-      s->zbits[s->numZ] = (uint8_t)(s->bsBuff >> 24);
-      s->numZ++;
-      s->bsBuff <<= 8;
-      s->bsLive -= 8;
-   }
+    while (s->bsLive > 0)
+    {
+        s->zbits[s->numZ] = (uint8_t)(s->bsBuff >> 24);
+        s->numZ++;
+        s->bsBuff <<= 8;
+        s->bsLive -= 8;
+    }
 }
 
-static
-void bsW ( EState* s, Int32 n, UInt32 v )
+static void bsW(EState* s, int32_t n, uint32_t v)
 {
     while (s->bsLive >= 8)
     {
@@ -1666,7 +1577,7 @@ void bsW ( EState* s, Int32 n, UInt32 v )
 }
 
 static
-void bsPutUInt32 ( EState* s, UInt32 u )
+void bsPutUInt32(EState* s, uint32_t u)
 {
    bsW ( s, 8, (u >> 24) & 0xffL );
    bsW ( s, 8, (u >> 16) & 0xffL );
@@ -1893,7 +1804,7 @@ static void sendMTFValues(EState* s)
 
          } else {
             for (i = gs; i <= ge; i++) { 
-               UInt16 icv = mtfv[i];
+               uint16_t icv = mtfv[i];
                for (t = 0; t < nGroups; t++) cost[t] += s->len[t][icv];
             }
          }
@@ -2025,10 +1936,10 @@ static void sendMTFValues(EState* s)
       AssertH ( s->selector[selCtr] < nGroups, 3006 );
 
       if (nGroups == 6 && 50 == ge-gs+1) {
-            UInt16 mtfv_i;
+            uint16_t mtfv_i;
             uint8_t* s_len_sel_selCtr 
                = &(s->len[s->selector[selCtr]][0]);
-            Int32* s_code_sel_selCtr
+            int32_t* s_code_sel_selCtr
                = &(s->code[s->selector[selCtr]][0]);
 
         for (uint8_t i = 0; i <= 49; i++)
@@ -2122,24 +2033,7 @@ static void makeMaps_d(DState *s)
       }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void BZ_INITIALISE_CRC(uint32_t &crcVar) { crcVar = 0xffffffff; }
-
-
 
 int32_t BZ2_decompress(DState *s)
 {
@@ -2338,55 +2232,279 @@ int32_t BZ2_decompress(DState *s)
             if (s->tt == NULL) { retVal = BZ_MEM_ERROR; goto save_state_and_return; };
         }
 
-#define GET_BITS(lll,vvv,nnn) \
-   case lll: s->state = lll; \
-   while (1) { \
-      if (s->bsLive >= nnn) { \
-         uint32_t v; \
-         v = (s->bsBuff >> (s->bsLive-nnn)) & ((1 << nnn)-1); \
-         s->bsLive -= nnn; \
-         vvv = v; \
-         break; } \
-      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; \
-      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); \
-      s->bsLive += 8; \
-      s->strm->next_in++; \
-      s->strm->avail_in--; \
-      s->strm->total_in_lo32++; \
-      if (s->strm->total_in_lo32 == 0) \
+
+
+
+   case BZ_X_BLKHDR_1: s->state = BZ_X_BLKHDR_1;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
          s->strm->total_in_hi32++; }
 
-        GET_BITS(BZ_X_BLKHDR_1, uc, 8);
         if (uc == 0x17) goto endhdr_2;
         if (uc != 0x31) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-        GET_BITS(BZ_X_BLKHDR_2, uc, 8);
+
+   case BZ_X_BLKHDR_2: s->state = BZ_X_BLKHDR_2;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         if (uc != 0x41) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-        GET_BITS(BZ_X_BLKHDR_3, uc, 8);
+
+   case BZ_X_BLKHDR_3: s->state = BZ_X_BLKHDR_3;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         if (uc != 0x59) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-        GET_BITS(BZ_X_BLKHDR_4, uc, 8);
+
+   case BZ_X_BLKHDR_4: s->state = BZ_X_BLKHDR_4;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         if (uc != 0x26) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-        GET_BITS(BZ_X_BLKHDR_5, uc, 8);
+
+   case BZ_X_BLKHDR_5: s->state = BZ_X_BLKHDR_5;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         if (uc != 0x53) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-        GET_BITS(BZ_X_BLKHDR_6, uc, 8);
+
+   case BZ_X_BLKHDR_6: s->state = BZ_X_BLKHDR_6;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         if (uc != 0x59) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
         s->currBlockNo++;
         if (s->verbosity >= 2) fprintf(stderr, "\n    [%d: huff+mtf ", s->currBlockNo );
         s->storedBlockCRC = 0;
-        GET_BITS(BZ_X_BCRC_1, uc, 8);
+
+   case BZ_X_BCRC_1: s->state = BZ_X_BCRC_1;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         s->storedBlockCRC = (s->storedBlockCRC << 8) | ((uint32_t)uc);
-        GET_BITS(BZ_X_BCRC_2, uc, 8);
+
+   case BZ_X_BCRC_2: s->state = BZ_X_BCRC_2;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         s->storedBlockCRC = (s->storedBlockCRC << 8) | ((uint32_t)uc);
-        GET_BITS(BZ_X_BCRC_3, uc, 8);
+
+   case BZ_X_BCRC_3: s->state = BZ_X_BCRC_3;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         s->storedBlockCRC = (s->storedBlockCRC << 8) | ((uint32_t)uc);
-        GET_BITS(BZ_X_BCRC_4, uc, 8);
+
+   case BZ_X_BCRC_4: s->state = BZ_X_BCRC_4;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+
+
         s->storedBlockCRC = (s->storedBlockCRC << 8) | ((uint32_t)uc);
-        GET_BITS(BZ_X_RANDBIT, s->blockRandomised, 1);
+
+   case BZ_X_RANDBIT: s->state = BZ_X_RANDBIT;
+   while (1) {
+      if (s->bsLive >= 1) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-1)) & ((1 << 1)-1);
+         s->bsLive -= 1;
+         s->blockRandomised = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         s->origPtr = 0;
-        GET_BITS(BZ_X_ORIGPTR_1, uc, 8);
+
+   case BZ_X_ORIGPTR_1: s->state = BZ_X_ORIGPTR_1;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         s->origPtr = (s->origPtr << 8) | ((int32_t)uc);
-        GET_BITS(BZ_X_ORIGPTR_2, uc, 8);
+
+   case BZ_X_ORIGPTR_2: s->state = BZ_X_ORIGPTR_2;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         s->origPtr = (s->origPtr << 8) | ((int32_t)uc);
-        GET_BITS(BZ_X_ORIGPTR_3, uc, 8);
+
+   case BZ_X_ORIGPTR_3: s->state = BZ_X_ORIGPTR_3;
+   while (1) {
+      if (s->bsLive >= 8) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1);
+         s->bsLive -= 8;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
         s->origPtr = (s->origPtr << 8) | ((int32_t)uc);
 
         if (s->origPtr < 0) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
@@ -2394,8 +2512,28 @@ int32_t BZ2_decompress(DState *s)
         if (s->origPtr > 10 + 100000*s->blockSize100k)
         { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
 
-      for (i = 0; i < 16; i++) {
-         GET_BITS(BZ_X_MAPPING_1, uc, 1);
+
+
+      for (i = 0; i < 16; i++)
+      {
+   case BZ_X_MAPPING_1: s->state = BZ_X_MAPPING_1;
+   while (1) {
+      if (s->bsLive >= 1) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-1)) & ((1 << 1)-1);
+         s->bsLive -= 1;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+
          if (uc == 1) 
             s->inUse16[i] = 1; else 
             s->inUse16[i] = 0;
@@ -2407,22 +2545,91 @@ int32_t BZ2_decompress(DState *s)
 
       for (i = 0; i < 16; i++)
          if (s->inUse16[i])
-            for (j = 0; j < 16; j++) {
-               GET_BITS(BZ_X_MAPPING_2, uc, 1);
+            for (j = 0; j < 16; j++)
+            {
+   case BZ_X_MAPPING_2: s->state = BZ_X_MAPPING_2;
+   while (1) {
+      if (s->bsLive >= 1) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-1)) & ((1 << 1)-1);
+         s->bsLive -= 1;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
                if (uc == 1) s->inUse[i * 16 + j] = 1;
             }
       makeMaps_d ( s );
       if (s->nInUse == 0) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
       alphaSize = s->nInUse+2;
 
-      GET_BITS(BZ_X_SELECTOR_1, nGroups, 3);
+
+
+   case BZ_X_SELECTOR_1: s->state = BZ_X_SELECTOR_1;
+   while (1) {
+      if (s->bsLive >= 3) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-3)) & ((1 << 3)-1);
+         s->bsLive -= 3;
+         nGroups = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       if (nGroups < 2 || nGroups > 6) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-      GET_BITS(BZ_X_SELECTOR_2, nSelectors, 15);
+
+   case BZ_X_SELECTOR_2: s->state = BZ_X_SELECTOR_2;
+   while (1) {
+      if (s->bsLive >= 15) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-15)) & ((1 << 15)-1);
+         s->bsLive -= 15;
+         nSelectors = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       if (nSelectors < 1) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
       for (i = 0; i < nSelectors; i++) {
          j = 0;
          while (1) {
-            GET_BITS(BZ_X_SELECTOR_3, uc, 1);
+
+   case BZ_X_SELECTOR_3: s->state = BZ_X_SELECTOR_3;
+   while (1) {
+      if (s->bsLive >= 1) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-1)) & ((1 << 1)-1);
+         s->bsLive -= 1;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
             if (uc == 0) break;
             j++;
             if (j >= nGroups) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
@@ -2443,14 +2650,67 @@ int32_t BZ2_decompress(DState *s)
          }
       }
 
+
+
       for (t = 0; t < nGroups; t++) {
-         GET_BITS(BZ_X_CODING_1, curr, 5);
+
+   case BZ_X_CODING_1: s->state = BZ_X_CODING_1;
+   while (1) {
+      if (s->bsLive >= 5) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-5)) & ((1 << 5)-1);
+         s->bsLive -= 5;
+         curr = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
          for (i = 0; i < alphaSize; i++) {
             while (1) {
                if (curr < 1 || curr > 20) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-               GET_BITS(BZ_X_CODING_2, uc, 1);
+
+   case BZ_X_CODING_2: s->state = BZ_X_CODING_2;
+   while (1) {
+      if (s->bsLive >= 1) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-1)) & ((1 << 1)-1);
+         s->bsLive -= 1;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
                if (uc == 0) break;
-               GET_BITS(BZ_X_CODING_3, uc, 1);
+
+   case BZ_X_CODING_3: s->state = BZ_X_CODING_3;
+   while (1) {
+      if (s->bsLive >= 1) {
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-1)) & ((1 << 1)-1);
+         s->bsLive -= 1;
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
                if (uc == 0) curr++; else curr--;
             }
             s->len[t][i] = curr;
@@ -2506,13 +2766,50 @@ int32_t BZ2_decompress(DState *s)
       gPerm = &(s->perm[gSel][0]); 
       gBase = &(s->base[gSel][0]); } 
    groupPos--; 
-   zn = gMinlen; 
-   GET_BITS(BZ_X_MTF_1, zvec, zn); 
+   zn = gMinlen;
+
+
+
+
+   case BZ_X_MTF_1: s->state = BZ_X_MTF_1; 
+   while (1) { 
+      if (s->bsLive >= zn) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-zn)) & ((1 << zn)-1); 
+         s->bsLive -= zn; 
+         zvec = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
    while (1) { 
       if (zn > 20 ) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
       if (zvec <= gLimit[zn]) break; 
-      zn++; 
-      GET_BITS(BZ_X_MTF_2, zj, 1); 
+      zn++;
+
+   case BZ_X_MTF_2: s->state = BZ_X_MTF_2; 
+   while (1) { 
+      if (s->bsLive >= 1) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-1)) & ((1 << 1)-1); 
+         s->bsLive -= 1; 
+         zj = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       zvec = (zvec << 1) | zj; }; 
    if (zvec - gBase[zn] < 0 || zvec - gBase[zn] >= BZ_MAX_ALPHA_SIZE) 
       { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
@@ -2542,12 +2839,46 @@ int32_t BZ2_decompress(DState *s)
       gBase = &(s->base[gSel][0]); } 
    groupPos--; 
    zn = gMinlen; 
-   GET_BITS(BZ_X_MTF_3, zvec, zn); 
+
+   case BZ_X_MTF_3: s->state = BZ_X_MTF_3; 
+   while (1) { 
+      if (s->bsLive >= zn) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-zn)) & ((1 << zn)-1); 
+         s->bsLive -= zn; 
+         zvec = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
    while (1) { 
       if (zn > 20 ) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
       if (zvec <= gLimit[zn]) break; 
       zn++; 
-      GET_BITS(BZ_X_MTF_4, zj, 1); 
+
+   case BZ_X_MTF_4: s->state = BZ_X_MTF_4; 
+   while (1) { 
+      if (s->bsLive >= 1) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-1)) & ((1 << 1)-1); 
+         s->bsLive -= 1; 
+         zj = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       zvec = (zvec << 1) | zj; }; 
    if (zvec - gBase[zn] < 0 || zvec - gBase[zn] >= BZ_MAX_ALPHA_SIZE) 
       { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
@@ -2650,12 +2981,46 @@ int32_t BZ2_decompress(DState *s)
       gBase = &(s->base[gSel][0]); } 
    groupPos--; 
    zn = gMinlen; 
-   GET_BITS(BZ_X_MTF_5, zvec, zn); 
+
+   case BZ_X_MTF_5: s->state = BZ_X_MTF_5;
+   while (1) { 
+      if (s->bsLive >= zn) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-zn)) & ((1 << zn)-1); 
+         s->bsLive -= zn; 
+         zvec = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
    while (1) { 
       if (zn > 20 ) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
       if (zvec <= gLimit[zn]) break; 
       zn++; 
-      GET_BITS(BZ_X_MTF_6, zj, 1); 
+
+   case BZ_X_MTF_6: s->state = BZ_X_MTF_6; 
+   while (1) { 
+      if (s->bsLive >= 1) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-1)) & ((1 << 1)-1); 
+         s->bsLive -= 1; 
+         zj = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       zvec = (zvec << 1) | zj; }; 
    if (zvec - gBase[zn] < 0 || zvec - gBase[zn] >= BZ_MAX_ALPHA_SIZE) 
       { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
@@ -2786,26 +3151,180 @@ int32_t BZ2_decompress(DState *s)
 
     endhdr_2:
 
-      GET_BITS(BZ_X_ENDHDR_2, uc, 8);
+
+
+   case BZ_X_ENDHDR_2: s->state = BZ_X_ENDHDR_2; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       if (uc != 0x72)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-      GET_BITS(BZ_X_ENDHDR_3, uc, 8);
+
+   case BZ_X_ENDHDR_3: s->state = BZ_X_ENDHDR_3;
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       if (uc != 0x45)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-      GET_BITS(BZ_X_ENDHDR_4, uc, 8);
+
+   case BZ_X_ENDHDR_4: s->state = BZ_X_ENDHDR_4; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       if (uc != 0x38)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-      GET_BITS(BZ_X_ENDHDR_5, uc, 8);
+
+   case BZ_X_ENDHDR_5: s->state = BZ_X_ENDHDR_5; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       if (uc != 0x50)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
-      GET_BITS(BZ_X_ENDHDR_6, uc, 8);
+
+   case BZ_X_ENDHDR_6: s->state = BZ_X_ENDHDR_6; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
       if (uc != 0x90)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
 
       s->storedCombinedCRC = 0;
-      GET_BITS(BZ_X_CCRC_1, uc, 8);
-      s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((UInt32)uc);
-      GET_BITS(BZ_X_CCRC_2, uc, 8);
-      s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((UInt32)uc);
-      GET_BITS(BZ_X_CCRC_3, uc, 8);
-      s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((UInt32)uc);
-      GET_BITS(BZ_X_CCRC_4, uc, 8);
-      s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((UInt32)uc);
+
+   case BZ_X_CCRC_1: s->state = BZ_X_CCRC_1; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+      s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((uint32_t)uc);
+
+   case BZ_X_CCRC_2: s->state = BZ_X_CCRC_2; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+      s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((uint32_t)uc);
+
+   case BZ_X_CCRC_3: s->state = BZ_X_CCRC_3; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+      s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((uint32_t)uc);
+
+   case BZ_X_CCRC_4: s->state = BZ_X_CCRC_4; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+      s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((uint32_t)uc);
 
       s->state = BZ_X_IDLE;
     { retVal = BZ_STREAM_END; goto save_state_and_return; };
@@ -2946,20 +3465,20 @@ int BZ2_bzCompressInit
                      int        verbosity,
                      int        workFactor )
 {
-   int32_t   n;
-   EState* s;
+    int32_t   n;
+    EState* s;
 
-   if (!bz_config_ok()) return BZ_CONFIG_ERROR;
+    if (!bz_config_ok()) return BZ_CONFIG_ERROR;
 
-   if (strm == NULL || blockSize100k < 1 || blockSize100k > 9 ||
+    if (strm == NULL || blockSize100k < 1 || blockSize100k > 9 ||
         workFactor < 0 || workFactor > 250)
-     return BZ_PARAM_ERROR;
+    {
+        return BZ_PARAM_ERROR;
+    }
 
-   if (workFactor == 0) workFactor = 30;
-   if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
-   if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
-
-
+    if (workFactor == 0) workFactor = 30;
+    if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
+    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
 
     s = (EState *)(strm->bzalloc)(strm->opaque,(sizeof(EState)),1);
 
@@ -3059,7 +3578,7 @@ static uint8_t copy_input_until_stop(EState* s)
          if (s->strm->avail_in == 0) break;
          progress_in = 1;
 
-   UInt32 zchh = (UInt32)(  (uint32_t)(*((uint8_t*)(s->strm->next_in)))    );                 
+   uint32_t zchh = (uint32_t)(  (uint32_t)(*((uint8_t*)(s->strm->next_in)))    );                 
    if (zchh != s->state_in_ch &&                 
        s->state_in_len == 1) {                   
       uint8_t ch = (uint8_t)(s->state_in_ch);        
@@ -4508,8 +5027,6 @@ const char * BZ2_bzerror(BZFILE *b, int *errnum)
 
 
 
-typedef int IntNative;
-
 
 int32_t verbosity;
 uint8_t keepInputFiles, smallMode, deleteOutputOnInterrupt;
@@ -4592,8 +5109,7 @@ uint8_t uInt64_isZero ( UInt64* n )
    return 1;
 }
 
-static 
-int32_t uInt64_qrm10 ( UInt64* n )
+static int32_t uInt64_qrm10 ( UInt64* n )
 {
    uint32_t rem, tmp;
    int32_t  i;
@@ -4948,7 +5464,7 @@ void showFileNames ( void )
 
 static void cleanUpAndFail(int32_t ec)
 {
-   IntNative      retVal;
+   int      retVal;
    struct stat statBuf;
 
    if ( srcMode == SM_F2F 
@@ -5048,7 +5564,7 @@ void ioError ( void )
 }
 
 static 
-void mySignalCatcher ( IntNative n )
+void mySignalCatcher(int n)
 {
    fprintf ( stderr,
              "\n%s: Control-C or similar caught, quitting.\n",
@@ -5057,7 +5573,7 @@ void mySignalCatcher ( IntNative n )
 }
 
 static 
-void mySIGSEGVorSIGBUScatcher ( IntNative n )
+void mySIGSEGVorSIGBUScatcher(int n)
 {
    if (opMode == OM_Z)
       fprintf ( 
@@ -5134,12 +5650,11 @@ void configError ( void )
 }
 
 
-static 
-void pad(char *s)
+static  void pad(char *s)
 {
-   Int32 i;
-   if ( (Int32)strlen(s) >= longestFileName ) return;
-   for (i = 1; i <= longestFileName - (Int32)strlen(s); i++)
+   int32_t i;
+   if ( (int32_t)strlen(s) >= longestFileName ) return;
+   for (i = 1; i <= longestFileName - (int32_t)strlen(s); i++)
       fprintf ( stderr, " " );
 }
 
@@ -5174,7 +5689,7 @@ uint8_t fileExists(char* name )
 FILE* fopen_output_safely(char* name, const char* mode )
 {
    FILE*     fp;
-   IntNative fh;
+   int fh;
    fh = open(name, O_WRONLY|O_CREAT|O_EXCL, S_IWUSR|S_IRUSR);
    if (fh == -1) return NULL;
    fp = fdopen(fh, mode);
@@ -5184,19 +5699,19 @@ FILE* fopen_output_safely(char* name, const char* mode )
 
 static uint8_t notAStandardFile (char* name )
 {
-   IntNative      i;
-   struct stat statBuf;
+    int i;
+    struct stat statBuf;
 
-   i = lstat ( name, &statBuf );
-   if (i != 0) return 1;
-   if (S_ISREG(statBuf.st_mode)) return 0;
-   return 1;
+    i = lstat ( name, &statBuf );
+    if (i != 0) return 1;
+    if (S_ISREG(statBuf.st_mode)) return 0;
+    return 1;
 }
 
 static int32_t countHardLinks(char *name)
 {  
-   IntNative      i;
-   struct stat statBuf;
+    int    i;
+    struct stat statBuf;
 
    i = lstat ( name, &statBuf );
    if (i != 0) return 0;
@@ -5214,7 +5729,7 @@ void ERROR_IF_NOT_ZERO(int i)
 static 
 void saveInputFileMetaInfo(char *srcName)
 {
-   IntNative retVal;
+   int retVal;
    retVal = stat( srcName, &fileMetaInfo );
    ERROR_IF_NOT_ZERO ( retVal );
 }
@@ -5223,14 +5738,14 @@ void saveInputFileMetaInfo(char *srcName)
 static 
 void applySavedMetaInfoToOutputFile(char *dstName)
 {
-   IntNative      retVal;
-   struct utimbuf uTimBuf;
+    int retVal;
+    struct utimbuf uTimBuf;
 
-   uTimBuf.actime = fileMetaInfo.st_atime;
-   uTimBuf.modtime = fileMetaInfo.st_mtime;
+    uTimBuf.actime = fileMetaInfo.st_atime;
+    uTimBuf.modtime = fileMetaInfo.st_mtime;
 
-   retVal = chmod ( dstName, fileMetaInfo.st_mode );
-   ERROR_IF_NOT_ZERO ( retVal );
+    retVal = chmod ( dstName, fileMetaInfo.st_mode );
+    ERROR_IF_NOT_ZERO ( retVal );
 
    retVal = utime ( dstName, &uTimBuf );
    ERROR_IF_NOT_ZERO ( retVal );
@@ -5252,11 +5767,11 @@ const char* unzSuffix[BZ_N_SUFFIX_PAIRS]
 
 static uint8_t hasSuffix(const char* s, const char* suffix )
 {
-   Int32 ns = strlen(s);
-   Int32 nx = strlen(suffix);
-   if (ns < nx) return 0;
-   if (strcmp(s + ns - nx, suffix) == 0) return 1;
-   return 0;
+    int32_t ns = strlen(s);
+    int32_t nx = strlen(suffix);
+    if (ns < nx) return 0;
+    if (strcmp(s + ns - nx, suffix) == 0) return 1;
+    return 0;
 }
 
 static uint8_t mapSuffix(char* name, const char* oldSuffix, const char* newSuffix )
@@ -5433,7 +5948,7 @@ static void compress(char *name )
       applySavedMetaInfoToOutputFile ( outName );
       deleteOutputOnInterrupt = 0;
       if ( !keepInputFiles ) {
-         IntNative retVal = remove ( inName );
+         int retVal = remove ( inName );
          ERROR_IF_NOT_ZERO ( retVal );
       }
    }
@@ -5603,7 +6118,7 @@ static void uncompress(char *name )
          applySavedMetaInfoToOutputFile ( outName );
          deleteOutputOnInterrupt = 0;
          if ( !keepInputFiles ) {
-            IntNative retVal = remove ( inName );
+            int retVal = remove ( inName );
             ERROR_IF_NOT_ZERO ( retVal );
          }
       }
@@ -5611,7 +6126,7 @@ static void uncompress(char *name )
       unzFailsExist = 1;
       deleteOutputOnInterrupt = 0;
       if ( srcMode == SM_F2F ) {
-         IntNative retVal = remove ( outName );
+         int retVal = remove ( outName );
          ERROR_IF_NOT_ZERO ( retVal );
       }
    }
@@ -5796,7 +6311,7 @@ typedef
    Cell;
 
 static 
-void *myMalloc ( Int32 n )
+void *myMalloc(int32_t n)
 {
    void* p;
 
@@ -5856,8 +6371,19 @@ static void addFlagsFromEnvVar(Cell **argList, const char *varName)
    }
 }
 
+class AppBzip2
+{
+public:
+    int run(int argc, char **argv);
+};
 
-IntNative main(IntNative argc, char **argv)
+int main(int argc, char **argv)
+{
+    AppBzip2 app;
+    return app.run(argc, argv);
+}
+
+int AppBzip2::run(int argc, char **argv)
 {
    int32_t  i, j;
    char   *tmp;
@@ -5865,8 +6391,8 @@ IntNative main(IntNative argc, char **argv)
    Cell   *aa;
    uint8_t   decode;
 
-   if (sizeof(Int32) != 4 || sizeof(UInt32) != 4  ||
-       sizeof(Int16) != 2 || sizeof(UInt16) != 2  ||
+   if (sizeof(int32_t) != 4 || sizeof(uint32_t) != 4  ||
+       sizeof(int16_t) != 2 || sizeof(uint16_t) != 2  ||
        sizeof(char)  != 1 || sizeof(uint8_t)  != 1)
       configError();
 

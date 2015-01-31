@@ -15,6 +15,7 @@ int App::run(int argc, char **argv)
     BitInput bi(&ifs);
     DecStream ds(&bi);
     ds.extractTo(cout);
+    ifs.close();
     return 0;
 }
 

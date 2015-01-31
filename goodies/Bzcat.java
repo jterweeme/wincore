@@ -142,6 +142,7 @@ class Bzcat
         
         public void init(BitInput bi) throws IOException
         {
+            System.err.println("Init");
             _minLengths = new int[6];
             _bases = new int[6][25];
             _limits = new int[6][24];
@@ -256,7 +257,9 @@ class Bzcat
 			    }
             }
             
-            _merged = new int[_length];
+            System.err.println(_length);
+            //_merged = new int[_length];
+            _merged = new int[999999];
             int[] characterBase = new int[256];
             
             for (int i = 0; i < 255; i++)
