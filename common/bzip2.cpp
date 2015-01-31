@@ -1928,8 +1928,7 @@ static void sendMTFValues(EState* s)
       }
 
       for (t = 0; t < nGroups; t++)
-         BZ2_hbMakeCodeLengths ( &(s->len[t][0]), &(s->rfreq[t][0]), 
-                                 alphaSize, 20 );
+         BZ2_hbMakeCodeLengths(&(s->len[t][0]), &(s->rfreq[t][0]), alphaSize, 20);
    }
 
 
@@ -2112,7 +2111,7 @@ void BZ2_compressBlock(EState* s, uint8_t is_last_block)
 
 
 
-static void makeMaps_d(DState* s)
+static void makeMaps_d(DState *s)
 {
    int32_t i;
    s->nInUse = 0;
@@ -2142,7 +2141,7 @@ void BZ_INITIALISE_CRC(uint32_t &crcVar) { crcVar = 0xffffffff; }
 
 
 
-int32_t BZ2_decompress(DState* s)
+int32_t BZ2_decompress(DState *s)
 {
     uint8_t uc;
     int32_t retVal;
@@ -2175,30 +2174,30 @@ int32_t BZ2_decompress(DState* s)
 
     if (s->state == BZ_X_MAGIC_1)
     {
-      s->save_i           = 0;
-      s->save_j           = 0;
-      s->save_t           = 0;
-      s->save_alphaSize   = 0;
-      s->save_nGroups     = 0;
-      s->save_nSelectors  = 0;
-      s->save_EOB         = 0;
-      s->save_groupNo     = 0;
-      s->save_groupPos    = 0;
-      s->save_nextSym     = 0;
-      s->save_nblockMAX   = 0;
-      s->save_nblock      = 0;
-      s->save_es          = 0;
-      s->save_N           = 0;
-      s->save_curr        = 0;
-      s->save_zt          = 0;
-      s->save_zn          = 0;
-      s->save_zvec        = 0;
-      s->save_zj          = 0;
-      s->save_gSel        = 0;
-      s->save_gMinlen     = 0;
-      s->save_gLimit      = NULL;
-      s->save_gBase       = NULL;
-      s->save_gPerm       = NULL;
+        s->save_i           = 0;
+        s->save_j           = 0;
+        s->save_t           = 0;
+        s->save_alphaSize   = 0;
+        s->save_nGroups     = 0;
+        s->save_nSelectors  = 0;
+        s->save_EOB         = 0;
+        s->save_groupNo     = 0;
+        s->save_groupPos    = 0;
+        s->save_nextSym     = 0;
+        s->save_nblockMAX   = 0;
+        s->save_nblock      = 0;
+        s->save_es          = 0;
+        s->save_N           = 0;
+        s->save_curr        = 0;
+        s->save_zt          = 0;
+        s->save_zn          = 0;
+        s->save_zvec        = 0;
+        s->save_zj          = 0;
+        s->save_gSel        = 0;
+        s->save_gMinlen     = 0;
+        s->save_gLimit      = NULL;
+        s->save_gBase       = NULL;
+        s->save_gPerm       = NULL;
     }
 
     i           = s->save_i;
@@ -2230,6 +2229,115 @@ int32_t BZ2_decompress(DState* s)
 
 
 
+
+
+
+    switch (s->state)
+    {
+   case BZ_X_MAGIC_1: s->state = BZ_X_MAGIC_1; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+
+        if (uc != BZ_HDR_B) { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
+
+   case BZ_X_MAGIC_2: s->state = BZ_X_MAGIC_2; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+        if (uc != BZ_HDR_Z) { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
+
+   case BZ_X_MAGIC_3: s->state = BZ_X_MAGIC_3; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         uc = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+        if (uc != BZ_HDR_h) { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
+
+   case BZ_X_MAGIC_4: s->state = BZ_X_MAGIC_4; 
+   while (1) { 
+      if (s->bsLive >= 8) { 
+         uint32_t v; 
+         v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
+         s->bsLive -= 8; 
+         s->blockSize100k = v; 
+         break; } 
+      if (s->strm->avail_in == 0) { retVal = 0; goto save_state_and_return; }; 
+      s->bsBuff = (s->bsBuff << 8) | ((uint32_t)(*((uint8_t*)(s->strm->next_in)))); 
+      s->bsLive += 8; 
+      s->strm->next_in++; 
+      s->strm->avail_in--; 
+      s->strm->total_in_lo32++; 
+      if (s->strm->total_in_lo32 == 0) 
+         s->strm->total_in_hi32++; }
+
+        if (s->blockSize100k < (BZ_HDR_0 + 1) || s->blockSize100k > (BZ_HDR_0 + 9))
+        { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
+        s->blockSize100k -= BZ_HDR_0;
+
+
+
+
+        if (s->smallDecompress)
+        {
+            s->ll16=(uint16_t *)(strm->bzalloc)(strm->opaque,
+                (s->blockSize100k*100000*sizeof(uint16_t)),1);
+
+            s->ll4=(uint8_t*)(strm->bzalloc)(strm->opaque,
+                (((1+s->blockSize100k*100000)>>1)*sizeof(uint8_t)),1);
+
+            if (s->ll16 == NULL || s->ll4 == NULL)
+            {
+                retVal = BZ_MEM_ERROR;
+                goto save_state_and_return;
+            };
+        }
+        else
+        {
+            s->tt=(uint32_t*)(strm->bzalloc)
+                (strm->opaque,(s->blockSize100k*100000*sizeof(int32_t)),1);
+
+            if (s->tt == NULL) { retVal = BZ_MEM_ERROR; goto save_state_and_return; };
+        }
+
 #define GET_BITS(lll,vvv,nnn) \
    case lll: s->state = lll; \
    while (1) { \
@@ -2247,41 +2355,6 @@ int32_t BZ2_decompress(DState* s)
       s->strm->total_in_lo32++; \
       if (s->strm->total_in_lo32 == 0) \
          s->strm->total_in_hi32++; }
-
-
-    switch (s->state)
-    {
-        GET_BITS(BZ_X_MAGIC_1, uc, 8);
-        if (uc != BZ_HDR_B) { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
-
-        GET_BITS(BZ_X_MAGIC_2, uc, 8);
-        if (uc != BZ_HDR_Z) { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
-
-        GET_BITS(BZ_X_MAGIC_3, uc, 8)
-        if (uc != BZ_HDR_h) { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
-
-        GET_BITS(BZ_X_MAGIC_4, s->blockSize100k, 8)
-        if (s->blockSize100k < (BZ_HDR_0 + 1) || s->blockSize100k > (BZ_HDR_0 + 9))
-        { retVal = BZ_DATA_ERROR_MAGIC; goto save_state_and_return; };
-        s->blockSize100k -= BZ_HDR_0;
-
-#define BZALLOC(nnn) (strm->bzalloc)(strm->opaque,(nnn),1)
-
-
-        if (s->smallDecompress)
-        {
-            s->ll16 = (unsigned short *)BZALLOC(s->blockSize100k * 100000 * sizeof(uint16_t));
-            s->ll4 = (uint8_t *)BZALLOC(((1 + s->blockSize100k * 100000) >> 1) * sizeof(uint8_t));
-            if (s->ll16 == NULL || s->ll4 == NULL)
-            { retVal = BZ_MEM_ERROR; goto save_state_and_return; };
-        }
-        else
-        {
-            s->tt = (unsigned *)BZALLOC( s->blockSize100k * 100000 * sizeof(int32_t) );
-            if (s->tt == NULL) { retVal = BZ_MEM_ERROR; goto save_state_and_return; };
-        }
-
-
 
         GET_BITS(BZ_X_BLKHDR_1, uc, 8);
         if (uc == 0x17) goto endhdr_2;
@@ -2330,7 +2403,7 @@ int32_t BZ2_decompress(DState* s)
 
       for (i = 0; i < 256; i++) s->inUse[i] = 0;
 
-#define RETURN(rrr) { retVal = rrr; goto save_state_and_return; };
+
 
       for (i = 0; i < 16; i++)
          if (s->inUse16[i])
@@ -2339,20 +2412,20 @@ int32_t BZ2_decompress(DState* s)
                if (uc == 1) s->inUse[i * 16 + j] = 1;
             }
       makeMaps_d ( s );
-      if (s->nInUse == 0) RETURN(BZ_DATA_ERROR);
+      if (s->nInUse == 0) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
       alphaSize = s->nInUse+2;
 
       GET_BITS(BZ_X_SELECTOR_1, nGroups, 3);
-      if (nGroups < 2 || nGroups > 6) RETURN(BZ_DATA_ERROR);
+      if (nGroups < 2 || nGroups > 6) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
       GET_BITS(BZ_X_SELECTOR_2, nSelectors, 15);
-      if (nSelectors < 1) RETURN(BZ_DATA_ERROR);
+      if (nSelectors < 1) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
       for (i = 0; i < nSelectors; i++) {
          j = 0;
          while (1) {
             GET_BITS(BZ_X_SELECTOR_3, uc, 1);
             if (uc == 0) break;
             j++;
-            if (j >= nGroups) RETURN(BZ_DATA_ERROR);
+            if (j >= nGroups) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
          }
          s->selectorMtf[i] = j;
       }
@@ -2374,7 +2447,7 @@ int32_t BZ2_decompress(DState* s)
          GET_BITS(BZ_X_CODING_1, curr, 5);
          for (i = 0; i < alphaSize; i++) {
             while (1) {
-               if (curr < 1 || curr > 20) RETURN(BZ_DATA_ERROR);
+               if (curr < 1 || curr > 20) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
                GET_BITS(BZ_X_CODING_2, uc, 1);
                if (uc == 0) break;
                GET_BITS(BZ_X_CODING_3, uc, 1);
@@ -2409,7 +2482,7 @@ int32_t BZ2_decompress(DState* s)
       for (i = 0; i <= 255; i++) s->unzftab[i] = 0;
 
       {
-         Int32 ii, jj, kk;
+         int32_t ii, jj, kk;
          kk = MTFA_SIZE-1;
          for (ii = 256 / MTFL_SIZE - 1; ii >= 0; ii--) {
             for (jj = MTFL_SIZE-1; jj >= 0; jj--) {
@@ -2420,32 +2493,30 @@ int32_t BZ2_decompress(DState* s)
          }
       }
 
-#define GET_MTF_VAL(label1,label2,lval) { \
-   if (groupPos == 0) { \
-      groupNo++; \
-      if (groupNo >= nSelectors) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; \
-      groupPos = 50; \
-      gSel = s->selector[groupNo]; \
-      gMinlen = s->minLens[gSel]; \
-      gLimit = &(s->limit[gSel][0]); \
-      gPerm = &(s->perm[gSel][0]); \
-      gBase = &(s->base[gSel][0]); } \
-   groupPos--; \
-   zn = gMinlen; \
-   GET_BITS(label1, zvec, zn); \
-   while (1) { \
-      if (zn > 20 ) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; \
-      if (zvec <= gLimit[zn]) break; \
-      zn++; \
-      GET_BITS(label2, zj, 1); \
-      zvec = (zvec << 1) | zj; }; \
-   if (zvec - gBase[zn] < 0 || zvec - gBase[zn] >= BZ_MAX_ALPHA_SIZE) \
-      { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; \
-   lval = gPerm[zvec - gBase[zn]]; }
-
-
       nblock = 0;
-      GET_MTF_VAL(BZ_X_MTF_1, BZ_X_MTF_2, nextSym);
+
+{ 
+   if (groupPos == 0) { 
+      groupNo++; 
+      if (groupNo >= nSelectors) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
+      groupPos = 50; 
+      gSel = s->selector[groupNo]; 
+      gMinlen = s->minLens[gSel]; 
+      gLimit = &(s->limit[gSel][0]); 
+      gPerm = &(s->perm[gSel][0]); 
+      gBase = &(s->base[gSel][0]); } 
+   groupPos--; 
+   zn = gMinlen; 
+   GET_BITS(BZ_X_MTF_1, zvec, zn); 
+   while (1) { 
+      if (zn > 20 ) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
+      if (zvec <= gLimit[zn]) break; 
+      zn++; 
+      GET_BITS(BZ_X_MTF_2, zj, 1); 
+      zvec = (zvec << 1) | zj; }; 
+   if (zvec - gBase[zn] < 0 || zvec - gBase[zn] >= BZ_MAX_ALPHA_SIZE) 
+      { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
+   nextSym = gPerm[zvec - gBase[zn]]; }
 
       while (1) {
 
@@ -2459,7 +2530,30 @@ int32_t BZ2_decompress(DState* s)
                if (nextSym == BZ_RUNA) es = es + (0+1) * N; else
                if (nextSym == BZ_RUNB) es = es + (1+1) * N;
                N = N * 2;
-               GET_MTF_VAL(BZ_X_MTF_3, BZ_X_MTF_4, nextSym);
+{
+   if (groupPos == 0) { 
+      groupNo++; 
+      if (groupNo >= nSelectors) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
+      groupPos = 50; 
+      gSel = s->selector[groupNo]; 
+      gMinlen = s->minLens[gSel]; 
+      gLimit = &(s->limit[gSel][0]); 
+      gPerm = &(s->perm[gSel][0]); 
+      gBase = &(s->base[gSel][0]); } 
+   groupPos--; 
+   zn = gMinlen; 
+   GET_BITS(BZ_X_MTF_3, zvec, zn); 
+   while (1) { 
+      if (zn > 20 ) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
+      if (zvec <= gLimit[zn]) break; 
+      zn++; 
+      GET_BITS(BZ_X_MTF_4, zj, 1); 
+      zvec = (zvec << 1) | zj; }; 
+   if (zvec - gBase[zn] < 0 || zvec - gBase[zn] >= BZ_MAX_ALPHA_SIZE) 
+      { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
+   nextSym = gPerm[zvec - gBase[zn]]; }
+
+
             }
                while (nextSym == BZ_RUNA || nextSym == BZ_RUNB);
 
@@ -2469,15 +2563,15 @@ int32_t BZ2_decompress(DState* s)
 
             if (s->smallDecompress)
                while (es > 0) {
-                  if (nblock >= nblockMAX) RETURN(BZ_DATA_ERROR);
-                  s->ll16[nblock] = (UInt16)uc;
+                  if (nblock >= nblockMAX) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
+                  s->ll16[nblock] = (uint16_t)uc;
                   nblock++;
                   es--;
                }
             else
                while (es > 0) {
-                  if (nblock >= nblockMAX) RETURN(BZ_DATA_ERROR);
-                  s->tt[nblock] = (UInt32)uc;
+                  if (nblock >= nblockMAX) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
+                  s->tt[nblock] = (uint32_t)uc;
                   nblock++;
                   es--;
                };
@@ -2486,18 +2580,18 @@ int32_t BZ2_decompress(DState* s)
 
          } else {
 
-            if (nblock >= nblockMAX) RETURN(BZ_DATA_ERROR);
+            if (nblock >= nblockMAX) { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
 
             {
                int32_t ii, jj, kk, pp, lno, off;
                uint32_t nn;
-               nn = (UInt32)(nextSym - 1);
+               nn = (uint32_t)(nextSym - 1);
 
                if (nn < MTFL_SIZE) {
                   pp = s->mtfbase[0];
                   uc = s->mtfa[pp+nn];
                   while (nn > 3) {
-                     Int32 z = pp+nn;
+                     int32_t z = pp+nn;
                      s->mtfa[(z)  ] = s->mtfa[(z)-1];
                      s->mtfa[(z)-1] = s->mtfa[(z)-2];
                      s->mtfa[(z)-2] = s->mtfa[(z)-3];
@@ -2540,17 +2634,40 @@ int32_t BZ2_decompress(DState* s)
 
             s->unzftab[s->seqToUnseq[uc]]++;
             if (s->smallDecompress)
-               s->ll16[nblock] = (UInt16)(s->seqToUnseq[uc]); else
-               s->tt[nblock]   = (UInt32)(s->seqToUnseq[uc]);
+               s->ll16[nblock] = (uint16_t)(s->seqToUnseq[uc]); else
+               s->tt[nblock]   = (uint32_t)(s->seqToUnseq[uc]);
             nblock++;
 
-            GET_MTF_VAL(BZ_X_MTF_5, BZ_X_MTF_6, nextSym);
+{
+   if (groupPos == 0) { 
+      groupNo++; 
+      if (groupNo >= nSelectors) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
+      groupPos = 50; 
+      gSel = s->selector[groupNo]; 
+      gMinlen = s->minLens[gSel]; 
+      gLimit = &(s->limit[gSel][0]); 
+      gPerm = &(s->perm[gSel][0]); 
+      gBase = &(s->base[gSel][0]); } 
+   groupPos--; 
+   zn = gMinlen; 
+   GET_BITS(BZ_X_MTF_5, zvec, zn); 
+   while (1) { 
+      if (zn > 20 ) { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
+      if (zvec <= gLimit[zn]) break; 
+      zn++; 
+      GET_BITS(BZ_X_MTF_6, zj, 1); 
+      zvec = (zvec << 1) | zj; }; 
+   if (zvec - gBase[zn] < 0 || zvec - gBase[zn] >= BZ_MAX_ALPHA_SIZE) 
+      { retVal = BZ_DATA_ERROR; goto save_state_and_return; }; 
+   nextSym = gPerm[zvec - gBase[zn]]; }
+
+
             continue;
          }
       }
 
       if (s->origPtr < 0 || s->origPtr >= nblock)
-         RETURN(BZ_DATA_ERROR);
+    { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
 
       s->state_out_len = 0;
       s->state_out_ch  = 0;
@@ -2562,50 +2679,71 @@ int32_t BZ2_decompress(DState* s)
       for (i = 1; i <= 256; i++) s->cftab[i] = s->unzftab[i-1];
       for (i = 1; i <= 256; i++) s->cftab[i] += s->cftab[i-1];
 
-#define SET_LL4(i,n) { if (((i) & 0x1) == 0) \
-        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0xf0) | (n); else \
-        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0x0f) | ((n) << 4); }
 
 
-#define SET_LL(i,n) { s->ll16[i] = (UInt16)(n & 0x0000ffff); SET_LL4(i, n >> 16); }
-
-      if (s->smallDecompress) {
+      if (s->smallDecompress)
+      {
          for (i = 0; i <= 256; i++) s->cftabCopy[i] = s->cftab[i];
-         for (i = 0; i < nblock; i++) {
+         for (i = 0; i < nblock; i++)
+        {
             uc = (uint8_t)(s->ll16[i]);
-            SET_LL(i, s->cftabCopy[uc]);
+            s->ll16[i] = (uint16_t)(s->cftabCopy[uc] & 0x0000ffff);
+
+{ if (((i) & 0x1) == 0) 
+        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0xf0) | (s->cftabCopy[uc] >> 16); else 
+        s->ll4[(i) >> 1] = (s->ll4[(i) >> 1] & 0x0f) | ((s->cftabCopy[uc] >> 16) << 4); }
+
             s->cftabCopy[uc]++;
          }
 
-#define GET_LL4(i) ((((uint32_t)(s->ll4[(i) >> 1])) >> (((i) << 2) & 0x4)) & 0xF)
-#define GET_LL(i) (((uint32_t)s->ll16[i]) | (GET_LL4(i) << 16))
+
 
          i = s->origPtr;
-         j = GET_LL(i);
+        j = (((uint32_t)s->ll16[i]) |
+            (((((uint32_t)(s->ll4[(i) >> 1])) >> (((i) << 2) & 0x4)) & 0xF) << 16));
+
          do {
-            int32_t tmp = GET_LL(j);
-            SET_LL(j, i);
+            int32_t tmp = (((uint32_t)s->ll16[j]) |
+                (((((uint32_t)(s->ll4[(j) >> 1])) >> (((j) << 2) & 0x4)) & 0xF) << 16));
+            {
+                s->ll16[j] = (uint16_t)(i & 0x0000ffff);
+
+{ if (((j) & 0x1) == 0) \
+        s->ll4[(j) >> 1] = (s->ll4[(j) >> 1] & 0xf0) | (i); else \
+        s->ll4[(j) >> 1] = (s->ll4[(j) >> 1] & 0x0f) | ((i) << 4); }
+
+            }
             i = j;
             j = tmp;
          }
             while (i != s->origPtr);
 
-#define BZ_GET_SMALL(x) x = BZ2_indexIntoF ( s->tPos, s->cftab ); s->tPos = GET_LL(s->tPos);
 
 
-#define BZ_RAND_UPD_MASK if (s->rNToGo == 0) { \
-      s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++; \
-      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
+
 
          s->tPos = s->origPtr;
          s->nblock_used = 0;
-         if (s->blockRandomised) {
+         if (s->blockRandomised)
+         {
             s->rNToGo = 0;
             s->rTPos  = 0;
-            BZ_GET_SMALL(s->k0); s->nblock_used++;
-            BZ_RAND_UPD_MASK; s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
+            s->k0 = BZ2_indexIntoF(s->tPos, s->cftab);
+            s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+    ( ((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
+
+            s->nblock_used++;
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
+            s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
          } else {
-            BZ_GET_SMALL(s->k0); s->nblock_used++;
+            s->k0 = BZ2_indexIntoF(s->tPos, s->cftab);
+            s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+        (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF)  << 16));
+            s->nblock_used++;
          }
 
       } else {
@@ -2628,7 +2766,11 @@ int32_t BZ2_decompress(DState* s)
             s->tPos >>= 8;
 
             s->nblock_used++;
-            BZ_RAND_UPD_MASK; s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
+            s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
          } else {
             s->tPos = s->tt[s->tPos];
             s->k0 = (uint8_t)(s->tPos & 0xff);
@@ -2638,23 +2780,22 @@ int32_t BZ2_decompress(DState* s)
          }
 
       }
-
-      RETURN(BZ_OK);
+    { retVal = BZ_OK; goto save_state_and_return; };
 
 
 
     endhdr_2:
 
       GET_BITS(BZ_X_ENDHDR_2, uc, 8);
-      if (uc != 0x72) RETURN(BZ_DATA_ERROR);
+      if (uc != 0x72)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
       GET_BITS(BZ_X_ENDHDR_3, uc, 8);
-      if (uc != 0x45) RETURN(BZ_DATA_ERROR);
+      if (uc != 0x45)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
       GET_BITS(BZ_X_ENDHDR_4, uc, 8);
-      if (uc != 0x38) RETURN(BZ_DATA_ERROR);
+      if (uc != 0x38)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
       GET_BITS(BZ_X_ENDHDR_5, uc, 8);
-      if (uc != 0x50) RETURN(BZ_DATA_ERROR);
+      if (uc != 0x50)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
       GET_BITS(BZ_X_ENDHDR_6, uc, 8);
-      if (uc != 0x90) RETURN(BZ_DATA_ERROR);
+      if (uc != 0x90)     { retVal = BZ_DATA_ERROR; goto save_state_and_return; };
 
       s->storedCombinedCRC = 0;
       GET_BITS(BZ_X_CCRC_1, uc, 8);
@@ -2667,7 +2808,7 @@ int32_t BZ2_decompress(DState* s)
       s->storedCombinedCRC = (s->storedCombinedCRC << 8) | ((UInt32)uc);
 
       s->state = BZ_X_IDLE;
-      RETURN(BZ_STREAM_END);
+    { retVal = BZ_STREAM_END; goto save_state_and_return; };
 
       default: AssertH ( 0, 4001 );
    }
@@ -2810,35 +2951,37 @@ int BZ2_bzCompressInit
 
    if (!bz_config_ok()) return BZ_CONFIG_ERROR;
 
-   if (strm == NULL || 
-       blockSize100k < 1 || blockSize100k > 9 ||
-       workFactor < 0 || workFactor > 250)
+   if (strm == NULL || blockSize100k < 1 || blockSize100k > 9 ||
+        workFactor < 0 || workFactor > 250)
      return BZ_PARAM_ERROR;
 
    if (workFactor == 0) workFactor = 30;
    if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
 
-   s = (EState *)BZALLOC( sizeof(EState) );
-   if (s == NULL) return BZ_MEM_ERROR;
-   s->strm = strm;
 
-   s->arr1 = NULL;
-   s->arr2 = NULL;
-   s->ftab = NULL;
 
-   n       = 100000 * blockSize100k;
-   s->arr1 = (unsigned *)BZALLOC( n                  * sizeof(UInt32) );
-   s->arr2 = (unsigned *)BZALLOC( (n+BZ_N_OVERSHOOT) * sizeof(UInt32) );
-   s->ftab = (unsigned *)BZALLOC( 65537              * sizeof(UInt32) );
+    s = (EState *)(strm->bzalloc)(strm->opaque,(sizeof(EState)),1);
 
-#define BZFREE(ppp) (strm->bzfree)(strm->opaque,(ppp))
+    if (s == NULL) return BZ_MEM_ERROR;
+    s->strm = strm;
+
+    s->arr1 = NULL;
+    s->arr2 = NULL;
+    s->ftab = NULL;
+
+    n = 100000 * blockSize100k;
+    s->arr1 = (unsigned *)(strm->bzalloc)(strm->opaque,(n * sizeof(uint32_t)), 1);
+    s->arr2 = (unsigned *)(strm->bzalloc)(strm->opaque,((n+BZ_N_OVERSHOOT)*sizeof(uint32_t)), 1);
+    s->ftab = (unsigned *)(strm->bzalloc)(strm->opaque,(65537 * sizeof(uint32_t)), 1);
+
+
 
    if (s->arr1 == NULL || s->arr2 == NULL || s->ftab == NULL) {
-      if (s->arr1 != NULL) BZFREE(s->arr1);
-      if (s->arr2 != NULL) BZFREE(s->arr2);
-      if (s->ftab != NULL) BZFREE(s->ftab);
-      if (s       != NULL) BZFREE(s);
+      if (s->arr1 != NULL) (strm->bzfree)(strm->opaque,(s->arr1));
+      if (s->arr2 != NULL) (strm->bzfree)(strm->opaque,(s->arr2));
+      if (s->ftab != NULL) (strm->bzfree)(strm->opaque,(s->ftab));
+      if (s       != NULL) (strm->bzfree)(strm->opaque,(s));
       return BZ_MEM_ERROR;
    }
 
@@ -3118,10 +3261,12 @@ int BZ2_bzCompressEnd  ( bz_stream *strm )
    if (s == NULL) return BZ_PARAM_ERROR;
    if (s->strm != strm) return BZ_PARAM_ERROR;
 
-   if (s->arr1 != NULL) BZFREE(s->arr1);
-   if (s->arr2 != NULL) BZFREE(s->arr2);
-   if (s->ftab != NULL) BZFREE(s->ftab);
-   BZFREE(strm->state);
+
+
+   if (s->arr1 != NULL) (strm->bzfree)(strm->opaque,(s->arr1));
+   if (s->arr2 != NULL) (strm->bzfree)(strm->opaque,(s->arr2));
+   if (s->ftab != NULL) (strm->bzfree)(strm->opaque,(s->ftab));
+   (strm->bzfree)(strm->opaque,(strm->state));
 
    strm->state = NULL;   
 
@@ -3137,7 +3282,9 @@ int BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
     if (verbosity < 0 || verbosity > 4) return BZ_PARAM_ERROR;
     if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
     if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
-    s = (DState *)BZALLOC( sizeof(DState) );
+
+    s = (DState *)(strm->bzalloc)(strm->opaque,(sizeof(DState)), 1);
+
     if (s == NULL) return BZ_MEM_ERROR;
     s->strm                  = strm;
     strm->state              = s;
@@ -3162,48 +3309,55 @@ int BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
 
 static void unRLE_obuf_to_output_FAST(DState* s)
 {
-   uint8_t k1;
+    uint8_t k1;
 
-   if (s->blockRandomised) {
-
-      while (1) {
-         while (1) {
-            if (s->strm->avail_out == 0) return;
-            if (s->state_out_len == 0) break;
-            *( (uint8_t*)(s->strm->next_out) ) = s->state_out_ch;
-            BZ_UPDATE_CRC ( s->calculatedBlockCRC, s->state_out_ch );
-            s->state_out_len--;
-            s->strm->next_out++;
-            s->strm->avail_out--;
-            s->strm->total_out_lo32++;
-            if (s->strm->total_out_lo32 == 0) s->strm->total_out_hi32++;
-         }
+    if (s->blockRandomised)
+    {
+        while (1)
+        {
+            while (1)
+            {
+                if (s->strm->avail_out == 0) return;
+                if (s->state_out_len == 0) break;
+                *( (uint8_t*)(s->strm->next_out) ) = s->state_out_ch;
+                BZ_UPDATE_CRC ( s->calculatedBlockCRC, s->state_out_ch );
+                s->state_out_len--;
+                s->strm->next_out++;
+                s->strm->avail_out--;
+                s->strm->total_out_lo32++;
+                if (s->strm->total_out_lo32 == 0) s->strm->total_out_hi32++;
+            }
    
-         if (s->nblock_used == s->save_nblock+1) return;
+            if (s->nblock_used == s->save_nblock+1) return;
                
    
-         s->state_out_len = 1;
-         s->state_out_ch = s->k0;
+            s->state_out_len = 1;
+            s->state_out_ch = s->k0;
 
-        s->tPos = s->tt[s->tPos];
-        k1 = (uint8_t)(s->tPos & 0xff);
-        s->tPos >>= 8;
+            s->tPos = s->tt[s->tPos];
+            k1 = (uint8_t)(s->tPos & 0xff);
+            s->tPos >>= 8;
 
 
 
-         BZ_RAND_UPD_MASK; 
-         k1 ^= ((s->rNToGo == 1) ? 1 : 0);
-        s->nblock_used++;
-         if (s->nblock_used == s->save_nblock+1) continue;
-         if (k1 != s->k0) { s->k0 = k1; continue; };
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
+            k1 ^= ((s->rNToGo == 1) ? 1 : 0);
+            s->nblock_used++;
+            if (s->nblock_used == s->save_nblock+1) continue;
+            if (k1 != s->k0) { s->k0 = k1; continue; };
    
-         s->state_out_len = 2;
+            s->state_out_len = 2;
 
-        s->tPos = s->tt[s->tPos];
+            s->tPos = s->tt[s->tPos];
         k1 = (uint8_t)(s->tPos & 0xff);
         s->tPos >>= 8;
 
-        BZ_RAND_UPD_MASK; 
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
          k1 ^= ((s->rNToGo == 1) ? 1 : 0);
         s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
@@ -3216,7 +3370,10 @@ static void unRLE_obuf_to_output_FAST(DState* s)
         s->tPos = s->tt[s->tPos];
         k1 = (uint8_t)(s->tPos & 0xff);
         s->tPos >>= 8;
-        BZ_RAND_UPD_MASK; 
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
          k1 ^= ((s->rNToGo == 1) ? 1 : 0);
         s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
@@ -3224,7 +3381,10 @@ static void unRLE_obuf_to_output_FAST(DState* s)
          s->tPos = s->tt[s->tPos];
         k1 = (uint8_t)(s->tPos & 0xff);
         s->tPos >>= 8;  
-        BZ_RAND_UPD_MASK; 
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
          k1 ^= ((s->rNToGo == 1) ? 1 : 0);
         s->nblock_used++;
          s->state_out_len = ((int32_t)k1) + 4;
@@ -3233,7 +3393,10 @@ static void unRLE_obuf_to_output_FAST(DState* s)
         s->k0 = (uint8_t)(s->tPos & 0xff);
         s->tPos >>= 8;
 
-        BZ_RAND_UPD_MASK; 
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
          s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
         s->nblock_used++;
       }
@@ -3366,8 +3529,7 @@ int32_t BZ2_indexIntoF(int32_t indx, int32_t *cftab )
     return nb;
 }
 
-static
-void unRLE_obuf_to_output_SMALL(DState* s)
+static void unRLE_obuf_to_output_SMALL(DState* s)
 {
     uint8_t k1;
 
@@ -3389,35 +3551,66 @@ void unRLE_obuf_to_output_SMALL(DState* s)
             }
 
             if (s->nblock_used == s->save_nblock+1) return;
-               
+             
+
+  
             s->state_out_len = 1;
             s->state_out_ch = s->k0;
-            BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
+            k1 = BZ2_indexIntoF( s->tPos, s->cftab );
+            s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+             (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
             k1 ^= ((s->rNToGo == 1) ? 1 : 0);
             s->nblock_used++;
             if (s->nblock_used == s->save_nblock+1) continue;
             if (k1 != s->k0) { s->k0 = k1; continue; };
    
             s->state_out_len = 2;
-            BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
+            k1 = BZ2_indexIntoF ( s->tPos, s->cftab );
+            s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+             (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
             k1 ^= ((s->rNToGo == 1) ? 1 : 0);
             s->nblock_used++;
             if (s->nblock_used == s->save_nblock+1) continue;
             if (k1 != s->k0) { s->k0 = k1; continue; };
    
             s->state_out_len = 3;
-            BZ_GET_SMALL(k1);
-            BZ_RAND_UPD_MASK; 
+            k1 = BZ2_indexIntoF ( s->tPos, s->cftab );
+            s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+    (  ((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
             k1 ^= ((s->rNToGo == 1) ? 1 : 0);
             s->nblock_used++;
             if (s->nblock_used == s->save_nblock+1) continue;
             if (k1 != s->k0) { s->k0 = k1; continue; };
    
-            BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK; 
+            k1 = BZ2_indexIntoF ( s->tPos, s->cftab );
+            s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+    ( ((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF)  << 16));
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
             k1 ^= ((s->rNToGo == 1) ? 1 : 0);
             s->nblock_used++;
-            s->state_out_len = ((Int32)k1) + 4;
-            BZ_GET_SMALL(s->k0); BZ_RAND_UPD_MASK; 
+            s->state_out_len = ((int32_t)k1) + 4;
+            s->k0 = BZ2_indexIntoF ( s->tPos, s->cftab );
+            s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+    ( ((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
+
+        if (s->rNToGo == 0) { s->rNToGo = BZ2_rNums[s->rTPos]; s->rTPos++;
+      if (s->rTPos == 512) s->rTPos = 0; } s->rNToGo--;
+
             s->k0 ^= ((s->rNToGo == 1) ? 1 : 0);
             s->nblock_used++;
         }
@@ -3438,26 +3631,43 @@ void unRLE_obuf_to_output_SMALL(DState* s)
          }
    
          if (s->nblock_used == s->save_nblock+1) return;
-   
+ 
+
+
          s->state_out_len = 1;
          s->state_out_ch = s->k0;
-         BZ_GET_SMALL(k1); s->nblock_used++;
+         k1 = BZ2_indexIntoF(s->tPos, s->cftab);
+         s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+            (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
+         s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
    
          s->state_out_len = 2;
-         BZ_GET_SMALL(k1); s->nblock_used++;
+         k1 = BZ2_indexIntoF ( s->tPos, s->cftab );
+         s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+            (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
+         s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
    
          s->state_out_len = 3;
-         BZ_GET_SMALL(k1); s->nblock_used++;
+         k1 = BZ2_indexIntoF ( s->tPos, s->cftab );
+         s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+            (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
+         s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
    
-         BZ_GET_SMALL(k1); s->nblock_used++;
+         k1 = BZ2_indexIntoF ( s->tPos, s->cftab );
+         s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+            (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF)  << 16));
+         s->nblock_used++;
          s->state_out_len = ((Int32)k1) + 4;
-         BZ_GET_SMALL(s->k0); s->nblock_used++;
+         s->k0 = BZ2_indexIntoF ( s->tPos, s->cftab );
+         s->tPos = (((uint32_t)s->ll16[s->tPos]) |
+            (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
+         s->nblock_used++;
       }
 
    }
@@ -3497,7 +3707,7 @@ int BZ2_bzDecompress ( bz_stream *strm )
          }
       }
       if (s->state >= BZ_X_MAGIC_1) {
-         Int32 r = BZ2_decompress ( s );
+         int32_t r = BZ2_decompress ( s );
          if (r == BZ_STREAM_END) {
             if (s->verbosity >= 3)
                fprintf(stderr, "\n    combined CRCs: stored = 0x%x, computed = 0x%x", 
@@ -3523,11 +3733,11 @@ int BZ2_bzDecompressEnd  ( bz_stream *strm )
    if (s == NULL) return BZ_PARAM_ERROR;
    if (s->strm != strm) return BZ_PARAM_ERROR;
 
-   if (s->tt   != NULL) BZFREE(s->tt);
-   if (s->ll16 != NULL) BZFREE(s->ll16);
-   if (s->ll4  != NULL) BZFREE(s->ll4);
+   if (s->tt   != NULL) (strm->bzfree)(strm->opaque,(s->tt));
+   if (s->ll16 != NULL) (strm->bzfree)(strm->opaque,(s->ll16));
+   if (s->ll4  != NULL) (strm->bzfree)(strm->opaque,(s->ll4));
 
-   BZFREE(strm->state);
+    (strm->bzfree)(strm->opaque,(strm->state));
    strm->state = NULL;
 
    return BZ_OK;
@@ -3703,17 +3913,11 @@ void BZ2_bzWrite
 }
 
 
-void BZ2_bzWriteClose
-                  ( int*          bzerror, 
-                    BZFILE*       b, 
-                    int           abandon,
-                    unsigned int* nbytes_in,
-                    unsigned int* nbytes_out )
+void BZ2_bzWriteClose(int *bzerror, BZFILE *b, int abandon, unsigned int *nbytes_in,
+                    unsigned int *nbytes_out)
 {
-   BZ2_bzWriteClose64 ( bzerror, b, abandon, 
-                        nbytes_in, NULL, nbytes_out, NULL );
+    BZ2_bzWriteClose64(bzerror, b, abandon, nbytes_in, NULL, nbytes_out, NULL);
 }
-
 
 void BZ2_bzWriteClose64
                   ( int*          bzerror, 
@@ -3810,16 +4014,7 @@ void BZ2_bzWriteClose64
    free ( bzf );
 }
 
-
-
-
-BZFILE* BZ2_bzReadOpen
-                   ( int*  bzerror, 
-                     FILE* f, 
-                     int   verbosity,
-                     int   small,
-                     void* unused,
-                     int   nUnused )
+BZFILE* BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small, void *unused, int nUnused)
 {
     bzFile* bzf = NULL;
     int     ret;
@@ -4527,11 +4722,11 @@ static
 uint8_t uncompressStream ( FILE *zStream, FILE *stream )
 {
    BZFILE* bzf = NULL;
-   Int32   bzerr, bzerr_dummy, ret, nread, streamNo, i;
-   uint8_t   obuf[5000];
-   uint8_t   unused[BZ_MAX_UNUSED];
-   Int32   nUnused;
-   uint8_t*  unusedTmp;
+   int32_t bzerr, bzerr_dummy, ret, nread, streamNo, i;
+   uint8_t obuf[5000];
+   uint8_t unused[BZ_MAX_UNUSED];
+   int32_t nUnused;
+   uint8_t *unusedTmp;
 
    nUnused = 0;
    streamNo = 0;
