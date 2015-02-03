@@ -1,27 +1,52 @@
-#include "bunzip2.h"
+#include "bitinput.h"
+#include <vector>
+#include <stdint.h>
 #include <cstring>
+#include <fstream>
+#include "fector.h"
+
+typedef Fector<uint8_t> Fugt;
+
+class Block
+{
+    uint32_t _minLengths[6] = {0}, _bwtByteCounts[256] = {0}, *_merged;
+    uint32_t _bases[6][25] = {}, _symbols[6][258] = {};
+    int32_t _limits[6][24] = {};
+    int32_t _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat = 0, _randomIndex, _randomCount;
+    bool _blockRandomised = false;
+    uint8_t _bwtBlock[900000] = {0}, _symbolMap[256] = {0}, _indexToFront(uint8_t *a, uint32_t i);
+    uint32_t _curp = 0, _length = 0, _dec = 0;
+    uint32_t _nextByte() { int r = _curp & 0xff; _curp = _merged[_curp >> 8]; _dec++; return r; }
+    void _generate(uint8_t *a) { for (unsigned i = 0; i < 256; i++) a[i] = i; }
+    uint32_t _nextSymbol(BitInput *bi, const Fugt &selectors);
+public:
+    //Block() : _merged(new uint32_t[999999]()) { }
+    ~Block() { delete[] _merged; }
+    int read();
+    void init(BitInput *bi);
+};
+
+class DecStream
+{
+    BitInput *_bi;
+    Block _bd;
+    uint32_t _streamComplete = false;
+    bool _initNextBlock();
+    int _read();
+public:
+    DecStream(BitInput *bi) : _bi(bi)
+    {
+        uint32_t magic = bi->readUInt32();
+        cerr << "Magic: " << hex << magic << "\n";
+    }
+    void extractTo(ostream &os) { for (int b = _read(); b != -1; b = _read()); }
+};
 
 uint8_t Block::_indexToFront(uint8_t *a, uint32_t index)
 {
     uint8_t value = a[index];
     for (uint32_t i = index; i > 0; i--) a[i] = a[i - 1];
     return a[0] = value;
-}
-
-uint32_t Block::_nextSymbol(BitInput *bi, Vugt selectors)
-{
-    if (++_grpPos % 50 == 0)
-        _curTbl = selectors.at(++_grpIdx); //[++_grpIdx];
-
-    for (int32_t n = _minLengths[_curTbl], codeBits = bi->readBits(n); n <= 23; n++)
-    {
-        if (codeBits <= _limits[_curTbl][n])
-            return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
-
-        codeBits = codeBits << 1 | bi->readBits(1);
-    }
-
-    return 0;
 }
 
 uint32_t Block::_nextSymbol(BitInput *bi, const Fugt &selectors)
@@ -45,36 +70,41 @@ uint32_t Block::_nextSymbol(BitInput *bi, const Fugt &selectors)
 
 void Block::init(BitInput *bi)
 {
-    cerr << "Block::init\n";
     _grpIdx = _grpPos = _last = -1;
-    bi->readInt();
+    uint32_t crc = bi->readUInt32();
+    cerr << "Block CRC: " << hex << crc << "\n";
     _blockRandomised = bi->readBool();
     _acc = _rleRepeat = _length = _curp = _dec = _randomIndex = _curTbl = 0;
     uint32_t bwtStartPointer = bi->readBits(24), symbolCount = 0;
+    cerr << "BWT Start: " << dec << bwtStartPointer << "\n";
     uint8_t tableCodeLengths[6][258];
+    uint16_t ranges = bi->readBits(16);
+    cerr << "Huffman Used Map: " << ranges << "\n";
 
-    for (uint16_t i = 0, ranges = bi->readBits(16); i < 16; i++)
+    for (uint16_t i = 0; i < 16; i++)
         if ((ranges & ((1 << 15) >> i)) != 0)
             for (int j = 0, k = i << 4; j < 16; j++, k++)
                 if (bi->readBool())
                     _symbolMap[symbolCount++] = (uint8_t)k;
 
-    cerr << symbolCount << "\n";
-
+    cerr << "SymbolCount: " << dec << symbolCount << "\n";
     uint32_t eob = symbolCount + 1, tables = bi->readBits(3), selectors_n = bi->readBits(15);
+    cerr << "Huffman Groups: " << tables << "\n";
+    cerr << "Selectors: " << selectors_n << "\n";
     uint8_t tableMTF[256];
     _generate(tableMTF);
-    //Vugt selectors;
+
+
     Fugt selectors2(selectors_n);
 
     for (uint32_t i = 0; i < selectors_n; i++)
     {
-        //selectors.push_back(_indexToFront(tableMTF, bi->readUnary()));
-        
         uint32_t x = bi->readUnary();
         uint8_t y = _indexToFront(tableMTF, x);
         selectors2.set(i, y);
     }
+
+    //cerr << "Selectors: " << selectors.size() << "\n";
 
     for (uint32_t t = 0; t < tables; t++)
     {
@@ -156,7 +186,7 @@ void Block::init(BitInput *bi)
         }
     }
 
-    //memset(_merged, 0, sizeof(_merged));
+    cerr << "Length: " << dec << _length << "\n";
     _merged = new uint32_t[_length]();
     int characterBase[256] = {0};
     for (int i = 0; i < 255; i++) characterBase[i + 1] = _bwtByteCounts[i];
@@ -190,12 +220,13 @@ bool DecStream::_initNextBlock()
     else if (marker1 == 0x177245 && marker2 == 0x385090)
     {
         _streamComplete = true;
-        _bi->readInt();
+        uint32_t crc = _bi->readInt();
+        cerr << "Stream CRC: " << hex << crc << "\n";
         return false;
     }
 
     _streamComplete = true;
-    throw "BZip2 stream format error";
+    throw string("BZip2 stream format error");
 }
 
 int Block::read()
@@ -215,6 +246,62 @@ int Block::read()
 
     _rleRepeat--;
     return _last;
+}
+
+class App
+{
+    void test(BitInput *bi)
+    {
+        uint32_t magic = bi->readUInt32();
+        cerr << "Magic: " << hex << magic << "\n";
+    }
+public:
+    int run(int argc, char **argv);
+};
+
+int App::run(int argc, char **argv)
+{
+    ifstream ifs(argv[1]);
+    BitInput bi(&ifs);
+    DecStream ds(&bi);
+    ds.extractTo(cerr);
+    ifs.close();
+    return 0;
+}
+
+int main(int argc, char **argv)
+{
+    App app;
+
+    try
+    {
+        return app.run(argc, argv);
+    }
+    catch (string s)
+    {
+        cout << s << "\n";
+    }
+    catch (const char *e)
+    {
+        cout << e << "\n";
+    }
+    catch (bad_alloc)
+    {
+        cout << "bad alloc\n";
+    }
+    catch (bad_exception)
+    {
+        cout << "bad exception\n";
+    }
+    catch (exception &e)
+    {
+        cout << "Onbekend exception " << e.what() << "\n";
+    }
+    catch (...)
+    {
+        cout << "Unknown exception\n";
+    }
+    return 0;
 }
 
 

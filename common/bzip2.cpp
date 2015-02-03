@@ -35,75 +35,9 @@ static const uint16_t BZ_MAX_UNUSED = 5000;
 
 typedef void BZFILE;
 
-extern BZFILE* BZ2_bzReadOpen ( 
-      int*  bzerror,   
-      FILE* f, 
-      int   verbosity, 
-      int   small,
-      void* unused,    
-      int   nUnused 
-   );
 
 
-extern void BZ2_bzWriteClose ( 
-      int*          bzerror, 
-      BZFILE*       b, 
-      int           abandon, 
-      unsigned int* nbytes_in, 
-      unsigned int* nbytes_out 
-   );
 
-extern void BZ2_bzWriteClose64 ( 
-      int*          bzerror, 
-      BZFILE*       b, 
-      int           abandon, 
-      unsigned int* nbytes_in_lo32, 
-      unsigned int* nbytes_in_hi32, 
-      unsigned int* nbytes_out_lo32, 
-      unsigned int* nbytes_out_hi32
-   );
-
-
-extern int BZ2_bzBuffToBuffCompress ( 
-      char*         dest, 
-      unsigned int* destLen,
-      char*         source, 
-      unsigned int  sourceLen,
-      int           blockSize100k, 
-      int           verbosity, 
-      int           workFactor 
-   );
-
-extern int BZ2_bzBuffToBuffDecompress ( 
-      char*         dest, 
-      unsigned int* destLen,
-      char*         source, 
-      unsigned int  sourceLen,
-      int           small, 
-      int           verbosity 
-   );
-
-
-extern const char * BZ2_bzlibVersion(void);
-extern BZFILE *BZ2_bzopen(const char *path, const char *mode);
-extern BZFILE *BZ2_bzdopen(int fd, const char *mode);
-extern int BZ2_bzread(BZFILE* b, void* buf, int len);
-
-extern int BZ2_bzwrite (
-      BZFILE* b, 
-      void*   buf, 
-      int     len 
-   );
-
-extern int BZ2_bzflush (
-      BZFILE* b
-   );
-
-extern void BZ2_bzclose (
-      BZFILE* b
-   );
-
-extern const char * BZ2_bzerror(BZFILE *b, int *errnum);
 
 static const uint8_t BZ_RUN = 0;
 static const uint8_t BZ_FLUSH = 1;
@@ -123,8 +57,6 @@ static const int8_t BZ_UNEXPECTED_EOF   = -7;
 static const int8_t BZ_OUTBUFF_FULL     = -8;
 static const int8_t BZ_CONFIG_ERROR     = -9;
 
-
-extern void BZ2_bz__AssertH__fail(int errcode);
 
 int VPrintf0(const char *zf) { return ::fprintf(stderr, zf); }
 
@@ -201,14 +133,6 @@ typedef
 
    }
    EState;
-
-
-
-extern void BZ2_blockSort(EState*);
-extern void BZ2_compressBlock(EState*, uint8_t);
-extern void BZ2_bsInitWrite ( EState* );
-extern void BZ2_hbAssignCodes ( int32_t*, uint8_t*, int32_t, int32_t, int32_t );
-extern void BZ2_hbMakeCodeLengths ( uint8_t*, int32_t*, int32_t, int32_t );
 
 
 static const uint8_t BZ_M_IDLE = 1;
@@ -340,16 +264,60 @@ typedef
    }
    DState;
 
+class AppBzip2
+{
+    int BZ2_bzBuffToBuffCompress(char *dest, unsigned int *destLen, char *source, 
+                  unsigned int sourceLen, int blockSize100k, int verbosity, int workFactor);
 
-extern int32_t BZ2_indexIntoF(int32_t, int32_t*);
-extern int32_t BZ2_decompress(DState*);
+    void mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
+               int32_t nblock, int32_t loSt, int32_t hiSt, int32_t dSt, int32_t *budget);
 
-extern void BZ2_hbCreateDecodeTables(int32_t*, int32_t*, int32_t*, uint8_t*,
-                int32_t, int32_t, int32_t);
+    void BZ2_bzclose(BZFILE* b);
+
+    int BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosity, int workFactor);
+    BZFILE *BZ2_bzopen(const char *path, const char *mode);
+
+    void mainSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant, 
+                uint32_t *ftab, int32_t nblock, int32_t verb, int32_t *budget);
+
+    BZFILE* BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
+        int verbosity, int workFactor);
+
+    void BZ2_bzWriteClose(int *bzerror, BZFILE *b, int abandon, unsigned int *nbytes_in,
+                    unsigned int *nbytes_out);
+
+    BZFILE *BZ2_bzdopen(int fd, const char *mode);
+    BZFILE *bzopen_or_bzdopen(const char *path, int fd, const char *mode, int open_mode);
+    void compressStream(FILE *stream, FILE *zStream);
+    void copyFileName(char* to, const char* from);
+    void compress(char *name);
+    void usage(char *fullProgName);
+    void license();
+    void uncompress(char *name);
+    void testf(char *name);
+    void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32_t hiSt);
+    void BZ2_compressBlock(EState* s, uint8_t is_last_block);
+    void generateMTFValues(EState *s);
+    void BZ2_blockSort(EState *s);
+    void makeMaps_e(EState* s);
+    void sendMTFValues(EState* s);
+    uint8_t handle_compress(bz_stream* strm);
+    int BZ2_bzCompress(bz_stream *strm, int action);
+    void BZ2_bzWrite(int *bzerror, BZFILE* b, void *buf, int len);
+    int BZ2_bzwrite(BZFILE* b, void* buf, int len);
+    void fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, int32_t hi);
+
+    void BZ2_bzWriteClose64(int *bzerror, BZFILE *b, int abandon, unsigned int *nbytes_in_lo32,
+      unsigned int *nbytes_in_hi32, unsigned int *nbytes_out_lo32, unsigned int *nbytes_out_hi32);
+
+    void fallbackSort(uint32_t* fmap, uint32_t* eclass, 
+        uint32_t *bhtab, int32_t nblock, int32_t verb);
+public:
+    int run(int argc, char **argv);
+};
 
 
-
-static void fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, int32_t hi)
+void AppBzip2::fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, int32_t hi)
 {
     int32_t i, j, tmp;
     uint32_t ec_tmp;
@@ -386,6 +354,58 @@ static void fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, int
 static const uint8_t FALLBACK_QSORT_SMALL_THRESH = 10;
 static const uint8_t FALLBACK_QSORT_STACK_SIZE =  100;
 
+const char * BZ2_bzlibVersion(void)
+{
+   return "1.0.2, 30-Dec-2001";
+
+}
+
+void BZ2_bz__AssertH__fail ( int errcode )
+{
+   fprintf(stderr, 
+      "\n\nbzip2/libbzip2: internal error number %d.\n"
+      "This is a bug in bzip2/libbzip2, %s.\n"
+      "Please report it to me at: jseward@acm.org.  If this happened\n"
+      "when you were using some program which uses libbzip2 as a\n"
+      "component, you should also report this bug to the author(s)\n"
+      "of that program.  Please make an effort to report this bug;\n"
+      "timely and accurate bug reports eventually lead to higher\n"
+      "quality software.  Thanks.  Julian Seward, 30 December 2001.\n\n",
+      errcode,
+      BZ2_bzlibVersion()
+   );
+
+   if (errcode == 1007) {
+   fprintf(stderr,
+      "\n*** A special note about internal error number 1007 ***\n"
+      "\n"
+      "Experience suggests that a common cause of i.e. 1007\n"
+      "is unreliable memory or other hardware.  The 1007 assertion\n"
+      "just happens to cross-check the results of huge numbers of\n"
+      "memory reads/writes, and so acts (unintendedly) as a stress\n"
+      "test of your memory system.\n"
+      "\n"
+      "I suggest the following: try compressing the file again,\n"
+      "possibly monitoring progress in detail with the -vv flag.\n"
+      "\n"
+      "* If the error cannot be reproduced, and/or happens at different\n"
+      "  points in compression, you may have a flaky memory system.\n"
+      "  Try a memory-test program.  I have used Memtest86\n"
+      "  (www.memtest86.com).  At the time of writing it is free (GPLd).\n"
+      "  Memtest86 tests memory much more thorougly than your BIOSs\n"
+      "  power-on test, and may find failures that the BIOS doesn't.\n"
+      "\n"
+      "* If the error can be repeatably reproduced, this is a bug in\n"
+      "  bzip2, and I would very much like to hear about it.  Please\n"
+      "  let me know, and, ideally, save a copy of the file causing the\n"
+      "  problem -- without which I will be unable to investigate it.\n"
+      "\n"
+   );
+   }
+
+   exit(3);
+}
+
 void AssertH(bool cond, uint32_t errcode)
 {
     if (!cond)
@@ -408,7 +428,7 @@ void fswap(uint32_t &zz1, uint32_t &zz2)
 
 
 
-static void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32_t hiSt)
+void AppBzip2::fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32_t hiSt)
 {
     int32_t unLo, unHi, ltLo, gtHi, n, m;
     int32_t sp, lo, hi;
@@ -520,15 +540,9 @@ static void fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32
     }
 }
 
-typedef int32_t Int32;
-typedef int32_t int32;
-typedef uint32_t uint32;
-typedef int16_t Int16;
-typedef int16_t int16;
-typedef uint16_t UInt16;
-typedef uint16_t uint16;
 
-static void fallbackSort(uint32_t* fmap, uint32_t* eclass, 
+
+void AppBzip2::fallbackSort(uint32_t* fmap, uint32_t* eclass, 
                     uint32_t *bhtab, int32_t nblock, int32_t verb)
 {
     int32_t ftab[257];
@@ -662,6 +676,8 @@ static void fallbackSort(uint32_t* fmap, uint32_t* eclass,
 }
 
 
+
+
 static uint8_t mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* quadrant,
                uint32_t nblock, int32_t* budget)
 {
@@ -765,15 +781,8 @@ int32_t incs[14] = { 1, 4, 13, 40, 121, 364, 1093, 3280,
                    9841, 29524, 88573, 265720,
                    797161, 2391484 };
 
-static
-void mainSimpleSort(uint32_t *ptr,
-                      uint8_t *block,
-                      uint16_t *quadrant,
-                      int32_t   nblock,
-                      int32_t   lo, 
-                      int32_t   hi, 
-                      int32_t   d,
-                      int32_t *budget )
+void mainSimpleSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant, int32_t nblock,
+                      int32_t lo, int32_t hi, int32_t d, int32_t *budget)
 {
    int32_t i, j, h, bigN, hp;
    uint32_t v;
@@ -855,7 +864,7 @@ static const uint8_t MAIN_QSORT_STACK_SIZE = 100;
 
 
 
-static void mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
+void AppBzip2::mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
                int32_t nblock, int32_t loSt, int32_t hiSt, int32_t dSt, int32_t *budget)
 {
     int32_t unLo, unHi, ltLo, gtHi, n, m, med;
@@ -1016,13 +1025,10 @@ static void mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
 static const uint32_t SETMASK = 1 << 21;
 static const uint32_t CLEARMASK = ~(1<<21);
 
-static void mainSort(uint32_t *ptr, 
-                uint8_t *block,
-                uint16_t *quadrant, 
-                uint32_t *ftab,
-                int32_t nblock,
-                int32_t verb,
-                int32_t *budget )
+
+
+void AppBzip2::mainSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant, 
+                uint32_t *ftab, int32_t nblock, int32_t verb, int32_t *budget)
 {
    int32_t i, j, k, ss, sb;
    int32_t runningOrder[256];
@@ -1182,9 +1188,9 @@ static void mainSort(uint32_t *ptr,
       bigDone[ss] = 1;
 
       if (i < 255) {
-         Int32 bbStart  = ftab[ss << 8] & CLEARMASK;
-         Int32 bbSize   = (ftab[(ss+1) << 8] & CLEARMASK) - bbStart;
-         Int32 shifts   = 0;
+         int32_t bbStart  = ftab[ss << 8] & CLEARMASK;
+         int32_t bbSize   = (ftab[(ss+1) << 8] & CLEARMASK) - bbStart;
+         int32_t shifts   = 0;
 
          while ((bbSize >> shifts) > 65534) shifts++;
 
@@ -1205,7 +1211,7 @@ static void mainSort(uint32_t *ptr,
                  nblock, numQSorted, nblock - numQSorted );
 }
 
-void BZ2_blockSort(EState* s)
+void AppBzip2::BZ2_blockSort(EState* s)
 {
     uint32_t *ptr    = s->ptr; 
     uint8_t *block  = s->block;
@@ -1379,6 +1385,14 @@ void BZ2_hbMakeCodeLengths(uint8_t *len, int32_t *freq, int32_t alphaSize, int32
    }
 }
 
+typedef int32_t Int32;
+typedef int32_t int32;
+typedef uint32_t uint32;
+typedef int16_t Int16;
+typedef int16_t int16;
+typedef uint16_t UInt16;
+typedef uint16_t uint16;
+
 void BZ2_hbAssignCodes(int32_t *code,
                          uint8_t *length,
                          int32_t minLen,
@@ -1490,7 +1504,7 @@ uint32_t BZ2_crc32Table[256] = {
    0xbcb4666dL, 0xb8757bdaL, 0xb5365d03L, 0xb1f740b4L
 };
 
-Int32 BZ2_rNums[512] = { 
+int32_t BZ2_rNums[512] = { 
    619, 720, 127, 481, 931, 816, 813, 233, 566, 247, 
    985, 724, 205, 454, 863, 491, 741, 242, 949, 214, 
    733, 859, 335, 708, 621, 574, 73, 654, 730, 472, 
@@ -1545,13 +1559,13 @@ Int32 BZ2_rNums[512] = {
    936, 638
 };
 
-void BZ2_bsInitWrite ( EState* s )
+void BZ2_bsInitWrite(EState *s)
 {
    s->bsLive = 0;
    s->bsBuff = 0;
 }
 
-static void bsFinishWrite(EState* s)
+static void bsFinishWrite(EState *s)
 {
     while (s->bsLive > 0)
     {
@@ -1562,7 +1576,7 @@ static void bsFinishWrite(EState* s)
     }
 }
 
-static void bsW(EState* s, int32_t n, uint32_t v)
+static void bsW(EState *s, int32_t n, uint32_t v)
 {
     while (s->bsLive >= 8)
     {
@@ -1590,7 +1604,7 @@ static void bsPutUChar(EState* s, uint8_t c)
    bsW( s, 8, (uint32_t)c );
 }
 
-static void makeMaps_e ( EState* s )
+void AppBzip2::makeMaps_e(EState* s)
 {
    int32_t i;
    s->nInUse = 0;
@@ -1601,7 +1615,7 @@ static void makeMaps_e ( EState* s )
       }
 }
 
-static void generateMTFValues ( EState* s )
+void AppBzip2::generateMTFValues(EState *s)
 {
     uint8_t  yy[256];
    int32_t   i, j;
@@ -1691,7 +1705,7 @@ static void generateMTFValues ( EState* s )
 
 static const uint8_t BZ_GREATER_ICOST = 15;
 
-static void sendMTFValues(EState* s)
+void AppBzip2::sendMTFValues(EState* s)
 {
     int32_t v, t, i, j, gs, ge, totc, bt, bc, iter;
     int32_t nSelectors, alphaSize, minLen, maxLen, selCtr;
@@ -1968,7 +1982,7 @@ static void sendMTFValues(EState* s)
 }
 
 
-void BZ2_compressBlock(EState* s, uint8_t is_last_block)
+void AppBzip2::BZ2_compressBlock(EState* s, uint8_t is_last_block)
 {
    if (s->nblock > 0) {
 
@@ -2034,6 +2048,25 @@ static void makeMaps_d(DState *s)
 }
 
 void BZ_INITIALISE_CRC(uint32_t &crcVar) { crcVar = 0xffffffff; }
+
+int32_t BZ2_indexIntoF(int32_t indx, int32_t *cftab )
+{
+    int32_t nb, na, mid;
+    nb = 0;
+    na = 256;
+    do
+    {
+        mid = (nb + na) >> 1;
+
+        if (indx >= cftab[mid])
+            nb = mid;
+        else
+            na = mid;
+    }
+    while (na - nb != 1);
+    return nb;
+}
+
 
 int32_t BZ2_decompress(DState *s)
 {
@@ -3364,51 +3397,7 @@ int32_t BZ2_decompress(DState *s)
    return retVal;   
 }
 
-void BZ2_bz__AssertH__fail ( int errcode )
-{
-   fprintf(stderr, 
-      "\n\nbzip2/libbzip2: internal error number %d.\n"
-      "This is a bug in bzip2/libbzip2, %s.\n"
-      "Please report it to me at: jseward@acm.org.  If this happened\n"
-      "when you were using some program which uses libbzip2 as a\n"
-      "component, you should also report this bug to the author(s)\n"
-      "of that program.  Please make an effort to report this bug;\n"
-      "timely and accurate bug reports eventually lead to higher\n"
-      "quality software.  Thanks.  Julian Seward, 30 December 2001.\n\n",
-      errcode,
-      BZ2_bzlibVersion()
-   );
 
-   if (errcode == 1007) {
-   fprintf(stderr,
-      "\n*** A special note about internal error number 1007 ***\n"
-      "\n"
-      "Experience suggests that a common cause of i.e. 1007\n"
-      "is unreliable memory or other hardware.  The 1007 assertion\n"
-      "just happens to cross-check the results of huge numbers of\n"
-      "memory reads/writes, and so acts (unintendedly) as a stress\n"
-      "test of your memory system.\n"
-      "\n"
-      "I suggest the following: try compressing the file again,\n"
-      "possibly monitoring progress in detail with the -vv flag.\n"
-      "\n"
-      "* If the error cannot be reproduced, and/or happens at different\n"
-      "  points in compression, you may have a flaky memory system.\n"
-      "  Try a memory-test program.  I have used Memtest86\n"
-      "  (www.memtest86.com).  At the time of writing it is free (GPLd).\n"
-      "  Memtest86 tests memory much more thorougly than your BIOSs\n"
-      "  power-on test, and may find failures that the BIOS doesn't.\n"
-      "\n"
-      "* If the error can be repeatably reproduced, this is a bug in\n"
-      "  bzip2, and I would very much like to hear about it.  Please\n"
-      "  let me know, and, ideally, save a copy of the file causing the\n"
-      "  problem -- without which I will be unable to investigate it.\n"
-      "\n"
-   );
-   }
-
-   exit(3);
-}
 
 static
 int bz_config_ok ( void )
@@ -3459,11 +3448,7 @@ static uint8_t isempty_RL ( EState* s )
       return 1;
 }
 
-int BZ2_bzCompressInit 
-                    ( bz_stream* strm, 
-                     int        blockSize100k,
-                     int        verbosity,
-                     int        workFactor )
+int AppBzip2::BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosity, int workFactor)
 {
     int32_t   n;
     EState* s;
@@ -3668,8 +3653,7 @@ static uint8_t copy_output_until_stop ( EState* s )
    return progress_out;
 }
 
-static
-uint8_t handle_compress ( bz_stream* strm )
+uint8_t AppBzip2::handle_compress ( bz_stream* strm )
 {
    uint8_t progress_in  = 0;
    uint8_t progress_out = 0;
@@ -3713,7 +3697,7 @@ uint8_t handle_compress ( bz_stream* strm )
    return progress_in || progress_out;
 }
 
-int BZ2_bzCompress ( bz_stream *strm, int action )
+int AppBzip2::BZ2_bzCompress(bz_stream *strm, int action)
 {
    uint8_t progress;
    EState* s;
@@ -3772,7 +3756,7 @@ int BZ2_bzCompress ( bz_stream *strm, int action )
    return BZ_OK;
 }
 
-int BZ2_bzCompressEnd  ( bz_stream *strm )
+int BZ2_bzCompressEnd(bz_stream *strm)
 {
    EState* s;
    if (strm == NULL) return BZ_PARAM_ERROR;
@@ -4030,23 +4014,6 @@ return_notr:
     }
 }
 
-int32_t BZ2_indexIntoF(int32_t indx, int32_t *cftab )
-{
-    int32_t nb, na, mid;
-    nb = 0;
-    na = 256;
-    do
-    {
-        mid = (nb + na) >> 1;
-
-        if (indx >= cftab[mid])
-            nb = mid;
-        else
-            na = mid;
-    }
-    while (na - nb != 1);
-    return nb;
-}
 
 static void unRLE_obuf_to_output_SMALL(DState* s)
 {
@@ -4286,7 +4253,8 @@ static uint8_t myfeof(FILE* f)
 
 
 
-BZFILE* BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k, int verbosity, int workFactor)
+BZFILE *AppBzip2::BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
+                int verbosity, int workFactor)
 {
     int32_t ret;
     bzFile* bzf = NULL;
@@ -4353,11 +4321,7 @@ BZFILE* BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k, int verbosity,
 
 
 
-void BZ2_bzWrite
-             ( int*    bzerror, 
-               BZFILE* b, 
-               void*   buf, 
-               int     len )
+void AppBzip2::BZ2_bzWrite(int *bzerror, BZFILE* b, void *buf, int len)
 {
     int32_t n, n2, ret;
     bzFile* bzf = (bzFile*)b;
@@ -4432,22 +4396,13 @@ void BZ2_bzWrite
 }
 
 
-void BZ2_bzWriteClose(int *bzerror, BZFILE *b, int abandon, unsigned int *nbytes_in,
-                    unsigned int *nbytes_out)
-{
-    BZ2_bzWriteClose64(bzerror, b, abandon, nbytes_in, NULL, nbytes_out, NULL);
-}
 
-void BZ2_bzWriteClose64
-                  ( int*          bzerror, 
-                    BZFILE*       b, 
-                    int           abandon,
-                    unsigned int* nbytes_in_lo32,
-                    unsigned int* nbytes_in_hi32,
-                    unsigned int* nbytes_out_lo32,
-                    unsigned int* nbytes_out_hi32 )
+
+void AppBzip2::BZ2_bzWriteClose64(int *bzerror,
+     BZFILE *b, int abandon, unsigned int *nbytes_in_lo32,
+     unsigned int *nbytes_in_hi32, unsigned int *nbytes_out_lo32, unsigned int *nbytes_out_hi32)
 {
-    int32_t   n, n2, ret;
+    int32_t n, n2, ret;
     bzFile* bzf = (bzFile*)b;
 
     if (bzf == NULL)
@@ -4533,6 +4488,12 @@ void BZ2_bzWriteClose64
    free ( bzf );
 }
 
+void AppBzip2::BZ2_bzWriteClose(int *bzerror, BZFILE *b, int abandon, unsigned int *nbytes_in,
+                    unsigned int *nbytes_out)
+{
+    BZ2_bzWriteClose64(bzerror, b, abandon, nbytes_in, NULL, nbytes_out, NULL);
+}
+
 BZFILE* BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small, void *unused, int nUnused)
 {
     bzFile* bzf = NULL;
@@ -4605,7 +4566,7 @@ BZFILE* BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small, void *un
 }
 
 
-void BZ2_bzReadClose ( int *bzerror, BZFILE *b )
+void BZ2_bzReadClose(int *bzerror, BZFILE *b)
 {
     bzFile* bzf = (bzFile*)b;
 
@@ -4760,14 +4721,8 @@ void BZ2_bzReadGetUnused(int *bzerror, BZFILE* b, void **unused, int *nUnused)
     *unused = bzf->strm.next_in;
 }
 
-int BZ2_bzBuffToBuffCompress
-                         ( char*         dest, 
-                           unsigned int* destLen,
-                           char*         source, 
-                           unsigned int  sourceLen,
-                           int           blockSize100k, 
-                           int           verbosity, 
-                           int           workFactor )
+int AppBzip2::BZ2_bzBuffToBuffCompress(char *dest, unsigned int *destLen, char *source, 
+                  unsigned int sourceLen, int blockSize100k, int verbosity, int workFactor)
 {
     bz_stream strm;
     int ret;
@@ -4783,8 +4738,7 @@ int BZ2_bzBuffToBuffCompress
    strm.bzalloc = NULL;
    strm.bzfree = NULL;
    strm.opaque = NULL;
-   ret = BZ2_bzCompressInit ( &strm, blockSize100k, 
-                              verbosity, workFactor );
+   ret = BZ2_bzCompressInit(&strm, blockSize100k, verbosity, workFactor);
    if (ret != BZ_OK) return ret;
 
    strm.next_in = source;
@@ -4808,8 +4762,7 @@ int BZ2_bzBuffToBuffCompress
    return ret;
 }
 
-int BZ2_bzBuffToBuffDecompress
-                           ( char*         dest, 
+int BZ2_bzBuffToBuffDecompress(char *dest, 
                              unsigned int* destLen,
                              char*         source, 
                              unsigned int  sourceLen,
@@ -4858,19 +4811,10 @@ int BZ2_bzBuffToBuffDecompress
    return ret; 
 }
 
-const char * BZ2_bzlibVersion(void)
-{
-   return "1.0.2, 30-Dec-2001";
-
-}
 
 
-static
-BZFILE * bzopen_or_bzdopen
-               ( const char *path,   
-                 int fd,             
-                 const char *mode,
-                 int open_mode)      
+
+BZFILE *AppBzip2::bzopen_or_bzdopen(const char *path, int fd, const char *mode, int open_mode)
 {
    int    bzerr;
    char   unused[BZ_MAX_UNUSED];
@@ -4930,16 +4874,12 @@ BZFILE * bzopen_or_bzdopen
    return bzfp;
 }
 
-BZFILE * BZ2_bzopen
-               ( const char *path,
-                 const char *mode )
+BZFILE *AppBzip2::BZ2_bzopen(const char *path, const char *mode)
 {
    return bzopen_or_bzdopen(path,-1,mode,0);
 }
 
-BZFILE * BZ2_bzdopen
-               ( int fd,
-                 const char *mode )
+BZFILE *AppBzip2::BZ2_bzdopen(int fd, const char *mode)
 {
     return bzopen_or_bzdopen(NULL, fd, mode, 1);
 }
@@ -4956,7 +4896,7 @@ int BZ2_bzread (BZFILE* b, void* buf, int len )
    }
 }
 
-int BZ2_bzwrite(BZFILE* b, void* buf, int len )
+int AppBzip2::BZ2_bzwrite(BZFILE* b, void* buf, int len)
 {
    int bzerr;
 
@@ -4973,7 +4913,7 @@ int BZ2_bzflush(BZFILE *b)
    return 0;
 }
 
-void BZ2_bzclose(BZFILE* b)
+void AppBzip2::BZ2_bzclose(BZFILE* b)
 {
    int bzerr;
    FILE *fp = ((bzFile *)b)->handle;
@@ -5064,8 +5004,6 @@ static void    configError           ( void )    __attribute__ ((noreturn));
 static void    crcError              ( void )    __attribute__ ((noreturn));
 static void    cleanUpAndFail        ( int32_t )   __attribute__ ((noreturn));
 static void    compressedStreamEOF   ( void )    __attribute__ ((noreturn));
-static void    copyFileName(char*, const char*);
-static void*   myMalloc     ( int32_t );
 
 typedef
    struct { uint8_t b[8]; } 
@@ -5139,8 +5077,7 @@ static void uInt64_toAscii(char* outbuf, UInt64* n)
       outbuf[i] = buf[nBuf-i-1];
 }
 
-static 
-void compressStream ( FILE *stream, FILE *zStream )
+void AppBzip2::compressStream(FILE *stream, FILE *zStream)
 {
    BZFILE* bzf = NULL;
    uint8_t   ibuf[5000];
@@ -5235,7 +5172,7 @@ void compressStream ( FILE *stream, FILE *zStream )
 }
 
 static 
-uint8_t uncompressStream ( FILE *zStream, FILE *stream )
+uint8_t uncompressStream(FILE *zStream, FILE *stream)
 {
    BZFILE* bzf = NULL;
    int32_t bzerr, bzerr_dummy, ret, nread, streamNo, i;
@@ -5433,7 +5370,7 @@ uint8_t testStream ( FILE *zStream )
 
 
 static
-void setExit ( Int32 v )
+void setExit(int32_t v)
 {
    if (v > exitValue) exitValue = v;
 }
@@ -5650,7 +5587,7 @@ void configError ( void )
 }
 
 
-static  void pad(char *s)
+static void pad(char *s)
 {
    int32_t i;
    if ( (int32_t)strlen(s) >= longestFileName ) return;
@@ -5658,8 +5595,7 @@ static  void pad(char *s)
       fprintf ( stderr, " " );
 }
 
-static 
-void copyFileName(char* to, const char* from ) 
+void AppBzip2::copyFileName(char* to, const char* from ) 
 {
    if ( strlen(from) > FILE_NAME_LEN-10 )  {
       fprintf (
@@ -5782,7 +5718,7 @@ static uint8_t mapSuffix(char* name, const char* oldSuffix, const char* newSuffi
    return 1;
 }
 
-static void compress(char *name )
+void AppBzip2::compress(char *name)
 {
    FILE  *inStr;
    FILE  *outStr;
@@ -5956,11 +5892,11 @@ static void compress(char *name )
    deleteOutputOnInterrupt = 0;
 }
 
-static void uncompress(char *name )
+void AppBzip2::uncompress(char *name)
 {
    FILE  *inStr;
    FILE  *outStr;
-   Int32 n, i;
+   int32_t n, i;
    uint8_t  magicNumberOK;
    uint8_t  cantGuess;
    struct stat statBuf;
@@ -6146,8 +6082,7 @@ static void uncompress(char *name )
 
 }
 
-static 
-void testf(char *name)
+void AppBzip2::testf(char *name)
 {
    FILE *inStr;
    uint8_t allOK;
@@ -6232,67 +6167,9 @@ void testf(char *name)
    if (!allOK) testFailsExist = 1;
 }
 
-static 
-void license ( void )
-{
-   fprintf ( stderr,
 
-    "bzip2, a block-sorting file compressor.  "
-    "Version %s.\n"
-    "   \n"
-    "   Copyright (C) 1996-2002 by Julian Seward.\n"
-    "   \n"
-    "   This program is free software; you can redistribute it and/or modify\n"
-    "   it under the terms set out in the LICENSE file, which is included\n"
-    "   in the bzip2-1.0 source distribution.\n"
-    "   \n"
-    "   This program is distributed in the hope that it will be useful,\n"
-    "   but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-    "   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-    "   LICENSE file for more details.\n"
-    "   \n",
-    BZ2_bzlibVersion()
-   );
-}
 
-static 
-void usage(char *fullProgName)
-{
-   fprintf (
-      stderr,
-      "bzip2, a block-sorting file compressor.  "
-      "Version %s.\n"
-      "\n   usage: %s [flags and input files in any order]\n"
-      "\n"
-      "   -h --help           print this message\n"
-      "   -d --decompress     force decompression\n"
-      "   -z --compress       force compression\n"
-      "   -k --keep           keep (don't delete) input files\n"
-      "   -f --force          overwrite existing output files\n"
-      "   -t --test           test compressed file integrity\n"
-      "   -c --stdout         output to standard out\n"
-      "   -q --quiet          suppress noncritical error messages\n"
-      "   -v --verbose        be verbose (a 2nd -v gives more)\n"
-      "   -L --license        display software version & license\n"
-      "   -V --version        display software version & license\n"
-      "   -s --small          use less memory (at most 2500k)\n"
-      "   -1 .. -9            set block size to 100k .. 900k\n"
-      "   --fast              alias for -1\n"
-      "   --best              alias for -9\n"
-      "\n"
-      "   If invoked as `bzip2', default action is to compress.\n"
-      "              as `bunzip2',  default action is to decompress.\n"
-      "              as `bzcat', default action is to decompress to stdout.\n"
-      "\n"
-      "   If no file names are given, bzip2 compresses or decompresses\n"
-      "   from standard input to standard output.  You can combine\n"
-      "   short flags, so `-v -4' means the same as -v4 or -4v, &c.\n"
-      "\n",
 
-      BZ2_bzlibVersion(),
-      fullProgName
-   );
-}
 
 static 
 void redundant(char* flag)
@@ -6371,16 +6248,68 @@ static void addFlagsFromEnvVar(Cell **argList, const char *varName)
    }
 }
 
-class AppBzip2
-{
-public:
-    int run(int argc, char **argv);
-};
 
-int main(int argc, char **argv)
+
+
+
+void AppBzip2::usage(char *fullProgName)
 {
-    AppBzip2 app;
-    return app.run(argc, argv);
+   fprintf (
+      stderr,
+      "bzip2, a block-sorting file compressor.  "
+      "Version %s.\n"
+      "\n   usage: %s [flags and input files in any order]\n"
+      "\n"
+      "   -h --help           print this message\n"
+      "   -d --decompress     force decompression\n"
+      "   -z --compress       force compression\n"
+      "   -k --keep           keep (don't delete) input files\n"
+      "   -f --force          overwrite existing output files\n"
+      "   -t --test           test compressed file integrity\n"
+      "   -c --stdout         output to standard out\n"
+      "   -q --quiet          suppress noncritical error messages\n"
+      "   -v --verbose        be verbose (a 2nd -v gives more)\n"
+      "   -L --license        display software version & license\n"
+      "   -V --version        display software version & license\n"
+      "   -s --small          use less memory (at most 2500k)\n"
+      "   -1 .. -9            set block size to 100k .. 900k\n"
+      "   --fast              alias for -1\n"
+      "   --best              alias for -9\n"
+      "\n"
+      "   If invoked as `bzip2', default action is to compress.\n"
+      "              as `bunzip2',  default action is to decompress.\n"
+      "              as `bzcat', default action is to decompress to stdout.\n"
+      "\n"
+      "   If no file names are given, bzip2 compresses or decompresses\n"
+      "   from standard input to standard output.  You can combine\n"
+      "   short flags, so `-v -4' means the same as -v4 or -4v, &c.\n"
+      "\n",
+
+      BZ2_bzlibVersion(),
+      fullProgName
+   );
+}
+
+void AppBzip2::license()
+{
+   fprintf ( stderr,
+
+    "bzip2, a block-sorting file compressor.  "
+    "Version %s.\n"
+    "   \n"
+    "   Copyright (C) 1996-2002 by Julian Seward.\n"
+    "   \n"
+    "   This program is free software; you can redistribute it and/or modify\n"
+    "   it under the terms set out in the LICENSE file, which is included\n"
+    "   in the bzip2-1.0 source distribution.\n"
+    "   \n"
+    "   This program is distributed in the hope that it will be useful,\n"
+    "   but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+    "   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+    "   LICENSE file for more details.\n"
+    "   \n",
+    BZ2_bzlibVersion()
+   );
 }
 
 int AppBzip2::run(int argc, char **argv)
@@ -6621,6 +6550,12 @@ int AppBzip2::run(int argc, char **argv)
    }
 
    return exitValue;
+}
+
+int main(int argc, char **argv)
+{
+    AppBzip2 app;
+    return app.run(argc, argv);
 }
 
 
