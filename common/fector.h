@@ -2,6 +2,9 @@
 #define _FECTOR_H_
 #include <stdint.h>
 #include <stdexcept>
+#include <iostream>
+#include <sstream>
+using namespace std;
 
 template<class T> class Fector
 {
@@ -15,12 +18,26 @@ public:
 
     ~Fector() { delete[] _buf; }
     uint32_t size() const { return _size; }
-    T at(uint32_t i) const { return _buf[i]; }
+
+    T at(uint32_t i) const
+    {
+        if (i >= _size) throw out_of_range("Fector");
+        return _buf[i];
+    }
 
     void set(uint32_t i, T val)
     {
+        if (i >= _size) throw out_of_range("Fector");
         _buf[i] = val;
     }
+};
+
+class Fugt : public Fector<uint8_t>
+{
+public:
+    Fugt(uint32_t size) : Fector<uint8_t>(size) { }
+    void dump(ostream &os) { for (uint32_t i = 0; i < size(); i++) os << (int)at(i) << " "; }
+    string toString() { ostringstream o; dump(o); return o.str(); }
 };
 
 #endif

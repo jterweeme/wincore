@@ -2,7 +2,8 @@ CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = valgrind $(VALFLAGS)
 
-TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 dd diff dos2unix grep gunzip gzip \
+TARGETS = base64 bunzip2 bzcat bzinfo bzip2 bzmd5 cat cp crc32 dd diff \
+    dos2unix grep gunzip gzip \
     jpg2tga kompakt ls md5s nl od tar tee test1 testbinp \
     tgunzip1 touch tr unix2dos uuidgen wingroup yes zcat
 
@@ -20,6 +21,7 @@ bunzip2: bunzip2m.o bunzip2.o bitinput.o
 bzcat: bzcat.o bitinput.o bunzip2.o
 bzinfo: bzinfo.o bitinput.o
 bzip2: bzip2.o
+bzmd5: bzmd5.o
 cat: cat.o
 cp: cp.o
 crc32: crc32.o
@@ -53,6 +55,7 @@ bunzip2.o: bunzip2.cpp bunzip2.h bitinput.h fector.h
 bzcat.o: bzcat.cpp bunzip2.h bitinput.h
 bzinfo.o: bzinfo.cpp bitinput.h fector.h
 bzip2.o: bzip2.cpp
+bzmd5.o: bzmd5.cpp buftest.h
 cat.o: cat.cpp
 cp.o: cp.cpp
 crc32.o: crc32.cpp

@@ -2,6 +2,34 @@ import java.io.IOException;
 
 class Bzcat
 {
+    class Fugt
+    {
+        private int _size;
+        private byte[] _buf;
+
+        Fugt(int size)
+        {
+            _size = size;
+            _buf = new byte[size];
+        }
+
+        byte at(int i)
+        {
+            return _buf[i];
+        }
+
+        void set(int i, byte val)
+        {
+            _buf[i] = val;
+        }
+
+        void dump(java.io.PrintStream os)
+        {
+            for (int i = 0; i < _size; i++)
+                os.format("%d ", at(i));
+        }
+    }
+
     class BitInput
     {
         final java.io.InputStream _is;
@@ -181,9 +209,18 @@ class Bzcat
             System.err.format("Huffman Groups: %d\n", tables);
             System.err.format("Selectors: %d\n", selectors_n);
             byte[] tableMTF = _generate(), selectors = new byte[selectors_n];
-            
+            Fugt selectors2 = new Fugt(selectors_n);
+
             for (int i = 0; i < selectors_n; i++)
-                selectors[i] = _indexToFront(tableMTF, bi.readUnary());
+            {
+                int x = bi.readUnary();
+                byte y = _indexToFront(tableMTF, x);
+                selectors2.set(i, y);
+                selectors[i] = y;
+            }
+
+            selectors2.dump(System.err);
+            System.err.print("\n");
 
             for (int t = 0; t < tables; t++)
             {
@@ -294,9 +331,7 @@ class Bzcat
         
         public void extractTo(java.io.OutputStream o) throws IOException
         {
-            for (int b = _read(); b != -1; b = _read())
-                o.write(b);
-
+            for (int b = _read(); b != -1; b = _read()) o.write(b);
             o.flush();
         }
 

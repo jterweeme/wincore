@@ -9,6 +9,7 @@
 #include <vector>
 #include <iomanip>
 #include <sstream>
+#include "bunzip2.h"
 using namespace std;
 
 typedef vector<string> Vest;

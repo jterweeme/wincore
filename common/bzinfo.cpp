@@ -5,8 +5,6 @@
 #include <fstream>
 #include "fector.h"
 
-typedef Fector<uint8_t> Fugt;
-
 class Block
 {
     uint32_t _minLengths[6] = {0}, _bwtByteCounts[256] = {0}, *_merged;
@@ -19,8 +17,9 @@ class Block
     uint32_t _nextByte() { int r = _curp & 0xff; _curp = _merged[_curp >> 8]; _dec++; return r; }
     void _generate(uint8_t *a) { for (unsigned i = 0; i < 256; i++) a[i] = i; }
     uint32_t _nextSymbol(BitInput *bi, const Fugt &selectors);
+    Fugt _bwtBlock2;
 public:
-    //Block() : _merged(new uint32_t[999999]()) { }
+    Block() : _bwtBlock2(900000) { }
     ~Block() { delete[] _merged; }
     int read();
     void init(BitInput *bi);
@@ -104,6 +103,8 @@ void Block::init(BitInput *bi)
         selectors2.set(i, y);
     }
 
+    //cerr << selectors2.toString() << "\n";
+
     //cerr << "Selectors: " << selectors.size() << "\n";
 
     for (uint32_t t = 0; t < tables; t++)
@@ -171,7 +172,13 @@ void Block::init(BitInput *bi)
             {
                 uint8_t nextByte = _symbolMap[mtfValue];
                 _bwtByteCounts[nextByte & 0xff] += n;
-                while (--n >= 0) _bwtBlock[_length++] = nextByte;
+
+                while (--n >= 0)
+                {
+                    _bwtBlock2.set(_length, nextByte);
+                    _bwtBlock[_length++] = nextByte;
+                }
+
                 n = 0;
                 inc = 1;
             }
@@ -182,6 +189,7 @@ void Block::init(BitInput *bi)
             mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
             uint8_t nextByte = _symbolMap[mtfValue];
             _bwtByteCounts[nextByte & 0xff]++;
+            _bwtBlock2.set(_length, nextByte);
             _bwtBlock[_length++] = nextByte;
         }
     }
@@ -194,7 +202,8 @@ void Block::init(BitInput *bi)
 
     for (uint32_t i = 0; i < _length; i++)
     {
-        int value = _bwtBlock[i] & 0xff;
+        int value = _bwtBlock2.at(i) & 0xff;
+        value = _bwtBlock[i] & 0xff;
         _merged[characterBase[value]++] = (i << 8) + value;
     }
 

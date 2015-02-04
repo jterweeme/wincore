@@ -8,22 +8,6 @@ uint8_t Block::_indexToFront(uint8_t *a, uint32_t index)
     return a[0] = value;
 }
 
-uint32_t Block::_nextSymbol(BitInput *bi, Vugt selectors)
-{
-    if (++_grpPos % 50 == 0)
-        _curTbl = selectors.at(++_grpIdx); //[++_grpIdx];
-
-    for (int32_t n = _minLengths[_curTbl], codeBits = bi->readBits(n); n <= 23; n++)
-    {
-        if (codeBits <= _limits[_curTbl][n])
-            return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
-
-        codeBits = codeBits << 1 | bi->readBits(1);
-    }
-
-    return 0;
-}
-
 uint32_t Block::_nextSymbol(BitInput *bi, const Fugt &selectors)
 {
     if (++_grpPos % 50 == 0)
@@ -64,17 +48,16 @@ void Block::init(BitInput *bi)
     uint32_t eob = symbolCount + 1, tables = bi->readBits(3), selectors_n = bi->readBits(15);
     uint8_t tableMTF[256];
     _generate(tableMTF);
-    //Vugt selectors;
     Fugt selectors2(selectors_n);
 
     for (uint32_t i = 0; i < selectors_n; i++)
     {
-        //selectors.push_back(_indexToFront(tableMTF, bi->readUnary()));
-        
         uint32_t x = bi->readUnary();
         uint8_t y = _indexToFront(tableMTF, x);
         selectors2.set(i, y);
     }
+
+    cerr << selectors2.toString() << "\n";
 
     for (uint32_t t = 0; t < tables; t++)
     {
@@ -141,7 +124,10 @@ void Block::init(BitInput *bi)
             {
                 uint8_t nextByte = _symbolMap[mtfValue];
                 _bwtByteCounts[nextByte & 0xff] += n;
-                while (--n >= 0) _bwtBlock[_length++] = nextByte;
+                while (--n >= 0)
+                {
+                    _bwtBlock2.set(_length++, nextByte);
+                }
                 n = 0;
                 inc = 1;
             }
@@ -152,19 +138,18 @@ void Block::init(BitInput *bi)
             mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
             uint8_t nextByte = _symbolMap[mtfValue];
             _bwtByteCounts[nextByte & 0xff]++;
-            _bwtBlock[_length++] = nextByte;
+            _bwtBlock2.set(_length++, nextByte);
         }
     }
 
-    //memset(_merged, 0, sizeof(_merged));
-    _merged = new uint32_t[_length]();
+    _merged = new int32_t[_length]();
     int characterBase[256] = {0};
     for (int i = 0; i < 255; i++) characterBase[i + 1] = _bwtByteCounts[i];
     for (int i = 2; i <= 255; i++) characterBase[i] += characterBase[i - 1];
 
-    for (uint32_t i = 0; i < _length; i++)
+    for (int32_t i = 0; i < _length; i++)
     {
-        int value = _bwtBlock[i] & 0xff;
+        int value = _bwtBlock2.at(i) & 0xff;
         _merged[characterBase[value]++] = (i << 8) + value;
     }
 

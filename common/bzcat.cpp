@@ -27,13 +27,17 @@ int main(int argc, char **argv)
     {
         return app.run(argc, argv);
     }
+    catch (exception &e)
+    {
+        cerr << e.what() << "\n";
+    }
     catch (const char *e)
     {
-        cout << e << "\n";
+        cerr << e << "\n";
     }
     catch (...)
     {
-        cout << "Unknown exception\n";
+        cerr << "Unknown exception\n";
     }
 
     return -1;

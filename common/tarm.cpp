@@ -25,11 +25,15 @@ public:
 class AppTar
 {
 public:
-    bool extractFile(istream &is, bool verbose = false);
-    bool listFile(istream &is, bool verbose = false);
+    bool extractFile(istream &is, bool verbose);
+    bool extractFile(istream &is) { return extractFile(is, false); }
+    bool listFile(istream &is, bool verbose);
+    bool listFile(istream &is) { return listFile(is, false); }
     void createFile(ostream &os, string fn);
-    void extractTar(istream &is, bool verbose = false) { while (extractFile(is, verbose)); }
-    void extractTar(string fn, bool v = false) { ifstream i(fn); extractTar(i, v); i.close(); }
+    void extractTar(istream &is, bool verbose) { while (extractFile(is, verbose)); }
+    void extractTar(istream &is) { extractTar(is, false); }
+    void extractTar(string fn, bool v) { ifstream i(fn); extractTar(i, v); i.close(); }
+    void extractTar(string fn) { extractTar(fn, false); }
     void listTar(istream &is, bool v = false) { while (listFile(is, v)); }
     void listTar(string fn, bool v = false);
     int run(int argc, char **argv);
@@ -120,8 +124,6 @@ void Options::parse(int argc, char **argv)
 int AppTar::run(int argc, char **argv)
 {
     Options o(argc, argv);
-    istream *is;
-    
     
     if (o.table())
         listTar(o.archive(), o.verbose());
