@@ -124,16 +124,20 @@ void Options::parse(int argc, char **argv)
 int AppTar::run(int argc, char **argv)
 {
     Options o(argc, argv);
+    FILE *fp = fopen(o.archive().c_str(), "r");
+    buftest bt(fp);
+    istream is(&bt);
     
     if (o.table())
         listTar(o.archive(), o.verbose());
 
+#if 0
     if (o.extract())
         extractTar(o.archive(), o.verbose());
 
     if (o.create());
         
-        
+#endif        
 
     return 0;
 }

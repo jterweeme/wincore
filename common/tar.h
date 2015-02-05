@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <sstream>
 #include "bunzip2.h"
+#include "buftest.h"
 using namespace std;
 
 typedef vector<string> Vest;
