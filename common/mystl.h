@@ -2670,7 +2670,7 @@ public:
     static const uint8_t DEC = 0;
     static const uint8_t OCT = 1;
     static const uint8_t HEX = 2;
-    ostream2() : _base(base2::DEC), _width(1) { }
+    ostream2() : _base(base2::DEC), _width(1), _fp(stdout) { }
     ostream2(FILE *fp) : _base(base2::DEC), _width(1), _fp(fp) { }
     ostream2& operator << (const string2 s) { fprintf(_fp, s.c_str()); return *this; }
     ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
@@ -2701,7 +2701,7 @@ public:
 class ostringstream2 : public ostream2
 {
 public:
-    string2 str() const { return string2("hello"); }
+    string2 str() const { return string2(""); }
 };
 
 template <class T> class vector3

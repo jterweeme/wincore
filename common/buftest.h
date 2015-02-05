@@ -17,44 +17,11 @@ public:
 
     fpos<mbstate_t> seekoff(int64_t off, ios::seekdir way, ios::openmode m)
     {
-        cerr << "seekoff " << off << " " << way << " " << way << "\n";
-
-        return (uint64_t)_M_in_cur - (uint64_t)_M_in_beg;
-    }
-
-    streambuf *setbuf(char *s, long n)
-    {
-        cerr << "setbuf\n";
-        return streambuf::setbuf(s, n);
-    }
-
-    fpos<mbstate_t> seekpos(streampos sp, ios::openmode m)
-    {
-        cerr << "seekpos\n";
-        return streambuf::seekpos(sp, m);
-    }
-
-    int sync()
-    {
-        cerr << "sync\n";
-        return sync();
-    }
-
-    long showmanyc()
-    {
-        cerr << "showmanyc\n";
-        return streambuf::showmanyc();
-    }
-
-    int pbackfail(int c)
-    {
-        cerr << "pbackfail\n";
-        return streambuf::pbackfail(c);
+        return (uint64_t)_M_in_cur - (uint64_t)_M_in_beg + ftell(_fp) - _buffer.size();
     }
 
     int underflow()
     {
-        cerr << "underflow\n";
         if (gptr() < egptr())
             return traits_type::to_int_type(*gptr());
 
@@ -76,27 +43,8 @@ public:
         return (int)(*gptr());
     }
 
-    long xsgetn(char *s, long n)
-    {
-        cerr << "xsgetn\n";
-        return 0;
-    }
-
-    long xsputn(const char *s, long n)
-    {
-        cerr << "xsputn\n";
-        return 0;
-    }
-
-    int overflow(int c)
-    {
-        cerr << "overflow\n";
-        return 0;
-    }
-
     int uflow()
     {
-        cerr << "uflow\n";
         int ret = traits_type::eof();
         bool testof = traits_type::eq_int_type(underflow(), ret);
 
@@ -109,10 +57,6 @@ public:
         return ret;
     }
 
-    void imbue(const locale &loc)
-    {
-        cerr << "imbue\n";
-    }
 };
 
 #endif

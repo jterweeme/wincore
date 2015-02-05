@@ -129,7 +129,7 @@ int AppTar::run(int argc, char **argv)
     istream is(&bt);
     
     if (o.table())
-        listTar(o.archive(), o.verbose());
+        listTar(is, o.verbose());
 
 #if 0
     if (o.extract())

@@ -68,6 +68,7 @@ int App::run(int argc, char **argv)
     else
     {
         cout << "Fout\n";
+        return 1;
     }
     
     return 0;
