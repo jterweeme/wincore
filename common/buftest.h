@@ -43,6 +43,7 @@ public:
         return (int)(*gptr());
     }
 
+#if 0
     int uflow()
     {
         int ret = traits_type::eof();
@@ -56,7 +57,7 @@ public:
 
         return ret;
     }
-
+#endif
 };
 
 #endif

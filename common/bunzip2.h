@@ -24,7 +24,7 @@ public:
     void init(BitInput *bi);
 };
 
-class DecStream : public ostream
+class DecStream
 {
     BitInput *_bi;
     Block _bd;
@@ -37,6 +37,21 @@ public:
     { for (int b = _read(); b != -1; b = _read()) os.put(b); os.flush(); }
 };
 
+class DecStreamBuf : public streambuf
+{
+    FILE *_fp;
+public:
+    DecStreamBuf(FILE *fp) : _fp(fp) { }
+
+    fpos<mbstate_t> seekoff(int64_t off, ios::seekdir way, ios::openmode m)
+    {
+    }
+
+    int underflow()
+    {
+        
+    }
+};
 
 #endif
 

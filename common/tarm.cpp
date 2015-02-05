@@ -24,6 +24,7 @@ public:
 
 class AppTar
 {
+    uint8_t _width = 5;
 public:
     bool extractFile(istream &is, bool verbose);
     bool extractFile(istream &is) { return extractFile(is, false); }
@@ -43,7 +44,8 @@ bool AppTar::listFile(istream &is, bool verbose)
 {
     Header h(is);
     if (h.empty()) return false;
-    if (verbose) h.fullInfo(cout); else cout << h.name() << "\n";
+    _width = max(h.numDigits(), _width);
+    if (verbose) h.fullInfo(cout, _width); else cout << h.name() << "\n";
     is.ignore(512 - is.tellg() % 512);
     is.ignore(h.size());
     is.ignore(512 - is.tellg() % 512);
@@ -131,14 +133,11 @@ int AppTar::run(int argc, char **argv)
     if (o.table())
         listTar(is, o.verbose());
 
-#if 0
     if (o.extract())
-        extractTar(o.archive(), o.verbose());
+        extractTar(is, o.verbose());
 
     if (o.create());
         
-#endif        
-
     return 0;
 }
 

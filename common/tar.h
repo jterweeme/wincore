@@ -46,16 +46,17 @@ public:
     Header(istream &is) { read(is); }
     void read(istream &is) { is.read((char *)&_h, sizeof(_h)); }
     uint32_t size() const { return strtol(_h.size, 0, 8); }
+    uint8_t numDigits() const;
     string name() const { return string(_h.name); }
     string uname() const { return string(_h.uname); }
     string gname() const { return string(_h.gname); }
     bool empty() const { return _h.name[0] == 0; }
     SHeader raw() const { return _h; }
-    void fullInfo(ostream &os) const;
+    void fullInfo(ostream &os, uint8_t width) const;
     void mode(ostream &os) const;
     void timeStamp(ostream &os) const;
     string mode() const { ostringstream s; mode(s); return s.str(); }
-    string fullInfo() const { ostringstream s; fullInfo(s); return s.str(); }
+    string fullInfo(uint8_t w) const { ostringstream s; fullInfo(s, w); return s.str(); }
 };
 
 class TarStream

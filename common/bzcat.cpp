@@ -12,7 +12,7 @@ public:
 int App::run(int argc, char **argv)
 {
     ifstream ifs(argv[1]);
-    BitInput bi(&ifs);
+    BitInputStream bi(&ifs);
     DecStream ds(&bi);
     ds.extractTo(cout);
     ifs.close();

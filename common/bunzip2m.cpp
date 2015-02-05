@@ -13,7 +13,7 @@ int App::run(int argc, char **argv)
 {
     cout << argv[1] << "\n";
     ifstream ifs(argv[1]);
-    BitInput bi(&ifs);
+    BitInputStream bi(&ifs);
     DecStream ds(&bi);
     ofstream ofs(argv[2]);
     ds.extractTo(ofs);
