@@ -3,6 +3,7 @@
 #include "bitinput.h"
 #include "fector.h"
 #include <vector>
+#include <cstring>
 
 class Block
 {
@@ -30,26 +31,58 @@ class DecStream
     Block _bd;
     uint32_t _streamComplete = false;
     bool _initNextBlock();
-    int _read();
 public:
+    int read();
+    int read(char *buf, int n)
+    {
+        int i = 0;
+
+        for (int c; (c = read()) != -1 && i < n; i++)
+            buf[i] = c;
+
+        return i;
+    }
     DecStream(BitInput *bi) : _bi(bi) { _bi->ignore(32); }
     void extractTo(ostream &os)
-    { for (int b = _read(); b != -1; b = _read()) os.put(b); os.flush(); }
+    { for (int b = read(); b != -1; b = read()) os.put(b); os.flush(); }
 };
 
 class DecStreamBuf : public streambuf
 {
-    FILE *_fp;
+    DecStream _ds;
+    const uint32_t _put_back = 8;
+    vector<char> _buffer;
+    uint32_t _pos = 0;
 public:
-    DecStreamBuf(FILE *fp) : _fp(fp) { }
+    DecStreamBuf(BitInput *bi) : _ds(bi), _buffer(264) { }
+    DecStreamBuf(FILE *fp) : _ds(new BitInputFile(fp)) { }
 
     fpos<mbstate_t> seekoff(int64_t off, ios::seekdir way, ios::openmode m)
     {
+        return (uint64_t)_M_in_cur - (uint64_t)_M_in_beg;
     }
 
     int underflow()
     {
-        
+        if (gptr() < egptr())
+            return (int)(*gptr());
+
+        char *base = &_buffer.front();
+        char *start = base;
+
+        if (eback() == base)
+        {
+            memmove(base, egptr() - _put_back, _put_back);
+            start += _put_back;
+        }
+
+        uint32_t n = _ds.read(start, _buffer.size());
+
+        if (n == 0)
+            return traits_type::eof();
+
+        setg(base, start, start + n);
+        return (int)(*gptr());
     }
 };
 

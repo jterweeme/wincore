@@ -61,9 +61,15 @@ public:
 
 class TarStream
 {
+protected:
     istream *_is;
+    uint8_t _width = 5;
 public:
-    
+    TarStream(istream *is) : _is(is) { }
+    bool listFile(bool verbose);
+    void list(bool verbose) { while (listFile(verbose)); }
+    bool extractFile(bool verbose);
+    void extract(bool verbose) { while (extractFile(verbose)); }
 };
 
 #endif

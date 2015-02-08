@@ -29,7 +29,7 @@ uint32_t Block::_nextSymbol(BitInput *bi, const Fugt &selectors)
 
 void Block::init(BitInput *bi)
 {
-    cerr << "Block::init\n";
+    //cerr << "Block::init\n";
     _grpIdx = _grpPos = _last = -1;
     bi->readInt();
     _blockRandomised = bi->readBool();
@@ -43,7 +43,7 @@ void Block::init(BitInput *bi)
                 if (bi->readBool())
                     _symbolMap[symbolCount++] = (uint8_t)k;
 
-    cerr << symbolCount << "\n";
+    //cerr << symbolCount << "\n";
 
     uint32_t eob = symbolCount + 1, tables = bi->readBits(3), selectors_n = bi->readBits(15);
     uint8_t tableMTF[256];
@@ -57,7 +57,7 @@ void Block::init(BitInput *bi)
         selectors2.set(i, y);
     }
 
-    cerr << selectors2.toString() << "\n";
+    //cerr << selectors2.toString() << "\n";
 
     for (uint32_t t = 0; t < tables; t++)
     {
@@ -156,7 +156,7 @@ void Block::init(BitInput *bi)
     _curp = _merged[bwtStartPointer];
 }
 
-int DecStream::_read()
+int DecStream::read()
 {
     int nextByte = _bd.read();
     return nextByte = nextByte == -1 && _initNextBlock() ? _bd.read() : nextByte;

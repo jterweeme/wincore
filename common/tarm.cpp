@@ -18,39 +18,26 @@ public:
     bool extract() const { return _extract; }
     bool table() const { return _table; }
     bool create() const { return _create; }
+    bool bzip2() const { return _bzip2; }
     bool gzip() const { return _gzip; }
+    uint8_t compression() const;
     string archive() const { return _archive; }
 };
+
+uint8_t Options::compression() const
+{
+    if (bzip2()) return 3;
+    if (gzip()) return 2;
+    return 1;
+}
 
 class AppTar
 {
     uint8_t _width = 5;
 public:
-    bool extractFile(istream &is, bool verbose);
-    bool extractFile(istream &is) { return extractFile(is, false); }
-    bool listFile(istream &is, bool verbose);
-    bool listFile(istream &is) { return listFile(is, false); }
     void createFile(ostream &os, string fn);
-    void extractTar(istream &is, bool verbose) { while (extractFile(is, verbose)); }
-    void extractTar(istream &is) { extractTar(is, false); }
-    void extractTar(string fn, bool v) { ifstream i(fn); extractTar(i, v); i.close(); }
-    void extractTar(string fn) { extractTar(fn, false); }
-    void listTar(istream &is, bool v = false) { while (listFile(is, v)); }
-    void listTar(string fn, bool v = false);
     int run(int argc, char **argv);
 };
-
-bool AppTar::listFile(istream &is, bool verbose)
-{
-    Header h(is);
-    if (h.empty()) return false;
-    _width = max(h.numDigits(), _width);
-    if (verbose) h.fullInfo(cout, _width); else cout << h.name() << "\n";
-    is.ignore(512 - is.tellg() % 512);
-    is.ignore(h.size());
-    is.ignore(512 - is.tellg() % 512);
-    return true;
-}
 
 void AppTar::createFile(ostream &os, string fn)
 {
@@ -59,26 +46,6 @@ void AppTar::createFile(ostream &os, string fn)
     SHeader sh = h.raw();
     os.write((char *)&sh, sizeof(sh));
     ifs.close();
-}
-
-bool AppTar::extractFile(istream &is, bool verbose)
-{
-    Header h(is);
-    if (h.empty()) return false;
-    if (verbose) cout << h.name() << "\n";
-    is.ignore(512 - is.tellg() % 512);
-    ofstream ofs(h.name());
-    for (uint32_t i = 0; i < h.size(); i++) ofs.put(is.get());
-    ofs.close();
-    is.ignore(512 - is.tellg() % 512);
-    return true;
-}
-
-void AppTar::listTar(string fn, bool v)
-{
-    ifstream i(fn);
-    listTar(i, v);
-    i.close();
 }
 
 void Options::parse(int argc, char **argv)
@@ -127,17 +94,32 @@ int AppTar::run(int argc, char **argv)
 {
     Options o(argc, argv);
     FILE *fp = fopen(o.archive().c_str(), "r");
-    buftest bt(fp);
-    istream is(&bt);
+    TarStream *ts;
+    streambuf *bt;
+    istream *is;
+    
+    switch (o.compression())
+    {
+    case 3:
+        bt = new DecStreamBuf(fp);
+        break;
+    default:
+        bt = new buftest(fp);
+    }
+
+    is = new istream(bt);
+    ts = new TarStream(is);
     
     if (o.table())
-        listTar(is, o.verbose());
+        ts->list(o.verbose());
 
     if (o.extract())
-        extractTar(is, o.verbose());
+        ts->extract(o.verbose());
 
-    if (o.create());
-        
+    delete ts;
+    delete is;
+    delete bt;
+    fclose(fp);
     return 0;
 }
 

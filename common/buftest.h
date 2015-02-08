@@ -23,7 +23,7 @@ public:
     int underflow()
     {
         if (gptr() < egptr())
-            return traits_type::to_int_type(*gptr());
+            return (int)(*gptr());
 
         char *base = &_buffer.front();
         char *start = base;
