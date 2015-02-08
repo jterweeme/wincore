@@ -5,6 +5,19 @@
 #include <vector>
 #include <cstring>
 
+class Table : public Fugt
+{
+public:
+    Table() : Fugt(256) { for (uint32_t i = 0; i < 256; i++) set(i, i); }
+
+    uint8_t indexToFront(uint32_t index)
+    {
+        uint8_t value = at(index);
+        for (uint32_t i = index; i > 0; i--) set(i, at(i - 1));
+        return set(0, value);
+    }
+};
+
 class Block
 {
     int32_t _minLengths[6] = {0}, _bwtByteCounts[256] = {0}, *_merged;
@@ -12,10 +25,11 @@ class Block
     int32_t _limits[6][24] = {};
     int32_t _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat = 0, _randomIndex, _randomCount;
     bool _blockRandomised = false;
-    uint8_t _symbolMap[256] = {0}, _indexToFront(uint8_t *a, uint32_t i);
+    uint8_t _symbolMap[256] = {0};
     int32_t _curp, _length = 0, _dec = 0;
     uint32_t _nextByte() { int r = _curp & 0xff; _curp = _merged[_curp >> 8]; _dec++; return r; }
     void _generate(uint8_t *a) { for (unsigned i = 0; i < 256; i++) a[i] = i; }
+    void _generate(Fugt &a) { for (uint32_t i = 0; i < 256; i++) a.set(i, i); }
     uint32_t _nextSymbol(BitInput *bi, const Fugt &selectors);
     Fugt _bwtBlock2;
 public:

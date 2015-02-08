@@ -25,10 +25,10 @@ public:
         return _buf[i];
     }
 
-    void set(uint32_t i, T val)
+    T set(uint32_t i, T val)
     {
         if (i >= _size) throw out_of_range("Fector");
-        _buf[i] = val;
+        return _buf[i] = val;
     }
 };
 

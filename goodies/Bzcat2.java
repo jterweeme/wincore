@@ -1,5 +1,7 @@
 import java.io.IOException;
 
+
+/* Bzcat zonder de random */
 class Bzcat2
 {
     class BitInput
@@ -17,6 +19,20 @@ class Bzcat2
             for (; _bitCount < n; _bitCount += 8) _bitBuffer = _bitBuffer << 8 | _is.read();
             _bitCount -= n;
             return _bitBuffer >>> _bitCount & (1 << n) - 1;
+        }
+    }
+
+    class Table
+    {
+        private byte[] _buf = new byte[256];
+        Table() { for (int i = 0; i < 256; i++) _buf[i] = (byte)i; }
+        void dump(java.io.PrintStream os) { for (int i = 0; i < 256; i++) os.format("%d ", i); }
+
+        byte indexToFront(int index)
+        {
+            byte value = _buf[index];
+            for (int i = index; i > 0; i--) _buf[i] = _buf[i - 1];
+            return _buf[0] = value;
         }
     }
 
@@ -44,21 +60,27 @@ class Bzcat2
 
             throw new IOException("Error decoding BZip2 block");
         }
-
-        byte[] _generate()
+       
+        private int _maxLength(byte[] a, int n)
         {
-            byte a[] = new byte[256];
-            for (int i = 0; i < a.length; i++) a[i] = (byte)i;
-            return a;
+            byte maxLength = 0;
+
+            for (int i = 0; i < n; i++)
+                maxLength = (byte)Math.max(a[i], maxLength);
+
+            return maxLength;
         }
 
-        byte _indexToFront(byte[] a, int index)
+        private int _minLength(byte[] a, int n)
         {
-            byte value = a[index];
-            for (int i = index; i > 0; i--) a[i] = a[i - 1];
-            return a[0] = value;
+            byte minLength = 0;
+
+            for (int i = 0; i < n; i++)
+                minLength = (byte)Math.min(a[i], minLength);
+
+            return minLength;
         }
-        
+
         int _nextByte()
         {
             int next = _curp & 0xff;
@@ -112,7 +134,7 @@ class Bzcat2
             _last = -1;
             _randomIndex = 0;
             int crc = bi.readInt();
-            System.err.format("CRC: %x\n", crc);
+            //System.err.format("CRC: %x\n", crc);
             _blockRandomised = bi.readBool();
             _acc = 0;
             _rleRepeat = 0;
@@ -121,10 +143,10 @@ class Bzcat2
             _bwtBytesDecoded = 0;
             int bwtStartPointer = bi.readBits(24), symbolCount = 0;
             byte[][] tableCodeLengths = new byte[6][258];
-            System.err.format("Starting Pointer into BWT: %d\n", bwtStartPointer);
+            //System.err.format("Starting Pointer into BWT: %d\n", bwtStartPointer);
         
             int ranges = bi.readBits(16);
-            System.err.format("Huffman Used Map: %d\n", ranges);
+            //System.err.format("Huffman Used Map: %d\n", ranges);
     
             for (int i = 0; i < 16; i++)
                 if ((ranges & 1 << 15 >>> i) != 0)
@@ -132,14 +154,15 @@ class Bzcat2
                         if (bi.readBool())
                             _symbolMap[symbolCount++] = (byte)k;
             
-            System.err.format("SymbolCount: %d\n", symbolCount);
+            //System.err.format("SymbolCount: %d\n", symbolCount);
             int eob = symbolCount + 1, tables = bi.readBits(3), selectors_n = bi.readBits(15);
-            System.err.format("Huffman Groups: %d\n", tables);
-            System.err.format("Selectors: %d\n", selectors_n);
-            byte[] tableMTF = _generate(), selectors = new byte[selectors_n];
+            //System.err.format("Huffman Groups: %d\n", tables);
+            //System.err.format("Selectors: %d\n", selectors_n);
+            byte[] selectors = new byte[selectors_n];
+            Table tableMTF2 = new Table();
             
             for (int i = 0; i < selectors_n; i++)
-                selectors[i] = _indexToFront(tableMTF, bi.readUnary());
+                selectors[i] = tableMTF2.indexToFront(bi.readUnary());
 
             for (int t = 0; t < tables; t++)
             {
@@ -150,14 +173,10 @@ class Bzcat2
 			    }
 		    }
             
-	        for (int table = 0, minLength = 23, maxLength = 0; table < 6; table++)
+	        for (int table = 0; table < 6; table++)
             {
-                for (int i = 0; i < symbolCount + 2; i++)
-                {
-                    maxLength = Math.max(tableCodeLengths[table][i], maxLength);
-                    minLength = Math.min(tableCodeLengths[table][i], minLength);
-                }
-                
+                int minLength = _minLength(tableCodeLengths[table], symbolCount + 2);
+                int maxLength = _maxLength(tableCodeLengths[table], symbolCount + 2);
                 _minLengths[table] = minLength;
                 
                 for (int i = 0; i < symbolCount + 2; i++)
@@ -182,7 +201,7 @@ class Bzcat2
             }
             
             _curTbl = selectors[0];
-            byte[] symbolMTF = _generate();
+            Table symbolMTF2 = new Table();
             _length = 0;
             
             for (int n = 0, inc = 1, mtfValue = 0;;)
@@ -213,14 +232,14 @@ class Bzcat2
                     if (nextSymbol == eob)
                         break;
                 
-                    mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
+                    mtfValue = symbolMTF2.indexToFront(nextSymbol - 1) & 0xff;
                     byte next = _symbolMap[mtfValue];
                     _bwtByteCounts[next & 0xff]++;
                     _bwtBlock[_length++] = next;
 			    }
             }
             
-            System.err.println(_length);
+            //System.err.println(_length);
             //_merged = new int[_length];
             _merged = new int[999999];
             int[] characterBase = new int[256];
@@ -278,7 +297,7 @@ class Bzcat2
             {
                 _streamComplete = true;
                 int crc = _bi.readInt();
-                System.err.format("CRC: %x\n", crc);
+                //System.err.format("CRC: %x\n", crc);
                 return false;
             }
             

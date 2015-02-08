@@ -1,13 +1,6 @@
 #include "bunzip2.h"
 #include <cstring>
 
-uint8_t Block::_indexToFront(uint8_t *a, uint32_t index)
-{
-    uint8_t value = a[index];
-    for (uint32_t i = index; i > 0; i--) a[i] = a[i - 1];
-    return a[0] = value;
-}
-
 uint32_t Block::_nextSymbol(BitInput *bi, const Fugt &selectors)
 {
     if (++_grpPos % 50 == 0)
@@ -38,7 +31,7 @@ void Block::init(BitInput *bi)
     uint8_t tableCodeLengths[6][258];
 
     for (uint16_t i = 0, ranges = bi->readBits(16); i < 16; i++)
-        if ((ranges & ((1 << 15) >> i)) != 0)
+        if ((ranges & (1 << 15 >> i)) != 0)
             for (int j = 0, k = i << 4; j < 16; j++, k++)
                 if (bi->readBool())
                     _symbolMap[symbolCount++] = (uint8_t)k;
@@ -46,14 +39,13 @@ void Block::init(BitInput *bi)
     //cerr << symbolCount << "\n";
 
     uint32_t eob = symbolCount + 1, tables = bi->readBits(3), selectors_n = bi->readBits(15);
-    uint8_t tableMTF[256];
-    _generate(tableMTF);
+    Table tableMTF2;
     Fugt selectors2(selectors_n);
 
     for (uint32_t i = 0; i < selectors_n; i++)
     {
         uint32_t x = bi->readUnary();
-        uint8_t y = _indexToFront(tableMTF, x);
+        uint8_t y = tableMTF2.indexToFront(x);
         selectors2.set(i, y);
     }
 
@@ -100,8 +92,7 @@ void Block::init(BitInput *bi)
     }
 
     _curTbl = selectors2.at(0);
-    uint8_t symbolMTF[256];
-    _generate(symbolMTF);
+    Table symbolMTF2;
     _length = 0;
 
     for (int n = 0, inc = 1, mtfValue = 0;;)
@@ -123,11 +114,11 @@ void Block::init(BitInput *bi)
             if (n > 0)
             {
                 uint8_t nextByte = _symbolMap[mtfValue];
-                _bwtByteCounts[nextByte & 0xff] += n;
+                _bwtByteCounts[nextByte] += n;
+
                 while (--n >= 0)
-                {
                     _bwtBlock2.set(_length++, nextByte);
-                }
+                
                 n = 0;
                 inc = 1;
             }
@@ -135,9 +126,9 @@ void Block::init(BitInput *bi)
             if (nextSymbol == eob)
                 break;
 
-            mtfValue = _indexToFront(symbolMTF, nextSymbol - 1) & 0xff;
+            mtfValue = symbolMTF2.indexToFront(nextSymbol - 1);
             uint8_t nextByte = _symbolMap[mtfValue];
-            _bwtByteCounts[nextByte & 0xff]++;
+            _bwtByteCounts[nextByte]++;
             _bwtBlock2.set(_length++, nextByte);
         }
     }
