@@ -36,24 +36,85 @@ class Bzcat2
         }
     }
 
+    class Table2
+    {
+        public byte[] _codeLengths = new byte[258];
+        int _symbolCount;
+        public int[] _bases = new int[25], _limits = new int[24], _symbols = new int[258];
+        int minLength() { return minLength(_symbolCount + 2); }
+        int maxLength() { return maxLength(_symbolCount + 2); }
+        Table2(int symbolCount) { _symbolCount = symbolCount; }
+        int limit(int i) { return _limits[i]; }
+
+        int minLength(int n)
+        {
+            byte a = 0;
+
+            for (int i = 0; i < n; i++)
+                a = (byte)Math.min(_codeLengths[i], a);
+
+            return a;
+        }
+
+        int maxLength(int n)
+        {
+            byte a = 0;
+
+            for (int i = 0; i < n; i++)
+                a = (byte)Math.max(_codeLengths[i], a);
+
+            return a;
+        }
+
+        void calcBases()
+        {
+            for (int i = 0; i < _symbolCount + 2; i++)
+                _bases[_codeLengths[i] + 1]++;
+
+            for (int i = 1; i < 25; i++)
+                _bases[i] += _bases[i - 1];
+
+            int minLength = minLength();
+            int maxLength = maxLength();
+
+            for (int i = minLength, code = 0; i <= maxLength; i++)
+            {
+                int base = code;
+                code += _bases[i + 1] - _bases[i];
+                _bases[i] = base - _bases[i];
+                _limits[i] = code - 1;
+                code <<= 1;
+            }
+
+            for (int n = minLength, i = 0; n <= maxLength; n++)
+                for (int symbol = 0; symbol < _symbolCount + 2; symbol++)
+                    if (_codeLengths[symbol] == n)
+                        _symbols[i++] = symbol;
+        }
+
+    }
+
     class Block
     {
-        int[] _minLengths = new int[6], _bwtByteCounts, _merged;
+        int[] _bwtByteCounts, _merged;
         int[][] _bases = new int[6][25], _limits = new int[6][24], _symbols = new int[6][258];
         int _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat, _randomIndex, _randomCount;
         boolean _blockRandomised;
         byte[] _symbolMap, _bwtBlock;
         int _curp, _length = 0, _bwtBytesDecoded = 0;
+        java.util.ArrayList<Table2> _tables = new java.util.ArrayList<Table2>();
 
         int _nextSymbol(BitInput bi, byte[] selectors) throws IOException
         {
             if (++_grpPos % 50 == 0)
                 _curTbl = selectors[++_grpIdx];
 
-            for (int n = _minLengths[_curTbl], codeBits = bi.readBits(n); n <= 23; n++)
+            Table2 table = _tables.get(_curTbl);
+
+            for (int n = table.minLength(), codeBits = bi.readBits(n); n <= 23; n++)
             {
-                if (codeBits <= _limits[_curTbl][n])
-                    return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
+                if (codeBits <= table.limit(n))
+                    return table._symbols[codeBits - table._bases[n]];
                 
                 codeBits = codeBits << 1 | bi.readBits(1);
             }
@@ -61,26 +122,6 @@ class Bzcat2
             throw new IOException("Error decoding BZip2 block");
         }
        
-        private int _maxLength(byte[] a, int n)
-        {
-            byte maxLength = 0;
-
-            for (int i = 0; i < n; i++)
-                maxLength = (byte)Math.max(a[i], maxLength);
-
-            return maxLength;
-        }
-
-        private int _minLength(byte[] a, int n)
-        {
-            byte minLength = 0;
-
-            for (int i = 0; i < n; i++)
-                minLength = (byte)Math.min(a[i], minLength);
-
-            return minLength;
-        }
-
         int _nextByte()
         {
             int next = _curp & 0xff;
@@ -121,7 +162,7 @@ class Bzcat2
         
         public void init(BitInput bi) throws IOException
         {
-            _minLengths = new int[6];
+            _tables.clear();
             _bases = new int[6][25];
             _limits = new int[6][24];
             _symbols = new int[6][258];
@@ -134,7 +175,6 @@ class Bzcat2
             _last = -1;
             _randomIndex = 0;
             int crc = bi.readInt();
-            //System.err.format("CRC: %x\n", crc);
             _blockRandomised = bi.readBool();
             _acc = 0;
             _rleRepeat = 0;
@@ -142,11 +182,7 @@ class Bzcat2
             _curp = 0;
             _bwtBytesDecoded = 0;
             int bwtStartPointer = bi.readBits(24), symbolCount = 0;
-            byte[][] tableCodeLengths = new byte[6][258];
-            //System.err.format("Starting Pointer into BWT: %d\n", bwtStartPointer);
-        
             int ranges = bi.readBits(16);
-            //System.err.format("Huffman Used Map: %d\n", ranges);
     
             for (int i = 0; i < 16; i++)
                 if ((ranges & 1 << 15 >>> i) != 0)
@@ -154,10 +190,7 @@ class Bzcat2
                         if (bi.readBool())
                             _symbolMap[symbolCount++] = (byte)k;
             
-            //System.err.format("SymbolCount: %d\n", symbolCount);
             int eob = symbolCount + 1, tables = bi.readBits(3), selectors_n = bi.readBits(15);
-            //System.err.format("Huffman Groups: %d\n", tables);
-            //System.err.format("Selectors: %d\n", selectors_n);
             byte[] selectors = new byte[selectors_n];
             Table tableMTF2 = new Table();
             
@@ -166,39 +199,17 @@ class Bzcat2
 
             for (int t = 0; t < tables; t++)
             {
+                Table2 table = new Table2(symbolCount);
+
                 for (int i = 0, c = bi.readBits(5); i <= eob; i++)
                 {
 				    while (bi.readBool()) c += bi.readBool() ? -1 : 1;
-                    tableCodeLengths[t][i] = (byte)c;
+                    table._codeLengths[i] = (byte)c;
 			    }
+                
+                table.calcBases();
+                _tables.add(table);
 		    }
-            
-	        for (int table = 0; table < 6; table++)
-            {
-                int minLength = _minLength(tableCodeLengths[table], symbolCount + 2);
-                int maxLength = _maxLength(tableCodeLengths[table], symbolCount + 2);
-                _minLengths[table] = minLength;
-                
-                for (int i = 0; i < symbolCount + 2; i++)
-                    _bases[table][tableCodeLengths[table][i] + 1]++;
-                
-                for (int i = 1; i < 25; i++)
-                    _bases[table][i] += _bases[table][i - 1];
-                
-                for (int i = minLength, code = 0; i <= maxLength; i++)
-                {
-                    int base = code;
-                    code += _bases[table][i + 1] - _bases[table][i];
-                    _bases[table][i] = base - _bases[table][i];
-                    _limits[table][i] = code - 1;
-                    code <<= 1;
-                }
-                
-                for (int n = minLength, i = 0; n <= maxLength; n++)
-                    for (int symbol = 0; symbol < symbolCount + 2; symbol++)
-                        if (tableCodeLengths[table][symbol] == n)
-                            _symbols[table][i++] = symbol;
-            }
             
             _curTbl = selectors[0];
             Table symbolMTF2 = new Table();
