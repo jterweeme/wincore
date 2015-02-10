@@ -31,23 +31,26 @@ public:
     int32_t limit(uint8_t i) const { return _limits[i]; }
     uint32_t symbol(uint16_t i) const { return _symbols[i]; }
     uint32_t base(uint8_t i) const { return _bases[i]; }
+    void dump(ostream &os) const;
+    string toString() const { ostringstream o; dump(o); return o.str(); }
 };
 
 class Tables : public vector<Table>
 {
+public:
+    void dump(ostream &os) const;
+    string toString() const { ostringstream o; dump(o); return o.str(); }
 };
 
 class Block
 {
-    int32_t _bwtByteCounts[256] = {0}, *_merged;
-    int32_t _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat = 0, _randomIndex, _randomCount;
-    uint8_t _symbolMap[256] = {0};
-    int32_t _curp, _length = 0, _dec = 0;
+    int32_t *_merged;
+    int32_t _curTbl, _grpIdx, _grpPos, _last, _acc, _repeat, _curp, _length, _dec;
     uint32_t _nextByte() { int r = _curp & 0xff; _curp = _merged[_curp >> 8]; _dec++; return r; }
     uint32_t _nextSymbol(BitInput *bi, const Tables &t, const Fugt &selectors);
-    Fugt _bwtBlock2;
 public:
-    Block() : _bwtBlock2(900000) { }
+    void reset();
+    Block() { reset(); }
     ~Block() { delete[] _merged; }
     int read();
     void init(BitInput *bi);

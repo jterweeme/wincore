@@ -5,15 +5,12 @@ uint32_t Block::_nextSymbol(BitInput *bi, const Tables &t, const Fugt &selectors
 {
     if (++_grpPos % 50 == 0) _curTbl = selectors.at(++_grpIdx);
     Table table = t.at(_curTbl);
-
     uint32_t n = table.minLength();
     int32_t codeBits = bi->readBits(n);
 
     for (; n <= 23; n++)
     {
-        if (codeBits <= table.limit(n))
-            return table.symbol(codeBits - table.base(n));
-
+        if (codeBits <= table.limit(n)) return table.symbol(codeBits - table.base(n));
         codeBits = codeBits << 1 | bi->readBits(1);
     }
 
@@ -22,12 +19,8 @@ uint32_t Block::_nextSymbol(BitInput *bi, const Tables &t, const Fugt &selectors
 
 void Table::calc()
 {
-    for (uint32_t i = 0; i < _symbolCount + 2; i++)
-        _bases[_codeLengths.at(i) + 1]++;
-
-    for (uint32_t i = 1; i < 25; i++)
-        _bases[i] += _bases[i - 1];
-
+    for (uint32_t i = 0; i < _symbolCount + 2; i++) _bases[_codeLengths.at(i) + 1]++;
+    for (uint32_t i = 1; i < 25; i++) _bases[i] += _bases[i - 1];
     uint8_t minLength2 = minLength();
     uint8_t maxLength2 = maxLength();
  
@@ -83,6 +76,17 @@ int DecStreamBuf::underflow()
     return (int)(*gptr());
 }
 
+void Table::dump(ostream &os) const
+{
+    os << _codeLengths.toString() << "\n";
+}
+
+void Tables::dump(ostream &os) const
+{
+    for (const_iterator it = begin(); it != end(); it++)
+        os << it->toString() << "\n";
+}
+
 uint8_t MoveToFront::indexToFront(uint32_t index)
 {
     uint8_t value = at(index);
@@ -90,12 +94,22 @@ uint8_t MoveToFront::indexToFront(uint32_t index)
     return set(0, value);
 }
 
-void Block::init(BitInput *bi)
+void Block::reset()
 {
     _grpIdx = _grpPos = _last = -1;
+    _acc = _repeat = _length = _curp = _dec = _curTbl = 0;   
+}
+
+void Block::init(BitInput *bi)
+{
+    reset();
+    int32_t _bwtByteCounts[256] = {0};
+    uint8_t _symbolMap[256] = {0};
+    Fugt _bwtBlock2(9000000);
+
     bi->readInt();
     bi->readBool();
-    _acc = _rleRepeat = _length = _curp = _dec = _randomIndex = _curTbl = 0;
+
     uint32_t bwtStartPointer = bi->readBits(24), symbolCount = 0;
 
     for (uint16_t i = 0, ranges = bi->readBits(16); i < 16; i++)
@@ -131,6 +145,7 @@ void Block::init(BitInput *bi)
         tables2.push_back(table);
     }
 
+    //cerr << tables2.toString() << "\n";
     _curTbl = selectors2.at(0);
     MoveToFront symbolMTF2;
     _length = 0;
@@ -216,20 +231,20 @@ bool DecStream::_initNextBlock()
 
 int Block::read()
 {
-    for (int nextByte; _rleRepeat < 1;)
+    for (int nextByte; _repeat < 1;)
     {
         if (_dec == _length)
             return -1;
 
         if ((nextByte = _nextByte()) != _last)
-            _last = nextByte, _rleRepeat = 1, _acc = 1;
+            _last = nextByte, _repeat = 1, _acc = 1;
         else if (++_acc == 4)
-            _rleRepeat = _nextByte() + 1, _acc = 0;
+            _repeat = _nextByte() + 1, _acc = 0;
         else
-            _rleRepeat = 1;
+            _repeat = 1;
     }
 
-    _rleRepeat--;
+    _repeat--;
     return _last;
 }
 

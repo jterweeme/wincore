@@ -57,6 +57,12 @@ class Bzcat2
         byte max() { return max(_size); }
         byte add(byte val) { return _buf[_pos++] = val; }
 
+        void dump(java.io.PrintStream os)
+        {
+            for (int i = 0; i < _size; i++)
+                os.format("%d ", at(i));
+        }
+
         byte min(int range)
         {
             byte a = 0;
@@ -88,6 +94,12 @@ class Bzcat2
         void add(byte v) { _codeLengths2.set(_pos++, v); }
         private int _minLength(int n) { return _codeLengths2.min(n); }
         private int _maxLength(int n) { return _codeLengths2.max(n); }
+        
+        void dump(java.io.PrintStream os)
+        {
+            _codeLengths2.dump(os);
+            os.print("\n");
+        }
 
         void calc()
         {
@@ -115,36 +127,19 @@ class Bzcat2
 
     class Tables extends java.util.ArrayList<Table>
     {
-    }
-
-    class Block2
-    {
-        private int _repeat, _last, _length, _dec = 0, _curp;
-        private int[] _buf;
-        Block2() { }
-        Block2(int length) { _length = length; _buf = new int[_length]; }
-        void set(int i, int val) { _buf[i] = val; }
-
-        private int _nextByte()
+        void dump(java.io.PrintStream os)
         {
-            int next = _curp & 0xff;
-            _curp = _buf[_curp >>> 8];
-            _dec++;
-            return next;
-        }
-
-        int read()
-        {
-            return -1;
+            for (java.util.Iterator<Table> it = iterator(); it.hasNext();)
+                it.next().dump(os);
+    
+            os.print("\n");
         }
     }
 
     class Block
     {
-        private int[] _bwtByteCounts, _merged;
-        private int _curTbl, _grpIdx, _grpPos, _last, _acc, _repeat, _curp, _length = 0;
-        private byte[] _symbolMap, _bwtBlock;
-        private int _bwtBytesDecoded = 0;
+        private int[] _merged;
+        private int _curTbl, _grpIdx, _grpPos, _last, _acc, _repeat, _curp, _length, _dec;
 
         private int _nextSymbol(BitInput bi, Tables t, byte[] selectors) throws IOException
         {
@@ -156,8 +151,6 @@ class Bzcat2
 
             for (; n <= 23; n++)
             {
-                System.err.println(table.limit(n));
-
                 if (codeBits <= table.limit(n))
                     return table.symbol(codeBits - table.base(n));
                 
@@ -171,7 +164,7 @@ class Bzcat2
         {
             int next = _curp & 0xff;
             _curp = _merged[_curp >>> 8];
-            _bwtBytesDecoded++;
+            _dec++;
             return next;
 	    }
         
@@ -179,7 +172,7 @@ class Bzcat2
         {
             while (_repeat < 1)
             {
-                if (_bwtBytesDecoded == _length)
+                if (_dec == _length)
                     return -1;
                 
                 int nextByte = _nextByte();
@@ -210,9 +203,9 @@ class Bzcat2
             _curTbl = 0;
             _grpIdx = -1;
             _grpPos = -1;
-            _bwtBlock = new byte[900000];
-            _symbolMap = new byte[256];
-            _bwtByteCounts = new int[256];
+            byte[] _bwtBlock = new byte[900000];
+            byte[] _symbolMap = new byte[256];
+            int[] _bwtByteCounts = new int[256];
             _last = -1;
             int crc = bi.readInt();
             bi.readBool();
@@ -220,7 +213,7 @@ class Bzcat2
             _repeat = 0;
             _length = 0;
             _curp = 0;
-            _bwtBytesDecoded = 0;
+            _dec = 0;
             int bwtStartPointer = bi.readBits(24), symbolCount = 0;
             int ranges = bi.readBits(16);
     
@@ -253,6 +246,8 @@ class Bzcat2
                 _tables.add(table);
 		    }
             
+            _tables.dump(System.err);
+            System.err.print("\n");
             _curTbl = selectors[0];
             MoveToFront symbolMTF2 = new MoveToFront();
             _length = 0;
@@ -318,7 +313,6 @@ class Bzcat2
         private BitInput _bi;
         private boolean _streamComplete = false;
         private Block _bd;
-        private Block2 _block;
         
         void extractTo(java.io.OutputStream o) throws IOException
         {
