@@ -6,15 +6,15 @@ class Bzcat2
 {
     class BitInput
     {
-        final java.io.InputStream _is;
-        int _bitBuffer, _bitCount;
-        public int readInt() throws IOException { return readBits(16) << 16 | readBits(16); }
-        public BitInput(final java.io.InputStream is) { _is = is; }
-        public boolean readBool() throws IOException { return readBits(1) == 0 ? false : true; }
-        public int readUnary() throws IOException { int u = 0; while (readBool()) u++; return u; }
-        public void ignore(int n) throws IOException { while (n-- > 0) readBool(); }
+        private final java.io.InputStream _is;
+        private int _bitBuffer, _bitCount;
+        int readInt() throws IOException { return readBits(16) << 16 | readBits(16); }
+        BitInput(final java.io.InputStream is) { _is = is; }
+        boolean readBool() throws IOException { return readBits(1) == 0 ? false : true; }
+        int readUnary() throws IOException { int u = 0; while (readBool()) u++; return u; }
+        void ignore(int n) throws IOException { while (n-- > 0) readBool(); }
         
-        public int readBits(int n) throws IOException
+        int readBits(int n) throws IOException
         {
             for (; _bitCount < n; _bitCount += 8) _bitBuffer = _bitBuffer << 8 | _is.read();
             _bitCount -= n;
@@ -22,13 +22,13 @@ class Bzcat2
         }
     }
 
-    class Table
+    class MoveToFront
     {
         private byte[] _buf = new byte[256];
-        Table() { for (int i = 0; i < 256; i++) _buf[i] = (byte)i; }
+        MoveToFront() { for (int i = 0; i < 256; i++) _buf[i] = (byte)i; }
         void dump(java.io.PrintStream os) { for (int i = 0; i < 256; i++) os.format("%d ", i); }
 
-        byte indexToFront(int index)
+        private byte indexToFront(int index)
         {
             byte value = _buf[index];
             for (int i = index; i > 0; i--) _buf[i] = _buf[i - 1];
@@ -36,46 +36,65 @@ class Bzcat2
         }
     }
 
-    class Table2
+    class Fint
     {
-        public byte[] _codeLengths = new byte[258];
-        int _symbolCount;
-        public int[] _bases = new int[25], _limits = new int[24], _symbols = new int[258];
-        int minLength() { return minLength(_symbolCount + 2); }
-        int maxLength() { return maxLength(_symbolCount + 2); }
-        Table2(int symbolCount) { _symbolCount = symbolCount; }
+        private int _size;
+        private int[] _buf;
+        Fint(int size) { _size = size; _buf = new int[size]; }
+        int at(int i) { return _buf[i]; }
+        int set(int i, int val) { return _buf[i] = val; }
+    }
+
+    class Fugt
+    {
+        private int _size;
+        private byte[] _buf;
+        private int _pos = 0;
+        Fugt(int size) { _size = size; _buf = new byte[size]; }
+        byte at(int i) { return _buf[i]; }
+        byte set(int i, byte val) { return _buf[i] = val; }
+        byte min() { return min(_size); }
+        byte max() { return max(_size); }
+        byte add(byte val) { return _buf[_pos++] = val; }
+
+        byte min(int range)
+        {
+            byte a = 0;
+            for (int i = 0; i < range; i++) a = (byte)Math.min(_buf[i], a);
+            return a;
+        }
+
+        byte max(int range)
+        {
+            byte a = 0;
+            for (int i = 0; i < range; i++) a = (byte)Math.max(_buf[i], a);
+            return a;
+        }
+    }
+
+    class Table
+    {
+        private Fugt _codeLengths2 = new Fugt(258);
+        private int _pos = 0;
+        private int _symbolCount;
+        private Fint _bases2 = new Fint(25);
+        private int[] _bases = new int[25], _limits = new int[24], _symbols = new int[258];
+        int minLength() { return _minLength(_symbolCount + 2); }
+        private int _maxLength() { return _maxLength(_symbolCount + 2); }
+        Table(int symbolCount) { _symbolCount = symbolCount; }
         int limit(int i) { return _limits[i]; }
+        int symbol(int i) { return _symbols[i]; }
+        int base(int i) { return _bases[i]; }
+        void add(byte v) { _codeLengths2.set(_pos++, v); }
+        private int _minLength(int n) { return _codeLengths2.min(n); }
+        private int _maxLength(int n) { return _codeLengths2.max(n); }
 
-        int minLength(int n)
+        void calc()
         {
-            byte a = 0;
-
-            for (int i = 0; i < n; i++)
-                a = (byte)Math.min(_codeLengths[i], a);
-
-            return a;
-        }
-
-        int maxLength(int n)
-        {
-            byte a = 0;
-
-            for (int i = 0; i < n; i++)
-                a = (byte)Math.max(_codeLengths[i], a);
-
-            return a;
-        }
-
-        void calcBases()
-        {
-            for (int i = 0; i < _symbolCount + 2; i++)
-                _bases[_codeLengths[i] + 1]++;
-
-            for (int i = 1; i < 25; i++)
-                _bases[i] += _bases[i - 1];
-
+            for (int i = 0; i < _symbolCount + 2; i++) _bases[_codeLengths2.at(i) + 1]++;
+            for (int i = 1; i < 25; i++) _bases[i] += _bases[i - 1];
             int minLength = minLength();
-            int maxLength = maxLength();
+            int maxLength = _maxLength();
 
             for (int i = minLength, code = 0; i <= maxLength; i++)
             {
@@ -88,33 +107,59 @@ class Bzcat2
 
             for (int n = minLength, i = 0; n <= maxLength; n++)
                 for (int symbol = 0; symbol < _symbolCount + 2; symbol++)
-                    if (_codeLengths[symbol] == n)
+                    if (_codeLengths2.at(symbol) == n)
                         _symbols[i++] = symbol;
         }
 
     }
 
+    class Tables extends java.util.ArrayList<Table>
+    {
+    }
+
+    class Block2
+    {
+        private int _repeat, _last, _length, _dec = 0, _curp;
+        private int[] _buf;
+        Block2() { }
+        Block2(int length) { _length = length; _buf = new int[_length]; }
+        void set(int i, int val) { _buf[i] = val; }
+
+        private int _nextByte()
+        {
+            int next = _curp & 0xff;
+            _curp = _buf[_curp >>> 8];
+            _dec++;
+            return next;
+        }
+
+        int read()
+        {
+            return -1;
+        }
+    }
+
     class Block
     {
-        int[] _bwtByteCounts, _merged;
-        int[][] _bases = new int[6][25], _limits = new int[6][24], _symbols = new int[6][258];
-        int _curTbl, _grpIdx, _grpPos, _last, _acc, _rleRepeat, _randomIndex, _randomCount;
-        boolean _blockRandomised;
-        byte[] _symbolMap, _bwtBlock;
-        int _curp, _length = 0, _bwtBytesDecoded = 0;
-        java.util.ArrayList<Table2> _tables = new java.util.ArrayList<Table2>();
+        private int[] _bwtByteCounts, _merged;
+        private int _curTbl, _grpIdx, _grpPos, _last, _acc, _repeat, _curp, _length = 0;
+        private byte[] _symbolMap, _bwtBlock;
+        private int _bwtBytesDecoded = 0;
 
-        int _nextSymbol(BitInput bi, byte[] selectors) throws IOException
+        private int _nextSymbol(BitInput bi, Tables t, byte[] selectors) throws IOException
         {
-            if (++_grpPos % 50 == 0)
-                _curTbl = selectors[++_grpIdx];
+            if (++_grpPos % 50 == 0) _curTbl = selectors[++_grpIdx];
+            Table table = t.get(_curTbl);
 
-            Table2 table = _tables.get(_curTbl);
+            int n = table.minLength();
+            int codeBits = bi.readBits(n);
 
-            for (int n = table.minLength(), codeBits = bi.readBits(n); n <= 23; n++)
+            for (; n <= 23; n++)
             {
+                System.err.println(table.limit(n));
+
                 if (codeBits <= table.limit(n))
-                    return table._symbols[codeBits - table._bases[n]];
+                    return table.symbol(codeBits - table.base(n));
                 
                 codeBits = codeBits << 1 | bi.readBits(1);
             }
@@ -122,7 +167,7 @@ class Bzcat2
             throw new IOException("Error decoding BZip2 block");
         }
        
-        int _nextByte()
+        private int _nextByte()
         {
             int next = _curp & 0xff;
             _curp = _merged[_curp >>> 8];
@@ -130,9 +175,9 @@ class Bzcat2
             return next;
 	    }
         
-	    public int read()
+	    int read()
         {
-            while (_rleRepeat < 1)
+            while (_repeat < 1)
             {
                 if (_bwtBytesDecoded == _length)
                     return -1;
@@ -142,30 +187,26 @@ class Bzcat2
                 if (nextByte != _last)
                 {
                     _last = nextByte;
-                    _rleRepeat = 1;
+                    _repeat = 1;
                     _acc = 1;
                 }
                 else if (++_acc == 4)
                 {
-                    _rleRepeat = _nextByte() + 1;
+                    _repeat = _nextByte() + 1;
                     _acc = 0;
                 }
                 else
                 {
-                    _rleRepeat = 1;
+                    _repeat = 1;
                 }
             }
             
-            _rleRepeat--;
+            _repeat--;
             return _last;
         }
         
-        public void init(BitInput bi) throws IOException
+        void init(BitInput bi) throws IOException
         {
-            _tables.clear();
-            _bases = new int[6][25];
-            _limits = new int[6][24];
-            _symbols = new int[6][258];
             _curTbl = 0;
             _grpIdx = -1;
             _grpPos = -1;
@@ -173,11 +214,10 @@ class Bzcat2
             _symbolMap = new byte[256];
             _bwtByteCounts = new int[256];
             _last = -1;
-            _randomIndex = 0;
             int crc = bi.readInt();
-            _blockRandomised = bi.readBool();
+            bi.readBool();
             _acc = 0;
-            _rleRepeat = 0;
+            _repeat = 0;
             _length = 0;
             _curp = 0;
             _bwtBytesDecoded = 0;
@@ -192,32 +232,34 @@ class Bzcat2
             
             int eob = symbolCount + 1, tables = bi.readBits(3), selectors_n = bi.readBits(15);
             byte[] selectors = new byte[selectors_n];
-            Table tableMTF2 = new Table();
+            MoveToFront tableMTF2 = new MoveToFront();
             
             for (int i = 0; i < selectors_n; i++)
                 selectors[i] = tableMTF2.indexToFront(bi.readUnary());
 
+            Tables _tables = new Tables();
+
             for (int t = 0; t < tables; t++)
             {
-                Table2 table = new Table2(symbolCount);
+                Table table = new Table(symbolCount);
 
                 for (int i = 0, c = bi.readBits(5); i <= eob; i++)
                 {
 				    while (bi.readBool()) c += bi.readBool() ? -1 : 1;
-                    table._codeLengths[i] = (byte)c;
+                    table.add((byte)c);
 			    }
                 
-                table.calcBases();
+                table.calc();
                 _tables.add(table);
 		    }
             
             _curTbl = selectors[0];
-            Table symbolMTF2 = new Table();
+            MoveToFront symbolMTF2 = new MoveToFront();
             _length = 0;
             
             for (int n = 0, inc = 1, mtfValue = 0;;)
             {
-                int nextSymbol = _nextSymbol(bi, selectors);
+                int nextSymbol = _nextSymbol(bi, _tables, selectors);
 
                 if (nextSymbol == 0)
                 {
@@ -250,9 +292,7 @@ class Bzcat2
 			    }
             }
             
-            //System.err.println(_length);
-            //_merged = new int[_length];
-            _merged = new int[999999];
+            _merged = new int[_length];
             int[] characterBase = new int[256];
             
             for (int i = 0; i < 255; i++)
@@ -264,7 +304,8 @@ class Bzcat2
             for (int i = 0; i < _length; i++)
             {
                 int value = _bwtBlock[i] & 0xff;
-                _merged[characterBase[value]++] = (i << 8) + value;
+                _merged[characterBase[value]] = (i << 8) + value;
+                characterBase[value]++;
             }
             
             _bwtBlock = null;
@@ -274,11 +315,12 @@ class Bzcat2
 
     class DecStream
     {
-        BitInput _bi;
-        boolean _streamComplete = false;
-        Block _bd;
+        private BitInput _bi;
+        private boolean _streamComplete = false;
+        private Block _bd;
+        private Block2 _block;
         
-        public void extractTo(java.io.OutputStream o) throws IOException
+        void extractTo(java.io.OutputStream o) throws IOException
         {
             for (int b = _read(); b != -1; b = _read())
                 o.write(b);
@@ -286,13 +328,13 @@ class Bzcat2
             o.flush();
         }
 
-        int _read() throws IOException
+        private int _read() throws IOException
         {
             int next = _bd.read();
             return next = next == -1 && _initNextBlock() ? _bd.read() : next;
         }
         
-        boolean _initNextBlock() throws IOException
+        private boolean _initNextBlock() throws IOException
         {
             if (_streamComplete)
                 return false;
@@ -308,7 +350,6 @@ class Bzcat2
             {
                 _streamComplete = true;
                 int crc = _bi.readInt();
-                //System.err.format("CRC: %x\n", crc);
                 return false;
             }
             
@@ -316,7 +357,7 @@ class Bzcat2
             throw new IOException("BZip2 stream format error");
         }
         
-        public DecStream(BitInput bi) throws IOException
+        DecStream(BitInput bi) throws IOException
         {
             _bi = bi;
             _bi.ignore(32);

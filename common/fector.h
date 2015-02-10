@@ -10,6 +10,8 @@ template<class T> class Fector
 {
     uint32_t _size;
     T *_buf;
+    T _max(T a, T b) { return a > b ? a : b; }
+    T _min(T a, T b) { return a < b ? a : b; }
 public:
     Fector(uint32_t size) : _size(size), _buf(new T[size]) { }
 
@@ -30,6 +32,23 @@ public:
         if (i >= _size) throw out_of_range("Fector");
         return _buf[i] = val;
     }
+
+    T max(uint32_t range)
+    {
+        T a = 0;
+        for (uint32_t i = 0; i < range; i++) a = _max(_buf[i], a);
+        return a;
+    }
+
+    T min(uint32_t range)
+    {
+        T a = 0;
+        for (uint32_t i = 0; i < range; i++) a = _min(_buf[i], a);
+        return a;
+    }
+
+    T max() { return max(_size); }
+    T min() { return min(_size); }
 };
 
 class Fugt : public Fector<uint8_t>

@@ -1,18 +1,18 @@
 #include "bunzip2.h"
 #include <cstring>
 
-uint32_t Block::_nextSymbol(BitInput *bi, const Fugt &selectors)
+uint32_t Block::_nextSymbol(BitInput *bi, const Tables &t, const Fugt &selectors)
 {
-    if (++_grpPos % 50 == 0)
-        _curTbl = selectors.at(++_grpIdx);
+    if (++_grpPos % 50 == 0) _curTbl = selectors.at(++_grpIdx);
+    Table table = t.at(_curTbl);
 
-    uint32_t n = _minLengths[_curTbl];
+    uint32_t n = table.minLength();
     int32_t codeBits = bi->readBits(n);
 
     for (; n <= 23; n++)
     {
-        if (codeBits <= _limits[_curTbl][n])
-            return _symbols[_curTbl][codeBits - _bases[_curTbl][n]];
+        if (codeBits <= table.limit(n))
+            return table.symbol(codeBits - table.base(n));
 
         codeBits = codeBits << 1 | bi->readBits(1);
     }
@@ -20,15 +20,83 @@ uint32_t Block::_nextSymbol(BitInput *bi, const Fugt &selectors)
     return 0;
 }
 
+void Table::calc()
+{
+    for (uint32_t i = 0; i < _symbolCount + 2; i++)
+        _bases[_codeLengths.at(i) + 1]++;
+
+    for (uint32_t i = 1; i < 25; i++)
+        _bases[i] += _bases[i - 1];
+
+    uint8_t minLength2 = minLength();
+    uint8_t maxLength2 = maxLength();
+ 
+    for (int32_t i = minLength2, code = 0; i <= maxLength2; i++)
+    {
+        int32_t base = code;
+        code += _bases[i + 1] - _bases[i];
+        _bases[i] = base - _bases[i];
+        _limits[i] = code - 1;
+        code <<= 1;
+    }
+
+    uint8_t n = minLength2;
+
+    for (uint32_t i = 0; n <= maxLength2; n++)
+        for (uint32_t symbol = 0; symbol < _symbolCount + 2; symbol++)
+            if (_codeLengths.at(symbol) == n)
+                _symbols[i++] = symbol;
+}
+
+int DecStream::read(char *buf, int n)
+{
+    int i = 0;
+    for (int c; (c = read()) != -1 && i < n; i++) buf[i] = c;
+    return i;
+}
+
+fpos<mbstate_t> DecStreamBuf::seekoff(int64_t off, ios::seekdir way, ios::openmode m)
+{
+    return (uint64_t)_M_in_cur - (uint64_t)_M_in_beg;
+}
+
+int DecStreamBuf::underflow()
+{
+    if (gptr() < egptr())
+        return (int)(*gptr());
+
+    char *base = &_buffer.front();
+    char *start = base;
+
+    if (eback() == base)
+    {
+        memmove(base, egptr() - _put_back, _put_back);
+        start += _put_back;
+    }
+
+    uint32_t n = _ds.read(start, _buffer.size());
+
+    if (n == 0)
+        return traits_type::eof();
+
+    setg(base, start, start + n);
+    return (int)(*gptr());
+}
+
+uint8_t MoveToFront::indexToFront(uint32_t index)
+{
+    uint8_t value = at(index);
+    for (uint32_t i = index; i > 0; i--) set(i, at(i - 1));
+    return set(0, value);
+}
+
 void Block::init(BitInput *bi)
 {
-    //cerr << "Block::init\n";
     _grpIdx = _grpPos = _last = -1;
     bi->readInt();
-    _blockRandomised = bi->readBool();
+    bi->readBool();
     _acc = _rleRepeat = _length = _curp = _dec = _randomIndex = _curTbl = 0;
     uint32_t bwtStartPointer = bi->readBits(24), symbolCount = 0;
-    uint8_t tableCodeLengths[6][258];
 
     for (uint16_t i = 0, ranges = bi->readBits(16); i < 16; i++)
         if ((ranges & (1 << 15 >> i)) != 0)
@@ -36,10 +104,8 @@ void Block::init(BitInput *bi)
                 if (bi->readBool())
                     _symbolMap[symbolCount++] = (uint8_t)k;
 
-    //cerr << symbolCount << "\n";
-
     uint32_t eob = symbolCount + 1, tables = bi->readBits(3), selectors_n = bi->readBits(15);
-    Table tableMTF2;
+    MoveToFront tableMTF2;
     Fugt selectors2(selectors_n);
 
     for (uint32_t i = 0; i < selectors_n; i++)
@@ -49,55 +115,29 @@ void Block::init(BitInput *bi)
         selectors2.set(i, y);
     }
 
-    //cerr << selectors2.toString() << "\n";
+    Tables tables2;
 
     for (uint32_t t = 0; t < tables; t++)
     {
+        Table table(symbolCount);
+
         for (uint32_t i = 0, c = bi->readBits(5); i <= eob; i++)
         {
             while (bi->readBool()) c += bi->readBool() ? -1 : 1;
-            tableCodeLengths[t][i] = c;
-        }
-    }
-
-    for (uint32_t table = 0, minLength = 23, maxLength = 0; table < tables; table++)
-    {
-        for (uint32_t i = 0; i < symbolCount + 2; i++)
-        {
-            maxLength = max((uint32_t)tableCodeLengths[table][i], maxLength);
-            minLength = min((uint32_t)tableCodeLengths[table][i], minLength);
+            table.add(c);
         }
 
-        _minLengths[table] = minLength;
-
-        for (uint32_t i = 0; i < symbolCount + 2; i++)
-            _bases[table][tableCodeLengths[table][i] + 1]++;
-
-        for (uint32_t i = 1; i < 25; i++)
-            _bases[table][i] += _bases[table][i - 1];
-
-        for (uint32_t i = minLength, code = 0; i <= maxLength; i++)
-        {
-            int base = code;
-            code += _bases[table][i + 1] - _bases[table][i];
-            _bases[table][i] = base - _bases[table][i];
-            _limits[table][i] = code - 1;
-            code <<= 1;
-        }
-
-        for (uint32_t n = minLength, i = 0; n <= maxLength; n++)
-            for (uint32_t symbol = 0; symbol < symbolCount + 2; symbol++)
-                if (tableCodeLengths[table][symbol] == n)
-                    _symbols[table][i++] = symbol;
+        table.calc();
+        tables2.push_back(table);
     }
 
     _curTbl = selectors2.at(0);
-    Table symbolMTF2;
+    MoveToFront symbolMTF2;
     _length = 0;
 
     for (int n = 0, inc = 1, mtfValue = 0;;)
     {
-        uint32_t nextSymbol = _nextSymbol(bi, selectors2);
+        uint32_t nextSymbol = _nextSymbol(bi, tables2, selectors2);
 
         if (nextSymbol == 0)
         {
