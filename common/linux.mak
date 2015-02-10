@@ -17,8 +17,8 @@ TARGETS = base64 bunzip2 bzcat bzinfo bzip2 bzmd5 cat cp crc32 dd diff \
 
 all: $(TARGETS)
 base64: base64.o
-bunzip2: bunzip2m.o bunzip2.o bitinput.o
-bzcat: bzcat.o bitinput.o bunzip2.o
+bunzip2: bunzip2m.o bunzip2.o bitinput.o fector.o
+bzcat: bzcat.o bitinput.o bunzip2.o fector.o
 bzinfo: bzinfo.o bitinput.o
 bzip2: bzip2.o
 bzmd5: bzmd5.o
@@ -38,7 +38,7 @@ md5s: md5s.o mystl.o hasher.o
 nl: nl.o
 od: od.o mystl.o odmain.o
 rm: rm.o
-tar: tar.o tarm.o bitinput.o bunzip2.o
+tar: tar.o tarm.o bitinput.o bunzip2.o fector.o
 tee: tee.o
 test1: test1.o mystl.o hasher.o
 testbinp: testbinp.o bitinput.o
@@ -63,6 +63,7 @@ crc32.o: crc32.cpp
 dd.o: dd.cpp
 diff.o: diff.cpp
 dos2unix.o: dos2unix.cpp
+fector.o: fector.cpp
 filesys.o: filesys.cpp filesys.h
 grep.o: grep.cpp
 gunzip.o: gunzip.cpp gunzip.h

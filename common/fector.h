@@ -55,7 +55,7 @@ class Fugt : public Fector<uint8_t>
 {
 public:
     Fugt(uint32_t size) : Fector<uint8_t>(size) { }
-    void dump(ostream &os) const { for (uint32_t i = 0; i < size(); i++) os << (int)at(i) << " "; }
+    void dump(ostream &os) const;
     string toString() const { ostringstream o; dump(o); return o.str(); }
 };
 
