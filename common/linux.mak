@@ -22,7 +22,7 @@ bzcat: bzcat.o bitinput.o bunzip2.o fector.o
 bzinfo: bzinfo.o bitinput.o
 bzip2: bzip2.o
 bzmd5: bzmd5.o
-cat: cat.o
+cat: cat.o mystl.o
 cp: cp.o
 crc32: crc32.o
 dd: dd.o
@@ -39,7 +39,7 @@ nl: nl.o
 od: od.o mystl.o odmain.o
 rm: rm.o mystl.o
 tar: tar.o tarm.o bitinput.o bunzip2.o fector.o
-tee: tee.o
+tee: tee.o mystl.o
 test1: test1.o mystl.o hasher.o
 testbinp: testbinp.o bitinput.o
 tgunzip1: tgunzip1.o gunzip.o
@@ -111,7 +111,6 @@ test: testgunzip2 test1go tgunzip1go
 	$(VALGRIND) ./od zero.dat | ./diff -s zero.od -
 	$(VALGRIND) ./base64 zero.dat | ./diff -s zero.b64 -
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
-	$(VALGRIND) ./md5s -c data.md5
 	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s | ./diff -s kompakt1.out -
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 	$(VALGRIND) ./md5s -c data.md5

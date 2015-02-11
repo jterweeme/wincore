@@ -2495,12 +2495,14 @@ template<typename T, typename U> inline void sort_heap(T first, T last, U __comp
     __sort_heap(first, last, __iter_comp_iter(__comp));
 }
 
+
+
 enum _Ios_Seekdir
 {
-      _S_beg = 0,
-      _S_cur = SEEK_CUR,
-      _S_end = SEEK_END,
-      _S_ios_seekdir_end = 1L << 16
+    _S_beg = 0,
+    _S_cur = SEEK_CUR,
+    _S_end = SEEK_END,
+    _S_ios_seekdir_end = 1L << 16
 };
 
 struct mbstate_t
@@ -2515,6 +2517,17 @@ class streambuf
 public:
     char *_M_in_beg;
     char *_M_in_cur;
+    int sputc(char c) { return 0; }
+    int pubsync() { return 0; }
+};
+
+class ios2
+{
+public:
+    typedef _Ios_Seekdir seekdir;
+    typedef int openmode;
+    static const Util2::uint8_t binary = 1;
+    streambuf *rdbuf() const { return new streambuf(); }
 };
 
 template <Util2::size_t T> class bitset
@@ -2557,6 +2570,7 @@ protected:
     FILE *_fp;
     size_t _lastRead;
     bool _eof;
+    streambuf *sb;
 public:
     istream2() : _pos(0), _lastRead(0), _eof(false) { }
     istream2(FILE *fp) : _pos(0), _fp(fp), _lastRead(0), _eof(false) { }
@@ -2576,6 +2590,7 @@ class istreamDebug : public istream2
 public:
     istreamDebug() : istream2() { }
     istreamDebug(FILE *fp) : istream2(fp) { }
+
     virtual int get()
     {
         _pos++;
@@ -2666,7 +2681,7 @@ public:
     uint8_t type() const { return _type; }
 };
 
-class ostream2
+class ostream2 : public ios2
 {
 protected:
     typedef Util2::uint8_t uint8_t;
@@ -2680,6 +2695,7 @@ public:
     static const uint8_t OCT = 1;
     static const uint8_t HEX = 2;
     ostream2() : _base(base2::DEC), _width(1), _fp(stdout) { }
+    ostream2(streambuf *sb) { }
     ostream2(FILE *fp) : _base(base2::DEC), _width(1), _fp(fp) { }
     ostream2& operator << (const string2 s) { fprintf(_fp, s.c_str()); return *this; }
     ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
@@ -2705,6 +2721,8 @@ public:
     static const uint8_t trunc = 1 << 5;
     void open(const char *fn, openmode om = out);
     void close() { }
+    ofstream2() : ostream2() { }
+    ofstream2(const char *f) : ostream2(fopen(f, "rw")) { }
 };
 
 class ostringstream2 : public ostream2
@@ -2729,13 +2747,7 @@ public:
     T operator[](Util2::size_t n) { return _buf[n]; }
 };
 
-class ios2
-{
-public:
-    typedef _Ios_Seekdir seekdir;
-    typedef int openmode;
-    static const Util2::uint8_t binary = 1;
-};
+
 
 namespace mystl
 {

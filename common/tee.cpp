@@ -1,6 +1,10 @@
+#if 0
 #include <iostream>
 #include <fstream>
 using namespace std;
+#else
+#include "common.h"
+#endif
 
 class teebuf : public streambuf
 {
