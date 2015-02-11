@@ -1,7 +1,4 @@
 #include "bunzip2.h"
-#include <fstream>
-#include <algorithm>
-#include <cstring>
 
 class App
 {

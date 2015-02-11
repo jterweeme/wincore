@@ -9,6 +9,7 @@ public:
     typedef unsigned char uint8_t;
     typedef unsigned short uint16_t;
     typedef unsigned uint32_t;
+    typedef unsigned long long uint64_t;
     typedef long unsigned size_t;
     typedef long int ptrdiff_t;
     struct __true_type { };
@@ -416,14 +417,13 @@ template <typename T> inline bool operator<(const reverse_iterator<T> &x,
 }
 
 template<typename T> inline bool operator!=(const reverse_iterator<T> &x,
-           const reverse_iterator<T> &y)
+    const reverse_iterator<T> &y)
 {
     return !(x == y);
 }
 
 template<typename _Iterator> inline bool
-    operator>(const reverse_iterator<_Iterator>& __x,
-          const reverse_iterator<_Iterator>& __y)
+    operator>(const reverse_iterator<_Iterator>& __x, const reverse_iterator<_Iterator>& __y)
     { return __y < __x; }
 
 template<typename _IteratorL, typename _IteratorR>
@@ -1999,10 +1999,11 @@ template<typename _InputIterator, typename _Predicate, typename _Distance>
     _InputIterator
     __find_if_not_n(_InputIterator __first, _Distance& __len, _Predicate __pred)
 {
-      for (; __len; --__len, ++__first)
-    if (!__pred(__first))
-      break;
-      return __first;
+    for (; __len; --__len, ++__first)
+        if (!__pred(__first))
+            break;
+
+    return __first;
 }
 
 template<typename _ForwardIterator1, typename _ForwardIterator2,
@@ -2269,8 +2270,7 @@ template<typename _RandomAccessIterator, typename _Compare>
 template<typename _RandomAccessIterator, typename _Compare>
     _RandomAccessIterator
     __unguarded_partition(_RandomAccessIterator __first,
-              _RandomAccessIterator __last,
-              _RandomAccessIterator __pivot, _Compare __comp)
+              _RandomAccessIterator __last, _RandomAccessIterator __pivot, _Compare __comp)
 {
     while (true)
     {
@@ -2313,8 +2313,7 @@ template<typename _RandomAccessIterator, typename _Compare,
 }
 
 template<typename _RandomAccessIterator>
-    inline bool
-    __is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
+    inline bool __is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
     return __is_heap(__first, distance(__first, __last));
 }
@@ -2325,11 +2324,8 @@ template<typename T, typename U> inline bool __is_heap(T __first, T __last, U __
 }
 
 template<typename _RandomAccessIterator, typename _Distance, typename _Tp,
-       typename _Compare>
-    void
-    __push_heap(_RandomAccessIterator __first,
-        _Distance __holeIndex, _Distance __topIndex, _Tp __value,
-        _Compare __comp)
+       typename _Compare> void __push_heap(_RandomAccessIterator __first,
+        _Distance __holeIndex, _Distance __topIndex, _Tp __value, _Compare __comp)
 {
       _Distance __parent = (__holeIndex - 1) / 2;
       while (__holeIndex > __topIndex && __comp(__first + __parent, __value))
@@ -2464,28 +2460,20 @@ template<typename T, typename _Size, typename _Compare>
     }
 }
 
-inline int
-__lg(int __n)
+inline int __lg(int __n) { return sizeof(int) * __CHAR_BIT__  - 1 - __builtin_clz(__n); }
+
+inline unsigned __lg(unsigned __n)
 { return sizeof(int) * __CHAR_BIT__  - 1 - __builtin_clz(__n); }
 
-inline unsigned
-__lg(unsigned __n)
-{ return sizeof(int) * __CHAR_BIT__  - 1 - __builtin_clz(__n); }
+inline long __lg(long __n) { return sizeof(long) * __CHAR_BIT__ - 1 - __builtin_clzl(__n); }
 
-inline long
-__lg(long __n)
+inline unsigned long __lg(unsigned long __n)
 { return sizeof(long) * __CHAR_BIT__ - 1 - __builtin_clzl(__n); }
 
-inline unsigned long
-__lg(unsigned long __n)
-{ return sizeof(long) * __CHAR_BIT__ - 1 - __builtin_clzl(__n); }
-
-inline long long
-__lg(long long __n)
+inline long long __lg(long long __n)
 { return sizeof(long long) * __CHAR_BIT__ - 1 - __builtin_clzll(__n); }
 
-inline unsigned long long
-__lg(unsigned long long __n)
+inline unsigned long long __lg(unsigned long long __n)
 { return sizeof(long long) * __CHAR_BIT__ - 1 - __builtin_clzll(__n); }
 
 template <typename T, typename U> inline void sort(T first, T last, U comp)
@@ -2507,6 +2495,27 @@ template<typename T, typename U> inline void sort_heap(T first, T last, U __comp
     __sort_heap(first, last, __iter_comp_iter(__comp));
 }
 
+enum _Ios_Seekdir
+{
+      _S_beg = 0,
+      _S_cur = SEEK_CUR,
+      _S_end = SEEK_END,
+      _S_ios_seekdir_end = 1L << 16
+};
+
+struct mbstate_t
+{
+    int fill[6];
+};
+
+template <class T> class fpos;
+
+class streambuf
+{
+public:
+    char *_M_in_beg;
+    char *_M_in_cur;
+};
 
 template <Util2::size_t T> class bitset
 {
@@ -2723,6 +2732,8 @@ public:
 class ios2
 {
 public:
+    typedef _Ios_Seekdir seekdir;
+    typedef int openmode;
     static const Util2::uint8_t binary = 1;
 };
 
@@ -2739,6 +2750,7 @@ namespace mystl
     typedef Util2::uint8_t uint8_t;
     typedef Util2::uint16_t uint16_t;
     typedef Util2::uint32_t uint32_t;
+    typedef Util2::uint64_t uint64_t;
     void *memcpy(void *dest, const void *src, size_t n);
     char *strcpy(char *dest, const char *src);
     void *memset(void *s, const int c, const size_t n);

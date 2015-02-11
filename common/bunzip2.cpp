@@ -1,5 +1,4 @@
 #include "bunzip2.h"
-#include <cstring>
 
 uint32_t Block::_nextSymbol(BitInput *bi, const Tables &t, const Fugt &selectors)
 {

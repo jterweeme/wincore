@@ -1,8 +1,6 @@
 #ifndef _BITINPUT_H_
 #define _BITINPUT_H_
-#include <iostream>
-#include <stdint.h>
-using namespace std;
+#include "common2.h"
 
 class BitInput
 {

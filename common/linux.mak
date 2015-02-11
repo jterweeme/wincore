@@ -37,7 +37,7 @@ ls: ls.o
 md5s: md5s.o mystl.o hasher.o
 nl: nl.o
 od: od.o mystl.o odmain.o
-rm: rm.o
+rm: rm.o mystl.o
 tar: tar.o tarm.o bitinput.o bunzip2.o fector.o
 tee: tee.o
 test1: test1.o mystl.o hasher.o

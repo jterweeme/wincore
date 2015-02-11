@@ -1,10 +1,6 @@
 #ifndef _FECTOR_H_
 #define _FECTOR_H_
-#include <stdint.h>
-#include <stdexcept>
-#include <iostream>
-#include <sstream>
-using namespace std;
+#include "common2.h"
 
 template<class T> class Fector
 {
@@ -23,13 +19,13 @@ public:
 
     T at(uint32_t i) const
     {
-        if (i >= _size) throw out_of_range("Fector");
+        //if (i >= _size) throw out_of_range("Fector");
         return _buf[i];
     }
 
     T set(uint32_t i, T val)
     {
-        if (i >= _size) throw out_of_range("Fector");
+        //if (i >= _size) throw out_of_range("Fector");
         return _buf[i] = val;
     }
 
