@@ -1,3 +1,5 @@
+namespace mystl { }
+using namespace mystl;
 #include "filesys.h"
 #include <unistd.h>
 #include <sys/stat.h>

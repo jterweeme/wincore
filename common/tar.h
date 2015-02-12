@@ -1,6 +1,5 @@
 #ifndef _TAR_H_
 #define _TAR_H_
-
 #include <iostream>
 #include <fstream>
 #include <stdint.h>
@@ -11,7 +10,6 @@
 #include <sstream>
 #include "bunzip2.h"
 #include "buftest.h"
-using namespace std;
 
 typedef vector<string> Vest;
 

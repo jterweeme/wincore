@@ -1,7 +1,7 @@
+using namespace std;
 #include <iostream>
 #include <fstream>
 #include <stdint.h>
-using namespace std;
 
 char set[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

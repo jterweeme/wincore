@@ -1,3 +1,4 @@
+using namespace std;
 #include "buftest.h"
 
 int main(int argc, char **argv)

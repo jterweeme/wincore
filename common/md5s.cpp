@@ -1,3 +1,5 @@
+namespace mystl { }
+using namespace mystl;
 #include "hasher.h"
 
 typedef vector<string> Vest;

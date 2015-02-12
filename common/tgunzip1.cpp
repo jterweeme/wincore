@@ -1,3 +1,4 @@
+using namespace std;
 #include "gunzip.h"
 
 int main()

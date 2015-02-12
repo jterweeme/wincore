@@ -1,4 +1,6 @@
 //#include "filesys.h"
+namespace mystl { }
+using namespace mystl;
 #include "common.h"
 #include <stdlib.h>
 

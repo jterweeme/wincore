@@ -223,7 +223,7 @@ template<typename> struct __is_move_iterator
     typedef Util::__false_type __type;
 };
 
-template<bool, typename> struct __enable_if    { };
+template<bool, typename> struct __enable_if { };
 template<typename T> struct __enable_if<true, T> { typedef T __type; };
 template<bool, typename _Iftrue, typename> struct __conditional_type { typedef _Iftrue __type; };
 template<typename T, typename U> struct __conditional_type<false, T, U> { typedef U __type; };
@@ -351,15 +351,14 @@ template<typename T> inline typename iterator_traits<T>::difference_type
     return __distance(__first, __last, __iterator_category(__first));
 }
 
-template<typename _BidirectionalIterator, typename _Distance> inline void
-    __advance(_BidirectionalIterator& __i, _Distance __n, bidirectional_iterator_tag)
+template<typename It, typename D> inline void __advance(It &i, D n, bidirectional_iterator_tag)
 {
-    if (__n > 0)
-        while (__n--)
-            ++__i;
+    if (n > 0)
+        while (n--)
+            ++i;
     else
-        while (__n++)
-            --__i;
+        while (n++)
+            --i;
 }
 
 template<typename T, typename U> inline void __advance(T &__i, U __n, random_access_iterator_tag)
@@ -717,11 +716,9 @@ inline _Val_less_iter __val_comp_iter(_Iter_less_iter) { return _Val_less_iter()
 
 struct _Iter_equal_to_iter
 {
-    template<typename _Iterator1, typename _Iterator2>
-        bool
-        operator()(_Iterator1 __it1, _Iterator2 __it2) const
+    template<typename It1, typename It2> bool operator()(It1 it1, It2 it2) const
     {
-        return *__it1 == *__it2;
+        return *it1 == *it2;
     }
 };
 
@@ -988,25 +985,6 @@ template<bool _IsMove, typename _II, typename _OI> inline _OI
 }
 
 template<typename _CharT> struct char_traits;
-template<typename _CharT, typename _Traits> class istreambuf_iterator;
-template<typename _CharT, typename _Traits> class ostreambuf_iterator;
-
-template<bool _IsMove, typename _CharT> typename __enable_if<__is_char<_CharT>::__value,
-         ostreambuf_iterator<_CharT, char_traits<_CharT> > >::__type
-    __copy_move_a2(_CharT*, _CharT*,
-           ostreambuf_iterator<_CharT, char_traits<_CharT> >);
-
-template<bool _IsMove, typename _CharT>
-    typename __enable_if<__is_char<_CharT>::__value,
-         ostreambuf_iterator<_CharT, char_traits<_CharT> > >::__type
-    __copy_move_a2(const _CharT*, const _CharT*,
-           ostreambuf_iterator<_CharT, char_traits<_CharT> >);
-
-template<bool _IsMove, typename _CharT>
-    typename __enable_if<__is_char<_CharT>::__value,
-                    _CharT*>::__type
-    __copy_move_a2(istreambuf_iterator<_CharT, char_traits<_CharT> >,
-           istreambuf_iterator<_CharT, char_traits<_CharT> >, _CharT*);
 
 template<bool _IsMove, typename _II, typename _OI>
     inline _OI __copy_move_a2(_II __first, _II __last, _OI __result)
@@ -1448,9 +1426,9 @@ template<typename T, typename U, typename V>
     return uninitialized_copy(__first, __last, __result);
 }
 
-template<typename _InputIterator, typename _ForwardIterator, typename _Allocator>
+template<typename II, typename _ForwardIterator, typename _Allocator>
     inline _ForwardIterator
-    __uninitialized_move_a(_InputIterator __first, _InputIterator __last,
+    __uninitialized_move_a(II __first, II __last,
     _ForwardIterator __result, _Allocator& __alloc)
 {
     return __uninitialized_copy_a((__first), (__last), __result, __alloc);
@@ -1764,15 +1742,13 @@ protected:
             push_back(*__first);
     }
 
-    template<typename _Integer> void _M_assign_dispatch(_Integer __n,
-        _Integer __val, Util::__true_type)
+    template<typename I> void _M_assign_dispatch(I __n, I __val, Util::__true_type)
     {
         _M_fill_assign(__n, __val);
     }
 
     template<typename _InputIterator> void
-    _M_assign_dispatch(_InputIterator __first, _InputIterator __last,
-           Util::__false_type)
+    _M_assign_dispatch(_InputIterator __first, _InputIterator __last, Util::__false_type)
     {
         typedef typename iterator_traits<_InputIterator>::iterator_category _IterCategory;
         _M_assign_aux(__first, __last, _IterCategory());
@@ -1843,21 +1819,19 @@ template<typename _Tp, typename _Alloc> inline bool
     return !(__x == __y);
 }
 
-template<typename _Tp, typename _Alloc>   inline bool
+template<typename _Tp, typename _Alloc> inline bool
     operator>(const vector2<_Tp, _Alloc>& __x, const vector2<_Tp, _Alloc>& __y)
 {
     return __y < __x;
 }
 
-template<typename _Tp, typename _Alloc>
-    inline bool
+template<typename _Tp, typename _Alloc> inline bool
     operator<=(const vector2<_Tp, _Alloc>& __x, const vector2<_Tp, _Alloc>& __y)
 {
     return !(__y < __x);
 }
 
-template<typename _Tp, typename _Alloc>
-    inline bool
+template<typename _Tp, typename _Alloc> inline bool
     operator>=(const vector2<_Tp, _Alloc>& __x, const vector2<_Tp, _Alloc>& __y)
 {
     return !(__x < __y);
@@ -2049,8 +2023,7 @@ template<typename _ForwardIterator1, typename _ForwardIterator2,
     return __first1;
 }
 
-template<typename _ForwardIterator, typename _Integer,
-       typename _UnaryPredicate>
+template<typename _ForwardIterator, typename _Integer, typename _UnaryPredicate>
     _ForwardIterator
     __search_n_aux(_ForwardIterator __first, _ForwardIterator __last,
            _Integer __count, _UnaryPredicate __unary_pred,
@@ -2196,13 +2169,12 @@ template<typename _InputIterator, typename _Predicate>
     typename iterator_traits<_InputIterator>::difference_type
     count_if(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
-      typename iterator_traits<_InputIterator>::difference_type __n = 0;
-      for (; __first != __last; ++__first)
-    if (__pred(__first))
-      ++__n;
-      return __n;
+    typename iterator_traits<_InputIterator>::difference_type __n = 0;
+    for (; __first != __last; ++__first)
+        if (__pred(__first))
+            ++__n;
+    return __n;
 }
-
 
 template<typename _InputIterator, typename _Tp>
     inline typename iterator_traits<_InputIterator>::difference_type
@@ -2212,9 +2184,7 @@ template<typename _InputIterator, typename _Tp>
 }
 
 
-template<typename _BidirectionalIterator>
-    inline void
-    reverse(_BidirectionalIterator __first, _BidirectionalIterator __last)
+template<typename Iterator> inline void reverse(Iterator __first, Iterator __last)
 {
     reverse(__first, __last, __iterator_category(__first));
 }
@@ -2303,10 +2273,8 @@ template<typename _RandomAccessIterator, typename _Distance>
     return __is_heap_until(__first, __n, __iter_less_iter()) == __n;
 }
 
-template<typename _RandomAccessIterator, typename _Compare,
-       typename _Distance>
-    inline bool
-    __is_heap(_RandomAccessIterator __first, _Compare __comp, _Distance __n)
+template<typename _RandomAccessIterator, typename _Compare, typename _Distance>
+    inline bool __is_heap(_RandomAccessIterator __first, _Compare __comp, _Distance __n)
 {
     return __is_heap_until(__first, __n,
     __iter_comp_iter(__comp)) == __n;
@@ -2405,22 +2373,12 @@ template<typename _RandomAccessIterator, typename _Compare> void
     }
 }
 
-
-template <typename T, typename U> void __heap_select(T first, T middle, T last, U comp)
+template <typename T, typename Compare> void __sort_heap(T first, T last, Compare comp)
 {
-    __make_heap(first, middle, comp);
-
-    for (T i = middle; i < last; ++i)
-        if (comp(i, first))
-            __pop_heap(first, middle, i, comp);
-}
-
-template <typename T, typename _Compare> void __sort_heap(T __first, T __last, _Compare __comp)
-{
-    while (__last - __first > 1)
+    while (last - first > 1)
     {
-        --__last;
-        __pop_heap(__first, __last, __last, __comp);
+        --last;
+        __pop_heap(first, last, last, comp);
     }
 }
 
@@ -2434,68 +2392,10 @@ template<typename T, typename U> inline void make_heap(T __first, T __last, U __
     __make_heap(__first, __last, __iter_comp_iter(__comp));
 }
 
-template <typename T, typename _Compare> inline void
-    __partial_sort(T __first, T __middle, T __last, _Compare __comp)
+template<typename T, typename U> inline void sort_heap(T first, T last, U comp)
 {
-    __heap_select(__first, __middle, __last, __comp);
-    __sort_heap(__first, __middle, __comp);
+    __sort_heap(first, last, __iter_comp_iter(comp));
 }
-
-template<typename T, typename _Size, typename _Compare>
-    void introsort_loop(T __first, T __last, _Size __depth_limit, _Compare __comp)
-{
-    while (__last - __first > int(_S_threshold))
-    {
-        if (__depth_limit == 0)
-        {
-            __partial_sort(__first, __last, __last, __comp);
-            return;
-        }
-
-        --__depth_limit;
-        T __cut =
-        __unguarded_partition_pivot(__first, __last, __comp);
-        introsort_loop(__cut, __last, __depth_limit, __comp);
-        __last = __cut;
-    }
-}
-
-inline int __lg(int __n) { return sizeof(int) * __CHAR_BIT__  - 1 - __builtin_clz(__n); }
-
-inline unsigned __lg(unsigned __n)
-{ return sizeof(int) * __CHAR_BIT__  - 1 - __builtin_clz(__n); }
-
-inline long __lg(long __n) { return sizeof(long) * __CHAR_BIT__ - 1 - __builtin_clzl(__n); }
-
-inline unsigned long __lg(unsigned long __n)
-{ return sizeof(long) * __CHAR_BIT__ - 1 - __builtin_clzl(__n); }
-
-inline long long __lg(long long __n)
-{ return sizeof(long long) * __CHAR_BIT__ - 1 - __builtin_clzll(__n); }
-
-inline unsigned long long __lg(unsigned long long __n)
-{ return sizeof(long long) * __CHAR_BIT__ - 1 - __builtin_clzll(__n); }
-
-template <typename T, typename U> inline void sort(T first, T last, U comp)
-{
-    if (first != last)
-    {
-        introsort_loop(first, last, __lg(last - first) * 2, comp);
-        __final_insertion_sort(first, last, comp);
-    }
-}
-
-template <typename T, typename U, typename V>
-    inline V set_intersection(T first1, T last1, U first2, U last2, V result);
-
-template<typename T, typename U, typename V> U transform(T first, T last, U result, V unary_op);
-
-template<typename T, typename U> inline void sort_heap(T first, T last, U __comp)
-{
-    __sort_heap(first, last, __iter_comp_iter(__comp));
-}
-
-
 
 enum _Ios_Seekdir
 {
@@ -2514,6 +2414,9 @@ template <class T> class fpos;
 
 class streambuf
 {
+protected:
+    char *gptr() const;
+    char *egptr() const;
 public:
     char *_M_in_beg;
     char *_M_in_cur;
@@ -2523,11 +2426,36 @@ public:
 
 class ios2
 {
+protected:
+    streambuf *_sb;
+
 public:
     typedef _Ios_Seekdir seekdir;
     typedef int openmode;
     static const Util2::uint8_t binary = 1;
     streambuf *rdbuf() const { return new streambuf(); }
+    ios2(streambuf *sb) : _sb(sb) { }
+    ios2() { }
+};
+
+class filebuf : public streambuf
+{
+    typedef Util2::uint32_t uint32_t;
+    FILE *_fp;
+    const uint32_t _put_back;
+    //vector<char> _buffer;
+public:
+    filebuf(FILE *fp) : _fp(fp), _put_back(8) { }
+
+    fpos<mbstate_t> seekoff(int64_t off, ios2::seekdir way, ios2::openmode m);
+
+    int underflow()
+    {
+        if (gptr() < egptr())
+            return (int)(*gptr());
+
+        return 0;
+    }
 };
 
 template <Util2::size_t T> class bitset
@@ -2570,7 +2498,6 @@ protected:
     FILE *_fp;
     size_t _lastRead;
     bool _eof;
-    streambuf *sb;
 public:
     istream2() : _pos(0), _lastRead(0), _eof(false) { }
     istream2(FILE *fp) : _pos(0), _fp(fp), _lastRead(0), _eof(false) { }

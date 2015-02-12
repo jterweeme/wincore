@@ -57,7 +57,7 @@ bzcat.o: bzcat.cpp bunzip2.h bitinput.h
 bzinfo.o: bzinfo.cpp bitinput.h fector.h
 bzip2.o: bzip2.cpp
 bzmd5.o: bzmd5.cpp buftest.h
-cat.o: cat.cpp
+cat.o: cat.cpp common.h mystl.h
 cp.o: cp.cpp
 crc32.o: crc32.cpp
 dd.o: dd.cpp
@@ -74,14 +74,14 @@ jpg2tga.o: jpg2tga.cpp
 kompakt.o: kompakt.cpp kompakt.h common.h mystl.h mystl.tcc
 ls.o: ls.cpp
 main.o: main.cpp
-mystl.o: mystl.cpp
+mystl.o: mystl.cpp mystl.h mystl.tcc
 nl.o: nl.cpp
-od.o: od.cpp
+od.o: od.cpp od.h common.h mystl.h mystl.tcc
 odmain.o: odmain.cpp
 rm.o: rm.cpp
 tar.o: tar.cpp tar.h
 tarm.o: tarm.cpp tar.h
-tee.o: tee.cpp
+tee.o: tee.cpp common.h mystl.h mystl.tcc
 test1.o: test1.cpp
 testbinp.o: testbinp.cpp
 tgunzip1.o: tgunzip1.cpp
@@ -105,7 +105,10 @@ testgunzip2:
 	$(VALGRIND) ./md5s -c znew.md5
 	rm -f znew.txt
 
-test: testgunzip2 test1go tgunzip1go
+testkompakt:
+	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -s -l
+
+test: testgunzip2 test1go tgunzip1go testkompakt
 	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
 	$(VALGRIND) ./od zero.dat | ./diff -s zero.od -

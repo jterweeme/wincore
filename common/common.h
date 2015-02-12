@@ -9,7 +9,7 @@
 
 #if 1
 #include "mystl.h"
-using namespace mystl;
+//using namespace mystl;
 #else
 #include <iostream>
 #include <fstream>

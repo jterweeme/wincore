@@ -3,6 +3,8 @@
 #include <fstream>
 using namespace std;
 #else
+namespace mystl { }
+using namespace mystl;
 #include "common.h"
 #endif
 

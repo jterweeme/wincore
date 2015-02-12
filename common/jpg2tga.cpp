@@ -1,3 +1,4 @@
+using namespace std;
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
@@ -9,7 +10,6 @@
 #include <fstream>
 #include <vector>
 #include <array>
-using namespace std;
 
 typedef enum
 {

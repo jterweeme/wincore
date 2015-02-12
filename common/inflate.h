@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
-using namespace std;
 
 typedef vector<int> Vint;
 typedef vector<uint8_t> Vugt;

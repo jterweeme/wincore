@@ -1,3 +1,4 @@
+using namespace std;
 #include "gunzip.h"
 
 void GzipStream::extractTo(ostream &os)

@@ -1,3 +1,4 @@
+using namespace std;
 #include "bitinput.h"
 #include <vector>
 #include <stdint.h>

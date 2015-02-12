@@ -4,7 +4,6 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
-using namespace std;
 
 class buftest : public streambuf
 {
