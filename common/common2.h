@@ -19,7 +19,7 @@ using namespace mystl;
 #include <bitset>
 #include <cstring>
 #include <algorithm>
-using namespace std;
+//using namespace std;
 #endif
 
 #endif

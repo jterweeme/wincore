@@ -11,6 +11,82 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
     return dest;
 }
 
+void *Util2::memmove(char *dst, const char *src, uint32_t n)
+{
+    if (dst <= src)
+        return memcpy(dst, src, n);
+
+    src += n;
+    dst += n;
+
+    while (n--)
+        *--dst = *--src;
+
+    return dst;
+}
+
+void Util2::reverse(char str[], int length)
+{
+    int start = 0;
+    int end = length - 1;
+    
+    while (start < end)
+    {
+        swap(*(str + start), *(str + end));
+        start++;
+        end--;
+    }
+}
+
+char *Util2::itoa(uint32_t num, char *str, int base)
+{
+    int i = 0;
+
+    while (num != 0)
+    {
+        uint32_t rem = num % base;
+        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
+        num = num / base;
+    }
+
+    str[i] = '\0';
+    reverse(str, i);
+    return str;
+}
+
+char *Util2::itoa(int32_t num, char *str, int base)
+{
+    int i = 0;
+    bool isNegative = false;
+
+    if (num == 0)
+    {
+        str[i++] = '0';
+        str[i] = '\0';
+        return str;
+    }
+
+    if (num < 0 && base == 10)
+    {
+        isNegative = true;
+        num = -num;
+    }
+
+    while (num != 0)
+    {
+        int rem = num % base;
+        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
+        num = num / base;
+    }
+
+    if (isNegative)
+        str[i++] = '-';
+
+    str[i] = '\0';
+    reverse(str, i);
+    return str;
+}
+
 char *Util2::strtok(char *str, const char *delimiters)
 {
     static char *sp = NULL;
@@ -146,6 +222,7 @@ void ofstream2::open(const char *fn, openmode om)
 
 ostream2& ostream2::operator << (const uint32_t u)
 {
+#if 0
     char a[] = "%08x";
     char d[] = "%8d";
     a[2] = _width.size() + '0';
@@ -166,6 +243,28 @@ ostream2& ostream2::operator << (const uint32_t u)
     fflush(_fp);
     _width.size(1);
     return *this;
+#else
+    Util2 util;
+    char s[10] = {0};
+
+    switch (_base.type())
+    {
+    case base2::OCT:
+        util.itoa(u, s, 8);
+        break;
+    case base2::HEX:
+        util.itoa(u, s, 16);
+        break;
+    default:
+        util.itoa(u, s, 10);
+    }
+
+    for (uint32_t i = 0; i < _width.size() - util.strlen(s); i++)
+        put(_fill.fill());
+
+    print(s);
+    return *this;
+#endif
 }
 
 int Util2::strcmp(const char *s1, const char *s2)

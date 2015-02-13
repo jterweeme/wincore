@@ -15,7 +15,8 @@ public:
     struct __true_type { };
     struct __false_type { };
     void reverse(char *str, const int length);
-    char *itoa(const int num, char *str, const int base);
+    char *itoa(const uint32_t num, char *str, const int base);
+    char *itoa(const int32_t num, char *str, const int base);
     int isdigit(int c) { return c >= '0' && c <= '9'; }
     int isspace(int c) { return c == ' '; }
     int isupper(int c) { return c >= 'A' && c <= 'Z'; }
@@ -28,6 +29,7 @@ public:
     char tocupper(int c) { return toupper(c); }
     void *memcpy(void *dest, const void *src, size_t n);
     void *memset(void *s, const int c, const size_t n);
+    void *memmove(char *dst, const char *src, uint32_t n);
     char *strcpy(char *dest, const char *src);
     char *strncpy(char *dest, const char *src, size_t n);
     size_t strlen(const char *s);
@@ -193,30 +195,6 @@ template<> struct __is_char<char>
     typedef Util::__true_type __type;
 };
 
-template<typename _Tp> struct __is_byte
-{
-    enum { __value = 0 };
-    typedef Util::__false_type __type;
-};
-
-template<> struct __is_byte<char>
-{
-    enum { __value = 1 };
-    typedef Util::__true_type __type;
-};
-
-template<> struct __is_byte<signed char>
-{
-    enum { __value = 1 };
-    typedef Util::__true_type __type;
-};
-
-template<> struct __is_byte<unsigned char>
-{
-    enum { __value = 1 };
-    typedef Util::__true_type __type;
-};
-
 template<typename> struct __is_move_iterator
 {
     enum { __value = 0 };
@@ -327,8 +305,7 @@ template<typename _Iterator> struct _Iter_base<_Iterator, true>
 
 template<typename _InputIterator>
     inline typename iterator_traits<_InputIterator>::difference_type
-    __distance(_InputIterator __first, _InputIterator __last,
-    input_iterator_tag)
+    __distance(_InputIterator __first, _InputIterator __last, input_iterator_tag)
 {
     typename iterator_traits<_InputIterator>::difference_type __n = 0;
     while (__first != __last)
@@ -366,10 +343,9 @@ template<typename T, typename U> inline void __advance(T &__i, U __n, random_acc
     __i += __n;
 }
 
-template<typename _InputIterator, typename _Distance>
-    inline void advance(_InputIterator& __i, _Distance __n)
+template<typename II, typename _Distance> inline void advance(II& __i, _Distance __n)
 {
-    typename iterator_traits<_InputIterator>::difference_type __d = __n;
+    typename iterator_traits<II>::difference_type __d = __n;
     __advance(__i, __d, __iterator_category(__i));
 }
 
@@ -943,10 +919,9 @@ template<bool, bool, typename> struct __copy_move
 
 template<> struct __copy_move<false, false, random_access_iterator_tag>
 {
-    template<typename _II, typename _OI> static _OI
-        __copy_m(_II __first, _II __last, _OI __result)
+    template<typename II, typename _OI> static _OI __copy_m(II __first, II __last, _OI __result)
     {
-        typedef typename iterator_traits<_II>::difference_type _Distance;
+        typedef typename iterator_traits<II>::difference_type _Distance;
         for(_Distance __n = __last - __first; __n > 0; --__n)
         {
             *__result = *__first;
@@ -1072,13 +1047,6 @@ template<typename T, typename U> inline typename
         *first = __tmp;
 }
 
-template<typename _Tp> inline typename __enable_if<__is_byte<_Tp>::__value, void>::__type
-    __fill_a(_Tp* __first, _Tp* __last, const _Tp& __c)
-{
-    const _Tp __tmp = __c;
-    __builtin_memset(__first, static_cast<unsigned char>(__tmp), __last - __first);
-}
-
 template<typename _ForwardIterator, typename _Tp>
     inline void fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
 {
@@ -1113,15 +1081,14 @@ template<> struct __equal<true>
     }
 };
 
-template<typename _II1, typename _II2>
-    inline bool
-    __equal_aux(_II1 __first1, _II1 __last1, _II2 __first2)
+template<typename II1, typename _II2>
+    inline bool __equal_aux(II1 __first1, II1 __last1, _II2 __first2)
 {
-      typedef typename iterator_traits<_II1>::value_type _ValueType1;
+      typedef typename iterator_traits<II1>::value_type _ValueType1;
       typedef typename iterator_traits<_II2>::value_type _ValueType2;
       const bool __simple = ((__is_integer<_ValueType1>::__value
                   || __is_pointer<_ValueType1>::__value)
-                         && __is_pointer<_II1>::__value
+                         && __is_pointer<II1>::__value
                          && __is_pointer<_II2>::__value
                  && __are_same<_ValueType1, _ValueType2>::__value);
 
@@ -1953,25 +1920,17 @@ template<typename T, typename U> T __find_if(T first, T last, U pred, random_acc
     }
 }
 
-template<typename _Iterator, typename _Predicate>
-    inline _Iterator __find_if(_Iterator __first, _Iterator __last, _Predicate __pred)
+template<typename I, typename P> inline I __find_if(I __first, I __last, P __pred)
 {
     return __find_if(__first, __last, __pred, __iterator_category(__first));
 }
 
-template<typename _InputIterator, typename _Predicate>
-    inline _InputIterator
-    __find_if_not(_InputIterator __first, _InputIterator __last,
-          _Predicate __pred)
+template<typename II, typename P> inline II __find_if_not(II __first, II __last, P __pred)
 {
-      return __find_if(__first, __last,
-                __negate(__pred),
-                __iterator_category(__first));
+    return __find_if(__first, __last, __negate(__pred), __iterator_category(__first));
 }
 
-template<typename _InputIterator, typename _Predicate, typename _Distance>
-    _InputIterator
-    __find_if_not_n(_InputIterator __first, _Distance& __len, _Predicate __pred)
+template<typename II, typename P, typename D> II __find_if_not_n(II __first, D& __len, P __pred)
 {
     for (; __len; --__len, ++__first)
         if (!__pred(__first))
@@ -2211,8 +2170,7 @@ template<typename _RandomAccessIterator, typename _Compare>
 }
 
 template<typename _RandomAccessIterator, typename _Compare>
-    inline void
-    __unguarded_insertion_sort(_RandomAccessIterator __first,
+    inline void __unguarded_insertion_sort(_RandomAccessIterator __first,
                    _RandomAccessIterator __last, _Compare __comp)
 {
     for (_RandomAccessIterator __i = __first; __i != __last; ++__i)
@@ -2267,10 +2225,9 @@ template<typename T, typename U> inline T __unguarded_partition_pivot(T first, T
     return __unguarded_partition(first + 1, last, first, comp);
 }
 
-template<typename _RandomAccessIterator, typename _Distance>
-    inline bool __is_heap(_RandomAccessIterator __first, _Distance __n)
+template<typename I, typename D> inline bool __is_heap(I __first, D n)
 {
-    return __is_heap_until(__first, __n, __iter_less_iter()) == __n;
+    return __is_heap_until(__first, n, __iter_less_iter()) == n;
 }
 
 template<typename _RandomAccessIterator, typename _Compare, typename _Distance>
@@ -2305,8 +2262,7 @@ template<typename _RandomAccessIterator, typename _Distance, typename _Tp,
       *(__first + __holeIndex) = (__value);
 }
 
-template<typename T, typename _Compare>
-    inline void __pop_heap(T __first, T __last, T __result, _Compare __comp)
+template<typename T, typename C> inline void __pop_heap(T __first, T __last, T __result, C __comp)
 {
     typedef typename iterator_traits<T>::value_type _ValueType;
     typedef typename iterator_traits<T>::difference_type _DistanceType;
@@ -2340,17 +2296,6 @@ template<typename T, typename U, typename _Tp, typename _Compare> void
 
     __push_heap(__first, __holeIndex, __topIndex, (__value), __iter_comp_val(__comp));
 }
-
-
-template <typename T, typename U> inline void pop_heap(T first, T last, U comp)
-{
-    if (last - first > 1)
-    {
-        --last;
-        __pop_heap(first, last, last, __iter_comp_iter(comp));
-    }
-}
-
 
 template<typename _RandomAccessIterator, typename _Compare> void
     __make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
@@ -2412,49 +2357,72 @@ struct mbstate_t
 
 template <class T> class fpos;
 
-class streambuf
+class streambuf2
 {
 protected:
     char *gptr() const;
     char *egptr() const;
+    char *eback() const;
+    void setg(char *gbeg, char *gnext, char *gend);
+    virtual int overflow(int c) { return 0; }
 public:
     char *_M_in_beg;
     char *_M_in_cur;
-    int sputc(char c) { return 0; }
+    int sputc(char c) { return overflow(c); }
     int pubsync() { return 0; }
 };
 
 class ios2
 {
 protected:
-    streambuf *_sb;
-
+    streambuf2 *_sb;
 public:
     typedef _Ios_Seekdir seekdir;
     typedef int openmode;
     static const Util2::uint8_t binary = 1;
-    streambuf *rdbuf() const { return new streambuf(); }
-    ios2(streambuf *sb) : _sb(sb) { }
+    streambuf2 *rdbuf() const { return _sb; }
+    streambuf2 *rdbuf(streambuf2 *sb) { return _sb = sb; }
+    ios2(streambuf2 *sb) : _sb(sb) { }
     ios2() { }
 };
 
-class filebuf : public streambuf
+class filebuf2 : public streambuf2
 {
     typedef Util2::uint32_t uint32_t;
     FILE *_fp;
-    const uint32_t _put_back;
-    //vector<char> _buffer;
+    const uint32_t _put_back = 8;
+    vector2<char> _buffer;
 public:
-    filebuf(FILE *fp) : _fp(fp), _put_back(8) { }
-
+    filebuf2(FILE *fp) : _fp(fp), _buffer(264) { }
+    filebuf2() : _buffer(264) { }
     fpos<mbstate_t> seekoff(int64_t off, ios2::seekdir way, ios2::openmode m);
+    int overflow(int c) { return fputc(c, _fp); }
+
+    filebuf2 *open(const char *fn, ios2::openmode m) { _fp = fopen(fn, "rw"); return this; }
 
     int underflow()
     {
+        Util2 u;
+
         if (gptr() < egptr())
             return (int)(*gptr());
 
-        return 0;
+        char *base = &_buffer.front();
+        char *start = base;
+ 
+        if (eback() == base)
+        {
+            u.memmove(base, egptr() - _put_back, _put_back);
+            start += _put_back;
+        }       
+
+        uint32_t n = fread(start, 1, _buffer.size() - (start - base), _fp);
+
+        if (n == 0)
+            return EOF;
+
+        setg(base, start, start + n);
+        return (int)(*gptr());
     }
 };
 
@@ -2512,44 +2480,6 @@ public:
     virtual void read(char *s, size_t length);
 };
 
-class istreamDebug : public istream2
-{
-public:
-    istreamDebug() : istream2() { }
-    istreamDebug(FILE *fp) : istream2(fp) { }
-
-    virtual int get()
-    {
-        _pos++;
-        int c = fgetc(_fp);
-        fprintf(stderr, "Get:\n%x\n\n", c);
-        return c;
-    }
-
-    virtual istreamDebug& ignore(size_t n = 1, int d = '\n')
-    {
-        while (n--)
-            istream2::get();
-        return *this;
-    }
-
-    virtual void read(char *s, size_t length)
-    {
-        char *buf = new char[length];
-        Util2 u;
-        _lastRead = fread(buf, 1, length, _fp);
-        fprintf(stderr, "Read:\n");
-
-        for (size_t i = 0; i < length; i++)
-            fprintf(stderr, "%x ", buf[i]);
-
-        _pos += _lastRead;
-        _eof = _lastRead < length;
-        u.memcpy(s, buf, length);
-        delete[] buf;
-    }
-};
-
 class fstream
 {
     typedef Util2::uint8_t uint8_t;
@@ -2591,8 +2521,9 @@ class fill2
 {
     char _fill;
 public:
-    fill2() : _fill('a') { }
+    fill2() : _fill(' ') { }
     fill2(char fill) : _fill(fill) { }
+    char fill() const { return _fill; }
 };
 
 class base2
@@ -2615,25 +2546,29 @@ protected:
     typedef Util2::uint32_t uint32_t;
     uint8_t _mode;
     base2 _base;
+    fill2 _fill;
     width2 _width;
     FILE *_fp;
 public:
     static const uint8_t DEC = 0;
     static const uint8_t OCT = 1;
     static const uint8_t HEX = 2;
-    ostream2() : _base(base2::DEC), _width(1), _fp(stdout) { }
-    ostream2(streambuf *sb) { }
-    ostream2(FILE *fp) : _base(base2::DEC), _width(1), _fp(fp) { }
-    ostream2& operator << (const string2 s) { fprintf(_fp, s.c_str()); return *this; }
-    ostream2& operator << (const char *s) { fprintf(_fp, s); fflush(_fp); return *this; }
+    ostream2() : _base(base2::DEC), _fp(stdout) { }
+    ostream2(streambuf2 *sb) { }
+    ostream2(FILE *fp) : _base(base2::DEC), _fp(fp) { }
+    void put(int c) { fputc(c, _fp); }
+    //void put(int c) { _sb->sputc(c); }
+    ostream2 &print(const char *s) { while (*s) put(*s++); return *this; }
+    ostream2& operator << (const string2 s) { return print(s.c_str()); }
+    ostream2& operator << (const char *s) { return print(s); }
     ostream2& operator << (const align &a) { return *this; }
     ostream2& operator << (const width2 &w) { _width = w; return *this; }
-    ostream2& operator << (const fill2 &f) { return *this; }
+    ostream2& operator << (const fill2 &f) { _fill = f; return *this; }
     ostream2& operator << (const base2 &base) { _base = base; return *this; }
     virtual ostream2& operator << (const uint32_t u);
-    ostream2& write(const char *s, int n) { fwrite(s, n, 1, _fp); return *this; }
+    ostream2 &write(const char *s, int n) { for (int i = 0; i < n; i++) put(s[i]); return *this; }
     virtual ~ostream2() { }
-    void put(int c) { fputc(c, _fp); }
+
 };
 
 class ofstream2 : public ostream2
@@ -2674,8 +2609,6 @@ public:
     T operator[](Util2::size_t n) { return _buf[n]; }
 };
 
-
-
 namespace mystl
 {
     template <class T> class vector : public vector2<T>
@@ -2704,6 +2637,7 @@ namespace mystl
     typedef ofstream2 ofstream;
     typedef ifstream2 ifstream;
     typedef ostringstream2 ostringstream;
+    typedef streambuf2 streambuf;
     extern istream cin;
     extern ostream cout;
     extern ostream cerr;

@@ -4,7 +4,7 @@ VALGRIND = valgrind $(VALFLAGS)
 
 TARGETS = base64 bunzip2 bzcat bzinfo bzip2 bzmd5 cat cp crc32 dd diff \
     dos2unix grep gunzip gzip \
-    jpg2tga kompakt ls md5s nl od rm tar tee test1 testbinp \
+    jpg2tga kompakt ls md5s nl od rm tar tee test1 test2 testbinp \
     tgunzip1 touch tr unix2dos uuidgen wingroup yes zcat
 
 %.o: %.cpp
@@ -41,10 +41,11 @@ rm: rm.o mystl.o
 tar: tar.o tarm.o bitinput.o bunzip2.o fector.o
 tee: tee.o mystl.o
 test1: test1.o mystl.o hasher.o
+test2: test2.o
 testbinp: testbinp.o bitinput.o
 tgunzip1: tgunzip1.o gunzip.o
 touch: touch.o
-tr: tr.o
+tr: tr.o mystl.o
 unix2dos: unix2dos.o mystl.o
 uuidgen: uuidgen.o
 wingroup: wingroup.o
@@ -83,6 +84,7 @@ tar.o: tar.cpp tar.h
 tarm.o: tarm.cpp tar.h
 tee.o: tee.cpp common.h mystl.h mystl.tcc
 test1.o: test1.cpp
+test2.o: test2.cpp
 testbinp.o: testbinp.cpp
 tgunzip1.o: tgunzip1.cpp
 touch.o: touch.cpp

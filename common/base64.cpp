@@ -1,7 +1,6 @@
+namespace mystl { }
 using namespace std;
-#include <iostream>
-#include <fstream>
-#include <stdint.h>
+#include "common2.h"
 
 char set[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

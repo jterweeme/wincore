@@ -1,3 +1,4 @@
+using namespace std;
 #include <fstream>
 #include "bitinput.h"
 

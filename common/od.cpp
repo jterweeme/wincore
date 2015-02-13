@@ -9,6 +9,23 @@ namespace mystl { }
 using namespace mystl;
 #include "od.h"
 
+int AppOd::run(int argc, char **argv)
+{
+    HexStream hs;
+
+    if (argc < 2)
+    {
+        hs.dump(cin);
+    }
+    else
+    {
+        ifstream s(argv[1], ifstream::in | ifstream::binary);
+        hs.dump(s);
+    }
+
+    return 0;
+}
+
 void HexStream::dump(istream &input)
 {
     char arr[16] = { 0 };
