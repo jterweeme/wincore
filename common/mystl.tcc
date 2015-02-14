@@ -9,16 +9,14 @@ template<typename T> inline bool operator==(const reverse_iterator<T> &x,
 
 template<typename T, typename U, typename V> U transform(T first, T last, U result, V unary_op)
 {
-    for (; first != last; ++first, ++result)
-        *result = unary_op(*first);
-
+    for (; first != last; ++first, ++result) *result = unary_op(*first);
     return result;
 }
 
-template <typename V, typename W> void vector2<V, W>::_M_fill_initialize(size_type __n,
+template <typename V, typename W> void vector2<V, W>::_M_fill_initialize(size_t n,
     const value_type& __value)
 {
-    __uninitialized_fill_n_a(this->_M_impl._M_start, __n, __value, _M_get_Tp_allocator());
+    __uninitialized_fill_n_a(this->_M_impl._M_start, n, __value, _M_get_Tp_allocator());
     this->_M_impl._M_finish = this->_M_impl._M_end_of_storage;
 }
 
@@ -54,15 +52,14 @@ template <typename T> void reverse(T __first, T __last, random_access_iterator_t
 }
 
 template<typename T, typename _Alloc> void
-    vector2<T, _Alloc>::_M_fill_insert(iterator __position,
-    size_type n, const value_type& __x)
+    vector2<T, _Alloc>::_M_fill_insert(iterator __position, size_t n, const value_type& __x)
 {
     if (n != 0)
     {
-        if (size_type(this->_M_impl._M_end_of_storage - this->_M_impl._M_finish) >= n)
+        if (size_t(this->_M_impl._M_end_of_storage - this->_M_impl._M_finish) >= n)
         {
             value_type __x_copy = __x;
-            const size_type __elems_after = end() - __position;
+            const size_t __elems_after = end() - __position;
             pointer __old_finish(this->_M_impl._M_finish);
 
             if (__elems_after > n)
@@ -90,8 +87,8 @@ template<typename T, typename _Alloc> void
         }
         else
         {
-            const size_type __len = _M_check_len(n, "vector::_M_fill_insert");
-            const size_type __elems_before = __position - begin();
+            const size_t __len = _M_check_len(n, "vector::_M_fill_insert");
+            const size_t __elems_before = __position - begin();
             pointer __new_start(this->_M_allocate(__len));
             pointer __new_finish(__new_start);
 
@@ -139,7 +136,7 @@ template<typename T, typename U>
 {
     if (&__x != this)
     {
-        const size_type __xlen = __x.size();
+        const size_t __xlen = __x.size();
         if (__xlen > capacity())
         {
             pointer __tmp = _M_allocate_and_copy(__xlen, __x.begin(), __x.end());
@@ -159,7 +156,7 @@ template<typename T, typename U>
         {
             copy(__x._M_impl._M_start, __x._M_impl._M_start + size(), this->_M_impl._M_start);
 
-            __uninitialized_copy_a(__x._M_impl._M_start + size(), __x._M_impl._M_finish,
+            uninitialized_copy_a(__x._M_impl._M_start + size(), __x._M_impl._M_finish,
                       this->_M_impl._M_finish, _M_get_Tp_allocator());
         }
         this->_M_impl._M_finish = this->_M_impl._M_start + __xlen;
@@ -185,8 +182,8 @@ template<typename T, typename U> void
     }
     else
     {
-        const size_type __len = _M_check_len(size_type(1), "vector::_M_insert_aux");
-        const size_type __elems_before = __position - begin();
+        const size_t __len = _M_check_len(size_t(1), "vector::_M_insert_aux");
+        const size_t __elems_before = __position - begin();
         pointer __new_start(this->_M_allocate(__len));
         pointer __new_finish(__new_start);
 
@@ -206,7 +203,7 @@ template<typename T, typename U> void
         catch(...)
         {
             if (!__new_finish)
-                _Alloc_traits::destroy(this->_M_impl,        __new_start + __elems_before);
+                _Alloc_traits::destroy(this->_M_impl, __new_start + __elems_before);
             else
                 _Destroy(__new_start, __new_finish, _M_get_Tp_allocator());
 

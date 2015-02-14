@@ -8,10 +8,10 @@ TARGETS = base64 bunzip2 bzcat bzinfo bzip2 bzmd5 cat cp crc32 dd diff \
     tgunzip1 touch tr unix2dos uuidgen wingroup yes zcat
 
 %.o: %.cpp
-	@g++ $(CXXFLAGS) -c -o $@ $<
+	g++ $(CXXFLAGS) -c -o $@ $<
 
 %: %.o
-	@g++ -o $@ $^
+	g++ -o $@ $^
 
 .PHONY: all
 
@@ -41,7 +41,7 @@ rm: rm.o mystl.o
 tar: tar.o tarm.o bitinput.o bunzip2.o fector.o
 tee: tee.o mystl.o
 test1: test1.o mystl.o hasher.o
-test2: test2.o
+test2: test2.o mystl.o
 testbinp: testbinp.o bitinput.o
 tgunzip1: tgunzip1.o gunzip.o
 touch: touch.o

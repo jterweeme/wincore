@@ -202,6 +202,7 @@ void istream2::getline(char *dest, size_t size)
 
 void ofstream2::open(const char *fn, openmode om)
 {
+#if 0
     switch (om)
     {
     case out:
@@ -211,6 +212,7 @@ void ofstream2::open(const char *fn, openmode om)
         _fp = fopen(fn, "wb+");
         break;
     }
+#endif
 }
 
 ostream2& ostream2::operator << (const uint32_t u)
@@ -236,6 +238,27 @@ ostream2& ostream2::operator << (const uint32_t u)
     print(s);
     return *this;
 }
+
+#if 0
+int filebuf2::underflow()
+{
+    Util2 u;
+    if (gptr() < egptr()) return (int)(*gptr());
+    char *base = _buffer;
+    char *start = base;
+
+    if (eback() == base)
+    {
+        u.memmove(base, egptr() - _put_back, _put_back);
+        start += _put_back;
+    }
+
+    uint32_t n = fread(start, 1, 264 - (start - base), _fp);
+    if (n == 0) return EOF;
+    setg(base, start, start + n);
+    return (int)(*gptr());
+}
+#endif
 
 int Util2::strcmp(const char *s1, const char *s2)
 {
