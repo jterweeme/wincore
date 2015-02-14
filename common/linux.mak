@@ -108,7 +108,7 @@ testgunzip2:
 	rm -f znew.txt
 
 testkompakt:
-	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -s -l
+	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s | ./diff -s kompakt1.out -
 
 test: testgunzip2 test1go tgunzip1go testkompakt
 	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -
@@ -116,7 +116,6 @@ test: testgunzip2 test1go tgunzip1go testkompakt
 	$(VALGRIND) ./od zero.dat | ./diff -s zero.od -
 	$(VALGRIND) ./base64 zero.dat | ./diff -s zero.b64 -
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
-	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s | ./diff -s kompakt1.out -
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 	$(VALGRIND) ./md5s -c data.md5
 

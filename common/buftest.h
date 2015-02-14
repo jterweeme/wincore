@@ -4,12 +4,13 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include "fector.h"
 
 class buftest : public streambuf
 {
     FILE *_fp;
     const uint32_t _put_back;
-    vector<char> _buffer;
+    Fector<char> _buffer;
     uint32_t _pos = 0;
 public:
     buftest(FILE *fp) : _fp(fp), _put_back(8), _buffer(264) { }
@@ -24,7 +25,7 @@ public:
         if (gptr() < egptr())
             return (int)(*gptr());
 
-        char *base = &_buffer.front();
+        char *base = _buffer.begin();
         char *start = base;
 
         if (eback() == base)
@@ -36,7 +37,7 @@ public:
         uint32_t n = fread(start, 1, _buffer.size() - (start - base), _fp);
 
         if (n == 0)
-            return traits_type::eof();
+            return EOF;
 
         setg(base, start, start + n);
         return (int)(*gptr());

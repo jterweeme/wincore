@@ -24,8 +24,7 @@ template <typename V, typename W> void vector2<V, W>::_M_fill_initialize(size_ty
 
 template <typename V, typename W> vector2<V, W>::~vector2()
 {
-    _Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
-    _M_get_Tp_allocator());
+    _Destroy(this->_M_impl._M_start, this->_M_impl._M_finish, _M_get_Tp_allocator());
 }
 
 template <typename V, typename W> void vector2<V, W>::push_back(const value_type& x)

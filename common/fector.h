@@ -45,6 +45,7 @@ public:
 
     T max() { return max(_size); }
     T min() { return min(_size); }
+    T *begin() { return _buf; }
 };
 
 class Fugt : public Fector<uint8_t>

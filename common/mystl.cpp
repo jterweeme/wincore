@@ -27,15 +27,8 @@ void *Util2::memmove(char *dst, const char *src, uint32_t n)
 
 void Util2::reverse(char str[], int length)
 {
-    int start = 0;
-    int end = length - 1;
-    
-    while (start < end)
-    {
-        swap(*(str + start), *(str + end));
-        start++;
-        end--;
-    }
+    for (int start = 0, end = length - 1; start < end;)
+        swap(*(str + start++), *(str + end--));
 }
 
 char *Util2::itoa(uint32_t num, char *str, int base)
@@ -222,28 +215,6 @@ void ofstream2::open(const char *fn, openmode om)
 
 ostream2& ostream2::operator << (const uint32_t u)
 {
-#if 0
-    char a[] = "%08x";
-    char d[] = "%8d";
-    a[2] = _width.size() + '0';
-    d[1] = _width.size() + '0';
-
-    switch (_base.type())
-    {
-    case base2::OCT:
-        fprintf(_fp, "%07o", u);
-        break;
-    case base2::HEX:
-        fprintf(_fp, a, u);
-        break;
-    default:
-        fprintf(_fp, d, u);
-        break;
-    }
-    fflush(_fp);
-    _width.size(1);
-    return *this;
-#else
     Util2 util;
     char s[10] = {0};
 
@@ -264,7 +235,6 @@ ostream2& ostream2::operator << (const uint32_t u)
 
     print(s);
     return *this;
-#endif
 }
 
 int Util2::strcmp(const char *s1, const char *s2)

@@ -19,12 +19,10 @@ public:
 
 class Paar
 {
-    Hash _hash;
-    string _fn;
+    const Hash _hash;
+    const string _fn;
 public:
-    Paar() { }
     Paar(Hash &hash, string &fn) : _hash(hash), _fn(fn) { }
-    void read(istream &is) const;
     Hash hash() const { return _hash; }
     string fn() const { return _fn; }
 };
@@ -87,12 +85,6 @@ void AppMD5Sum::_hashFile(const char *fn, ostream &os)
     file.close();
 }
 
-void Paar::read(istream &is) const
-{
-    char line[255] = {0};
-    is.getline(line, sizeof(line));
-}
-
 void AppMD5Sum::_checkFile(string fn, ostream &os)
 {
     ifstream foo;
@@ -124,10 +116,10 @@ int AppMD5Sum::run(int argc, char **argv)
 
     Vest files = options.files();
 
-    for (Vest::iterator it = files.begin(); !options.check() && it != files.end(); it++)
+    for (Vest::const_iterator it = files.begin(); !options.check() && it != files.end(); it++)
         _hashFile(*it, cout);
 
-    for (Vest::iterator it = files.begin(); options.check() && it != files.end(); it++)
+    for (Vest::const_iterator it = files.begin(); options.check() && it != files.end(); it++)
         _checkFile(*it, cout);
     
     return 0;
