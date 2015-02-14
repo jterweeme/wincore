@@ -1803,36 +1803,30 @@ class filebuf2 : public streambuf2
     typedef Util2::uint32_t uint32_t;
     FILE *_fp;
     const uint32_t _put_back = 8;
-    vector2<char> _buffer;
+    char _buffer[264];
 public:
-    filebuf2(FILE *fp) : _fp(fp), _buffer(264) { }
-    filebuf2() : _buffer(264) { }
+    filebuf2(FILE *fp) : _fp(fp) { }
+    filebuf2() { }
     fpos<mbstate_t> seekoff(int64_t off, ios2::seekdir way, ios2::openmode m);
     int overflow(int c) { return fputc(c, _fp); }
-
     filebuf2 *open(const char *fn, ios2::openmode m) { _fp = fopen(fn, "rw"); return this; }
+    filebuf2 *open(FILE *fp) { _fp = fp; return this; }
 
     int underflow()
     {
         Util2 u;
-
-        if (gptr() < egptr())
-            return (int)(*gptr());
-
-        char *base = &_buffer.front();
+        if (gptr() < egptr()) return (int)(*gptr());
+        char *base = _buffer;
         char *start = base;
  
         if (eback() == base)
         {
             u.memmove(base, egptr() - _put_back, _put_back);
             start += _put_back;
-        }       
+        }
 
-        uint32_t n = fread(start, 1, _buffer.size() - (start - base), _fp);
-
-        if (n == 0)
-            return EOF;
-
+        uint32_t n = fread(start, 1, 264 - (start - base), _fp);
+        if (n == 0) return EOF;
         setg(base, start, start + n);
         return (int)(*gptr());
     }
@@ -1961,13 +1955,14 @@ protected:
     fill2 _fill;
     width2 _width;
     FILE *_fp;
-    //filebuf2 _fb;
+    filebuf2 _fb;
 public:
     ostream2() : _fp(stdout) { }
-    ostream2(streambuf2 *sb) { }
-    ostream2(FILE *fp) : _fp(fp) { }
-    void put(int c) { fputc(c, _fp); }
-    //void put(int c) { _sb->sputc(c); }
+    ostream2(streambuf2 *sb) : ios2(sb) { }
+    //ostream2(FILE *fp) : _fp(fp) { }
+    ostream2(FILE *fp) : ios2(&_fb) { _fb.open(fp); }
+    //void put(int c) { fputc(c, _fp); }
+    void put(int c) { _sb->sputc(c); }
     ostream2 &print(const char *s) { while (*s) put(*s++); return *this; }
     ostream2& operator << (const string2 s) { return print(s.c_str()); }
     ostream2& operator << (const char *s) { return print(s); }

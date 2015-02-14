@@ -1,5 +1,5 @@
 namespace mystl { }
-using namespace mystl;
+using namespace std;
 #include "hasher.h"
 
 void test(const char *data, size_t len, const Hash &hash)

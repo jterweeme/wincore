@@ -1,6 +1,6 @@
 #ifndef _HASHER_H_
 #define _HASHER_H_
-#include "common.h"
+#include "common2.h"
 
 class Hash
 {
