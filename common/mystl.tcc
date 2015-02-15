@@ -7,6 +7,13 @@ template<typename T> inline bool operator==(const reverse_iterator<T> &x,
     return x.base() == y.base();
 }
 
+template <typename T, typename U> void Vector_base<T, U>::_M_create_storage(size_t n)
+{
+    this->_M_impl._M_start = this->_M_allocate(n);
+    this->_M_impl._M_finish = this->_M_impl._M_start;
+    this->_M_impl._M_end_of_storage = this->_M_impl._M_start + n;
+}
+
 template<typename T, typename U, typename V> U transform(T first, T last, U result, V unary_op)
 {
     for (; first != last; ++first, ++result) *result = unary_op(*first);
