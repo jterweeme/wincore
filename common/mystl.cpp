@@ -310,8 +310,8 @@ namespace mystl
     base2 oct(base2::OCT);
     base2 dec(base2::DEC);
     istream cin(stdin);
-    ostream cout(stdout);
-    ostream cerr(stderr);
+    fpstream2 cout(stdout);
+    fpstream2 cerr(stderr);
     align right;
     fill2 setfill(char c) { return fill2(c); }
     width2 setw(int length) { return width2(length); }

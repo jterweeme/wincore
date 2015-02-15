@@ -1507,7 +1507,7 @@ public:
     filebuf2() { }
     fpos<mbstate_t> seekoff(int64_t off, ios2::seekdir way, ios2::openmode m);
     int overflow(int c) { return fputc(c, _fp); }
-    filebuf2 *open(const char *fn, ios2::openmode m) { _fp = fopen(fn, "rw"); return this; }
+    filebuf2 *open(const char *fn, ios2::openmode m) { _fp = fopen(fn, "w"); return this; }
     filebuf2 *open(FILE *fp) { _fp = fp; return this; }
     int underflow()
     {
@@ -1654,17 +1654,12 @@ class ostream2 : public ios2
 protected:
     typedef Util2::uint8_t uint8_t;
     typedef Util2::uint32_t uint32_t;
-    uint8_t _mode;
     base2 _base;
     fill2 _fill;
     width2 _width;
     filebuf2 _fb;
 public:
-    ostream2() { }
     ostream2(streambuf2 *sb) : ios2(sb) { }
-    //ostream2(FILE *fp) : _fp(fp) { }
-    ostream2(FILE *fp) : ios2(&_fb) { _fb.open(fp); }
-    //void put(int c) { fputc(c, _fp); }
     void put(int c) { _sb->sputc(c); }
     ostream2 &print(const char *s) { while (*s) put(*s++); return *this; }
     ostream2& operator << (const string2 s) { return print(s.c_str()); }
@@ -1673,14 +1668,22 @@ public:
     ostream2& operator << (const width2 &w) { _width = w; return *this; }
     ostream2& operator << (const fill2 &f) { _fill = f; return *this; }
     ostream2& operator << (const base2 &base) { _base = base; return *this; }
-    virtual ostream2& operator << (const uint32_t u);
+    ostream2& operator << (const uint32_t u);
     ostream2 &write(const char *s, int n) { for (int i = 0; i < n; i++) put(s[i]); return *this; }
     virtual ~ostream2() { }
 
 };
 
+class fpstream2 : public ostream2
+{
+    filebuf2 _fb;
+public:
+    fpstream2(FILE *fp) : ostream2(&_fb) { _fb.open(fp); }
+};
+
 class ofstream2 : public ostream2
 {
+    filebuf2 _fb;
 public:
     typedef int openmode;
     static const uint8_t app = 1 << 0;
@@ -1691,13 +1694,15 @@ public:
     static const uint8_t trunc = 1 << 5;
     void open(const char *fn, openmode om = out);
     void close() { }
-    ofstream2() : ostream2() { }
-    ofstream2(const char *f) : ostream2(fopen(f, "rw")) { }
+    ofstream2() : ostream2(&_fb) { }
+    ofstream2(const char *f) : ostream2(&_fb) { _fb.open(f, 0); }
 };
 
 class ostringstream2 : public ostream2
 {
+    stringbuf2 _sb;
 public:
+    ostringstream2() : ostream2(&_sb) { }
     string2 str() const { return string2(""); }
 };
 
@@ -1746,8 +1751,8 @@ namespace mystl
     typedef ostringstream2 ostringstream;
     typedef streambuf2 streambuf;
     extern istream cin;
-    extern ostream cout;
-    extern ostream cerr;
+    extern fpstream2 cout;
+    extern fpstream2 cerr;
     static const char endl[] = "\n";
     extern align right;
     extern base2 hex;

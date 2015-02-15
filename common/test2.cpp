@@ -4,8 +4,12 @@ using namespace mystl;
 
 int main(int argc, char **argv)
 {
-    ofstream ofs("onzin.txt");
-    ofs << "bladiebla\n";
+    ifstream ifs("yes.cpp");
+    char buf[10];
+    ifs.read(buf, sizeof(buf));
+    buf[9] = 0;
+    cout << buf << "\n";
+    ifs.close();
     return 0;
 }
 

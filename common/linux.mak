@@ -16,7 +16,7 @@ TARGETS = base64 bunzip2 bzcat bzinfo bzip2 bzmd5 cat cp crc32 dd diff \
 .PHONY: all
 
 all: $(TARGETS)
-base64: base64.o
+base64: base64.o mystl.o
 bunzip2: bunzip2m.o bunzip2.o bitinput.o fector.o
 bzcat: bzcat.o bitinput.o bunzip2.o fector.o
 bzinfo: bzinfo.o bitinput.o
