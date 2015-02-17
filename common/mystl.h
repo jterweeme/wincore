@@ -953,6 +953,7 @@ class stringbuf2 : public streambuf2
     string2 _buf;
 public:
     int overflow(int c) { _buf.push_back(c); return c; }
+    string2 str() const { return _buf; }
 };
 
 template <Util2::size_t T> class bitset
@@ -1108,7 +1109,7 @@ class ostringstream2 : public ostream2
     stringbuf2 _sb;
 public:
     ostringstream2() : ostream2(&_sb) { }
-    string2 str() const { return string2(""); }
+    string2 str() const { return _sb.str(); }
 };
 
 template <class T> class vector3

@@ -1,5 +1,5 @@
 namespace mystl { }
-using namespace std;
+using namespace mystl;
 #include "hasher.h"
 
 typedef vector<string> Vest;
@@ -116,10 +116,10 @@ int AppMD5Sum::run(int argc, char **argv)
 
     Vest files = options.files();
 
-    for (Vest::const_iterator it = files.begin(); !options.check() && it != files.end(); it++)
+    for (Vest::iterator it = files.begin(); !options.check() && it != files.end(); it++)
         _hashFile(*it, cout);
 
-    for (Vest::const_iterator it = files.begin(); options.check() && it != files.end(); it++)
+    for (Vest::iterator it = files.begin(); options.check() && it != files.end(); it++)
         _checkFile(*it, cout);
     
     return 0;
