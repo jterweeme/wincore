@@ -1,3 +1,4 @@
+namespace mystl { }
 using namespace std;
 #include "bunzip2.h"
 
@@ -70,7 +71,7 @@ int DecStreamBuf::underflow()
     uint32_t n = _ds.read(start, _buffer.size());
 
     if (n == 0)
-        return traits_type::eof();
+        return EOF;
 
     setg(base, start, start + n);
     return (int)(*gptr());

@@ -5,10 +5,13 @@
 template<class T> class Fector
 {
     uint32_t _size;
+    uint32_t _pos = 0;
     T *_buf;
     T _max(T a, T b) { return a > b ? a : b; }
     T _min(T a, T b) { return a < b ? a : b; }
 public:
+    typedef T *iterator;
+    typedef T *const_iterator;
     Fector(uint32_t size) : _size(size), _buf(new T[size]) { }
 
     Fector(const Fector &f) : _size(f._size), _buf(new T[_size])
@@ -45,7 +48,9 @@ public:
 
     T max() { return max(_size); }
     T min() { return min(_size); }
-    T *begin() { return _buf; }
+    T *begin() const { return _buf; }
+    T *end() const { return _buf + _size; }
+    void push_back(const T &x) { _buf[_pos++] = x; }
 };
 
 class Fugt : public Fector<uint8_t>

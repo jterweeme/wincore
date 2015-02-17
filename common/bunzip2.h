@@ -36,6 +36,7 @@ public:
 class Tables : public vector<Table>
 {
 public:
+    Tables() : vector<Table>() { }
     void dump(ostream &os) const;
     string toString() const { ostringstream o; dump(o); return o.str(); }
 };

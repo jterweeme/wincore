@@ -1,7 +1,6 @@
 #ifndef _OD_H_
 #define _OD_H_
-
-#include "common.h"
+#include "mystl.h"
 
 class HexStream
 {

@@ -1,3 +1,4 @@
+namespace mystl { }
 using namespace std;
 #include "bunzip2.h"
 

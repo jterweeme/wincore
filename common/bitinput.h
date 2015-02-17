@@ -1,6 +1,13 @@
 #ifndef _BITINPUT_H_
 #define _BITINPUT_H_
-#include "common2.h"
+//#include "mystl.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <vector>
+#include <cstring>
+#include <algorithm>
 
 class BitInput
 {

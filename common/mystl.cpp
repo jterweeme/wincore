@@ -299,8 +299,9 @@ char *Util2::strcpy(char *dest, const char *src)
 
 namespace mystl
 {
-    void *memcpy(void *dest, const void *src, size_t n) { Util2 u; return u.memcpy(dest, src, n); }
+    void *memcpy(void *d, const void *src, size_t n) { Util2 u; return u.memcpy(d, src, n); }
     void *memset(void *s, const int c, const size_t n) { Util2 u; return u.memset(s, c, n); }
+    void *memmove(char *d, const char *s, uint32_t n) { Util2 u; return u.memmove(d, s, n); }
     char *strcpy(char *dest, const char *src) { Util2 util; return util.strcpy(dest, src); }
     char *strncpy(char *d, const char *src, size_t n) { Util2 u; return u.strncpy(d, src, n); }
     int strncmp(const char *s1, const char *s2, size_t n) { Util2 u; return u.strncmp(s1, s2, n); }
