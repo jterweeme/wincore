@@ -11,7 +11,7 @@ public:
 int App::run(int argc, char **argv)
 {
     cout << argv[1] << "\n";
-    ifstream ifs(argv[1]);
+    mystl::ifstream ifs(argv[1]);
     BitInputStream bi(&ifs);
     DecStream ds(&bi);
     ofstream ofs(argv[2]);

@@ -11,7 +11,7 @@ public:
 #if 1
 int App::run(int argc, char **argv)
 {
-    ifstream ifs(argv[1]);
+    mystl::ifstream ifs(argv[1]);
     BitInputStream bi(&ifs);
     DecStream ds(&bi);
     ds.extractTo(cout);
