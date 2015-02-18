@@ -11,6 +11,12 @@
 #include "bunzip2.h"
 #include "buftest.h"
 
+#ifdef __GNUC__
+#define PACKED __attribute__ ((packed))
+#else
+#define PACKED
+#endif
+
 typedef vector<string> Vest;
 
 struct SHeader

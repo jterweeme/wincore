@@ -14,7 +14,7 @@ int App::run(int argc, char **argv)
     mystl::ifstream ifs(argv[1]);
     BitInputStream bi(&ifs);
     DecStream ds(&bi);
-    ofstream ofs(argv[2]);
+    mystl::ofstream ofs(argv[2]);
     ds.extractTo(ofs);
     ofs.close();
     ifs.close();

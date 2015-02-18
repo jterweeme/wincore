@@ -1,6 +1,8 @@
 #ifndef _FECTOR_H_
 #define _FECTOR_H_
-#include "common2.h"
+#include <iostream>
+#include <sstream>
+#include <cstring>
 
 template<class T> class Fector
 {

@@ -2,6 +2,7 @@
 #define _BZIP2_H_
 #include "bitinput.h"
 #include "fector.h"
+#include <vector>
 
 class MoveToFront : public Fugt
 {
@@ -65,7 +66,7 @@ public:
     int read();
     int read(char *buf, int n);
     DecStream(BitInput *bi) : _bi(bi) { _bi->ignore(32); }
-    void extractTo(ostream &os) { for (int b = read(); b != -1; b = read()) os.put(b); }
+    void extractTo(mystl::ostream &os) { for (int b = read(); b != -1; b = read()) os.put(b); }
 };
 
 class DecStreamBuf : public streambuf
