@@ -1,5 +1,5 @@
 namespace mystl { }
-using namespace std;
+using namespace mystl;
 #include "bunzip2.h"
 
 uint32_t Block::_nextSymbol(BitInput *bi, const Tables &t, const Fugt &selectors)

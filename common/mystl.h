@@ -633,7 +633,6 @@ template<typename T, typename U> inline void _Destroy2(T first, T last, allocato
 template <typename A, typename B, typename C, typename D> void
     __uninitialized_fill_n_a(A a, B b, C &c, D &d)
 {
-    
 }
 
 template <bool> struct __uninitialized_copy
@@ -860,10 +859,10 @@ public:
 class streambuf2
 {
 protected:
-    char *gptr() const;
-    char *egptr() const;
-    char *eback() const;
-    void setg(char *gbeg, char *gnext, char *gend);
+    char *gptr() const { return NULL; }
+    char *egptr() const { return NULL; }
+    char *eback() const { return NULL; }
+    void setg(char *gbeg, char *gnext, char *gend) { }
     virtual int overflow(int c) { return 0; }
 public:
     char *_M_in_beg;

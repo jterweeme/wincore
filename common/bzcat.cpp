@@ -1,5 +1,5 @@
 namespace mystl { }
-using namespace std;
+using namespace mystl;
 #include "bunzip2.h"
 
 class App
@@ -41,10 +41,12 @@ int main(int argc, char **argv)
     {
         return app.run(argc, argv);
     }
+#if 0
     catch (exception &e)
     {
         cerr << e.what() << "\n";
     }
+#endif
     catch (const char *e)
     {
         cerr << e << "\n";

@@ -34,7 +34,7 @@ public:
     string toString() const { ostringstream o; dump(o); return o.str(); }
 };
 
-class Tables : public vector<Table>
+class Tables : public std::vector<Table>
 {
 public:
     Tables() : vector<Table>() { }
