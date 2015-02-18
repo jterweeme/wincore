@@ -630,6 +630,12 @@ template<typename T, typename U> void _Destroy2(T first, T last, U &alloc)
 template<typename T, typename U> inline void _Destroy2(T first, T last, allocator<U>&)
 { _Destroy2(first, last); }
 
+template <typename A, typename B, typename C, typename D> void
+    __uninitialized_fill_n_a(A a, B b, C &c, D &d)
+{
+    
+}
+
 template <bool> struct __uninitialized_copy
 {
     template<typename T, typename U> static U __uninit_copy(T first, T last, U result)
@@ -1136,6 +1142,7 @@ namespace mystl
     size_t strlen(const char *s);
     int strcmp(const char* s1, const char *s2);
     int strncmp(const char *s1, const char *s2, size_t n);
+    template <typename T> using fpos = fpos2<T>;
     typedef string2 string;
     typedef ios2 ios;
     typedef istream2 istream;

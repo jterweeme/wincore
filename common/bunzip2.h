@@ -78,7 +78,7 @@ class DecStreamBuf : public streambuf
 public:
     DecStreamBuf(BitInput *bi) : _ds(bi), _buffer(264) { }
     DecStreamBuf(FILE *fp) : _ds(new BitInputFile(fp)) { }
-    fpos<mbstate_t> seekoff(int64_t off, ios::seekdir way, ios::openmode m);
+    //fpos2<mbstate_t> seekoff(int64_t off, ios::seekdir way, ios::openmode m);
     int underflow();
 };
 

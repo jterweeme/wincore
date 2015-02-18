@@ -17,8 +17,8 @@ template<typename T, typename U, typename V> U transform(T first, T last, U resu
 template <typename V, typename W> void vector2<V, W>::_M_fill_initialize(size_t n,
     const value_type& __value)
 {
-    __uninitialized_fill_n_a(this->_M_impl._M_start, n, __value, _M_get_Tp_allocator());
-    this->_M_impl._M_finish = this->_M_impl._M_end_of_storage;
+    __uninitialized_fill_n_a(_M_impl._M_start, n, __value, _M_get_Tp_allocator());
+    _M_impl._M_finish = _M_impl._M_end_of_storage;
 }
 
 template <typename V, typename W> vector2<V, W>::~vector2()

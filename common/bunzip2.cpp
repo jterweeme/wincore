@@ -49,10 +49,12 @@ int DecStream::read(char *buf, int n)
     return i;
 }
 
-fpos<mbstate_t> DecStreamBuf::seekoff(int64_t off, ios::seekdir way, ios::openmode m)
+#if 0
+fpos2<mbstate_t> DecStreamBuf::seekoff(int64_t off, ios::seekdir way, ios::openmode m)
 {
     return (uint64_t)_M_in_cur - (uint64_t)_M_in_beg;
 }
+#endif
 
 int DecStreamBuf::underflow()
 {
