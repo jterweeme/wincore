@@ -1,5 +1,3 @@
-namespace mystl { }
-using namespace mystl;
 #include "hasher.h"
 
 const uint32_t k[64] = {

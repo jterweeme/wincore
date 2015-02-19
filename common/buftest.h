@@ -1,7 +1,6 @@
 #ifndef _BUFTEST_H_
 #define _BUFTEST_H_
-#include <vector>
-//#include <cstring>
+#include "common.h"
 #include "fector.h"
 
 

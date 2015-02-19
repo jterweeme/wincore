@@ -1,9 +1,4 @@
-namespace mystl { }
-using namespace mystl;
 #include "bitinput.h"
-#include <vector>
-#include <stdint.h>
-#include <cstring>
 #include <fstream>
 #include "fector.h"
 
@@ -272,7 +267,7 @@ public:
 
 int App::run(int argc, char **argv)
 {
-    mystl::ifstream ifs(argv[1]);
+    ifstream ifs(argv[1]);
     BitInputStream bi(&ifs);
     DecStream ds(&bi);
     ds.extractTo(cerr);

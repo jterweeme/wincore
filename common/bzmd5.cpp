@@ -1,6 +1,3 @@
-namespace mystl { }
-using namespace mystl;
-#include "mystl.h"
 #include "buftest.h"
 
 int main(int argc, char **argv)

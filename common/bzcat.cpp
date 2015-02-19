@@ -1,5 +1,3 @@
-namespace mystl { }
-using namespace mystl;
 #include "bunzip2.h"
 
 class App

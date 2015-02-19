@@ -1,5 +1,3 @@
-namespace mystl { }
-using namespace mystl;
 #include "kompakt.h"
 #include "filesys.h"
 

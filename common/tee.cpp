@@ -1,12 +1,4 @@
-#if 0
-#include <iostream>
-#include <fstream>
-using namespace std;
-#else
-namespace mystl { }
-using namespace mystl;
 #include "common.h"
-#endif
 
 class teebuf : public streambuf
 {

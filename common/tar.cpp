@@ -1,5 +1,3 @@
-namespace mystl { }
-using namespace mystl;
 #include "tar.h"
 
 #if 0
