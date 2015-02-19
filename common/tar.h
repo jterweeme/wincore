@@ -35,7 +35,7 @@ public:
     Header(SHeader &h) : _h(h) { }
     Header(istream &is) { read(is); }
     void read(istream &is) { is.read((char *)&_h, sizeof(_h)); }
-    uint32_t size() const { return strtol(_h.size, 0, 8); }
+    uint32_t size() const { return mystl::strtol(_h.size, 0, 8); }
     uint8_t numDigits() const;
     string name() const { return string(_h.name); }
     string uname() const { return string(_h.uname); }

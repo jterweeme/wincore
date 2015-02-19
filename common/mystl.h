@@ -1132,8 +1132,8 @@ namespace mystl
     typedef Util2::uint16_t uint16_t;
     typedef Util2::int32_t int32_t;
     typedef Util2::uint32_t uint32_t;
-    typedef Util2::int64_t int64_t;
-    typedef Util2::uint64_t uint64_t;
+    //typedef Util2::int64_t int64_t;
+    //typedef Util2::uint64_t uint64_t;
     void *memcpy(void *dest, const void *src, size_t n);
     char *strcpy(char *dest, const char *src);
     void *memset(void *s, const int c, const size_t n);
