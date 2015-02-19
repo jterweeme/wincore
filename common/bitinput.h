@@ -1,7 +1,7 @@
 #ifndef _BITINPUT_H_
 #define _BITINPUT_H_
 #include "mystl.h"
-#include <stdint.h>
+//#include <stdint.h>
 #if 0
 #include <iostream>
 #include <fstream>

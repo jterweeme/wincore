@@ -2,10 +2,10 @@ CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = valgrind $(VALFLAGS)
 
-TARGETS = base64 bunzip2 bzcat bzinfo bzip2 bzmd5 cat cp crc32 dd diff \
+TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 dd diff \
     dos2unix grep gunzip gzip \
-    jpg2tga kompakt ls md5s nl od rm tee test1 test2 \
-    tgunzip1 touch tr unix2dos uuidgen wingroup yes zcat
+    jpg2tga kompakt ls md5s nl od rm tar tee test1 test2 testbinp \
+    teststl1 tgunzip1 touch tr unix2dos uuidgen wingroup yes zcat
 
 %.o: %.cpp
 	g++ $(CXXFLAGS) -c -o $@ $<
@@ -38,11 +38,12 @@ md5s: md5s.o mystl.o hasher.o
 nl: nl.o
 od: od.o mystl.o odmain.o
 rm: rm.o mystl.o
-tar: tar.o tarm.o bitinput.o bunzip2.o fector.o
+tar: tar.o tarm.o bitinput.o bunzip2.o fector.o mystl.o
 tee: tee.o mystl.o
 test1: test1.o mystl.o hasher.o
 test2: test2.o mystl.o
-testbinp: testbinp.o bitinput.o
+testbinp: testbinp.o bitinput.o mystl.o
+teststl1: teststl1.o mystl.o
 tgunzip1: tgunzip1.o gunzip.o
 touch: touch.o
 tr: tr.o mystl.o
@@ -86,6 +87,7 @@ tee.o: tee.cpp common.h mystl.h mystl.tcc
 test1.o: test1.cpp
 test2.o: test2.cpp
 testbinp.o: testbinp.cpp
+teststl1.o: teststl1.cpp mystl.h
 tgunzip1.o: tgunzip1.cpp
 touch.o: touch.cpp
 tr.o: tr.cpp
@@ -110,11 +112,18 @@ testgunzip2:
 testkompakt:
 	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s | ./diff -s kompakt1.out -
 
-test: testgunzip2 test1go tgunzip1go testkompakt
+testod:
+	$(VALGRIND) ./od zero.dat | ./diff -s zero.od -
+
+testbase64:
+	$(VALGRIND) ./base64 zero.dat | ./diff -s zero.b64 -
+
+teststl1go:
+	$(VALGRIND) ./teststl1
+
+test: testgunzip2 test1go tgunzip1go testkompakt testod testbase64 teststl1go
 	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
-	$(VALGRIND) ./od zero.dat | ./diff -s zero.od -
-	$(VALGRIND) ./base64 zero.dat | ./diff -s zero.b64 -
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 	$(VALGRIND) ./md5s -c data.md5

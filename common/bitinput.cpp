@@ -1,4 +1,5 @@
-using namespace std;
+namespace mystl { }
+using namespace mystl;
 #include "bitinput.h"
 
 uint32_t BitInput::readBits(uint32_t count)

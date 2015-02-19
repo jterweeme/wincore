@@ -1,9 +1,7 @@
 #ifndef _BUFTEST_H_
 #define _BUFTEST_H_
-#include <fstream>
-#include <iostream>
 #include <vector>
-#include <cstring>
+//#include <cstring>
 #include "fector.h"
 
 
@@ -53,7 +51,7 @@ public:
 public:
     buftest(FILE *fp) : _fp(fp), _put_back(8) { }
 
-    fpos<mbstate_t> seekoff(int64_t off, ios::seekdir way, ios::openmode m)
+    fpos2<mbstate_t2> seekoff(int64_t off, ios::seekdir way, ios::openmode m)
     {
         return (uint64_t)_M_in_cur - (uint64_t)_M_in_beg + ftell(_fp) - 264;
     }

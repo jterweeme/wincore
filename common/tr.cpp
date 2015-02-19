@@ -1,6 +1,6 @@
 namespace mystl { }
 using namespace mystl;
-#include "common.h"
+#include "mystl.h"
 
 int main(int argc, char **argv)
 {

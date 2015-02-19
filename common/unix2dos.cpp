@@ -1,5 +1,6 @@
-#include <iostream>
-using namespace std;
+namespace mystl { };
+using namespace mystl;
+#include "mystl.h"
 
 int main(int argc, char **argv)
 {

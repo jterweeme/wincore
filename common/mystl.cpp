@@ -11,6 +11,31 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
     return dest;
 }
 
+Util2::uint8_t Util2::ctoi(char c)
+{
+    return isdigit(c) == 1 ? c - '0' : c - 87;
+}
+
+Util2::uint32_t Util2::upow(uint32_t base, uint32_t exp)
+{
+    uint32_t result = base;
+    
+    for (uint32_t i = 1; i < exp; i++)
+        result *= base;
+
+    return exp > 0 ? result : 1;
+}
+
+Util2::uint32_t Util2::strtol(const char *a, const char *b, int base)
+{
+    uint32_t result = 0;
+
+    for (uint32_t i = strlen(a), j = 0; i > 0; i--, j++)
+        result += ctoi(a[i - 1]) * upow(base, j);
+
+    return result;
+}
+
 void *Util2::memmove(char *dst, const char *src, uint32_t n)
 {
     if (dst <= src)
@@ -232,7 +257,9 @@ ostream2& ostream2::operator << (const uint32_t u)
         util.itoa(u, s, 10);
     }
 
-    for (uint32_t i = 0; i < _width.size() - util.strlen(s); i++)
+    uint32_t fill = _width.size() > util.strlen(s) ? _width.size() - util.strlen(s) : 0;
+
+    for (uint32_t i = 0; i < fill; i++)
         put(_fill.fill());
 
     print(s);
@@ -307,6 +334,7 @@ namespace mystl
     int strncmp(const char *s1, const char *s2, size_t n) { Util2 u; return u.strncmp(s1, s2, n); }
     int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }
     size_t strlen(const char *s) { Util2 u; return u.strlen(s); }
+    uint32_t strtol(const char *a, const char *b, int c) { Util2 u; return u.strtol(a, b, c); }
     base2 hex(base2::HEX);
     base2 oct(base2::OCT);
     base2 dec(base2::DEC);
@@ -318,5 +346,6 @@ namespace mystl
     width2 setw(int length) { return width2(length); }
     int toupper(int c) { Util2 u; return u.toupper(c); }
     char *strtok(char *s, const char *delim) { Util2 u; return u.strtok(s, delim); }
+    int isdigit(int c) { Util2 u; return u.isdigit(c); }
 }
 

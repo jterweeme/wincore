@@ -1,13 +1,15 @@
 #ifndef _TAR_H_
 #define _TAR_H_
+#if 0
 #include <iostream>
 #include <fstream>
 #include <stdint.h>
-#include <cstdlib>
-#include <cstring>
+#endif
+//#include <cstdlib>
+//#include <cstring>
 #include <vector>
-#include <iomanip>
-#include <sstream>
+//#include <iomanip>
+//#include <sstream>
 #include "bunzip2.h"
 #include "buftest.h"
 

@@ -1,8 +1,9 @@
 #ifndef _FECTOR_H_
 #define _FECTOR_H_
-#include <iostream>
-#include <sstream>
-#include <cstring>
+#include "mystl.h"
+//#include <iostream>
+//#include <sstream>
+//#include <cstring>
 
 template<class T> class Fector
 {

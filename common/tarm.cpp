@@ -1,4 +1,5 @@
-using namespace std;
+namespace mystl { }
+using namespace mystl;
 #include "tar.h"
 
 class Options
@@ -43,7 +44,7 @@ public:
 void AppTar::createFile(ostream &os, string fn)
 {
     Header h;
-    ifstream ifs(fn);
+    ifstream ifs(fn.c_str());
     SHeader sh = h.raw();
     os.write((char *)&sh, sizeof(sh));
     ifs.close();
@@ -108,7 +109,7 @@ int AppTar::run(int argc, char **argv)
         bt = new buftest(fp);
     }
 
-    is = new istream(bt);
+    is = new istream2(bt);
     ts = new TarStream(is);
     
     if (o.table())

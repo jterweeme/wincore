@@ -2,7 +2,7 @@
 #define _HASHER_H_
 #include "mystl.h"
 #include <endian.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 
 class Hash
 {
@@ -26,7 +26,7 @@ public:
 class Chunk
 {
     uint32_t _w[16];
-    uint32_t const LEFTROTATE(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
+    uint32_t const leftRotate(uint32_t x, uint32_t c) { return x << c | x >> 32 - c; }
     uint32_t to_int32(const uint8_t *bytes) const;
 public:
     void read(const uint8_t *msg) { for (int i = 0; i < 16; i++) _w[i] = to_int32(msg + i * 4); }

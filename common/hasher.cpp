@@ -182,7 +182,7 @@ Hash Chunk::calc(Hash &hash)
         temp = d;
         d = c;
         c = b;
-        b = b + LEFTROTATE((a + f + k[i] + w(g)), r[i]);
+        b = b + leftRotate((a + f + k[i] + w(g)), r[i]);
         a = temp;
     }
 

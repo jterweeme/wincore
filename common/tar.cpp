@@ -1,4 +1,5 @@
-using namespace std;
+namespace mystl { }
+using namespace mystl;
 #include "tar.h"
 
 #if 0
@@ -18,7 +19,7 @@ bool TarStream::listFile(bool verbose)
 {
     Header h(*_is);
     if (h.empty()) return false;
-    _width = max(h.numDigits(), _width);
+    _width = max2(h.numDigits(), _width);
     if (verbose) h.fullInfo(cout, _width); else cout << h.name() << "\n";
     _is->ignore(512 - _is->tellg() % 512);
     _is->ignore(h.size());
@@ -71,7 +72,7 @@ bool TarStream::extractFile(bool verbose)
     if (h.empty()) return false;
     if (verbose) cout << h.name() << "\n";
     _is->ignore(512 - _is->tellg() % 512);
-    ofstream ofs(h.name());
+    ofstream ofs(h.name().c_str());
     for (uint32_t i = 0; i < h.size(); i++) ofs.put(_is->get());
     ofs.close();
     _is->ignore(512 - _is->tellg() % 512);

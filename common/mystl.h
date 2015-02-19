@@ -41,6 +41,9 @@ public:
     int strcmp(const char* s1, const char *s2);
     int strncmp(const char *s1, const char *s2, size_t n);
     char *strtok(char *str, const char *delimiters);
+    uint8_t ctoi(char c);
+    uint32_t upow(uint32_t base, uint32_t exp);
+    uint32_t strtol(const char *a, const char *b, int base);
 };
 
 template<bool> struct __truth_type { typedef Util2::false_type __type; };
@@ -576,8 +579,8 @@ public:
     ~allocator() throw() { }
 };
 
-template<typename _Alloc, bool = __is_empty(_Alloc)> struct __alloc_swap
-{ static void _S_do_it(_Alloc&, _Alloc&) { } };
+template<typename A, bool = __is_empty(A)> struct __alloc_swap
+{ static void _S_do_it(A&, A&) { } };
 
 template <typename T> struct __alloc_swap<T, false>
 { static void _S_do_it(T &__one, T &__two) { if (__one != __two) swap(__one, __two); } };
@@ -594,10 +597,7 @@ template <typename T> struct alloc_traits
     typedef typename T::difference_type difference_type;
     static pointer allocate(T &a, size_type n) { return a.allocate(n); }
     static void deallocate(T &a, pointer p, size_type n) { a.deallocate(p, n); }
-
-    template<typename U> static void construct(T &a, pointer p, const U &arg)
-    { a.construct(p, arg); }
-
+    template<typename U> static void construct(T &a, pointer p, const U &b) { a.construct(p, b); }
     static void destroy(T &a, pointer p) { a.destroy(p); }
     static size_type max_size(const T &a) { return a.max_size(); }
     static const T &_S_select_on_copy(const T &a) { return a; }
@@ -842,12 +842,10 @@ enum _Ios_Seekdir
     _S_ios_seekdir_end = 1L << 16
 };
 
-#if 0
-struct mbstate_t
+struct mbstate_t2
 {
     int fill[6];
 };
-#endif
 
 template <typename T> class fpos2
 {
@@ -869,6 +867,7 @@ public:
     char *_M_in_cur;
     int sputc(char c) { return overflow(c); }
     int pubsync() { return 0; }
+    virtual ~streambuf2() { }
 };
 
 class ios2
@@ -879,6 +878,7 @@ public:
     typedef _Ios_Seekdir seekdir;
     typedef int openmode;
     static const Util2::uint8_t binary = 1;
+    static const Util2::uint8_t in = 2;
     streambuf2 *rdbuf() const { return _sb; }
     streambuf2 *rdbuf(streambuf2 *sb) { return _sb = sb; }
     ios2(streambuf2 *sb) : _sb(sb) { }
@@ -974,6 +974,7 @@ protected:
     bool _eof;
 public:
     istream2() : _pos(0), _lastRead(0), _eof(false) { }
+    istream2(streambuf2 *sb) { }
     istream2(FILE *fp) : _pos(0), _fp(fp), _lastRead(0), _eof(false) { }
     virtual ~istream2() { }
     //int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
@@ -1139,6 +1140,7 @@ namespace mystl
     void *memmove(char *dst, const char *src, uint32_t n);
     char *strncpy(char *dest, const char *src, size_t n);
     size_t strlen(const char *s);
+    uint32_t strtol(const char *a, const char *b, int base);
     int strcmp(const char* s1, const char *s2);
     int strncmp(const char *s1, const char *s2, size_t n);
     template <typename T> using fpos = fpos2<T>;

@@ -1,4 +1,5 @@
-using namespace std;
+namespace mystl { }
+using namespace mystl;
 #include "bitinput.h"
 #include <vector>
 #include <stdint.h>
@@ -121,8 +122,8 @@ void Block::init(BitInput *bi)
     {
         for (uint32_t i = 0; i < symbolCount + 2; i++)
         {
-            maxLength = max((uint32_t)tableCodeLengths[table][i], maxLength);
-            minLength = min((uint32_t)tableCodeLengths[table][i], minLength);
+            maxLength = max2((uint32_t)tableCodeLengths[table][i], maxLength);
+            minLength = min2((uint32_t)tableCodeLengths[table][i], minLength);
         }
 
         _minLengths[table] = minLength;
@@ -295,6 +296,7 @@ int main(int argc, char **argv)
     {
         cout << e << "\n";
     }
+#if 0
     catch (bad_alloc)
     {
         cout << "bad alloc\n";
@@ -307,6 +309,7 @@ int main(int argc, char **argv)
     {
         cout << "Onbekend exception " << e.what() << "\n";
     }
+#endif
     catch (...)
     {
         cout << "Unknown exception\n";

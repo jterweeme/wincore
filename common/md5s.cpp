@@ -1,7 +1,7 @@
 namespace mystl { }
 using namespace mystl;
 #include "hasher.h"
-#include <iostream>
+//#include <iostream>
 
 typedef vector<string> Vest;
 
@@ -137,7 +137,7 @@ void AppMD5Sum::_checkPaar(Paar &paar, ostream &os)
     if (paar.hash().isEqual(hash2))
         os << "\e[1;32m" << paar.fn() << ": OK\e[0m\n";
     else
-        os << paar.fn() << ": FAILED\n";
+        os << "\e[1;31m" << paar.fn() << ": FAILED\e[0m\n";
 }
 
 int main(const int argc, char **argv)

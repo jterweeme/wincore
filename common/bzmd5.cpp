@@ -1,12 +1,14 @@
-using namespace std;
+namespace mystl { }
+using namespace mystl;
+#include "mystl.h"
 #include "buftest.h"
 
 int main(int argc, char **argv)
 {
-    filebuf fb;
+    filebuf2 fb;
     FILE *fp = fopen("cat.vcxproj", "r");
     buftest bt(fp);
-    fb.open("nl.vcxproj", std::ios::in);
+    fb.open("nl.vcxproj", ios::in);
     //istream is(&fb);
     istream is2(&bt);
     //ifstream is2("od.vcxproj");
