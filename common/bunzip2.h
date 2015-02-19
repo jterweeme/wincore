@@ -2,7 +2,7 @@
 #define _BZIP2_H_
 #include "bitinput.h"
 #include "fector.h"
-#include <vector>
+#include "vector.h"
 
 class MoveToFront : public Fugt
 {
@@ -15,14 +15,30 @@ class Table
 {
     Fugt _codeLengths;
     uint16_t _pos = 0;
-    const uint32_t _symbolCount;
+    uint32_t _symbolCount;
     uint32_t _bases[25] = {0};
     int32_t _limits[24] = {0};
     uint32_t _symbols[258] = {0};
     uint8_t _minLength(uint32_t n) { return _codeLengths.min(n); }
     uint8_t _maxLength(uint32_t n) { return _codeLengths.max(n); }
 public:
+    //Table() : _codeLengths(258), _symbolCount(0) { }
     Table(uint32_t symbolCount) : _codeLengths(258), _symbolCount(symbolCount) { }
+    //Table(const Table &t) : _codeLengths(258), _symbolCount(0) { }
+
+#if 0
+    Table& operator= (const Table &x)
+    {
+        _codeLengths = x._codeLengths;
+        _pos = x._pos;
+        _symbolCount = x._symbolCount;
+        memcpy(_bases, x._bases, sizeof(x._bases));
+        memcpy(_limits, x._limits, sizeof(x._limits));
+        memcpy(_symbols, x._symbols, sizeof(x._symbols));      
+        return *this;
+    }
+#endif
+
     void calc();
     uint8_t maxLength() { return _maxLength(_symbolCount + 2); }
     uint8_t minLength() { return _minLength(_symbolCount + 2); }
@@ -34,13 +50,19 @@ public:
     string toString() const { ostringstream o; dump(o); return o.str(); }
 };
 
-class Tables : public std::vector<Table>
+#if 1
+class Tables : public vector<Table>
 {
 public:
     Tables() : vector<Table>() { }
     void dump(ostream &os) const;
     string toString() const { ostringstream o; dump(o); return o.str(); }
 };
+#else
+class Tables : public std::array<Table>
+{
+};
+#endif
 
 class Block
 {

@@ -1,6 +1,4 @@
-namespace mystl { }
-using namespace mystl;
-#include "mystl.h"
+#include "common.h"
 
 int main(int argc, char **argv)
 {

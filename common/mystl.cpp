@@ -257,7 +257,7 @@ ostream2& ostream2::operator << (const uint32_t u)
         util.itoa(u, s, 10);
     }
 
-    uint32_t fill = _width.size() > util.strlen(s) ? _width.size() - util.strlen(s) : 0;
+    uint32_t fill = (uint32_t)_width.size() > util.strlen(s) ? _width.size() - util.strlen(s) : 0;
 
     for (uint32_t i = 0; i < fill; i++)
         put(_fill.fill());

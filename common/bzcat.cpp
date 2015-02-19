@@ -11,10 +11,10 @@ public:
 #if 1
 int App::run(int argc, char **argv)
 {
-    mystl::ifstream ifs(argv[1]);
+    ifstream ifs(argv[1]);
     BitInputStream bi(&ifs);
     DecStream ds(&bi);
-    ds.extractTo(mystl::cout);
+    ds.extractTo(cout);
     ifs.close();
     return 0;
 }
