@@ -10,6 +10,7 @@
 #if 1
 #include "mystl.h"
 #include "vector.h"
+#include "heapsort.h"
 using namespace mystl;
 #else
 #include <iostream>

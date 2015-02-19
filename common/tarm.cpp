@@ -107,7 +107,7 @@ int AppTar::run(int argc, char **argv)
         bt = new buftest(fp);
     }
 
-    is = new istream2(bt);
+    is = new istream(bt);
     ts = new TarStream(is);
     
     if (o.table())

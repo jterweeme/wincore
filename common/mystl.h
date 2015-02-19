@@ -1174,6 +1174,7 @@ namespace mystl
     char *strtok(char *s, const char *delim);
     template <typename T> inline const T &min(const T &a, const T &b) { return min2(a, b); }
     template <typename T> inline const T &max(const T &a, const T &b) { return a < b ? b : a; }
+    typedef mbstate_t2 mbstate_t;
 };
 
 #include "mystl.tcc"

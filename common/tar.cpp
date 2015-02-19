@@ -17,7 +17,7 @@ bool TarStream::listFile(bool verbose)
 {
     Header h(*_is);
     if (h.empty()) return false;
-    _width = max2(h.numDigits(), _width);
+    _width = max(h.numDigits(), _width);
     if (verbose) h.fullInfo(cout, _width); else cout << h.name() << "\n";
     _is->ignore(512 - _is->tellg() % 512);
     _is->ignore(h.size());

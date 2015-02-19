@@ -1,7 +1,6 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 #include "filesys.h"
-#include "heapsort.h"
 
 /*
 todo: skip/ignore functie maken

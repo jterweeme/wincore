@@ -1,5 +1,4 @@
 #include "bitinput.h"
-#include <fstream>
 #include "fector.h"
 
 class Block
