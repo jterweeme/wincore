@@ -1,16 +1,6 @@
 #ifndef _BITINPUT_H_
 #define _BITINPUT_H_
-#include "mystl.h"
-//#include <stdint.h>
-#if 0
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <vector>
-#include <cstring>
-#include <algorithm>
-#endif
+#include "common.h"
 
 class BitInput
 {
@@ -28,9 +18,9 @@ public:
 
 class BitInputStream : public BitInput
 {
-    mystl::istream *_is;
+    istream *_is;
 public:
-    BitInputStream(mystl::istream *is) : _is(is) { }
+    BitInputStream(istream *is) : _is(is) { }
     int getc() { return _is->get(); }
 };
 

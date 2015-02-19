@@ -1,5 +1,3 @@
-namespace mystl { }
-using namespace mystl;
 #include <fstream>
 #include "bitinput.h"
 

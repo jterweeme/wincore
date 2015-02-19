@@ -9,6 +9,7 @@
 
 #if 1
 #include "mystl.h"
+#include "vector.h"
 using namespace mystl;
 #else
 #include <iostream>

@@ -5,8 +5,6 @@ TODO: bug: when last read equals 16, another read will be attempted
 and another empty line will be displayed.
 */
 
-namespace mystl { }
-using namespace mystl;
 #include "od.h"
 
 int AppOd::run(int argc, char **argv)

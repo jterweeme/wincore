@@ -1,23 +1,7 @@
 #ifndef _TAR_H_
 #define _TAR_H_
-#if 0
-#include <iostream>
-#include <fstream>
-#include <stdint.h>
-#endif
-//#include <cstdlib>
-//#include <cstring>
-#include <vector>
-//#include <iomanip>
-//#include <sstream>
 #include "bunzip2.h"
 #include "buftest.h"
-
-#ifdef __GNUC__
-#define PACKED __attribute__ ((packed))
-#else
-#define PACKED
-#endif
 
 typedef vector<string> Vest;
 

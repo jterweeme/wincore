@@ -2,7 +2,6 @@
 #define _BZIP2_H_
 #include "bitinput.h"
 #include "fector.h"
-#include "vector.h"
 
 class MoveToFront : public Fugt
 {

@@ -1,6 +1,6 @@
 #ifndef _HASHER_H_
 #define _HASHER_H_
-#include "mystl.h"
+#include "common.h"
 #include <endian.h>
 //#include <stdlib.h>
 
