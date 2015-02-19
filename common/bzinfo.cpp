@@ -117,8 +117,8 @@ void Block::init(BitInput *bi)
     {
         for (uint32_t i = 0; i < symbolCount + 2; i++)
         {
-            maxLength = max2((uint32_t)tableCodeLengths[table][i], maxLength);
-            minLength = min2((uint32_t)tableCodeLengths[table][i], minLength);
+            maxLength = max((uint32_t)tableCodeLengths[table][i], maxLength);
+            minLength = min((uint32_t)tableCodeLengths[table][i], minLength);
         }
 
         _minLengths[table] = minLength;

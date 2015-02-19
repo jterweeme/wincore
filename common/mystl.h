@@ -1172,6 +1172,8 @@ namespace mystl
     void toupper(const char *src, char *dest);
     void toupper(char *s);
     char *strtok(char *s, const char *delim);
+    template <typename T> inline const T &min(const T &a, const T &b) { return min2(a, b); }
+    template <typename T> inline const T &max(const T &a, const T &b) { return a < b ? b : a; }
 };
 
 #include "mystl.tcc"
