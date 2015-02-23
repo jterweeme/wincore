@@ -1,7 +1,7 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <stdio.h>
-#include <new>
+//#include <new>
 
 class Util2
 {
@@ -534,7 +534,7 @@ template<typename T, typename _BI2> inline _BI2 copy_backward(T first, T last, _
 template<typename I, typename T> inline void fill(I first, I last, const T &value)
 { __fill_a(__niter_base(first), __niter_base(last), value); }
 
-//inline void* operator new(Util2::size_t, void* p) noexcept { return p; }
+inline void* operator new(Util2::size_t, void* p) noexcept { return p; }
 
 template<typename T> class new_allocator
 {
