@@ -1118,8 +1118,61 @@ public:
     const_iterator end() { return _buf + _size; }
 };
 
+template <class OI, class S, class T> OI fill_n2(OI first, S n, const T &val)
+{
+    while (n > 0)
+    {
+        *first = val;
+        ++first;
+        --n;
+    }
+
+    return first;
+}
+
+template <typename T, size_t N> struct array_traits2 { typedef T Type[N]; };
+
+template <typename T, size_t N> struct array2
+{
+    typedef T Type[N];
+    typename array_traits2<T, N>::Type elems;
+    void fill(const T& u) { fill_n2(begin(), size(), u); }
+    static constexpr T& ref2(const Type& t, size_t n) { return const_cast<T&>(t[n]); }
+    T *data() noexcept { return __addressof(ref2(elems, 0)); }
+    const T* data() const noexcept { return __addressof(ref2(elems, 0)); }
+    T *begin() { return (T*)(data()); }
+    const T *begin() const { return const_iterator(data()); }
+    T *end() { return (T*)(data() + N); }
+    const T *end() const { return const_iterator(data() + N); }
+    const T *rbegin() const { return const_reverse_iterator(end()); }
+    const T *cbegin() const { return const_iterator(data()); }
+    const T *cend() const { return const_iterator(data() + N); }
+    constexpr size_t size() const { return N; }
+    constexpr size_t max_size() const { return N; }
+    constexpr bool empty() const { return size() == 0; }
+    T& operator[](size_t n) { return const_cast<T&>(elems[n]); }
+    constexpr const T& operator[](size_t n) const { return const_cast<T&>(elems[n]); }
+    T &at(size_t n) { return const_cast<T&>(elems[n]); }
+    constexpr const T &at(size_t n) const { return const_cast<T&>(elems[n]); }
+    T &front() noexcept { return *begin(); }
+    constexpr const T &front() const { return const_cast<T&>(elems[0]); }
+    T &back() noexcept { return N ? *(end() - 1) : *end(); }
+};
+
 namespace mystl
 {
+    template <class OI, class S, class T> OI fill_n(OI first, S n, const T &val)
+    {
+        while (n > 0)
+        {
+            *first = val;
+            ++first;
+            --n;
+        }
+
+        return first;
+    }
+
     template <class T> class vector : public vector2<T>
     {
     public:
@@ -1132,8 +1185,8 @@ namespace mystl
     typedef Util2::uint16_t uint16_t;
     typedef Util2::int32_t int32_t;
     typedef Util2::uint32_t uint32_t;
-    //typedef Util2::int64_t int64_t;
-    //typedef Util2::uint64_t uint64_t;
+    typedef Util2::int64_t int64_t;
+    typedef Util2::uint64_t uint64_t;
     void *memcpy(void *dest, const void *src, size_t n);
     char *strcpy(char *dest, const char *src);
     void *memset(void *s, const int c, const size_t n);
