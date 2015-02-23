@@ -1,7 +1,6 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 #include <stdio.h>
-//#include <new>
 
 class Util2
 {
@@ -1120,12 +1119,8 @@ public:
 
 template <class OI, class S, class T> OI fill_n2(OI first, S n, const T &val)
 {
-    while (n > 0)
-    {
-        *first = val;
-        ++first;
-        --n;
-    }
+    for (;n > 0; --n)
+        *first++ = val;
 
     return first;
 }
@@ -1161,26 +1156,8 @@ template <typename T, size_t N> struct array2
 
 namespace mystl
 {
-    template <class OI, class S, class T> OI fill_n(OI first, S n, const T &val)
-    {
-        while (n > 0)
-        {
-            *first = val;
-            ++first;
-            --n;
-        }
-
-        return first;
-    }
-
-    template <class T> class vector : public vector2<T>
-    {
-    public:
-        vector() : vector2<T>() { }
-        vector(Util2::size_t n, const T &val = T()) : vector2<T>(n, val) { }
-        template <typename U> vector(U first, U last) : vector2<T>(first, last) { }
-    };
-
+    template <class T> using vector = vector2<T>;
+    template <typename T, size_t N> using array = array2<T, N>;
     typedef Util2::uint8_t uint8_t;
     typedef Util2::uint16_t uint16_t;
     typedef Util2::int32_t int32_t;

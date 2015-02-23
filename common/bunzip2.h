@@ -15,12 +15,12 @@ class Table
     Fugt _codeLengths;
     uint16_t _pos = 0;
     uint32_t _symbolCount;
-    array2<uint32_t, 25> _bases;
+    array<uint32_t, 25> _bases;
     //uint32_t _bases[25] = {0};
-    array2<int32_t, 24> _limits;
+    array<int32_t, 24> _limits;
     //int32_t _limits[24] = {0};
     //uint32_t _symbols[258] = {0};
-    array2<uint32_t, 258> _symbols;
+    array<uint32_t, 258> _symbols;
     uint8_t _minLength(uint32_t n) { return _codeLengths.min(n); }
     uint8_t _maxLength(uint32_t n) { return _codeLengths.max(n); }
 public:

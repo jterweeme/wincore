@@ -52,10 +52,10 @@ void Hash::read(const char *hash)
     strncpy(s1, hash + 8, 8);
     strncpy(s2, hash + 16, 8);
     strncpy(s3, hash + 24, 8);
-    _h0 = be32toh(mystl::strtol(s0, 0, 16));
-    _h1 = be32toh(mystl::strtol(s1, 0, 16));
-    _h2 = be32toh(mystl::strtol(s2, 0, 16));
-    _h3 = be32toh(mystl::strtol(s3, 0, 16));
+    _h0 = be32toh(strtol(s0, 0, 16));
+    _h1 = be32toh(strtol(s1, 0, 16));
+    _h2 = be32toh(strtol(s2, 0, 16));
+    _h3 = be32toh(strtol(s3, 0, 16));
 
 #endif
 }
