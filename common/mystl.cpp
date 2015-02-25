@@ -197,9 +197,25 @@ string2::string2(const char *s1, const char *s2)
 
 void istream2::read(char *s, size_t length)
 {
+    for (_lastRead = 0; _lastRead < length; _lastRead++)
+    {
+        int c = get();
+        
+        if (c == EOF)
+        {
+            _eof = true;
+            return;
+        }
+
+        s[_lastRead] = c;
+    }
+
+
+#if 0
     _lastRead = fread(s, 1, length, _fp);
     _pos += _lastRead;
     _eof = _lastRead < length;
+#endif
 }
 
 void istream2::getline(char *dest, size_t size)
@@ -237,6 +253,35 @@ void ofstream2::open(const char *fn, openmode om)
         _fp = fopen(fn, "wb+");
         break;
     }
+#endif
+}
+
+int streambuf2::sungetc()
+{
+    if ((!gptr()) || (gptr()==eback()));
+    gbump(-1);
+    return *gptr();
+}
+
+int filebuf2::underflow()
+{
+    return fgetc(_fp);
+#if 0
+    Util2 u;
+    if (gptr() < egptr()) return (int)(*gptr());
+    char *base = _buffer;
+    char *start = base;
+
+    if (eback() == base)
+    {
+        u.memmove(base, egptr() - _put_back, _put_back);
+        start += _put_back;
+    }
+
+    uint32_t n = fread(start, 1, 264 - (start - base), _fp);
+    if (n == 0) return EOF;
+    setg(base, start, start + n);
+    return (int)(*gptr());
 #endif
 }
 
@@ -338,7 +383,7 @@ namespace mystl
     base2 hex(base2::HEX);
     base2 oct(base2::OCT);
     base2 dec(base2::DEC);
-    istream cin(stdin);
+    ifpstream2 cin(stdin);
     fpstream2 cout(stdout);
     fpstream2 cerr(stderr);
     align right;

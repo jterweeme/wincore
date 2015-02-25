@@ -6,7 +6,18 @@ int main(int argc, char **argv)
     _setmode(_fileno(stdin), O_BINARY);
 #endif
     AppOd app;
-    return app.run(argc, argv);
+    int ret = -1;
+
+    try
+    {
+        ret = app.run(argc, argv);
+    }
+    catch (const char *e)
+    {
+        cerr << e << "\n";
+    }
+
+    return ret;
 }
 
 

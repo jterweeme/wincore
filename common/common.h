@@ -7,9 +7,9 @@
 #define PACKED
 #endif
 
-#if 0
 #include "mystl.h"
 #include "heapsort.h"
+#if 1
 using namespace mystl;
 #else
 #include <iostream>
