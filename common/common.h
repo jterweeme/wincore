@@ -7,11 +7,15 @@
 #define PACKED
 #endif
 
-#include "mystl.h"
-#include "heapsort.h"
+namespace mystl { }
+
 #if 1
 using namespace mystl;
+#include "mystl.h"
+#include "heapsort.h"
 #else
+//#include "mystl.h"
+//#include "heapsort.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>

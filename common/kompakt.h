@@ -230,7 +230,7 @@ class PathTable : public vector<PathEntry>
     size_t _size;
 public:
     void read(mistream &is, int lba, size_t n);
-    void snort();
+    void snort() { sort(begin(), end(), wayToSort); }
     void dump(ostream &os);
     PathEntry &getByLBA(uint32_t lba);
     PathEntry &getByIndex(int i);

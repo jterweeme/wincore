@@ -174,12 +174,6 @@ void PathEntry::read(mistream &is)
     is.ignore(is.tellg() % 2);
 }
 
-void PathTable::snort()
-{
-    make_heap(begin(), end(), wayToSort);
-    sort_heap(begin(), end(), wayToSort);
-}
-
 PathEntry &PathTable::getByLBA(uint32_t lba)
 {
     for (iterator it = begin(); it != end(); it++)

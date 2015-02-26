@@ -103,10 +103,17 @@ template<typename T, typename U> inline void sort_heap2(T first, T last, U comp)
     }
 }
 
+template <typename T, typename U> void sort2(T first, T last, U comp)
+{
+    make_heap2(first, last, comp);
+    sort_heap2(first, last, comp);
+}
+
 namespace mystl
 {
     template <typename T, typename U> void make_heap(T f, T l, U c) { make_heap2(f, l, c); }
     template <typename T, typename U> void sort_heap(T f, T l, U c) { sort_heap2(f, l, c); }
+    template <typename T, typename U> void sort(T f, T l, U c) { sort2(f, l, c); }
     template<typename T> inline void reverse(T first, T last) { reverse2(first, last); }
 }
 

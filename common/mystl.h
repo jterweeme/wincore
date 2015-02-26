@@ -506,7 +506,7 @@ template<bool _IsMove> struct __copy_move_backward<_IsMove, true, random_access_
 };
 
 template<bool T, typename _BI1, typename _BI2> inline _BI2
-    __copy_move_backward_a(_BI1 first, _BI1 last, _BI2 result)
+__copy_move_backward_a(_BI1 first, _BI1 last, _BI2 result)
 {
     typedef typename iterator_traits<_BI1>::value_type _ValueType1;
     typedef typename iterator_traits<_BI2>::value_type _ValueType2;
@@ -518,8 +518,8 @@ template<bool T, typename _BI1, typename _BI2> inline _BI2
     return __copy_move_backward<T, __simple, _Category>::copy_move_b(first, last, result);
 }
 
-template<bool T, typename BI1, typename BI2>
-    inline BI2 copy_move_backward_a2(BI1 first, BI1 last, BI2 result)
+template<bool T, typename BI1, typename BI2> inline BI2
+copy_move_backward_a2(BI1 first, BI1 last, BI2 result)
 {
     return BI2(__copy_move_backward_a<T>
         (__niter_base(first), __niter_base(last), __niter_base(result)));
@@ -674,20 +674,20 @@ template <typename T, typename T2> inline T2 uninitialized_copy(T first, T __las
                    && __assignable>::__uninit_copy(first, __last, __result);
 }
 
-template<typename T, typename U, typename V>
-    inline U uninitialized_copy_a(T first, T last, U result, allocator<V>&)
+template<typename T, typename U, typename V> inline U
+uninitialized_copy_a(T first, T last, U result, allocator<V>&)
 {
     return uninitialized_copy(first, last, result);
 }
 
-template<typename T, typename T2, typename T3>
-    inline T2 __uninitialized_move_if_noexcept_a(T __first, T __last, T2 __result, T3 &alloc)
+template<typename T, typename T2, typename T3> inline T2
+__uninitialized_move_if_noexcept_a(T __first, T __last, T2 __result, T3 &alloc)
 {
     return uninitialized_copy_a(__first, __last, __result, alloc);
 }
 
-template <typename T, typename U>
-    struct Vector_impl2 : public alloc_traits<U>::template rebind<T>::other
+template <typename T, typename U> struct
+Vector_impl2 : public alloc_traits<U>::template rebind<T>::other
 {
     typedef typename alloc_traits<U>::template rebind<T>::other A;
     typename alloc_traits<A>::pointer _M_start;
@@ -1075,7 +1075,6 @@ public:
     ostream2& operator << (const uint32_t u);
     ostream2 &write(const char *s, int n) { for (int i = 0; i < n; i++) put(s[i]); return *this; }
     virtual ~ostream2() { }
-
 };
 
 class ifpstream2 : public istream2
