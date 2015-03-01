@@ -14,17 +14,16 @@ template<typename T, typename U, typename V> U transform(T first, T last, U resu
     return result;
 }
 
-template <typename V, typename W> void vector2<V, W>::_M_fill_initialize(size_t n,
-    const value_type& __value)
+template <typename V, typename W> void vector2<V, W>::_M_fill_initialize(size_t n, const V &value)
 {
-    __uninitialized_fill_n_a(_M_impl._M_start, n, __value, _M_get_Tp_allocator());
+    __uninitialized_fill_n_a(_M_impl._M_start, n, value, _M_get_Tp_allocator());
     _M_impl._M_finish = _M_impl._M_end_of_storage;
 }
 
 template <typename V, typename W> vector2<V, W>::~vector2()
 { _Destroy2(_M_impl._M_start, _M_impl._M_finish, _M_get_Tp_allocator()); }
 
-template <typename V, typename W> void vector2<V, W>::push_back(const value_type& x)
+template <typename V, typename W> void vector2<V, W>::push_back(const V &x)
 {
     if (_M_impl._M_finish != _M_impl._M_end_of_storage)
         _Alloc_traits::construct(_M_impl, _M_impl._M_finish++, x);
@@ -41,9 +40,8 @@ template <typename T> void reverse(T first, T last, random_access_iterator_tag)
         iter_swap(first++, last++);
 }
 
-template <typename T, typename A> vector2<T, A>::vector2(size_t n,
-    const value_type &value, const allocator_type &a)
-  : _Base(n, a)
+template <typename T, typename A> vector2<T, A>::vector2(size_t n, const T &value, const A &a)
+  : Base(n, a)
 {
     _M_fill_initialize(n, value);
 }
@@ -57,14 +55,14 @@ template <typename T, typename U> void Vector_impl2<T, U>::_M_swap_data(Vector_i
 
 template <typename T, typename A> vector2<T, A>::vector2(const vector2 &x)
   :
-    _Base(x.size(), _Alloc_traits::_S_select_on_copy(x._M_get_Tp_allocator()))
+    Base(x.size(), _Alloc_traits::_S_select_on_copy(x._M_get_Tp_allocator()))
 {
     _M_impl._M_finish = uninitialized_copy_a(x.begin(), x.end(), _M_impl._M_start,
                 _M_get_Tp_allocator());
 }
 
 template <typename T, typename U> typename vector2<T, U>::iterator
-            vector2<T, U>::insert(iterator position, const value_type &x)
+            vector2<T, U>::insert(iterator position, const T &x)
 {
     const size_t __n = position - begin();
 
@@ -108,11 +106,11 @@ template <typename T, typename A> void vector2<T, A>::swap(vector2 &x)
 }
 
 template<typename T, typename _Alloc> void
-    vector2<T, _Alloc>::_M_fill_insert(iterator __position, size_t n, const value_type &x)
+    vector2<T, _Alloc>::_M_fill_insert(iterator __position, size_t n, const T &x)
 {
     if (size_t(_M_impl._M_end_of_storage - _M_impl._M_finish) >= n)
     {
-        value_type __x_copy = x;
+        T __x_copy = x;
         const size_t __elems_after = end() - __position;
         pointer __old_finish(_M_impl._M_finish);
 
@@ -178,50 +176,20 @@ template<typename T, typename _Alloc> void
     }
 }
 
-template<typename T, typename U>
-    vector2<T, U> &vector2<T, U>::operator=(const vector2<T, U>& __x)
-{
-    const size_t __xlen = __x.size();
-
-    if (__xlen > capacity())
-    {
-        pointer __tmp = _M_allocate_and_copy(__xlen, __x.begin(), __x.end());
-        _Destroy2(_M_impl._M_start, _M_impl._M_finish, _M_get_Tp_allocator());
-        _M_deallocate(_M_impl._M_start, _M_impl._M_end_of_storage - _M_impl._M_start);
-        _M_impl._M_start = __tmp;
-        _M_impl._M_end_of_storage = _M_impl._M_start + __xlen;
-    }
-    else if (size() >= __xlen)
-    {
-        _Destroy2(copy(__x.begin(), __x.end(), begin()), end(), _M_get_Tp_allocator());
-    }
-    else
-    {
-        copy(__x._M_impl._M_start, __x._M_impl._M_start + size(), _M_impl._M_start);
-
-        uninitialized_copy_a(__x._M_impl._M_start + size(), __x._M_impl._M_finish,
-                  _M_impl._M_finish, _M_get_Tp_allocator());
-    }
-
-    _M_impl._M_finish = _M_impl._M_start + __xlen;
-    return *this;
-}
-
-template<typename T, typename U> void
-        vector2<T, U>::_M_insert_aux(iterator __position, const T &x)
+template<typename T, typename U> void vector2<T, U>::_M_insert_aux(iterator position, const T &x)
 {
     if (this->_M_impl._M_finish != this->_M_impl._M_end_of_storage)
     {
         _Alloc_traits::construct(_M_impl, _M_impl._M_finish, *(_M_impl._M_finish  - 1));
         ++_M_impl._M_finish;
         T __x_copy = x;
-        copy_backward(__position.base(), _M_impl._M_finish - 2, _M_impl._M_finish - 1);
-        *__position = __x_copy;
+        copy_backward(position.base(), _M_impl._M_finish - 2, _M_impl._M_finish - 1);
+        *position = __x_copy;
     }
     else
     {
         const size_t __len = _M_check_len(size_t(1), "vector::_M_insert_aux");
-        const size_t __elems_before = __position - begin();
+        const size_t __elems_before = position - begin();
         pointer __new_start(_M_allocate(__len));
         pointer __new_finish(__new_start);
 
@@ -231,11 +199,11 @@ template<typename T, typename U> void
             __new_finish = 0;
 
             __new_finish = __uninitialized_move_if_noexcept_a(_M_impl._M_start,
-                    __position.base(), __new_start, _M_get_Tp_allocator());
+                    position.base(), __new_start, _M_get_Tp_allocator());
 
             ++__new_finish;
 
-            __new_finish = __uninitialized_move_if_noexcept_a(__position.base(),
+            __new_finish = __uninitialized_move_if_noexcept_a(position.base(),
                     _M_impl._M_finish, __new_finish, _M_get_Tp_allocator());
         }
         catch (...)

@@ -72,6 +72,7 @@ void AppMD5Sum::_hashStream(istream &is, const char *name, ostream &os)
 
 void AppMD5Sum::_hashFile(const char *fn, ostream &os)
 {
+    cerr << fn << "\n";
     _hasher.reset();
     ifstream file;
     file.open(fn, fstream::in | ios::binary);
@@ -140,7 +141,18 @@ void AppMD5Sum::_checkPaar(Paar &paar, ostream &os)
 int main(const int argc, char **argv)
 {
     AppMD5Sum app;
-    return app.run(argc, argv);
+    int ret = -1;
+
+    try
+    {
+        ret = app.run(argc, argv);
+    }
+    catch (const char *e)
+    {
+        cerr << e << "\n";
+    }
+
+    return ret;
 }
 
 

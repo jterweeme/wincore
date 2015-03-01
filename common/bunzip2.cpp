@@ -19,16 +19,16 @@ uint32_t Block::_nextSymbol(BitInput *bi, const Tables &t, const Fugt &selectors
 void Table::calc()
 {
     for (uint32_t i = 0; i < _symbolCount + 2; i++) _bases[_codeLengths.at(i) + 1]++;
-    for (uint32_t i = 1; i < 25; i++) _bases[i] += _bases[i - 1];
+    for (uint32_t i = 1; i < 25; i++) _bases.at(i) += _bases.at(i - 1);
     uint8_t minLength2 = minLength();
     uint8_t maxLength2 = maxLength();
  
     for (int32_t i = minLength2, code = 0; i <= maxLength2; i++)
     {
         int32_t base = code;
-        code += _bases[i + 1] - _bases[i];
-        _bases[i] = base - _bases[i];
-        _limits[i] = code - 1;
+        code += _bases.at(i + 1) - _bases.at(i);
+        _bases.at(i) = base - _bases.at(i);
+        _limits.at(i) = code - 1;
         code <<= 1;
     }
 
@@ -37,7 +37,7 @@ void Table::calc()
     for (uint32_t i = 0; n <= maxLength2; n++)
         for (uint32_t symbol = 0; symbol < _symbolCount + 2; symbol++)
             if (_codeLengths.at(symbol) == n)
-                _symbols[i++] = symbol;
+                _symbols.at(i++) = symbol;
 }
 
 int DecStream::read(char *buf, int n)

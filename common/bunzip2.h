@@ -16,44 +16,25 @@ class Table
     uint16_t _pos = 0;
     uint32_t _symbolCount;
     array<uint32_t, 25> _bases;
-    //uint32_t _bases[25] = {0};
     array<int32_t, 24> _limits;
-    //int32_t _limits[24] = {0};
-    //uint32_t _symbols[258] = {0};
     array<uint32_t, 258> _symbols;
     uint8_t _minLength(uint32_t n) { return _codeLengths.min(n); }
     uint8_t _maxLength(uint32_t n) { return _codeLengths.max(n); }
 public:
-    //Table() : _codeLengths(258), _symbolCount(0) { }
     Table(uint32_t symbolCount) : _codeLengths(258), _symbolCount(symbolCount)
     { _bases.fill(0); _limits.fill(0); _symbols.fill(0); }
-    //Table(const Table &t) : _codeLengths(258), _symbolCount(0) { }
-
-#if 0
-    Table& operator= (const Table &x)
-    {
-        _codeLengths = x._codeLengths;
-        _pos = x._pos;
-        _symbolCount = x._symbolCount;
-        memcpy(_bases, x._bases, sizeof(x._bases));
-        memcpy(_limits, x._limits, sizeof(x._limits));
-        memcpy(_symbols, x._symbols, sizeof(x._symbols));      
-        return *this;
-    }
-#endif
 
     void calc();
     uint8_t maxLength() { return _maxLength(_symbolCount + 2); }
     uint8_t minLength() { return _minLength(_symbolCount + 2); }
     void add(uint8_t v) { _codeLengths.set(_pos++, v); }
-    int32_t limit(uint8_t i) const { return _limits[i]; }
-    uint32_t symbol(uint16_t i) const { return _symbols[i]; }
-    uint32_t base(uint8_t i) const { return _bases[i]; }
+    int32_t limit(uint8_t i) const { return _limits.at(i); }
+    uint32_t symbol(uint16_t i) const { return _symbols.at(i); }
+    uint32_t base(uint8_t i) const { return _bases.at(i); }
     void dump(ostream &os) const;
     string toString() const { ostringstream o; dump(o); return o.str(); }
 };
 
-#if 1
 class Tables : public vector<Table>
 {
 public:
@@ -61,11 +42,6 @@ public:
     void dump(ostream &os) const;
     string toString() const { ostringstream o; dump(o); return o.str(); }
 };
-#else
-class Tables : public std::array<Table>
-{
-};
-#endif
 
 class Block
 {
