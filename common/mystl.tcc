@@ -1,7 +1,7 @@
 #ifndef _MYSTL_TCC_
 #define _MYSTL_TCC_
 
-template <typename T, typename U> void Vector_base<T, U>::_M_create_storage(size_t n)
+template <typename T> void Vector_base<T>::_M_create_storage(size_t n)
 {
     _M_impl.start = _M_allocate(n);
     _M_impl.fin = _M_impl.start;

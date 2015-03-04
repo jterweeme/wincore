@@ -565,27 +565,27 @@ struct Vector_impl2 : public alloc_traits<U>::template rebind<T>::other
     Vector_impl2(A const &a) : A(a) { }
 };
 
-template<typename T, typename U> struct Vector_base
+template<typename T> struct Vector_base
 {
-    typedef typename alloc_traits<U>::template rebind<T>::other A;
+    typedef typename alloc_traits<allocator<T> >::template rebind<T>::other A;
     void _M_create_storage(size_t n);
     A& _M_get_Tp_allocator() { return *static_cast<A*>(&this->_M_impl); }
     const A& _M_get_Tp_allocator() const { return *static_cast<const A*>(&this->_M_impl); }
-    U get_allocator() const { return U(_M_get_Tp_allocator()); }
+    allocator<T> get_allocator() const { return allocator<T>(_M_get_Tp_allocator()); }
     Vector_base() : _M_impl() { }
-    Vector_base(const U &a) : _M_impl(a) { }
+    Vector_base(const allocator<T> &a) : _M_impl(a) { }
     Vector_base(size_t n) : _M_impl() { _M_create_storage(n); }
-    Vector_base(size_t n, const U &a) : _M_impl(a) { _M_create_storage(n); }
+    Vector_base(size_t n, const allocator<T> &a) : _M_impl(a) { _M_create_storage(n); }
     ~Vector_base(){_M_deallocate(_M_impl.start,_M_impl.eos - _M_impl.start); }
-    Vector_impl2<T, U> _M_impl;
+    Vector_impl2<T, allocator<T> > _M_impl;
     T *_M_allocate(size_t n) { return n != 0 ? alloc_traits<A>::allocate(_M_impl, n) : 0; }
     void _M_deallocate(T *p, size_t n) { if (p) alloc_traits<A>::deallocate(_M_impl, p, n); }
 };
 
-template <typename V> class vector2 : protected Vector_base<V, allocator<V> >
+template <typename V> class vector2 : protected Vector_base<V>
 {
-    typedef Vector_base<V, allocator<V> > Base;
-    typedef alloc_traits<typename Vector_base<V, allocator<V> >::A > _Alloc_traits;
+    typedef Vector_base<V> Base;
+    typedef alloc_traits<typename Vector_base<V>::A > _Alloc_traits;
 protected:
     using Base::_M_allocate;
     using Base::_M_deallocate;
