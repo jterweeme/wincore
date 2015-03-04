@@ -14,13 +14,13 @@ template<typename T, typename U, typename V> U transform(T first, T last, U resu
     return result;
 }
 
-template <typename V, typename W> void vector2<V, W>::_M_fill_initialize(size_t n, const V &value)
+template <typename V> void vector2<V>::_M_fill_initialize(size_t n, const V &value)
 { _M_impl.fin = _M_impl.eos; }
 
-template <typename V, typename W> vector2<V, W>::~vector2()
+template <typename V> vector2<V>::~vector2()
 { _Destroy2(_M_impl.start, _M_impl.fin, _M_get_Tp_allocator()); }
 
-template <typename V, typename W> void vector2<V, W>::push_back(const V &x)
+template <typename V> void vector2<V>::push_back(const V &x)
 {
     if (_M_impl.fin != _M_impl.eos)
         _Alloc_traits::construct(_M_impl, _M_impl.fin++, x);
@@ -34,21 +34,21 @@ template <typename T> void reverse(T first, T last, random_access_iterator_tag)
     while (first < last) iter_swap(first++, last++);
 }
 
-template <typename T, typename A> vector2<T, A>::vector2(const vector2 &x)
+template <typename T> vector2<T>::vector2(const vector2 &x)
   :
     Base(x.size(), _Alloc_traits::_S_select_on_copy(x._M_get_Tp_allocator()))
 {
     _M_impl.fin = uninit_copy_a(x.begin(), x.end(), _M_impl.start, _M_get_Tp_allocator());
 }
 
-template <typename T, typename A> size_t vector2<T, A>::_M_check_len(size_t n, const char *s) const
+template <typename T> size_t vector2<T>::_M_check_len(size_t n, const char *s) const
 {
     if (max_size() - size() < n) throw;
     const size_t __len = size() + max2(size(), n);
     return (__len < size() || __len > max_size()) ? max_size() : __len;
 }
 
-template <typename T, typename _Alloc> void vector2<T, _Alloc>::reserve(size_t n)
+template <typename T> void vector2<T>::reserve(size_t n)
 {
     if (n > this->max_size())
         throw;
@@ -65,8 +65,8 @@ template <typename T, typename _Alloc> void vector2<T, _Alloc>::reserve(size_t n
     }
 }
 
-template<typename T, typename _Alloc> void
-vector2<T, _Alloc>::_M_fill_insert(iterator pos, size_t n, const T &x)
+template<typename T> void
+vector2<T>::_M_fill_insert(iterator pos, size_t n, const T &x)
 {
     if (size_t(_M_impl._M_end_of_storage - _M_impl.fin) >= n)
     {
@@ -109,7 +109,7 @@ vector2<T, _Alloc>::_M_fill_insert(iterator pos, size_t n, const T &x)
     }
 }
 
-template<typename T, typename U> void vector2<T, U>::_M_insert_aux(iterator pos, const T &x)
+template<typename T> void vector2<T>::_M_insert_aux(iterator pos, const T &x)
 {
     if (_M_impl.fin != _M_impl.eos)
     {

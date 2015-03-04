@@ -582,8 +582,7 @@ template<typename T, typename U> struct Vector_base
     void _M_deallocate(T *p, size_t n) { if (p) alloc_traits<A>::deallocate(_M_impl, p, n); }
 };
 
-template <typename V, typename W = allocator<V> > class vector2
-    : protected Vector_base<V, allocator<V> >
+template <typename V> class vector2 : protected Vector_base<V, allocator<V> >
 {
     typedef Vector_base<V, allocator<V> > Base;
     typedef alloc_traits<typename Vector_base<V, allocator<V> >::A > _Alloc_traits;
