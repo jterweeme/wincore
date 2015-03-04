@@ -64,84 +64,6 @@ template<typename, typename> struct __are_same
 template<typename T> struct __are_same<T, T>
 { enum { __value = 1 }; typedef Util2::true_type __type; };
 
-template<typename _Tp> struct __is_integer
-{
-    enum { __value = 0 };
-    typedef Util2::false_type __type;
-};
-
-template<> struct __is_integer<bool>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<char>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<signed char>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<unsigned char>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<short>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<unsigned short>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<int>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<unsigned int>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<long>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<unsigned long>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<long long>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
-template<> struct __is_integer<unsigned long long>
-{
-    enum { __value = 1 };
-    typedef Util2::true_type __type;
-};
-
 template<typename _Tp> struct __is_pointer
 {
     enum { __value = 0 };
@@ -160,16 +82,11 @@ template<typename> struct __is_normal_iterator
     typedef Util2::false_type __type;
 };
 
-template<typename> struct __is_move_iterator
+template<typename> struct imi
 {
     enum { __value = 0 };
     typedef Util2::false_type __type;
 };
-
-template<bool, typename> struct __enable_if { };
-template<typename T> struct __enable_if<true, T> { typedef T __type; };
-template<bool, typename _Iftrue, typename> struct __conditional_type { typedef _Iftrue __type; };
-template<typename T, typename U> struct __conditional_type<false, T, U> { typedef U __type; };
 
 template<typename T> struct __numeric_traits_integer
 {
@@ -182,9 +99,6 @@ template<typename T> struct __numeric_traits_integer
     static const bool __is_signed = ((T)(-1) < 0);
     static const int __digits = sizeof(T) * __CHAR_BIT__ - ((T)(-1) < 0);
 };
-
-template<typename T> inline T* __addressof(T& r)
-{ return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(r))); }
 
 template<typename T> inline T* addressof(T& r)
 { return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(r))); }
@@ -259,7 +173,7 @@ template<typename T, bool> struct _Iter_base
 template<typename T> struct _Iter_base<T, true>
 {
     typedef typename T::iterator_type iterator_type;
-    static typename T::iterator_type _S_base(T __it) { return __it.base(); }
+    static typename T::iterator_type _S_base(T it) { return it.base(); }
 };
 
 template <typename T, typename U> class normal_iterator
@@ -342,7 +256,7 @@ struct _Iter_less_iter
     template<typename T, typename T2> bool operator()(T it1, T2 it2) const { return *it1 < *it2; }
 };
 
-inline _Iter_less_iter __iter_less_iter()  { return _Iter_less_iter(); }
+inline _Iter_less_iter __iter_less_iter() { return _Iter_less_iter(); }
 
 struct _Iter_less_val
 { template<typename I, typename V> bool operator()(I it, V& val) const { return *it < val; } };
@@ -432,9 +346,9 @@ template <typename T> struct _Niter_base : _Iter_base<T, __is_normal_iterator<T>
 template <typename T> inline typename _Niter_base<T>::iterator_type __niter_base(T it)
 { return _Niter_base<T>::_S_base(it); }
 
-template <typename T> struct _Miter_base : _Iter_base<T, __is_move_iterator<T>::__value> { };
+template <typename T> struct _Miter_base : _Iter_base<T, imi<T>::__value> { };
 
-template<typename T> inline typename _Miter_base<T>::iterator_type __miter_base(T it)
+template<typename T> inline typename _Miter_base<T>::iterator_type mb(T it)
 { return _Miter_base<T>::_S_base(it); }
 
 template<bool, bool, typename> struct __copy_move
@@ -472,10 +386,9 @@ template<bool T, typename II, typename _OI> inline _OI copy_move_a(II first, II 
     typedef typename iterator_traits<II>::value_type _ValueTypeI;
     typedef typename iterator_traits<_OI>::value_type _ValueTypeO;
     typedef typename iterator_traits<II>::iterator_category _Category;
-    const bool __simple = (__is_trivial(_ValueTypeI)
-                         && __is_pointer<II>::__value
-                         && __is_pointer<_OI>::__value
-                 && __are_same<_ValueTypeI, _ValueTypeO>::__value);
+
+    const bool __simple = (__is_trivial(_ValueTypeI) && __is_pointer<II>::__value
+            && __is_pointer<_OI>::__value && __are_same<_ValueTypeI, _ValueTypeO>::__value);
 
     return __copy_move<T, __simple, _Category>::__copy_m(first, last, result);
 }
@@ -483,11 +396,8 @@ template<bool T, typename II, typename _OI> inline _OI copy_move_a(II first, II 
 template<bool T, typename II, typename OI> inline OI copy_move_a2(II first, II last, OI result)
 { return OI(copy_move_a<T>(__niter_base(first), __niter_base(last), __niter_base(result))); }
 
-template<typename T, typename T2> inline T2 copy(T first, T last, T2 result)
-{
-    return copy_move_a2<__is_move_iterator<T>::__value>
-        (__miter_base(first), __miter_base(last), result);
-}
+template<typename T, typename T2> inline T2 copy(T f, T l, T2 r)
+{ return copy_move_a2<imi<T>::__value>(mb(f), mb(l), r); }
 
 template<bool, bool, typename> struct __copy_move_backward
 {
@@ -522,16 +432,10 @@ __copy_move_backward_a(_BI1 first, _BI1 last, _BI2 result)
 }
 
 template<bool T, typename BI1, typename BI2> inline BI2
-copy_move_backward_a2(BI1 first, BI1 last, BI2 result)
+copy_move_back_a2(BI1 first, BI1 last, BI2 result)
 {
     return BI2(__copy_move_backward_a<T>
         (__niter_base(first), __niter_base(last), __niter_base(result)));
-}
-
-template<typename T, typename _BI2> inline _BI2 copy_backward(T first, T last, _BI2 result)
-{
-    return copy_move_backward_a2<__is_move_iterator<T>::__value>
-          (__miter_base(first), __miter_base(last),  result);
 }
 
 template<typename I, typename T> inline void fill(I first, I last, const T &value)
@@ -612,7 +516,7 @@ template<typename T> inline void _Destroy2(T *pointer) { pointer->~T(); }
 template<bool> struct _Destroy_aux
 {
     template<typename T> static void __destroy(T first, T last)
-    { for (; first != last; ++first) _Destroy2(__addressof(*first)); }
+    { for (; first != last; ++first) _Destroy2(addressof(*first)); }
 };
 
 template<> struct _Destroy_aux<true> { template<typename T> static void __destroy(T, T) { } };
@@ -624,34 +528,19 @@ template<typename I> inline void _Destroy2(I first, I last)
 }
 
 template<typename T, typename U> void _Destroy2(T first, T last, U &alloc)
-{ for (; first != last; ++first) alloc_traits<U>::destroy(alloc, __addressof(*first)); }
+{ for (; first != last; ++first) alloc_traits<U>::destroy(alloc, addressof(*first)); }
 
 template<typename T, typename U> inline void _Destroy2(T first, T last, allocator<U>&)
 { _Destroy2(first, last); }
-
-template <typename A, typename B, typename C, typename D> void
-    __uninitialized_fill_n_a(A a, B b, C &c, D &d)
-{
-}
 
 template <bool> struct __uninitialized_copy
 {
     template<typename T, typename U> static U __uninit_copy(T first, T last, U result)
     {
         U cur = result;
-
-        try
-        {
-            for (; first != last; ++first, ++cur)
-                _Construct(__addressof(*cur), *first);
-
-            return cur;
-        }
-        catch(...)
-        {
-            _Destroy2(result, cur);
-            throw;
-        }
+        for (; first != last; ++first, ++cur) _Construct(cur, *first);
+        //for (; first != last; ++first, ++cur) ::new(static_cast<void*>(cur)) (U)(*first);
+        return cur;
     }
 };
 
@@ -671,28 +560,22 @@ template <typename T, typename T2> inline T2 uninitialized_copy(T first, T __las
                    && __assignable>::__uninit_copy(first, __last, __result);
 }
 
-template<typename T, typename U, typename V> inline U
-uninitialized_copy_a(T first, T last, U result, allocator<V>&)
-{
-    return uninitialized_copy(first, last, result);
-}
+template<typename T, typename U, typename V> inline U uninit_copy_a(T f, T l, U r, allocator<V>&)
+{ return uninitialized_copy(f, l, r); }
 
 template<typename T, typename T2, typename T3> inline T2
-__uninitialized_move_if_noexcept_a(T __first, T __last, T2 __result, T3 &alloc)
-{
-    return uninitialized_copy_a(__first, __last, __result, alloc);
-}
+uninit_move_if_noexcept_a(T first, T last, T2 result, T3 &alloc)
+{ return uninit_copy_a(first, last, result, alloc); }
 
-template <typename T, typename U> struct
-Vector_impl2 : public alloc_traits<U>::template rebind<T>::other
+template <typename T, typename U>
+struct Vector_impl2 : public alloc_traits<U>::template rebind<T>::other
 {
     typedef typename alloc_traits<U>::template rebind<T>::other A;
-    typename alloc_traits<A>::pointer _M_start = 0;
-    typename alloc_traits<A>::pointer _M_finish = 0;
-    typename alloc_traits<A>::pointer _M_end_of_storage = 0;
+    T *start = 0;
+    T *fin = 0;
+    T *eos = 0;
     Vector_impl2() { }
     Vector_impl2(A const &a) : A(a) { }
-    void _M_swap_data(Vector_impl2 &x);
 };
 
 template<typename T, typename U> struct Vector_base
@@ -708,7 +591,7 @@ public:
     Vector_base(const U &a) : _M_impl(a) { }
     Vector_base(size_t n) : _M_impl() { _M_create_storage(n); }
     Vector_base(size_t n, const U &a) : _M_impl(a) { _M_create_storage(n); }
-    ~Vector_base(){_M_deallocate(_M_impl._M_start,_M_impl._M_end_of_storage - _M_impl._M_start); }
+    ~Vector_base(){_M_deallocate(_M_impl.start,_M_impl.eos - _M_impl.start); }
     Vector_impl2<T, U> _M_impl;
     pointer _M_allocate(size_t n) { return n != 0 ? alloc_traits<A>::allocate(_M_impl, n) : 0; }
     void _M_deallocate(pointer p, size_t n) { if (p) alloc_traits<A>::deallocate(_M_impl, p, n); }
@@ -724,83 +607,48 @@ protected:
     using Base::_M_impl;
     using Base::_M_get_Tp_allocator;
 public:
-    typedef typename Base::pointer pointer;
     typedef typename alloc_traits<typename Base::A>::const_pointer const_pointer;
     typedef typename _Alloc_traits::reference reference;
     typedef typename _Alloc_traits::const_reference const_reference;
-    typedef normal_iterator<pointer, vector2> iterator;
+    typedef normal_iterator<typename Base::pointer, vector2> iterator;
     typedef normal_iterator<const_pointer, vector2> const_iterator;
     void _M_fill_initialize(size_t n, const V &value);
     vector2() : Base() { }
     explicit vector2(size_t n, const V& value = V(), const W &a = W());
     vector2(const vector2 &x);
-
-    template<typename T> vector2(T f, T l, const W &a = W()) : Base(a)
-    { _M_initialize_dispatch(f, l, __is_integer<T>::__type()); }
-
     reference front() { return *begin(); }
     ~vector2();
     void assign(size_t n, const V &val) { _M_fill_assign(n, val); }
-
-    template<typename T> void assign(T first, T last)
-    { _M_assign_dispatch(first, last, __is_integer<T>::_type()); }
-
-    iterator begin() { return iterator(_M_impl._M_start); }
-    const_iterator begin() const { return const_iterator(_M_impl._M_start); }
-    iterator end() { return iterator(_M_impl._M_finish); }
-    const_iterator end() const { return const_iterator(_M_impl._M_finish); }
-    size_t size() const { return size_t(_M_impl._M_finish - _M_impl._M_start); }
+    iterator begin() { return iterator(_M_impl.start); }
+    const_iterator begin() const { return const_iterator(_M_impl.start); }
+    iterator end() { return iterator(_M_impl.fin); }
+    const_iterator end() const { return const_iterator(_M_impl.fin); }
+    size_t size() const { return size_t(_M_impl.fin - _M_impl.start); }
     size_t max_size() const { return _Alloc_traits::max_size(_M_get_Tp_allocator()); }
-    size_t capacity() const { return size_t(_M_impl._M_end_of_storage - _M_impl._M_start); }
     void reserve(size_t n);
-    const_reference operator[](size_t __n) const { return *(_M_impl._M_start + __n); }
-    void _M_range_check(size_t n) const { if (n >= this->size()) throw; }
+    const_reference operator[](size_t n) const { return *(_M_impl.start + n); }
     void push_back(const V &x);
-    void pop_back() { --_M_impl._M_finish; _Alloc_traits::destroy(_M_impl, _M_impl._M_finish); }
-    iterator insert(iterator __position, const V &x);
+    void pop_back() { --_M_impl.fin; _Alloc_traits::destroy(_M_impl, _M_impl.fin); }
     void insert(iterator pos, size_t n, const V &x) { _M_fill_insert(pos, n, x); }
-
-    template<typename T> void insert(iterator position, T first, T last)
-    { _M_insert_dispatch(position, first, last, __is_integer<T>::__type()); }
-
-    const_reference at(size_t n) const { _M_range_check(n); return (*this)[n]; }
-    iterator erase(iterator position) { return _M_erase(position); }
-    iterator erase(iterator __first, iterator __last) { return _M_erase(__first, __last); }
-    void swap(vector2 &x);
-    void clear() { _M_erase_at_end(this->_M_impl._M_start); }
+    const_reference at(size_t n) const { return (*this)[n]; }
+    void clear() { _M_erase_at_end(this->_M_impl.start); }
 protected:
-    template<typename T> pointer _M_allocate_and_copy(size_t n, T first, T last)
+    template<typename T> typename Base::pointer _M_allocate_and_copy(size_t n, T first, T last)
     {
-        pointer result = this->_M_allocate(n);
+        typename Base::pointer result = this->_M_allocate(n);
         uninitialized_copy_a(first, last, result, _M_get_Tp_allocator());
         return result;
     }
 
-    template<typename T> void _M_range_initialize(T __first, T __last, input_iterator_tag)
-    { for (; __first != __last; ++__first) push_back(*__first); }
+    template<typename T> void _M_range_initialize(T first, T last, input_iterator_tag)
+    { for (; first != last; ++first) push_back(*first); }
 
-    template<typename T> void _M_assign_aux(T __first, T __last, input_iterator_tag);
-    template<typename T> void _M_assign_aux(T __first, T __last, forward_iterator_tag);
     void _M_fill_assign(size_t n, const V &val);
-
-    template<typename T> void _M_insert_dispatch(iterator pos, T n, T val, Util2::__true_type)
-    { _M_fill_insert(pos, n, val); }
-
-    template<typename T> void _M_insert_dispatch(iterator pos,T first,T last, Util2::__false_type)
-    { _M_range_insert(pos, first, last, iterator_traits<T>::iterator_category()); }
-
-    template<typename T> void _M_range_insert(iterator pos, T first, T last, input_iterator_tag);
-    template<typename T> void _M_range_insert(iterator pos, T first, T last, forward_iterator_tag);
     void _M_fill_insert(iterator pos, size_t n, const V &x);
     void _M_insert_aux(iterator position, const V &x);
     size_t _M_check_len(size_t n, const char * s) const;
-    iterator _M_erase(iterator position);
-    iterator _M_erase(iterator first, iterator last);
     template<typename Ptr> Ptr _M_data_ptr(Ptr ptr) const { return ptr; }
 };
-
-template <typename T, typename U> inline void swap(vector2<T, U> &x, vector2<T, U> &y)
-{ x.swap(y); }
 
 enum _Ios_Seekdir
 {
@@ -1039,9 +887,7 @@ public:
     ostream2& operator << (const width2 &w) { _width = w; return *this; }
     ostream2& operator << (const fill2 &f) { _fill = f; return *this; }
     ostream2& operator << (const base2 &base) { _base = base; return *this; }
-
     ostream2& operator << (uint32_t u);
-
     ostream2 &write(const char *s, int n) { for (int i = 0; i < n; i++) put(s[i]); return *this; }
     virtual ~ostream2() { }
 };
