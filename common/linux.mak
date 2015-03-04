@@ -78,7 +78,7 @@ gunzipm.o: gunzipm.cpp gunzip.h
 gzip.o: gzip.cpp
 hasher.o: hasher.cpp hasher.h
 jpg2tga.o: jpg2tga.cpp
-kompakt.o: kompakt.cpp kompakt.h common.h heapsort.h  mystl.h mystl.tcc
+kompakt.o: kompakt.cpp kompakt.h common.h mystl.h mystl.tcc
 ls.o: ls.cpp
 main.o: main.cpp
 mystl.o: mystl.cpp mystl.h mystl.tcc

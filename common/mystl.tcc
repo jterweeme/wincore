@@ -40,8 +40,9 @@ template <typename T> vector2<T>::vector2(const vector2 &x)
 
 template <typename T> size_t vector2<T>::_M_check_len(size_t n, const char *s) const
 {
+    Util2 u;
     if (max_size() - size() < n) throw;
-    const size_t __len = size() + max2(size(), n);
+    const size_t __len = size() + u.max(size(), n);
     return (__len < size() || __len > max_size()) ? max_size() : __len;
 }
 

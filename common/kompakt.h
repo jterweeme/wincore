@@ -302,16 +302,11 @@ class Directory : public vector<DirEntry>
     static bool sortLBA(const DirEntry &p1, const DirEntry &p2)
     { return p1.dir().lbaLE < p2.dir().lbaLE; }
 public:
-    //Directory() { }
     void read(mistream &s, uint32_t offset);
     string toString();
     void list(ostream &os, int mode = 1);
     string list(int mode = 1) { ostringstream oss; list(oss, mode); return oss.str(); }
-    void snort()
-    {
-        make_heap(begin(), end(), sortLBA);
-        sort_heap(begin(), end(), sortLBA);
-    }
+    void snort() { sort(begin(), end(), sortLBA); }
 };
 
 class Directories : public vector<Directory>
