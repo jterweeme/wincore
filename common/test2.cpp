@@ -1,6 +1,6 @@
 #include "common.h"
 
-void function1(const string2 s) { }
+//void function1(const string2 s) { }
 void function1(const char *s) { }
 void function1(const uint8_t c) { }
 void function1(const uint16_t c) { }

@@ -23,7 +23,7 @@ template <typename V> vector2<V>::~vector2()
 template <typename V> void vector2<V>::push_back(const V &x)
 {
     if (_M_impl.fin != _M_impl.eos)
-        _Alloc_traits::construct(_M_impl, _M_impl.fin++, x);
+        atraits::construct(_M_impl, _M_impl.fin++, x);
     else
         _M_insert_aux(end(), x);
 }
@@ -36,7 +36,7 @@ template <typename T> void reverse(T first, T last, random_access_iterator_tag)
 
 template <typename T> vector2<T>::vector2(const vector2 &x)
   :
-    Base(x.size(), _Alloc_traits::_S_select_on_copy(x._M_get_Tp_allocator()))
+    Base(x.size(), atraits::_S_select_on_copy(x._M_get_Tp_allocator()))
 {
     _M_impl.fin = uninit_copy_a(x.begin(), x.end(), _M_impl.start, _M_get_Tp_allocator());
 }
@@ -113,7 +113,7 @@ template<typename T> void vector2<T>::_M_insert_aux(iterator pos, const T &x)
 {
     if (_M_impl.fin != _M_impl.eos)
     {
-        _Alloc_traits::construct(_M_impl, _M_impl.fin, *(_M_impl.fin - 1));
+        atraits::construct(_M_impl, _M_impl.fin, *(_M_impl.fin - 1));
         ++_M_impl.fin;
         T x_copy = x;
         copy_move_back_a2<imi<T>::__value>(mb(pos.base()), mb(_M_impl.fin - 2), _M_impl.fin - 1);
@@ -125,7 +125,7 @@ template<typename T> void vector2<T>::_M_insert_aux(iterator pos, const T &x)
         const size_t __elems_before = pos - begin();
         T *ns(_M_allocate(__len));
         T *nf(ns);
-        _Alloc_traits::construct(_M_impl, ns + __elems_before, x);
+        atraits::construct(_M_impl, ns + __elems_before, x);
         nf = 0;
         nf = uninit_move_if_noexcept_a(_M_impl.start, pos.base(), ns, _M_get_Tp_allocator());
         ++nf;

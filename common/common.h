@@ -9,24 +9,24 @@
 
 namespace mystl { }
 
+
 #if 1
 using namespace mystl;
-#include "mystl.h"
-#include "heapsort.h"
 #else
-//#include "mystl.h"
-//#include "heapsort.h"
+using namespace std;
+#endif
+
+#include <algorithm>
+#include <array>
+#include <bitset>
+#include <cstring>
+#include <iomanip>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <iomanip>
 #include <vector>
-#include <bitset>
-#include <cstring>
-#include <algorithm>
-#include <array>
-using namespace std;
-#endif
+#include "mystl.h"
+#include "heapsort.h"
 
 #endif
 

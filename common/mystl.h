@@ -44,16 +44,14 @@ public:
     uint8_t ctoi(char c);
     uint32_t upow(uint32_t base, uint32_t exp);
     uint32_t strtol(const char *a, const char *b, int base);
+    template<typename T> inline void swap(T &a, T &b) { T tmp = a; a = b; b = tmp; }
+
+    template<typename T> inline T* addressof(T& r)
+    { return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(r))); }
 };
 
 template<bool> struct __truth_type { typedef Util2::false_type __type; };
 template<> struct __truth_type<true> { typedef Util2::true_type __type; };
-
-template<class T, class _Tp> struct traitor
-{
-    enum { __value = bool(T::__value) || bool(_Tp::__value) };
-    typedef typename __truth_type<__value>::__type __type;
-};
 
 template<typename, typename> struct __are_same
 {
@@ -99,22 +97,6 @@ template<typename T> struct __numeric_traits_integer
     static const bool __is_signed = ((T)(-1) < 0);
     static const int __digits = sizeof(T) * __CHAR_BIT__ - ((T)(-1) < 0);
 };
-
-template<typename T> inline T* addressof(T& r)
-{ return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(r))); }
-
-template<typename T> inline void swap(T &a, T &b)
-{
-    T tmp = a;
-    a = b;
-    b = tmp;
-}
-
-template<typename T, size_t _Nm> inline void swap(T (&__a)[_Nm], T (&__b)[_Nm])
-{
-    for (size_t __n = 0; __n < _Nm; ++__n)
-        swap(__a[__n], __b[__n]);
-}
 
 struct input_iterator_tag { };
 struct forward_iterator_tag : public input_iterator_tag { };
@@ -327,7 +309,10 @@ template<bool> struct __iter_swap
 };
 
 template<> struct __iter_swap<true>
-{ template<typename T, typename T2> static void iter_swap(T a, T2 b) { swap(*a, *b); } };
+{
+    template<typename T, typename T2> static void iter_swap(T a, T2 b)
+    { Util2 u; u.swap(*a, *b); }
+};
 
 template <typename T, typename T2> inline void iter_swap(T __a, T2 __b)
 {
@@ -445,9 +430,6 @@ template<typename I, typename T> inline void fill(I first, I last, const T &valu
 inline void* operator new(Util2::size_t, void* p) noexcept { return p; }
 #endif
 
-template<typename> class allocator;
-template<> class allocator<void>;
-
 template<typename T> class allocator
 {
 public:
@@ -458,12 +440,9 @@ public:
     typedef T &reference;
     typedef const T& const_reference;
     typedef T value_type;
-    template<typename T1> struct rebind { typedef allocator<T1> other; };
     allocator() { }
     template<typename T1> allocator(const allocator<T1>&) { }
     ~allocator() { }
-    T *address(T &x) const { return __addressof(x); }
-    const T *address(const T &x) const { return __addressof(x); }
 
     T *allocate(size_t n, const void* = 0) const
     { return static_cast<T*>(::operator new(n * sizeof(T))); }
@@ -478,7 +457,9 @@ template<typename A, bool = __is_empty(A)> struct __alloc_swap
 { static void _S_do_it(A&, A&) { } };
 
 template <typename T> struct __alloc_swap<T, false>
-{ static void _S_do_it(T &__one, T &__two) { if (__one != __two) swap(__one, __two); } };
+{
+    static void _S_do_it(T &one, T &two) { Util2 u; if (one != two) u.swap(one, two); }
+};
 
 template <typename T> struct alloc_traits
 {
@@ -492,7 +473,6 @@ template <typename T> struct alloc_traits
     static size_t max_size(const T &a) { return a.max_size(); }
     static const T &_S_select_on_copy(const T &a) { return a; }
     static void _S_on_swap(T &a, T &b) { __alloc_swap<T>::_S_do_it(a, b); }
-    template<typename U> struct rebind { typedef typename T::template rebind<U>::other other; };
 };
 
 template <typename T, typename T2> inline void _Construct(T *p, const T2& value)
@@ -503,7 +483,7 @@ template<typename T> inline void _Destroy2(T *pointer) { pointer->~T(); }
 template<bool> struct _Destroy_aux
 {
     template<typename T> static void __destroy(T first, T last)
-    { for (; first != last; ++first) _Destroy2(addressof(*first)); }
+    { Util2 u; for (; first != last; ++first) _Destroy2(u.addressof(*first)); }
 };
 
 template<> struct _Destroy_aux<true> { template<typename T> static void __destroy(T, T) { } };
@@ -515,10 +495,7 @@ template<typename I> inline void _Destroy2(I first, I last)
 }
 
 template<typename T, typename U> void _Destroy2(T first, T last, U &alloc)
-{ for (; first != last; ++first) alloc_traits<U>::destroy(alloc, addressof(*first)); }
-
-template<typename T, typename U> inline void _Destroy2(T first, T last, allocator<U>&)
-{ _Destroy2(first, last); }
+{ Util2 u; for (; first != last; ++first) alloc_traits<U>::destroy(alloc, u.addressof(*first)); }
 
 template <bool> struct __uninitialized_copy
 {
@@ -554,38 +531,36 @@ template<typename T, typename T2, typename T3> inline T2
 uninit_move_if_noexcept_a(T first, T last, T2 result, T3 &alloc)
 { return uninit_copy_a(first, last, result, alloc); }
 
-template <typename T, typename U>
-struct Vector_impl2 : public alloc_traits<U>::template rebind<T>::other
+template <typename T, typename U> struct Vector_impl2 : public allocator<T>
 {
-    typedef typename alloc_traits<U>::template rebind<T>::other A;
     T *start = 0;
     T *fin = 0;
     T *eos = 0;
     Vector_impl2() { }
-    Vector_impl2(A const &a) : A(a) { }
+    Vector_impl2(allocator<T> const &a) : allocator<T>(a) { }
 };
 
 template<typename T> struct Vector_base
 {
-    typedef typename alloc_traits<allocator<T> >::template rebind<T>::other A;
+    typedef allocator<T> A;
     void _M_create_storage(size_t n);
-    A& _M_get_Tp_allocator() { return *static_cast<A*>(&this->_M_impl); }
-    const A& _M_get_Tp_allocator() const { return *static_cast<const A*>(&this->_M_impl); }
+    Vector_impl2<T, allocator<T> > _M_impl;
+    A& _M_get_Tp_allocator() { return *static_cast<A*>(&_M_impl); }
+    const A& _M_get_Tp_allocator() const { return *static_cast<const A*>(&_M_impl); }
     allocator<T> get_allocator() const { return allocator<T>(_M_get_Tp_allocator()); }
     Vector_base() : _M_impl() { }
     Vector_base(const allocator<T> &a) : _M_impl(a) { }
     Vector_base(size_t n) : _M_impl() { _M_create_storage(n); }
     Vector_base(size_t n, const allocator<T> &a) : _M_impl(a) { _M_create_storage(n); }
     ~Vector_base(){_M_deallocate(_M_impl.start,_M_impl.eos - _M_impl.start); }
-    Vector_impl2<T, allocator<T> > _M_impl;
     T *_M_allocate(size_t n) { return n != 0 ? alloc_traits<A>::allocate(_M_impl, n) : 0; }
     void _M_deallocate(T *p, size_t n) { if (p) alloc_traits<A>::deallocate(_M_impl, p, n); }
 };
 
-template <typename V> class vector2 : protected Vector_base<V>
+template <typename V> class vector2 : public Vector_base<V>
 {
     typedef Vector_base<V> Base;
-    typedef alloc_traits<typename Vector_base<V>::A > _Alloc_traits;
+    typedef alloc_traits<typename Vector_base<V>::A> atraits;
 protected:
     using Base::_M_allocate;
     using Base::_M_deallocate;
@@ -606,11 +581,11 @@ public:
     iterator end() { return iterator(_M_impl.fin); }
     const_iterator end() const { return const_iterator(_M_impl.fin); }
     size_t size() const { return size_t(_M_impl.fin - _M_impl.start); }
-    size_t max_size() const { return _Alloc_traits::max_size(_M_get_Tp_allocator()); }
+    size_t max_size() const { return atraits::max_size(_M_get_Tp_allocator()); }
     void reserve(size_t n);
     const V& operator[](size_t n) const { return *(_M_impl.start + n); }
     void push_back(const V &x);
-    void pop_back() { --_M_impl.fin; _Alloc_traits::destroy(_M_impl, _M_impl.fin); }
+    void pop_back() { --_M_impl.fin; atraits::destroy(_M_impl, _M_impl.fin); }
     void insert(iterator pos, size_t n, const V &x) { _M_fill_insert(pos, n, x); }
     const V &at(size_t n) const { return (*this)[n]; }
     void clear() { _M_erase_at_end(this->_M_impl.start); }
@@ -795,7 +770,12 @@ public:
     static const uint8_t binary = 2;
 };
 
-class ifstream2 : public istream2
+namespace mystl
+{
+    typedef istream2 istream;   
+}
+
+class ifstream2 : public istream
 {
     typedef Util2::uint8_t uint8_t;
     bool _open;
@@ -988,26 +968,32 @@ namespace mystl
     template <class T> using vector = vector2<T>;
     template <typename T, size_t N> using array = array2<T, N>;
     template <Util2::size_t T> using bitset = bitset2<T>;
+#ifndef _STDINT_H
     typedef Util2::uint8_t uint8_t;
     typedef Util2::uint16_t uint16_t;
     typedef Util2::int32_t int32_t;
     typedef Util2::uint32_t uint32_t;
     typedef Util2::int64_t int64_t;
     typedef Util2::uint64_t uint64_t;
+#endif
+#ifndef _STRING_H
     void *memcpy(void *dest, const void *src, size_t n);
     char *strcpy(char *dest, const char *src);
     void *memset(void *s, const int c, const size_t n);
+    char *strtok(char *s, const char *delim);
     void *memmove(char *dst, const char *src, uint32_t n);
     char *strncpy(char *dest, const char *src, size_t n);
     size_t strlen(const char *s);
+#endif
+#ifndef _STDLIB_H
     uint32_t strtol(const char *a, const char *b, int base);
+#endif
     int strcmp(const char* s1, const char *s2);
     int strncmp(const char *s1, const char *s2, size_t n);
     template <typename T> using fpos = fpos2<T>;
     typedef string2 string;
     typedef fstream2 fstream;
     typedef ios2 ios;
-    typedef istream2 istream;
     typedef ostream2 ostream;
     typedef ofstream2 ofstream;
     typedef ifstream2 ifstream;
@@ -1032,11 +1018,15 @@ namespace mystl
     int toupper(int c);
     void toupper(const char *src, char *dest);
     void toupper(char *s);
-    char *strtok(char *s, const char *delim);
     template <typename T> inline const T &min(const T &a, const T &b) { return min2(a, b); }
     template <typename T> inline const T &max(const T &a, const T &b) { return a < b ? b : a; }
+#ifndef _WCHAR_H
     typedef mbstate_t2 mbstate_t;
+#endif
     //ostream& operator << (ostream& os, char c);
+
+    template<typename T> inline T* addressof(T& r)
+    { return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(r))); }
 };
 
 #include "mystl.tcc"
