@@ -14,9 +14,6 @@ template<typename T, typename U, typename V> U transform(T first, T last, U resu
     return result;
 }
 
-template <typename V> void vector2<V>::_M_fill_initialize(size_t n, const V &value)
-{ _M_impl.fin = _M_impl.eos; }
-
 template <typename V> vector2<V>::~vector2()
 { _Destroy2(_M_impl.start, _M_impl.fin, _M_get_Tp_allocator()); }
 
@@ -65,50 +62,6 @@ template <typename T> void vector2<T>::reserve(size_t n)
     }
 }
 
-template<typename T> void
-vector2<T>::_M_fill_insert(iterator pos, size_t n, const T &x)
-{
-    if (size_t(_M_impl._M_end_of_storage - _M_impl.fin) >= n)
-    {
-        T x_copy = x;
-        const size_t elems_after = end() - pos;
-        T *old_finish(_M_impl.fin);
-
-        if (elems_after > n)
-        {
-            __uninitialized_move_a(_M_impl.fin - n,_M_impl.fin,_M_impl.fin,_M_get_Tp_allocator());
-            _M_impl.fin += n;
-            (pos.base(), old_finish - n, old_finish);
-            fill(pos.base(), pos.base() + n, x_copy);
-        }
-        else
-        {
-            __uninitialized_fill_n_a(_M_impl.fin, n - elems_after, x_copy, _M_get_Tp_allocator());
-            _M_impl.fin += n - elems_after;
-            __uninitialized_move_a(pos.base(), old_finish, _M_impl.fin, _M_get_Tp_allocator());
-            _M_impl.fin += elems_after;
-            fill(pos.base(), old_finish, x_copy);
-        }
-    }
-    else
-    {
-        const size_t __len = _M_check_len(n, "vector::_M_fill_insert");
-        const size_t __elems_before = pos - begin();
-        T *ns(_M_allocate(__len));
-        T *nf(ns);
-        __uninitialized_fill_n_a(ns + __elems_before, n, x, _M_get_Tp_allocator());
-        nf = 0;
-        nf = uninit_move_if_noexcept_a(_M_impl.start, pos.base(), ns, _M_get_Tp_allocator());
-        nf += n;
-        nf = uninit_move_if_noexcept_a(pos.base(), _M_impl.fin, nf, _M_get_Tp_allocator());
-        _Destroy2(_M_impl.start, _M_impl.fin, _M_get_Tp_allocator());
-        _M_deallocate(_M_impl.start, _M_impl._M_end_of_storage - _M_impl.start);
-        _M_impl.start = ns;
-        _M_impl.fin = nf;
-        _M_impl._M_end_of_storage = ns + __len;
-    }
-}
-
 template<typename T> void vector2<T>::_M_insert_aux(iterator pos, const T &x)
 {
     if (_M_impl.fin != _M_impl.eos)
@@ -126,10 +79,8 @@ template<typename T> void vector2<T>::_M_insert_aux(iterator pos, const T &x)
         T *ns(_M_allocate(__len));
         T *nf(ns);
         atraits::construct(_M_impl, ns + __elems_before, x);
-        nf = 0;
         nf = uninit_move_if_noexcept_a(_M_impl.start, pos.base(), ns, _M_get_Tp_allocator());
-        ++nf;
-        nf = uninit_move_if_noexcept_a(pos.base(), _M_impl.fin, nf, _M_get_Tp_allocator());
+        nf = uninit_move_if_noexcept_a(pos.base(), _M_impl.fin, nf + 1, _M_get_Tp_allocator());
         _Destroy2(_M_impl.start, _M_impl.fin, _M_get_Tp_allocator());
         _M_deallocate(_M_impl.start, _M_impl.eos - _M_impl.start);
         _M_impl.start = ns;

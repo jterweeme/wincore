@@ -50,9 +50,6 @@ public:
     { return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(r))); }
 };
 
-template<bool> struct __truth_type { typedef Util2::false_type __type; };
-template<> struct __truth_type<true> { typedef Util2::true_type __type; };
-
 template<typename, typename> struct __are_same
 {
     enum { __value = 0 };
@@ -192,46 +189,33 @@ template <typename T, typename T2> struct __is_normal_iterator<ni<T, T2> >
 };
 
 template<typename L, typename R, typename C>
-    inline bool operator==(const ni<L, C>& lhs, const ni<R, C>& rhs)
-{
-    return lhs.base() == rhs.base();
-}
+inline bool operator==(const ni<L, C>& lhs, const ni<R, C>& rhs)
+{ return lhs.base() == rhs.base(); }
 
-template <typename T, typename U> inline bool operator==(const ni<T, U>& __lhs,
-    const ni<T, U>& __rhs)
-{
-    return __lhs.base() == __rhs.base();
-}
+template <typename T, typename U> inline bool operator==(const ni<T, U>& lhs, const ni<T, U>& rhs)
+{ return lhs.base() == rhs.base(); }
 
 template<typename L, typename R, typename C> inline bool
-    operator!=(const ni<L, C>& lhs, const ni<R, C>& rhs)
-{
-    return lhs.base() != rhs.base();
-}
+operator!=(const ni<L, C>& lhs, const ni<R, C>& rhs)
+{ return lhs.base() != rhs.base(); }
 
-template<typename I, typename C> inline bool
-    operator<(const ni<I, C> &lhs, const ni<I, C> &rhs)
+template<typename I, typename C> inline bool operator<(const ni<I, C> &lhs, const ni<I, C> &rhs)
 { return lhs.base() < rhs.base(); }
 
-template<typename I, typename C> inline bool operator<=(const ni<I, C>& lhs,
-        const ni<I, C>& __rhs)
-{ return lhs.base() <= __rhs.base(); }
+template<typename I, typename C> inline bool operator<=(const ni<I, C>& lhs, const ni<I, C>& rhs)
+{ return lhs.base() <= rhs.base(); }
 
 template<typename L, typename R, typename C> inline bool
-    operator>=(const ni<L, C>& lhs, const ni<R, C>& rhs)
+operator>=(const ni<L, C>& lhs, const ni<R, C>& rhs)
 { return lhs.base() >= rhs.base(); }
 
-template<typename _Iterator, typename _Container>
-    inline typename ni<_Iterator, _Container>::difference_type
-    operator-(const ni<_Iterator, _Container>& __lhs,
-    const ni<_Iterator, _Container>& __rhs)
-{ return __lhs.base() - __rhs.base(); }
+template<typename T, typename C> inline typename ni<T, C>::difference_type
+operator-(const ni<T, C>& lhs, const ni<T, C>& rhs)
+{ return lhs.base() - rhs.base(); }
 
-template<typename _Iterator, typename _Container>
-    inline ni<_Iterator, _Container>
-    operator+(typename ni<_Iterator, _Container>::difference_type
-    __n, const ni<_Iterator, _Container>& __i)
-{ return ni<_Iterator, _Container>(__i.base() + __n); }
+template<typename T, typename C> inline ni<T, C>
+operator+(typename ni<T, C>::difference_type n, const ni<T, C> &i)
+{ return ni<T, C>(i.base() + n); }
 
 struct _Iter_less_iter
 {
@@ -336,47 +320,8 @@ template <typename T> struct _Miter_base : _Iter_base<T, imi<T>::__value> { };
 template<typename T> inline typename _Miter_base<T>::iterator_type mb(T it)
 { return _Miter_base<T>::_S_base(it); }
 
-template<bool, bool, typename> struct __copy_move
-{
-    template<typename _II, typename _OI> static _OI __copy_m(_II first, _II last, _OI result)
-    {
-        for (; first != last; ++result, ++first) *result = *first;
-        return result;
-    }
-};
-
-template<> struct __copy_move<false, false, random_access_iterator_tag>
-{
-    template<typename II, typename OI> static OI __copy_m(II first, II last, OI result)
-    {
-        for (typename iterator_traits<II>::difference_type n = last - first; n > 0; --n)
-            *result++ = *first++;
-        
-        return result;
-    }
-};
-
-template<bool Move> struct __copy_move<Move, true, random_access_iterator_tag>
-{
-    template<typename T> static T *__copy_m(const T *first, const T *last, T *result)
-    {
-        const Util2::ptrdiff_t _Num = last - first;
-        if (_Num) __builtin_memmove(result, first, sizeof(T) * _Num);
-        return result + _Num;
-    }
-};
-
-template<bool T, typename II, typename _OI> inline _OI copy_move_a(II first, II last, _OI result)
-{
-    typedef typename iterator_traits<II>::value_type _ValueTypeI;
-    typedef typename iterator_traits<_OI>::value_type _ValueTypeO;
-    typedef typename iterator_traits<II>::iterator_category _Category;
-
-    const bool __simple = (__is_trivial(_ValueTypeI) && __is_pointer<II>::__value
-            && __is_pointer<_OI>::__value && __are_same<_ValueTypeI, _ValueTypeO>::__value);
-
-    return __copy_move<T, __simple, _Category>::__copy_m(first, last, result);
-}
+template<bool T, typename II, typename OI> inline OI copy_move_a(II first, II last, OI result)
+{ for (; first != last; ++result, ++first) *result = *first; return result; }
 
 template<bool T, typename II, typename OI> inline OI copy_move_a2(II first, II last, OI result)
 { return OI(copy_move_a<T>(__niter_base(first), __niter_base(last), __niter_base(result))); }
@@ -384,47 +329,11 @@ template<bool T, typename II, typename OI> inline OI copy_move_a2(II first, II l
 template<typename T, typename T2> inline T2 copy(T f, T l, T2 r)
 { return copy_move_a2<imi<T>::__value>(mb(f), mb(l), r); }
 
-template<bool, bool, typename> struct __copy_move_backward
-{
-    template<typename T, typename T2> static T2 copy_move_b(T first, T last, T2 result)
-    {
-        while (first != last) *--result = *--last;
-        return result;
-    }
-};
+template<bool T, typename BI1, typename BI2> inline BI2 copy_move_back_a(BI1 f, BI1 l, BI2 result)
+{ while (f != l) *--result = *--l; return result; }
 
-template<bool _IsMove> struct __copy_move_backward<_IsMove, true, random_access_iterator_tag>
-{
-    template<typename T> static T* copy_move_b(const T* first, const T* last, T* result)
-    {
-        const Util2::ptrdiff_t num = last - first;
-        if (num) __builtin_memmove(result - num, first, sizeof(T) * num);
-        return result - num;
-    }
-};
-
-template<bool T, typename _BI1, typename _BI2> inline _BI2
-__copy_move_backward_a(_BI1 first, _BI1 last, _BI2 result)
-{
-    typedef typename iterator_traits<_BI1>::value_type _ValueType1;
-    typedef typename iterator_traits<_BI2>::value_type _ValueType2;
-    typedef typename iterator_traits<_BI1>::iterator_category _Category;
-
-    const bool __simple = (__is_trivial(_ValueType1) && __is_pointer<_BI1>::__value
-               && __is_pointer<_BI2>::__value && __are_same<_ValueType1, _ValueType2>::__value);
-
-    return __copy_move_backward<T, __simple, _Category>::copy_move_b(first, last, result);
-}
-
-template<bool T, typename BI1, typename BI2> inline BI2
-copy_move_back_a2(BI1 first, BI1 last, BI2 result)
-{
-    return BI2(__copy_move_backward_a<T>
-        (__niter_base(first), __niter_base(last), __niter_base(result)));
-}
-
-template<typename I, typename T> inline void fill(I first, I last, const T &value)
-{ __fill_a(__niter_base(first), __niter_base(last), value); }
+template<bool T, typename BI1, typename BI2> inline BI2 copy_move_back_a2(BI1 f, BI1 l, BI2 r)
+{ return BI2(copy_move_back_a<T>(__niter_base(f), __niter_base(l), __niter_base(r))); }
 
 #if 0
 inline void* operator new(Util2::size_t, void* p) noexcept { return p; }
@@ -569,7 +478,7 @@ protected:
 public:
     typedef ni<V *, vector2> iterator;
     typedef ni<const V *, vector2> const_iterator;
-    void _M_fill_initialize(size_t n, const V &value);
+    void _M_fill_initialize(size_t n, const V &value) { _M_impl.fin = _M_impl.eos; }
     vector2() : Base() { }
     explicit vector2(size_t n) : Base(n, allocator<V>()) { _M_fill_initialize(n, V()); }
     vector2(const vector2 &x);
