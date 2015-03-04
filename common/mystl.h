@@ -582,7 +582,8 @@ template<typename T, typename U> struct Vector_base
     void _M_deallocate(T *p, size_t n) { if (p) alloc_traits<A>::deallocate(_M_impl, p, n); }
 };
 
-template <typename V, typename W = allocator<V> > class vector2 : protected Vector_base<V, W>
+template <typename V, typename W = allocator<V> > class vector2
+    : protected Vector_base<V, allocator<V> >
 {
     typedef Vector_base<V, allocator<V> > Base;
     typedef alloc_traits<typename Vector_base<V, allocator<V> >::A > _Alloc_traits;
@@ -596,7 +597,7 @@ public:
     typedef ni<const V *, vector2> const_iterator;
     void _M_fill_initialize(size_t n, const V &value);
     vector2() : Base() { }
-    explicit vector2(size_t n) : Base(n, W()) { _M_fill_initialize(n, V()); }
+    explicit vector2(size_t n) : Base(n, allocator<V>()) { _M_fill_initialize(n, V()); }
     vector2(const vector2 &x);
     V &front() { return *begin(); }
     ~vector2();
