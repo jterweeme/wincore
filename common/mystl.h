@@ -176,7 +176,7 @@ template<typename T> struct _Iter_base<T, true>
     static typename T::iterator_type _S_base(T it) { return it.base(); }
 };
 
-template <typename T, typename U> class normal_iterator
+template <typename T, typename U> class ni
 {
 protected:
     T _M_current;
@@ -187,69 +187,69 @@ public:
     typedef typename iterator_traits<T>::difference_type difference_type;
     typedef typename iterator_traits<T>::reference reference;
     typedef typename iterator_traits<T>::pointer pointer;
-    normal_iterator() : _M_current(T()) { }
-    explicit normal_iterator(const T& __i) : _M_current(__i) { }
+    ni() : _M_current(T()) { }
+    explicit ni(const T& __i) : _M_current(__i) { }
     reference operator*() const { return *_M_current; }
     pointer operator->() const { return _M_current; }
-    normal_iterator& operator++() { ++_M_current; return *this; }
-    normal_iterator operator++(int) { return normal_iterator(_M_current++); }
-    normal_iterator operator--() { --_M_current; return *this; }
-    normal_iterator operator--(int) { return normal_iterator(_M_current--); }
+    ni& operator++() { ++_M_current; return *this; }
+    ni operator++(int) { return ni(_M_current++); }
+    ni operator--() { --_M_current; return *this; }
+    ni operator--(int) { return ni(_M_current--); }
     reference operator[](difference_type __n) const { return _M_current[__n]; }
-    normal_iterator& operator+=(difference_type __n) { _M_current += __n; return *this; }
-    normal_iterator operator+(difference_type n) const { return normal_iterator(_M_current + n); }
-    normal_iterator& operator-=(difference_type __n) { _M_current -= __n; return *this; }
-    normal_iterator operator-(difference_type n) const { return normal_iterator(_M_current - n); }
+    ni& operator+=(difference_type __n) { _M_current += __n; return *this; }
+    ni operator+(difference_type n) const { return ni(_M_current + n); }
+    ni& operator-=(difference_type __n) { _M_current -= __n; return *this; }
+    ni operator-(difference_type n) const { return ni(_M_current - n); }
     const T& base() const { return _M_current; }
 };
 
-template <typename T, typename T2> struct __is_normal_iterator<normal_iterator<T, T2> >
+template <typename T, typename T2> struct __is_normal_iterator<ni<T, T2> >
 {
     enum { __value = 1 };
     typedef Util2::true_type __type;
 };
 
 template<typename L, typename R, typename C>
-    inline bool operator==(const normal_iterator<L, C>& lhs, const normal_iterator<R, C>& rhs)
+    inline bool operator==(const ni<L, C>& lhs, const ni<R, C>& rhs)
 {
     return lhs.base() == rhs.base();
 }
 
-template <typename T, typename U> inline bool operator==(const normal_iterator<T, U>& __lhs,
-    const normal_iterator<T, U>& __rhs)
+template <typename T, typename U> inline bool operator==(const ni<T, U>& __lhs,
+    const ni<T, U>& __rhs)
 {
     return __lhs.base() == __rhs.base();
 }
 
 template<typename L, typename R, typename C> inline bool
-    operator!=(const normal_iterator<L, C>& lhs, const normal_iterator<R, C>& rhs)
+    operator!=(const ni<L, C>& lhs, const ni<R, C>& rhs)
 {
     return lhs.base() != rhs.base();
 }
 
 template<typename I, typename C> inline bool
-    operator<(const normal_iterator<I, C> &lhs, const normal_iterator<I, C> &rhs)
+    operator<(const ni<I, C> &lhs, const ni<I, C> &rhs)
 { return lhs.base() < rhs.base(); }
 
-template<typename I, typename C> inline bool operator<=(const normal_iterator<I, C>& lhs,
-        const normal_iterator<I, C>& __rhs)
+template<typename I, typename C> inline bool operator<=(const ni<I, C>& lhs,
+        const ni<I, C>& __rhs)
 { return lhs.base() <= __rhs.base(); }
 
 template<typename L, typename R, typename C> inline bool
-    operator>=(const normal_iterator<L, C>& lhs, const normal_iterator<R, C>& rhs)
+    operator>=(const ni<L, C>& lhs, const ni<R, C>& rhs)
 { return lhs.base() >= rhs.base(); }
 
 template<typename _Iterator, typename _Container>
-    inline typename normal_iterator<_Iterator, _Container>::difference_type
-    operator-(const normal_iterator<_Iterator, _Container>& __lhs,
-    const normal_iterator<_Iterator, _Container>& __rhs)
+    inline typename ni<_Iterator, _Container>::difference_type
+    operator-(const ni<_Iterator, _Container>& __lhs,
+    const ni<_Iterator, _Container>& __rhs)
 { return __lhs.base() - __rhs.base(); }
 
 template<typename _Iterator, typename _Container>
-    inline normal_iterator<_Iterator, _Container>
-    operator+(typename normal_iterator<_Iterator, _Container>::difference_type
-    __n, const normal_iterator<_Iterator, _Container>& __i)
-{ return normal_iterator<_Iterator, _Container>(__i.base() + __n); }
+    inline ni<_Iterator, _Container>
+    operator+(typename ni<_Iterator, _Container>::difference_type
+    __n, const ni<_Iterator, _Container>& __i)
+{ return ni<_Iterator, _Container>(__i.base() + __n); }
 
 struct _Iter_less_iter
 {
@@ -445,30 +445,10 @@ template<typename I, typename T> inline void fill(I first, I last, const T &valu
 inline void* operator new(Util2::size_t, void* p) noexcept { return p; }
 #endif
 
-template<typename T> class new_allocator
-{
-public:
-    template<typename T1> struct rebind { typedef new_allocator<T1> other; };
-    new_allocator() throw() { }
-    new_allocator(const new_allocator&) throw() { }
-    template<typename T1> new_allocator(const new_allocator<T1>&) throw() { }
-    ~new_allocator() throw() { }
-    T *address(T &x) const { return __addressof(x); }
-    const T *address(const T &x) const { return __addressof(x); }
-
-    T *allocate(size_t n, const void* = 0)
-    { return static_cast<T*>(::operator new(n * sizeof(T))); }
-
-    void deallocate(T *p, size_t) { ::operator delete(p); }
-    size_t max_size() const throw() { return size_t(-1) / sizeof(T); }
-    void construct(T *p, const T &val) { ::new((void *)p) T(val); }
-    void destroy(T *p) { p->~T(); }
-};
-
 template<typename> class allocator;
 template<> class allocator<void>;
 
-template<typename T> class allocator: public new_allocator<T>
+template<typename T> class allocator
 {
 public:
     typedef Util2::size_t size_type;
@@ -479,10 +459,19 @@ public:
     typedef const T& const_reference;
     typedef T value_type;
     template<typename T1> struct rebind { typedef allocator<T1> other; };
-    allocator() throw() { }
-    allocator(const allocator& __a) throw() : new_allocator<T>(__a) { }
-    template<typename T1> allocator(const allocator<T1>&) throw() { }
-    ~allocator() throw() { }
+    allocator() { }
+    template<typename T1> allocator(const allocator<T1>&) { }
+    ~allocator() { }
+    T *address(T &x) const { return __addressof(x); }
+    const T *address(const T &x) const { return __addressof(x); }
+
+    T *allocate(size_t n, const void* = 0) const
+    { return static_cast<T*>(::operator new(n * sizeof(T))); }
+
+    void deallocate(T *p, size_t) const { ::operator delete(p); }
+    size_t max_size() const { return size_t(-1) / sizeof(T); }
+    void construct(T *p, const T &val) const { ::new((void *)p) T(val); }
+    void destroy(T *p) const { p->~T(); }
 };
 
 template<typename A, bool = __is_empty(A)> struct __alloc_swap
@@ -496,8 +485,6 @@ template <typename T> struct alloc_traits
     typedef typename T::pointer pointer;
     typedef typename T::const_pointer const_pointer;
     typedef typename T::value_type value_type;
-    typedef typename T::reference reference;
-    typedef typename T::const_reference const_reference;
     static typename T::pointer allocate(T &a, size_t n) { return a.allocate(n); }
     static void deallocate(T &a, typename T::pointer p, size_t n) { a.deallocate(p, n); }
     template<typename U> static void construct(T &a, pointer p, const U &b) { a.construct(p, b); }
@@ -581,9 +568,7 @@ struct Vector_impl2 : public alloc_traits<U>::template rebind<T>::other
 template<typename T, typename U> struct Vector_base
 {
     typedef typename alloc_traits<U>::template rebind<T>::other A;
-    typedef typename alloc_traits<A>::pointer pointer;
     void _M_create_storage(size_t n);
-public:
     A& _M_get_Tp_allocator() { return *static_cast<A*>(&this->_M_impl); }
     const A& _M_get_Tp_allocator() const { return *static_cast<const A*>(&this->_M_impl); }
     U get_allocator() const { return U(_M_get_Tp_allocator()); }
@@ -593,30 +578,27 @@ public:
     Vector_base(size_t n, const U &a) : _M_impl(a) { _M_create_storage(n); }
     ~Vector_base(){_M_deallocate(_M_impl.start,_M_impl.eos - _M_impl.start); }
     Vector_impl2<T, U> _M_impl;
-    pointer _M_allocate(size_t n) { return n != 0 ? alloc_traits<A>::allocate(_M_impl, n) : 0; }
-    void _M_deallocate(pointer p, size_t n) { if (p) alloc_traits<A>::deallocate(_M_impl, p, n); }
+    T *_M_allocate(size_t n) { return n != 0 ? alloc_traits<A>::allocate(_M_impl, n) : 0; }
+    void _M_deallocate(T *p, size_t n) { if (p) alloc_traits<A>::deallocate(_M_impl, p, n); }
 };
 
 template <typename V, typename W = allocator<V> > class vector2 : protected Vector_base<V, W>
 {
     typedef Vector_base<V, allocator<V> > Base;
-    typedef alloc_traits<typename Base::A> _Alloc_traits;
+    typedef alloc_traits<typename Vector_base<V, allocator<V> >::A > _Alloc_traits;
 protected:
     using Base::_M_allocate;
     using Base::_M_deallocate;
     using Base::_M_impl;
     using Base::_M_get_Tp_allocator;
 public:
-    typedef typename alloc_traits<typename Base::A>::const_pointer const_pointer;
-    typedef typename _Alloc_traits::reference reference;
-    typedef typename _Alloc_traits::const_reference const_reference;
-    typedef normal_iterator<typename Base::pointer, vector2> iterator;
-    typedef normal_iterator<const_pointer, vector2> const_iterator;
+    typedef ni<V *, vector2> iterator;
+    typedef ni<const V *, vector2> const_iterator;
     void _M_fill_initialize(size_t n, const V &value);
     vector2() : Base() { }
-    explicit vector2(size_t n, const V& value = V(), const W &a = W());
+    explicit vector2(size_t n) : Base(n, W()) { _M_fill_initialize(n, V()); }
     vector2(const vector2 &x);
-    reference front() { return *begin(); }
+    V &front() { return *begin(); }
     ~vector2();
     void assign(size_t n, const V &val) { _M_fill_assign(n, val); }
     iterator begin() { return iterator(_M_impl.start); }
@@ -626,16 +608,16 @@ public:
     size_t size() const { return size_t(_M_impl.fin - _M_impl.start); }
     size_t max_size() const { return _Alloc_traits::max_size(_M_get_Tp_allocator()); }
     void reserve(size_t n);
-    const_reference operator[](size_t n) const { return *(_M_impl.start + n); }
+    const V& operator[](size_t n) const { return *(_M_impl.start + n); }
     void push_back(const V &x);
     void pop_back() { --_M_impl.fin; _Alloc_traits::destroy(_M_impl, _M_impl.fin); }
     void insert(iterator pos, size_t n, const V &x) { _M_fill_insert(pos, n, x); }
-    const_reference at(size_t n) const { return (*this)[n]; }
+    const V &at(size_t n) const { return (*this)[n]; }
     void clear() { _M_erase_at_end(this->_M_impl.start); }
 protected:
-    template<typename T> typename Base::pointer _M_allocate_and_copy(size_t n, T first, T last)
+    template<typename T> V* _M_allocate_and_copy(size_t n, T first, T last)
     {
-        typename Base::pointer result = this->_M_allocate(n);
+        V *result = this->_M_allocate(n);
         uninitialized_copy_a(first, last, result, _M_get_Tp_allocator());
         return result;
     }

@@ -34,12 +34,6 @@ template <typename T> void reverse(T first, T last, random_access_iterator_tag)
     while (first < last) iter_swap(first++, last++);
 }
 
-template <typename T, typename A>
-vector2<T, A>::vector2(size_t n, const T &value, const A &a) : Base(n, a)
-{
-    _M_fill_initialize(n, value);
-}
-
 template <typename T, typename A> vector2<T, A>::vector2(const vector2 &x)
   :
     Base(x.size(), _Alloc_traits::_S_select_on_copy(x._M_get_Tp_allocator()))
@@ -62,7 +56,7 @@ template <typename T, typename _Alloc> void vector2<T, _Alloc>::reserve(size_t n
     if (this->capacity() < n)
     {
         const size_t __old_size = size();
-        typename Base::pointer tmp = _M_allocate_and_copy(n,_M_impl.start,_M_impl.fin);
+        T *tmp = _M_allocate_and_copy(n,_M_impl.start,_M_impl.fin);
         _Destroy2(_M_impl.start, _M_impl.fin, _M_get_Tp_allocator());
         _M_deallocate(_M_impl.start, _M_impl._M_end_of_storage - _M_impl.start);
         _M_impl.start = tmp;
@@ -78,7 +72,7 @@ vector2<T, _Alloc>::_M_fill_insert(iterator pos, size_t n, const T &x)
     {
         T x_copy = x;
         const size_t elems_after = end() - pos;
-        typename Base::pointer old_finish(_M_impl.fin);
+        T *old_finish(_M_impl.fin);
 
         if (elems_after > n)
         {
@@ -100,8 +94,8 @@ vector2<T, _Alloc>::_M_fill_insert(iterator pos, size_t n, const T &x)
     {
         const size_t __len = _M_check_len(n, "vector::_M_fill_insert");
         const size_t __elems_before = pos - begin();
-        typename Base::pointer ns(_M_allocate(__len));
-        typename Base::pointer nf(ns);
+        T *ns(_M_allocate(__len));
+        T *nf(ns);
         __uninitialized_fill_n_a(ns + __elems_before, n, x, _M_get_Tp_allocator());
         nf = 0;
         nf = uninit_move_if_noexcept_a(_M_impl.start, pos.base(), ns, _M_get_Tp_allocator());
@@ -129,8 +123,8 @@ template<typename T, typename U> void vector2<T, U>::_M_insert_aux(iterator pos,
     {
         const size_t __len = _M_check_len(size_t(1), "vector::_M_insert_aux");
         const size_t __elems_before = pos - begin();
-        typename Base::pointer ns(_M_allocate(__len));
-        typename Base::pointer nf(ns);
+        T *ns(_M_allocate(__len));
+        T *nf(ns);
         _Alloc_traits::construct(_M_impl, ns + __elems_before, x);
         nf = 0;
         nf = uninit_move_if_noexcept_a(_M_impl.start, pos.base(), ns, _M_get_Tp_allocator());
