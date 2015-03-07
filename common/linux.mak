@@ -132,6 +132,9 @@ test: testgunzip2 test1go tgunzip1go testkompakt testod testbase64 teststl1go
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 	$(VALGRIND) ./md5s -c data.md5
+	$(VALGRIND) ./test2
+	$(VALGRIND) ./cppcom01
+	$(VALGRIND) ./cppcom02
 
 clean:
 	rm -Rf *.o jpg2tga *.tga $(TARGETS)
