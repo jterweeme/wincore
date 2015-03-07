@@ -58,21 +58,21 @@ public:
     template <typename T, typename T2> T2 uninitialized_copy(T first, T last, T2 result);
 };
 
-template <typename T> struct iterator_traits
+template <typename T> struct iterator_traits2
 {
     typedef typename T::value_type value_type;
     typedef typename T::pointer pointer;
     typedef typename T::reference reference;
 };
 
-template <typename T> struct iterator_traits<T*>
+template <typename T> struct iterator_traits2<T*>
 {
     typedef T value_type;
     typedef T *pointer;
     typedef T &reference;
 };
 
-template <typename T> struct iterator_traits<const T*>
+template <typename T> struct iterator_traits2<const T*>
 {
     typedef T value_type;
     typedef const T* pointer;
@@ -85,10 +85,10 @@ protected:
     T _M_current;
 public:
     typedef T iterator_type;
-    typedef typename iterator_traits<T>::value_type value_type;
+    typedef typename iterator_traits2<T>::value_type value_type;
     typedef Util2::ptrdiff_t difference_type;
-    typedef typename iterator_traits<T>::reference reference;
-    typedef typename iterator_traits<T>::pointer pointer;
+    typedef typename iterator_traits2<T>::reference reference;
+    typedef typename iterator_traits2<T>::pointer pointer;
     ni() : _M_current(T()) { }
     explicit ni(const T &i) : _M_current(i) { }
     reference operator*() const { return *_M_current; }
@@ -232,7 +232,7 @@ protected:
     template<typename Ptr> Ptr _M_data_ptr(Ptr ptr) const { return ptr; }
 };
 
-enum _Ios_Seekdir
+enum _Ios_Seekdir2
 {
     _S_beg = 0,
     _S_cur = SEEK_CUR,
@@ -255,7 +255,7 @@ public:
 class ios_base2
 {
 public:
-    typedef _Ios_Seekdir seekdir;
+    typedef _Ios_Seekdir2 seekdir;
     typedef int openmode;
 };
 
@@ -400,7 +400,7 @@ namespace mystl
     typedef istream2 istream;   
 }
 
-class ifstream2 : public istream
+class ifstream2 : public istream2
 {
     typedef Util2::uint8_t uint8_t;
     bool _open;

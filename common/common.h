@@ -10,7 +10,7 @@
 namespace mystl { }
 
 
-#if 1
+#if 0
 using namespace mystl;
 #else
 using namespace std;
