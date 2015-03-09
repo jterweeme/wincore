@@ -181,6 +181,19 @@ void *Util2::memset(void *s, int c, size_t n)
     return s;
 }
 
+filebuf2 *filebuf2::open(const char *fn, ios2::openmode m)
+{
+    switch (m)
+    {
+    case ios2::in:
+        _fp = fopen(fn, "r");
+        break;
+    default:
+        _fp = fopen(fn, "w");
+    }
+    return this;
+}
+
 string2::string2(const char *s1, size_t n)
 {
     Util2 util;
@@ -384,8 +397,8 @@ namespace mystl
     base2 oct(base2::OCT);
     base2 dec(base2::DEC);
     ifpstream2 cin(stdin);
-    fpstream2 cout(stdout);
-    fpstream2 cerr(stderr);
+    ofpstream2 cout(stdout);
+    ofpstream2 cerr(stderr);
     align right;
     fill2 setfill(char c) { return fill2(c); }
     width2 setw(int length) { return width2(length); }

@@ -60,21 +60,18 @@ public:
 
 template <typename T> struct iterator_traits2
 {
-    typedef typename T::value_type value_type;
     typedef typename T::pointer pointer;
     typedef typename T::reference reference;
 };
 
 template <typename T> struct iterator_traits2<T*>
 {
-    typedef T value_type;
     typedef T *pointer;
     typedef T &reference;
 };
 
 template <typename T> struct iterator_traits2<const T*>
 {
-    typedef T value_type;
     typedef const T* pointer;
     typedef const T& reference;
 };
@@ -85,7 +82,6 @@ protected:
     T _M_current;
 public:
     typedef T iterator_type;
-    typedef typename iterator_traits2<T>::value_type value_type;
     typedef Util2::ptrdiff_t difference_type;
     typedef typename iterator_traits2<T>::reference reference;
     typedef typename iterator_traits2<T>::pointer pointer;
@@ -142,7 +138,6 @@ public:
     typedef const T *const_pointer;
     typedef T &reference;
     typedef const T& const_reference;
-    typedef T value_type;
     allocator2() { }
     template<typename T1> allocator2(const allocator2<T1>&) { }
     ~allocator2() { }
@@ -157,7 +152,6 @@ template <typename T> struct alloc_traits
 {
     typedef typename T::pointer pointer;
     typedef typename T::const_pointer const_pointer;
-    typedef typename T::value_type value_type;
     static typename T::pointer allocate(T &a, size_t n) { return a.allocate(n); }
     static void deallocate(T &a, typename T::pointer p, size_t n) { a.deallocate(p, n); }
     template<typename U> static void construct(T &a, pointer p, const U &b) { a.construct(p, b); }
@@ -255,9 +249,21 @@ public:
 class ios_base2
 {
 public:
+    typedef Util2::uint8_t uint8_t;
     typedef _Ios_Seekdir2 seekdir;
     typedef int openmode;
+    static const uint8_t in = 1;
+    static const uint8_t binary = 2;
+    static const uint8_t out = 4;
+    static const uint8_t ate = 8;
+    static const uint8_t app = 16;
+    static const uint8_t trunc = 32;
 };
+
+namespace mystl
+{
+    typedef ios_base2 ios_base;
+}
 
 class streambuf2
 {
@@ -272,7 +278,7 @@ protected:
     char *egptr() const { return NULL; }
     char *eback() const { return NULL; }
     void setg(char *gbeg, char *gnext, char *gend) { }
-    virtual int seekoff(int off, ios_base2::seekdir way, int openmode) { return 0; }
+    virtual int seekoff(int off, ios_base::seekdir way, int openmode) { return 0; }
     virtual int overflow(int c) { throw "Overflow not implemented"; return 0; }
     virtual int underflow() { throw "Underflow not implemented"; return 0; }
     //virtual int uflow() = 0;
@@ -288,8 +294,13 @@ public:
     int sbumpc() { return 0; }
     int pubsync() { return 0; }
     virtual ~streambuf2() { }
-    int pubseekoff(int off, ios_base2::seekdir way, int mode) { return seekoff(off, way, mode); }
+    int pubseekoff(int off, ios_base::seekdir way, int mode) { return seekoff(off, way, mode); }
 };
+
+namespace mystl
+{
+    typedef streambuf2 streambuf;
+}
 
 class ios2 : public ios_base2
 {
@@ -304,6 +315,53 @@ public:
     ios2() { }
 };
 
+class fpinbuf : public streambuf2
+{
+    FILE *_fp;
+    typedef Util2::uint32_t uint32_t;
+    const uint32_t _put_back = 8;
+    char _buffer[264];
+    uint32_t _pos = 0;
+public:
+    //fpinbuf() { }
+    //fpinbuf(FILE *fp) : _fp(fp) { }
+    fpinbuf *open(FILE *fp) { _fp = fp; return this; }
+
+    int underflow()
+    {
+        Util2 u;
+
+        if (gptr() < egptr())
+            return (int)(*gptr());
+
+        char *base = _buffer;
+        char *start = base;
+
+        if (eback() == base)
+        {
+            u.memmove(base, egptr() - _put_back, _put_back);
+            start += _put_back;
+        }
+
+        uint32_t n = fread(start, 1, 264 - (start - base), _fp);
+
+        if (n == 0)
+            return EOF;
+
+        setg(base, start, start + n);
+        return (int)(*gptr());
+    }
+
+};
+
+class fpoutbuf : public streambuf2
+{
+    FILE *_fp;
+public:
+    fpoutbuf *open(FILE *fp) { _fp = fp; return this; }
+    int overflow(int c) { return fputc(c, _fp); }
+};
+
 class filebuf2 : public streambuf2
 {
     typedef Util2::uint32_t uint32_t;
@@ -316,8 +374,8 @@ public:
     filebuf2() { }
     //fpos<mbstate_t> seekoff(int64_t off, ios2::seekdir way, ios2::openmode m);
     int overflow(int c) { return fputc(c, _fp); }
-    filebuf2 *open(const char *fn, ios2::openmode m) { _fp = fopen(fn, "w"); return this; }
-    filebuf2 *open(FILE *fp) { _fp = fp; return this; }
+    filebuf2 *open(const char *fn, ios2::openmode m);
+    //filebuf2 *open(FILE *fp) { _fp = fp; return this; }
     int underflow();
 };
 
@@ -397,7 +455,8 @@ public:
 
 namespace mystl
 {
-    typedef istream2 istream;   
+    typedef istream2 istream;
+    typedef fstream2 fstream;
 }
 
 class ifstream2 : public istream2
@@ -407,8 +466,6 @@ class ifstream2 : public istream2
     filebuf2 _fb;
 public:
     bool is_open() const { return _open; }
-    static const uint8_t in = 1;
-    static const uint8_t binary = 2;
     ifstream2() : _open(false) { }
     ifstream2(const char *s, int m = 1) : istream2(fopen(s, "rb")) { _open = _fp; }
     void open(const char *fn, int mode = 1) { _open = _fp = fopen(fn, "rb"); }
@@ -481,31 +538,34 @@ public:
 
 class ifpstream2 : public istream2
 {
-    filebuf2 _fb;
+    fpinbuf _fb;
 public:
     ifpstream2(FILE *fp) : istream2(&_fb) { _fb.open(fp); }
     int get() { return _fb.sgetc(); }
-    int tellg() { return _fb.pubseekoff(0, ios_base2::seekdir::_S_beg, 0); }
+    int tellg() { return _fb.pubseekoff(0, ios_base::seekdir::_S_beg, 0); }
 };
 
-class fpstream2 : public ostream2
+class ofpstream2 : public ostream2
+{
+    fpoutbuf _fb;
+public:
+    ofpstream2(FILE *fp) : ostream2(&_fb) { _fb.open(fp); }
+};
+
+class ifstream3 : public istream2
 {
     filebuf2 _fb;
 public:
-    fpstream2(FILE *fp) : ostream2(&_fb) { _fb.open(fp); }
+    typedef Util2::uint8_t uint8_t;
+    ifstream3(const char *s) : istream2(&_fb) { _fb.open(s, in); }
+    virtual int get() { return _fb.underflow(); }
+    void close() { }
 };
 
 class ofstream2 : public ostream2
 {
     filebuf2 _fb;
 public:
-    typedef int openmode;
-    static const uint8_t app = 1 << 0;
-    static const uint8_t ate = 1 << 1;
-    static const uint8_t bin = 1 << 2;
-    static const uint8_t in = 1 << 3;
-    static const uint8_t out = 1 << 4;
-    static const uint8_t trunc = 1 << 5;
     void open(const char *fn, openmode om = out);
     void close() { }
     ofstream2() : ostream2(&_fb) { }
@@ -594,16 +654,14 @@ namespace mystl
     int strncmp(const char *s1, const char *s2, size_t n);
     template <typename T> using fpos = fpos2<T>;
     typedef string2 string;
-    typedef fstream2 fstream;
     typedef ios2 ios;
     typedef ostream2 ostream;
     typedef ofstream2 ofstream;
     typedef ifstream2 ifstream;
     typedef ostringstream2 ostringstream;
-    typedef streambuf2 streambuf;
     extern ifpstream2 cin;
-    extern fpstream2 cout;
-    extern fpstream2 cerr;
+    extern ofpstream2 cout;
+    extern ofpstream2 cerr;
     static const char endl[] = "\n";
     extern align right;
     extern base2 hex;
