@@ -278,12 +278,15 @@ protected:
     char *egptr() const { return NULL; }
     char *eback() const { return NULL; }
     void setg(char *gbeg, char *gnext, char *gend) { }
-    virtual int seekoff(int off, ios_base::seekdir way, int openmode) { return 0; }
+
     virtual int overflow(int c) { throw "Overflow not implemented"; return 0; }
     virtual int underflow() { throw "Underflow not implemented"; return 0; }
     //virtual int uflow() = 0;
     void gbump(int n) { }
 public:
+    typedef Util2::uint8_t uint8_t;
+    typedef Util2::uint32_t uint32_t;
+    virtual uint32_t seekoff(int off, int way, uint8_t openmode);
     char *_M_in_beg;
     char *_M_in_cur;
     int sputc(char c) { return overflow(c); }
@@ -294,7 +297,7 @@ public:
     int sbumpc() { return 0; }
     int pubsync() { return 0; }
     virtual ~streambuf2() { }
-    int pubseekoff(int off, ios_base::seekdir way, int mode) { return seekoff(off, way, mode); }
+    int pubseekoff(int off, int way, int mode) { return seekoff(off, way, mode); }
 };
 
 namespace mystl
@@ -323,35 +326,8 @@ class fpinbuf : public streambuf2
     char _buffer[264];
     uint32_t _pos = 0;
 public:
-    //fpinbuf() { }
-    //fpinbuf(FILE *fp) : _fp(fp) { }
     fpinbuf *open(FILE *fp) { _fp = fp; return this; }
-
-    int underflow()
-    {
-        Util2 u;
-
-        if (gptr() < egptr())
-            return (int)(*gptr());
-
-        char *base = _buffer;
-        char *start = base;
-
-        if (eback() == base)
-        {
-            u.memmove(base, egptr() - _put_back, _put_back);
-            start += _put_back;
-        }
-
-        uint32_t n = fread(start, 1, 264 - (start - base), _fp);
-
-        if (n == 0)
-            return EOF;
-
-        setg(base, start, start + n);
-        return (int)(*gptr());
-    }
-
+    int underflow();
 };
 
 class fpoutbuf : public streambuf2
@@ -369,13 +345,18 @@ class filebuf2 : public streambuf2
     FILE *_fp;
     const uint32_t _put_back = 8;
     char _buffer[264];
+    uint32_t _pos = 0;
 public:
-    filebuf2(FILE *fp) : _fp(fp) { }
-    filebuf2() { }
-    //fpos<mbstate_t> seekoff(int64_t off, ios2::seekdir way, ios2::openmode m);
+    //filebuf2(FILE *fp) : _fp(fp) { }
+    //filebuf2() { }
+
+    uint32_t seekoff(int off, int way, uint8_t m)
+    {
+        return _pos;
+    }
+
     int overflow(int c) { return fputc(c, _fp); }
     filebuf2 *open(const char *fn, ios2::openmode m);
-    //filebuf2 *open(FILE *fp) { _fp = fp; return this; }
     int underflow();
 };
 
@@ -459,6 +440,7 @@ namespace mystl
     typedef fstream2 fstream;
 }
 
+#if 0
 class ifstream2 : public istream2
 {
     typedef Util2::uint8_t uint8_t;
@@ -471,6 +453,21 @@ public:
     void open(const char *fn, int mode = 1) { _open = _fp = fopen(fn, "rb"); }
     void close() { if (_open) { fclose(_fp); _open = false; } }
     virtual ~ifstream2() { close(); }
+};
+#endif
+
+class ifstream2 : public istream2
+{
+    filebuf2 _fb;
+public:
+    typedef Util2::uint8_t uint8_t;
+    ifstream2() { }
+    ifstream2(const char *s, int m = 1) : istream2(&_fb) { _fb.open(s, in); }
+    bool is_open() { return true; }
+    void open(const char *fn, int mode = 1) { _fb.open(fn, in); }
+    virtual int get() { return _fb.underflow(); }
+    int tellg() { return _fb.seekoff(0, 0, 0); }
+    void close() { }
 };
 
 class align
@@ -542,7 +539,7 @@ class ifpstream2 : public istream2
 public:
     ifpstream2(FILE *fp) : istream2(&_fb) { _fb.open(fp); }
     int get() { return _fb.sgetc(); }
-    int tellg() { return _fb.pubseekoff(0, ios_base::seekdir::_S_beg, 0); }
+    int tellg() { return _fb.pubseekoff(0, 0, 0); }
 };
 
 class ofpstream2 : public ostream2
@@ -552,15 +549,7 @@ public:
     ofpstream2(FILE *fp) : ostream2(&_fb) { _fb.open(fp); }
 };
 
-class ifstream3 : public istream2
-{
-    filebuf2 _fb;
-public:
-    typedef Util2::uint8_t uint8_t;
-    ifstream3(const char *s) : istream2(&_fb) { _fb.open(s, in); }
-    virtual int get() { return _fb.underflow(); }
-    void close() { }
-};
+
 
 class ofstream2 : public ostream2
 {

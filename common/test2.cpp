@@ -1,5 +1,16 @@
 #include "common.h"
 
+void functie()
+{
+    ifstream ifs("onzin.txt");
+    
+    for (int i = 0; i < 10; i++)
+        cout.put(ifs.get());
+
+    cout << "\n" << ifs.tellg() << "\n";
+    ifs.close();
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -13,14 +24,15 @@ int main(int argc, char **argv)
     for (vector<uint32_t>::iterator it = v1.begin(); it != v1.end(); it++)
         cout << *it << "\n";
 #endif
+    try
+    {
+        functie();
+    }
+    catch (const char *e)
+    {
+        cerr << e << "\n";
+    }
 
-    ifstream3 ifs("onzin.txt");
-    
-    for (int i = 0; i < 10; i++)
-        cout.put(ifs.get());
-
-    cout << "\n" << ifs.tellg() << "\n";
-    ifs.close();
     return 0;
 }
 

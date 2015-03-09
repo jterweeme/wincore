@@ -11,6 +11,12 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
     return dest;
 }
 
+uint32_t streambuf2::seekoff(int off, int way, uint8_t openmode)
+{
+    throw "Seekoff not implemented";
+    return 0;
+}
+
 Util2::uint8_t Util2::ctoi(char c)
 {
     return isdigit(c) == 1 ? c - '0' : c - 87;
@@ -34,6 +40,31 @@ Util2::uint32_t Util2::strtol(const char *a, const char *b, int base)
         result += ctoi(a[i - 1]) * upow(base, j);
 
     return result;
+}
+
+int fpinbuf::underflow()
+{
+    Util2 u;
+
+    if (gptr() < egptr())
+        return (int)(*gptr());
+
+    char *base = _buffer;
+    char *start = base;
+
+    if (eback() == base)
+    {
+        u.memmove(base, egptr() - _put_back, _put_back);
+        start += _put_back;
+    }
+
+    uint32_t n = fread(start, 1, 264 - (start - base), _fp);
+
+    if (n == 0)
+        return EOF;
+
+    setg(base, start, start + n);
+    return (int)(*gptr());
 }
 
 void *Util2::memmove(char *dst, const char *src, uint32_t n)
@@ -278,6 +309,7 @@ int streambuf2::sungetc()
 
 int filebuf2::underflow()
 {
+    _pos++;
     return fgetc(_fp);
 #if 0
     Util2 u;
