@@ -28,11 +28,13 @@ bool TarStream::listFile(bool verbose)
 void Header::fullInfo(ostream &os, uint8_t width) const
 {
     os << mode() << " " << uname() << "/" << gname() << " " << setw(width) << size() << " "
-       << "1990-01-01 00-00 " << name() << "\n";
+       << timeStamp() << " " << name() << "\n";
 }
 
 void Header::timeStamp(ostream &os) const
 {
+    for (uint8_t i = 0; i < 12; i++)
+        os.put(_h.mtime[i]);
 }
 
 uint8_t Header::numDigits() const

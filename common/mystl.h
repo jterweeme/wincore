@@ -422,10 +422,7 @@ protected:
 public:
     istream2() { }
     istream2(streambuf2 *sb) : ios2(sb) { }
-    //istream2(FILE *fp) : _fp(fp) { }
     virtual ~istream2() { }
-    //int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
-    //virtual int get() { _pos++; return fgetc(_fp); }
     virtual int get() { return _sb->sgetc(); }
     virtual istream2 &ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
     virtual int tellg() { return _sb->pubseekoff(0, 0, 0); }

@@ -1,8 +1,9 @@
 CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = valgrind $(VALFLAGS)
+COMMON_H = common.h mystl.h mystl.tcc
 
-TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 dd diff \
+TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
     cppcom01 cppcom02 \
     jpg2tga kompakt ls md5s nl od rm tar tee test1 test2 testbinp \
@@ -28,6 +29,7 @@ cp: cp.o
 cppcom01: cppcom01.o mystl.o
 cppcom02: cppcom02.o mystl.o
 crc32: crc32.o
+date: date.o mystl.o
 dd: dd.o
 diff: diff.o
 dos2unix: dos2unix.o mystl.o
@@ -62,11 +64,12 @@ bzcat.o: bzcat.cpp bunzip2.h bitinput.h
 bzinfo.o: bzinfo.cpp bitinput.h fector.h
 bzip2.o: bzip2.cpp
 bzmd5.o: bzmd5.cpp buftest.h
-cat.o: cat.cpp common.h mystl.h
+cat.o: cat.cpp $(COMMON_H)
 cp.o: cp.cpp
 cppcom01.o: cppcom01.cpp
 cppcom02.o: cppcom02.cpp
 crc32.o: crc32.cpp
+date.o: date.cpp $(COMMON_H)
 dd.o: dd.cpp
 diff.o: diff.cpp
 dos2unix.o: dos2unix.cpp
@@ -78,7 +81,7 @@ gunzipm.o: gunzipm.cpp gunzip.h
 gzip.o: gzip.cpp
 hasher.o: hasher.cpp hasher.h
 jpg2tga.o: jpg2tga.cpp
-kompakt.o: kompakt.cpp kompakt.h common.h mystl.h mystl.tcc
+kompakt.o: kompakt.cpp kompakt.h $(COMMON_H)
 ls.o: ls.cpp
 main.o: main.cpp
 mystl.o: mystl.cpp mystl.h mystl.tcc
@@ -88,7 +91,7 @@ odmain.o: odmain.cpp
 rm.o: rm.cpp
 tar.o: tar.cpp tar.h
 tarm.o: tarm.cpp tar.h
-tee.o: tee.cpp common.h mystl.h mystl.tcc
+tee.o: tee.cpp $(COMMON_H)
 test1.o: test1.cpp
 test2.o: test2.cpp
 testbinp.o: testbinp.cpp
