@@ -268,6 +268,8 @@ namespace mystl
 class streambuf2
 {
 protected:
+    typedef Util2::uint8_t uint8_t;
+    typedef Util2::uint32_t uint32_t;
     char *inBeg;
     char *inCur;
     char *inEnd;
@@ -278,26 +280,37 @@ protected:
     char *egptr() const { return NULL; }
     char *eback() const { return NULL; }
     void setg(char *gbeg, char *gnext, char *gend) { }
-
+    void gbump(int n) { }
     virtual int overflow(int c) { throw "Overflow not implemented"; return 0; }
     virtual int underflow() { throw "Underflow not implemented"; return 0; }
-    //virtual int uflow() = 0;
-    void gbump(int n) { }
-public:
-    typedef Util2::uint8_t uint8_t;
-    typedef Util2::uint32_t uint32_t;
+    virtual int uflow() { return 0; }
     virtual uint32_t seekoff(int off, int way, uint8_t openmode);
+
+    virtual uint32_t xsgetn(char *s, uint32_t n)
+    {
+        uint32_t r = 0;
+        for (r = 0; r < n; r++) s[r] = underflow();
+        return r;
+    }
+
+    virtual uint32_t xsputn(const char *s, uint32_t n) { return 0; }
+    virtual streambuf2 *setbuf(char *s, uint32_t n) { return this; }
+    virtual uint32_t seekpos(uint32_t sp, uint8_t which) { return 0; }
+    virtual uint32_t showmanyc() { return 0; }
+    virtual int pbackfail(int c) { return 0; }
+    virtual int sync() { return 0; }
+public:
     char *_M_in_beg;
     char *_M_in_cur;
     int sputc(char c) { return overflow(c); }
     int snextc() { throw "Snextc not implemented"; return 0; }
     int sgetc() { return underflow(); }
-    int sgetn(char *s, int n) { return 0; }
+    int sgetn(char *s, int n) { return xsgetn(s, n); }
     int sungetc();
     int sbumpc() { return 0; }
     int pubsync() { return 0; }
     virtual ~streambuf2() { }
-    int pubseekoff(int off, int way, int mode) { return seekoff(off, way, mode); }
+    int pubseekoff(int off, int way, uint8_t mode) { return seekoff(off, way, mode); }
 };
 
 namespace mystl
@@ -310,13 +323,16 @@ class ios2 : public ios_base2
 protected:
     streambuf2 *_sb;
 public:
-    static const Util2::uint8_t binary = 1;
-    static const Util2::uint8_t in = 2;
     streambuf2 *rdbuf() const { return _sb; }
     streambuf2 *rdbuf(streambuf2 *sb) { return _sb = sb; }
     ios2(streambuf2 *sb) : _sb(sb) { }
     ios2() { }
 };
+
+namespace mystl
+{
+    typedef ios2 ios;
+}
 
 class fpinbuf : public streambuf2
 {
@@ -347,16 +363,9 @@ class filebuf2 : public streambuf2
     char _buffer[264];
     uint32_t _pos = 0;
 public:
-    //filebuf2(FILE *fp) : _fp(fp) { }
-    //filebuf2() { }
-
-    uint32_t seekoff(int off, int way, uint8_t m)
-    {
-        return _pos;
-    }
-
+    uint32_t seekoff(int off, int way, uint8_t m) { return _pos; }
     int overflow(int c) { return fputc(c, _fp); }
-    filebuf2 *open(const char *fn, ios2::openmode m);
+    filebuf2 *open(const char *fn, ios::openmode m);
     int underflow();
 };
 
@@ -407,19 +416,19 @@ class istream2 : public ios2
 {
     typedef Util2::uint16_t uint16_t;
 protected:
-    size_t _pos = 0;
     FILE *_fp;
     size_t _lastRead = 0;
     bool _eof = false;
 public:
     istream2() { }
     istream2(streambuf2 *sb) : ios2(sb) { }
-    istream2(FILE *fp) : _fp(fp) { }
+    //istream2(FILE *fp) : _fp(fp) { }
     virtual ~istream2() { }
     //int peek() { int c = fgetc(_fp); ungetc(c, _fp); return c; }
+    //virtual int get() { _pos++; return fgetc(_fp); }
+    virtual int get() { return _sb->sgetc(); }
     virtual istream2 &ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
-    virtual int get() { _pos++; return fgetc(_fp); }
-    virtual int tellg() { return _pos; }
+    virtual int tellg() { return _sb->pubseekoff(0, 0, 0); }
     int gcount() { return _lastRead; }
     operator void * () const { return (void *)!_eof; }
     virtual void getline(char *dest, size_t size);
@@ -440,31 +449,15 @@ namespace mystl
     typedef fstream2 fstream;
 }
 
-#if 0
-class ifstream2 : public istream2
-{
-    typedef Util2::uint8_t uint8_t;
-    bool _open;
-    filebuf2 _fb;
-public:
-    bool is_open() const { return _open; }
-    ifstream2() : _open(false) { }
-    ifstream2(const char *s, int m = 1) : istream2(fopen(s, "rb")) { _open = _fp; }
-    void open(const char *fn, int mode = 1) { _open = _fp = fopen(fn, "rb"); }
-    void close() { if (_open) { fclose(_fp); _open = false; } }
-    virtual ~ifstream2() { close(); }
-};
-#endif
-
 class ifstream2 : public istream2
 {
     filebuf2 _fb;
 public:
     typedef Util2::uint8_t uint8_t;
     ifstream2() { }
-    ifstream2(const char *s, int m = 1) : istream2(&_fb) { _fb.open(s, in); }
+    ifstream2(const char *s, int m = 1) : istream2(&_fb) { _fb.open(s, ios::in); }
     bool is_open() { return true; }
-    void open(const char *fn, int mode = 1) { _fb.open(fn, in); }
+    void open(const char *fn, int mode = 1) { _fb.open(fn, ios::in); }
     virtual int get() { return _fb.underflow(); }
     int tellg() { return _fb.seekoff(0, 0, 0); }
     void close() { }
@@ -549,8 +542,6 @@ public:
     ofpstream2(FILE *fp) : ostream2(&_fb) { _fb.open(fp); }
 };
 
-
-
 class ofstream2 : public ostream2
 {
     filebuf2 _fb;
@@ -558,7 +549,7 @@ public:
     void open(const char *fn, openmode om = out);
     void close() { }
     ofstream2() : ostream2(&_fb) { }
-    ofstream2(const char *f) : ostream2(&_fb) { _fb.open(f, 0); }
+    ofstream2(const char *f) : ostream2(&_fb) { _fb.open(f, ios::out); }
 };
 
 class ostringstream2 : public ostream2
@@ -643,7 +634,6 @@ namespace mystl
     int strncmp(const char *s1, const char *s2, size_t n);
     template <typename T> using fpos = fpos2<T>;
     typedef string2 string;
-    typedef ios2 ios;
     typedef ostream2 ostream;
     typedef ofstream2 ofstream;
     typedef ifstream2 ifstream;

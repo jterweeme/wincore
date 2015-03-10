@@ -212,15 +212,18 @@ void *Util2::memset(void *s, int c, size_t n)
     return s;
 }
 
-filebuf2 *filebuf2::open(const char *fn, ios2::openmode m)
+filebuf2 *filebuf2::open(const char *fn, ios::openmode m)
 {
     switch (m)
     {
-    case ios2::in:
+    case ios::in:
         _fp = fopen(fn, "r");
         break;
-    default:
+    case ios::out:
         _fp = fopen(fn, "w");
+        break;
+    default:
+        throw "Unknown mode";
     }
     return this;
 }

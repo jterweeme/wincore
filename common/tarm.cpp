@@ -126,7 +126,18 @@ int AppTar::run(int argc, char **argv)
 int main(int argc, char **argv)
 {
     AppTar app;
-    return app.run(argc, argv);
+    int ret = -1;
+
+    try
+    {
+        ret = app.run(argc, argv);
+    }
+    catch (const char *e)
+    {
+        cerr << e << "\n";
+    }
+
+    return ret;
 }
 
 
