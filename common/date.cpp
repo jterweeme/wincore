@@ -1,9 +1,27 @@
 #include "common.h"
 
-int main(int argc, char **argv)
+class OptionsDate
+{
+public:
+    void parse(int argc, char **argv);
+};
+
+class AppDate
+{
+public:
+    int run(int argc, char **argv);
+};
+
+int AppDate::run(int argc, char **argv)
 {
     cout << "Thu Jan  1 00:00:00 UTC 1970\n";
     return 0;
+}
+
+int main(int argc, char **argv)
+{
+    AppDate app;
+    return app.run(argc, argv);
 }
 
 

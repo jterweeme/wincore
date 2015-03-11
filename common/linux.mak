@@ -7,7 +7,7 @@ TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
     cppcom01 cppcom02 \
     jpg2tga kompakt ls md5s nl od rm tar tee test1 test2 testbinp \
-    teststl1 tgunzip1 touch tr unix2dos uuidgen wingroup yes zcat
+    teststl1 tgunzip1 touch tr unix2dos uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
 	g++ $(CXXFLAGS) -c -o $@ $<
@@ -54,6 +54,7 @@ touch: touch.o
 tr: tr.o mystl.o
 unix2dos: unix2dos.o mystl.o
 uuidgen: uuidgen.o
+weekday: weekday.o
 wingroup: wingroup.o
 yes: yes.o
 zcat: zcat.o gunzip.o
@@ -101,6 +102,7 @@ touch.o: touch.cpp
 tr.o: tr.cpp
 unix2dos.o: unix2dos.cpp
 uuidgen.o: uuidgen.cpp
+weekday.o: weekday.cpp
 wingroup.o: wingroup.cpp
 yes.o: yes.cpp
 zcat.o: zcat.cpp gunzip.h inflate.h
@@ -129,7 +131,10 @@ testbase64:
 teststl1go:
 	$(VALGRIND) ./teststl1
 
-test: testgunzip2 test1go tgunzip1go testkompakt testod testbase64 teststl1go
+testtar:
+	$(VALGRIND) ./tar -tvf dinges.tar | ./diff -s dinges.out
+
+test: testgunzip2 test1go tgunzip1go testkompakt testod testtar testbase64 teststl1go
 	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso

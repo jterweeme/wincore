@@ -25,6 +25,16 @@ struct SHeader
     char prefix[155];
 } __attribute__ ((packed));
 
+struct MyDateTime
+{
+    uint32_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    void dump(ostream &os) const;
+    string toString() const { ostringstream os; dump(os); return os.str(); }
+};
 
 class Header
 {
