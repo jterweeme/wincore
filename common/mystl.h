@@ -310,7 +310,7 @@ protected:
     virtual int underflow() { throw "Underflow not implemented"; return 0; }
     virtual int uflow() { return underflow() == EOF ? EOF : *_inCur++; }
     virtual streampos seekoff(int64_t, seekdir, openmode) { throw "Seekoff"; return 0; }
-    //virtual streamsize xsgetn(char *s, streamsize n);
+    virtual streamsize xsgetn(char *s, streamsize n);
     //virtual uint32_t xsputn(const char *s, uint32_t n) { return 0; }
     //virtual streambuf2 *setbuf(char *s, uint32_t n) { return this; }
     //virtual streampos seekpos(streampos sp, uint8_t which) { return 0; }
@@ -325,7 +325,7 @@ public:
     int sbumpc() { return ((!gptr()) || (gptr() == egptr())) ? uflow() : *_inCur++; }
     int sgetc() { return ((!gptr()) || gptr() == egptr()) ? underflow() : *gptr(); }
     int snextc() { return sbumpc() == EOF ? EOF : sgetc(); }
-    //int sgetn(char *s, int n) { return xsgetn(s, n); }
+    int sgetn(char *s, int n) { return xsgetn(s, n); }
     int pubsync() { return sync(); }
     //streampos pubseekpos(streampos pos, uint8_t which) { return seekpos(pos, which); }
     streampos pubseekoff(int64_t off, seekdir way, openmode m) { return seekoff(off, way, m); }
@@ -459,7 +459,7 @@ public:
     //operator void * () const { return (void *)!_eof; }
     operator void * () const { return _sb->in_avail() == -1 ? (void *)false : (void *)true; }
     virtual void getline(char *dest, size_t size);
-    virtual void read(char *s, size_t length);
+    virtual void read(char *s, size_t length) { _lastRead = _sb->sgetn(s, length); }
 };
 
 class iostream2 : public istream2

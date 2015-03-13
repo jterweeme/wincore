@@ -217,20 +217,22 @@ string2::string2(const char *s1, const char *s2)
     util.strncpy(_s, s1, s2 - s1);
 }
 
-void istream2::read(char *s, size_t length)
+Util2::streamsize streambuf2::xsgetn(char *s, streamsize length)
 {
-    for (_lastRead = 0; _lastRead < length; _lastRead++)
+    for (streamsize i = 0; i < length; i++)
     {
-        int c = get();
+        int c = sbumpc();
 
         if (c == EOF)
         {
             //_eof = true;
-            return;
+            return i;
         }
 
-        s[_lastRead] = c;
+        s[i] = c;
     }
+
+    return length;
 }
 
 void istream2::getline(char *dest, size_t size)
