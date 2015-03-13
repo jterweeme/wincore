@@ -7,16 +7,16 @@ struct unreferenceable {
 };
 
 void print (unreferenceable* m) {
-  if (m) cout << m->x << "\n";
-  else cout << "[null pointer]\n";
+  if (m) std::cout << m->x << '\n';
+  else std::cout << "[null pointer]\n";
 }
 
 int main () {
-  void(*pfn)(unreferenceable*) = addressof(print);
+  void(*pfn)(unreferenceable*) = std::addressof(print);
 
   unreferenceable val {10};
   unreferenceable* foo = &val;
-  unreferenceable* bar = addressof(val);
+  unreferenceable* bar = std::addressof(val);
 
   (*pfn)(foo);   // prints [null pointer]
   (*pfn)(bar);   // prints 10

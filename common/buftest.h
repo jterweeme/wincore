@@ -1,9 +1,7 @@
 #ifndef _BUFTEST_H_
 #define _BUFTEST_H_
 #include "common.h"
-#include "fector.h"
 
-#if 0
 class buftest : public streambuf
 {
     FILE *_fp;
@@ -13,16 +11,14 @@ class buftest : public streambuf
 public:
     buftest(FILE *fp) : _fp(fp), _put_back(8) { }
 
-    fpos<mbstate_t> seekoff(int64_t off, ios::seekdir way, ios::openmode m)
+    streampos seekoff(int64_t off, ios::seekdir way, ios::openmode m)
     {
-        return (uint64_t)_M_in_cur - (uint64_t)_M_in_beg + ftell(_fp) - 264;
+        return (uint64_t)gptr() - (uint64_t)eback() + ftell(_fp) - 264;
     }
 
     int underflow()
     {
-        if (gptr() < egptr())
-            return (int)(*gptr());
-
+        if (gptr() < egptr()) return (int)(*gptr());
         char *base = _buffer;
         char *start = base;
 
@@ -33,29 +29,11 @@ public:
         }
 
         uint32_t n = fread(start, 1, 264 - (start - base), _fp);
-
-        if (n == 0)
-            return EOF;
-
+        if (n == 0) return EOF;
         setg(base, start, start + n);
         return (int)(*gptr());
     }   
 };
-#else
-class buftest : public streambuf
-{
-    FILE *_fp;
-    uint32_t _pos = 0;
-public:
-    //buftest *open(FILE *fp) { _fp = fp; return this; }
-    buftest(FILE *fp) : _fp(fp)
-    {
-        _fp = fp;
-    }
-    int underflow() { _pos++; return fgetc(_fp); }
-    uint32_t seekoff(int off, int way, uint8_t openmode) { return _pos; }
-};
-#endif
 
 #endif
 

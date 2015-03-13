@@ -9,7 +9,6 @@
 
 namespace mystl { }
 
-
 #if 1
 using namespace mystl;
 #else

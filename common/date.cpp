@@ -14,7 +14,12 @@ public:
 
 int AppDate::run(int argc, char **argv)
 {
-    cout << "Thu Jan  1 00:00:00 UTC 1970\n";
+    char onzin[900] = {0};
+    tm cal;
+    cal.tm_year = 0;
+    strftime(onzin, 900, "%Y", &cal);
+    cout << onzin << "\n";
+    //cout << "Thu Jan  1 00:00:00 UTC 1970\n";
     return 0;
 }
 

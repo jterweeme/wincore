@@ -2,7 +2,7 @@
 
 void functie()
 {
-    ifstream ifs("onzin.txt");
+    ifstream ifs("ls.cpp");
     
     for (int i = 0; i < 10; i++)
         cout.put(ifs.get());
@@ -24,6 +24,7 @@ int main(int argc, char **argv)
     for (vector<uint32_t>::iterator it = v1.begin(); it != v1.end(); it++)
         cout << *it << "\n";
 #endif
+#if 0
     try
     {
         functie();
@@ -32,6 +33,16 @@ int main(int argc, char **argv)
     {
         cerr << e << "\n";
     }
+#endif
+
+    FILE *fp = fopen("minimal.gif", "r");
+    
+    int c;
+    char buf[64] = {0};
+    fread((char *)buf, 64, 1, fp);
+    
+    while ((c = fgetc(fp)) != EOF)
+        printf("%x", c);
 
     return 0;
 }

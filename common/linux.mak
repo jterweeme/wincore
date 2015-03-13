@@ -6,7 +6,7 @@ COMMON_H = common.h mystl.h mystl.tcc
 TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
     cppcom01 cppcom02 \
-    jpg2tga kompakt ls md5s nl od rm tar tee test1 test2 testbinp \
+    jpg2tga kompakt ls md5s nl od rm tar tee test1 test2 test3 testbinp \
     teststl1 tgunzip1 touch tr unix2dos uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
@@ -47,6 +47,7 @@ tar: tar.o tarm.o bitinput.o bunzip2.o fector.o mystl.o
 tee: tee.o mystl.o
 test1: test1.o mystl.o hasher.o
 test2: test2.o mystl.o
+test3: test3.o mystl.o
 testbinp: testbinp.o bitinput.o mystl.o
 teststl1: teststl1.o mystl.o
 tgunzip1: tgunzip1.o gunzip.o
@@ -54,7 +55,7 @@ touch: touch.o
 tr: tr.o mystl.o
 unix2dos: unix2dos.o mystl.o
 uuidgen: uuidgen.o
-weekday: weekday.o
+weekday: weekday.o mystl.o
 wingroup: wingroup.o
 yes: yes.o
 zcat: zcat.o gunzip.o
@@ -95,6 +96,7 @@ tarm.o: tarm.cpp tar.h
 tee.o: tee.cpp $(COMMON_H)
 test1.o: test1.cpp
 test2.o: test2.cpp
+test3.o: test3.cpp
 testbinp.o: testbinp.cpp
 teststl1.o: teststl1.cpp mystl.h
 tgunzip1.o: tgunzip1.cpp
@@ -134,12 +136,16 @@ teststl1go:
 testtar:
 	$(VALGRIND) ./tar -tvf dinges.tar | ./diff -s dinges.out
 
-test: testgunzip2 test1go tgunzip1go testkompakt testod testtar testbase64 teststl1go
+testmd5sum:
 	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -
-	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
-	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
-	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 	$(VALGRIND) ./md5s -c data.md5
+
+testbunzip2:
+	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
+
+test: testgunzip2 test1go tgunzip1go testod testtar testbase64 teststl1go
+	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
+	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 	$(VALGRIND) ./test2
 	$(VALGRIND) ./cppcom01
 	$(VALGRIND) ./cppcom02

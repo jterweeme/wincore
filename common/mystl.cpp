@@ -4,16 +4,12 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
 {
     char *dst8 = (char *)dest;
     char *src8 = (char *)src;
-
-    while (n--)
-        *dst8++ = *src8++;
-
+    while (n--) *dst8++ = *src8++;
     return dest;
 }
 
-uint32_t streambuf2::seekoff(int off, int way, uint8_t openmode)
+size_t Util2::strftime(char *p, size_t max, const char *fmt, const tm *tp) const
 {
-    throw "Seekoff not implemented";
     return 0;
 }
 
@@ -25,59 +21,50 @@ Util2::uint8_t Util2::ctoi(char c)
 Util2::uint32_t Util2::upow(uint32_t base, uint32_t exp)
 {
     uint32_t result = base;
-    
-    for (uint32_t i = 1; i < exp; i++)
-        result *= base;
-
+    for (uint32_t i = 1; i < exp; i++) result *= base;
     return exp > 0 ? result : 1;
 }
 
 Util2::uint32_t Util2::strtol(const char *a, const char *b, int base)
 {
     uint32_t result = 0;
-
-    for (uint32_t i = strlen(a), j = 0; i > 0; i--, j++)
-        result += ctoi(a[i - 1]) * upow(base, j);
-
+    for (uint32_t i = strlen(a), j = 0; i > 0; i--, j++) result += ctoi(a[i - 1]) * upow(base, j);
     return result;
 }
 
+#if 0
+Util2::streamsize streambuf2::xsgetn(char *s, streamsize n)
+{
+    streamsize r = 0;
+    for (r = 0; r < n; r++) s[r] = underflow();
+    return r;
+}
+#endif
+
 int fpinbuf::underflow()
 {
-    Util2 u;
-
-    if (gptr() < egptr())
-        return (int)(*gptr());
-
+    if (gptr() < egptr()) return (int)(*gptr());
     char *base = _buffer;
     char *start = base;
 
     if (eback() == base)
     {
-        u.memmove(base, egptr() - _put_back, _put_back);
+        memmove(base, egptr() - _put_back, _put_back);
         start += _put_back;
     }
 
     uint32_t n = fread(start, 1, 264 - (start - base), _fp);
-
-    if (n == 0)
-        return EOF;
-
+    if (n == 0) return EOF;
     setg(base, start, start + n);
     return (int)(*gptr());
 }
 
 void *Util2::memmove(char *dst, const char *src, uint32_t n)
 {
-    if (dst <= src)
-        return memcpy(dst, src, n);
-
+    if (dst <= src) return memcpy(dst, src, n);
     src += n;
     dst += n;
-
-    while (n--)
-        *--dst = *--src;
-
+    while (n--) *--dst = *--src;
     return dst;
 }
 
@@ -128,9 +115,7 @@ char *Util2::itoa(int32_t num, char *str, int base)
         num = num / base;
     }
 
-    if (isNegative)
-        str[i++] = '-';
-
+    if (isNegative) str[i++] = '-';
     str[i] = '\0';
     reverse(str, i);
     return str;
@@ -140,17 +125,10 @@ char *Util2::strtok(char *str, const char *delimiters)
 {
     static char *sp = NULL;
     int i = 0;
-    int len = strlen(delimiters);
- 
-    if(len == 0)
-        printf("delimiters are empty\n");
- 
-    if(!str && !sp)
-        return NULL;
- 
-    if(str && !sp)
-        sp = str;
- 
+    int len = strlen(delimiters); 
+    if(len == 0) printf("delimiters are empty\n");
+    if(!str && !sp) return NULL;
+    if(str && !sp) sp = str;
     char* p_start = sp;
 
     while(true)
@@ -205,10 +183,7 @@ Util2::size_t Util2::strlen(const char *s)
 void *Util2::memset(void *s, int c, size_t n)
 {
     uint8_t *p = (uint8_t *)s;
-
-    while (n--)
-        *p++ = (uint8_t)c;
-
+    while (n--) *p++ = (uint8_t)c;
     return s;
 }
 
@@ -247,22 +222,15 @@ void istream2::read(char *s, size_t length)
     for (_lastRead = 0; _lastRead < length; _lastRead++)
     {
         int c = get();
-        
+
         if (c == EOF)
         {
-            _eof = true;
+            //_eof = true;
             return;
         }
 
         s[_lastRead] = c;
     }
-
-
-#if 0
-    _lastRead = fread(s, 1, length, _fp);
-    _pos += _lastRead;
-    _eof = _lastRead < length;
-#endif
 }
 
 void istream2::getline(char *dest, size_t size)
@@ -273,7 +241,7 @@ void istream2::getline(char *dest, size_t size)
 
         if (c == EOF)
         {
-            _eof = true;
+            //_eof = true;
             dest[pos] = '\0';
             return;
         }
@@ -303,18 +271,21 @@ void ofstream2::open(const char *fn, openmode om)
 #endif
 }
 
+#if 0
 int streambuf2::sungetc()
 {
     if ((!gptr()) || (gptr()==eback()));
     gbump(-1);
     return *gptr();
 }
+#endif
 
 int filebuf2::underflow()
 {
+#if 0
     _pos++;
     return fgetc(_fp);
-#if 0
+#else
     Util2 u;
     if (gptr() < egptr()) return (int)(*gptr());
     char *base = _buffer;
@@ -326,14 +297,20 @@ int filebuf2::underflow()
         start += _put_back;
     }
 
-    uint32_t n = fread(start, 1, 264 - (start - base), _fp);
-    if (n == 0) return EOF;
-    setg(base, start, start + n);
+    _lastRead = fread(start, 1, 264 - (start - base), _fp);
+
+    if (_lastRead == 0)
+    {
+        _eof = true;
+        return EOF;
+    }
+
+    setg(base, start, start + _lastRead);
     return (int)(*gptr());
 #endif
 }
 
-ostream2& ostream2::operator << (const uint32_t u)
+ostream2& ostream2::printInt(const uint32_t u)
 {
     Util2 util;
     char s[10] = {0};
@@ -351,34 +328,10 @@ ostream2& ostream2::operator << (const uint32_t u)
     }
 
     uint32_t fill = (uint32_t)_width.size() > util.strlen(s) ? _width.size() - util.strlen(s) : 0;
-
-    for (uint32_t i = 0; i < fill; i++)
-        put(_fill.fill());
-
+    for (uint32_t i = 0; i < fill; i++) put(_fill.fill());
     print(s);
     return *this;
 }
-
-#if 0
-int filebuf2::underflow()
-{
-    Util2 u;
-    if (gptr() < egptr()) return (int)(*gptr());
-    char *base = _buffer;
-    char *start = base;
-
-    if (eback() == base)
-    {
-        u.memmove(base, egptr() - _put_back, _put_back);
-        start += _put_back;
-    }
-
-    uint32_t n = fread(start, 1, 264 - (start - base), _fp);
-    if (n == 0) return EOF;
-    setg(base, start, start + n);
-    return (int)(*gptr());
-}
-#endif
 
 int Util2::strcmp(const char *s1, const char *s2)
 {
@@ -401,12 +354,8 @@ int Util2::strncmp(const char *s1, const char *s2, size_t n)
 char *Util2::strncpy(char *dest, const char *src, size_t n)
 {
     size_t i;
-
-    for (i = 0; i < n && src[i] != '\0'; i++)
-        dest[i] = src[i];
-    for (; i < n; i++)
-        dest[i] = '\0';
-
+    for (i = 0; i < n && src[i] != '\0'; i++) dest[i] = src[i];
+    for (; i < n; i++) dest[i] = '\0';
     return dest;
 }
 
@@ -428,6 +377,13 @@ namespace mystl
     int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }
     size_t strlen(const char *s) { Util2 u; return u.strlen(s); }
     uint32_t strtol(const char *a, const char *b, int c) { Util2 u; return u.strtol(a, b, c); }
+    tm *localtime(time_t *t) { Util2 u; return u.localtime(t); }
+
+    size_t strftime(char *p, size_t max, const char *fmt, const tm *tp)
+    { Util2 u; return u.strftime(p, max, fmt, tp); }
+
+    time_t time(time_t *timer) { Util2 u; return u.time(timer); }
+    time_t mktime(tm *timeptr) { Util2 u; return u.mktime(timeptr); }
     base2 hex(base2::HEX);
     base2 oct(base2::OCT);
     base2 dec(base2::DEC);

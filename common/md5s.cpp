@@ -72,7 +72,7 @@ void AppMD5Sum::_hashStream(istream &is, const char *name, ostream &os)
 
 void AppMD5Sum::_hashFile(const char *fn, ostream &os)
 {
-    cerr << fn << "\n";
+    //cerr << fn << "\n";
     _hasher.reset();
     ifstream file;
     file.open(fn, fstream::in | ios::binary);
