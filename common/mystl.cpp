@@ -32,15 +32,6 @@ Util2::uint32_t Util2::strtol(const char *a, const char *b, int base)
     return result;
 }
 
-#if 0
-Util2::streamsize streambuf2::xsgetn(char *s, streamsize n)
-{
-    streamsize r = 0;
-    for (r = 0; r < n; r++) s[r] = underflow();
-    return r;
-}
-#endif
-
 int fpinbuf::underflow()
 {
     if (gptr() < egptr()) return (int)(*gptr());

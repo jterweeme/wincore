@@ -380,11 +380,18 @@ class filebuf2 : public streambuf2
     const uint32_t _put_back = 8;
     char _buffer[264];
     uint32_t _pos = 0;
-    uint32_t _lastRead = 0;
+    streamsize _lastRead = 0;
+    bool multiFlag = false;
     bool _eof = false;
 public:
     streampos seekoff(int64_t off, seekdir way, openmode m)
     {
+        if (multiFlag)
+        {
+            multiFlag = false;
+            return ftell(_fp);
+        }
+
         uint32_t pb = ftell(_fp) > _lastRead ? 8 : 0;
         return (uint64_t)gptr() - (uint64_t)eback() + ftell(_fp) - _lastRead - pb;
     }
@@ -393,6 +400,14 @@ public:
     streamsize showmanyc() { return _eof ? -1 : 1; }
     filebuf2 *open(const char *fn, ios::openmode m);
     int underflow();
+
+    streamsize xsgetn(char *s, streamsize n)
+    {
+        multiFlag = true;
+        _lastRead = fread(s, 1, n, _fp);
+        _eof = _lastRead != n;
+        return _lastRead;
+    }
 };
 
 namespace mystl
