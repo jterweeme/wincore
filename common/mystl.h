@@ -308,7 +308,7 @@ protected:
     void gbump(int n) { _inCur += n; }
     virtual int overflow(int c) { throw "Overflow not implemented"; return 0; }
     virtual int underflow() { throw "Underflow not implemented"; return 0; }
-    virtual int uflow() { return underflow() == EOF ? EOF : *_inCur++; }
+    virtual int uflow() { return underflow() == EOF ? EOF : (uint8_t)*_inCur++; }
     virtual streampos seekoff(int64_t, seekdir, openmode) { throw "Seekoff"; return 0; }
     virtual streamsize xsgetn(char *s, streamsize n);
     //virtual uint32_t xsputn(const char *s, uint32_t n) { return 0; }
@@ -322,7 +322,7 @@ public:
     { uint64_t a = (uint64_t)egptr() - (uint64_t)gptr(); return a == 0 ? showmanyc() : a; }
 
     int sputc(char c) { return overflow(c); }
-    int sbumpc() { return ((!gptr()) || (gptr() == egptr())) ? uflow() : *_inCur++; }
+    int sbumpc() { return ((!gptr()) || (gptr() == egptr())) ? uflow() : (uint8_t)*_inCur++; }
     int sgetc() { return ((!gptr()) || gptr() == egptr()) ? underflow() : *gptr(); }
     int snextc() { return sbumpc() == EOF ? EOF : sgetc(); }
     int sgetn(char *s, int n) { return xsgetn(s, n); }
@@ -401,6 +401,7 @@ public:
     filebuf2 *open(const char *fn, ios::openmode m);
     int underflow();
 
+#if 0
     streamsize xsgetn(char *s, streamsize n)
     {
         multiFlag = true;
@@ -408,6 +409,7 @@ public:
         _eof = _lastRead != n;
         return _lastRead;
     }
+#endif
 };
 
 namespace mystl

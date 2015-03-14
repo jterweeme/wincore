@@ -143,7 +143,9 @@ testmd5sum:
 testbunzip2:
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
 
-test: testgunzip2 test1go tgunzip1go testod testtar testbase64 teststl1go
+tests1: testgunzip2 testkompakt testbunzip2 testmd5sum
+
+test: tests1 test1go tgunzip1go testod testtar testbase64 teststl1go
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 	$(VALGRIND) ./test2

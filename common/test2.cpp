@@ -35,14 +35,13 @@ int main(int argc, char **argv)
     }
 #endif
 
-    FILE *fp = fopen("minimal.gif", "r");
-    
-    int c;
-    char buf[64] = {0};
-    fread((char *)buf, 64, 1, fp);
-    
-    while ((c = fgetc(fp)) != EOF)
-        printf("%x", c);
+
+#if 0
+    ifstream ifs("minimal.gif");
+    char buf[43] = {0};
+    ifs.read(buf, 43);
+    cout << "onzin\n";
+#endif
 
     return 0;
 }

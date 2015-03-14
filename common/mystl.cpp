@@ -47,7 +47,7 @@ int fpinbuf::underflow()
     uint32_t n = fread(start, 1, 264 - (start - base), _fp);
     if (n == 0) return EOF;
     setg(base, start, start + n);
-    return (int)(*gptr());
+    return (uint8_t)(*gptr());
 }
 
 void *Util2::memmove(char *dst, const char *src, uint32_t n)
@@ -215,6 +215,7 @@ Util2::streamsize streambuf2::xsgetn(char *s, streamsize length)
         int c = sbumpc();
 
         if (c == EOF)
+        //if (in_avail() <= 0)
         {
             //_eof = true;
             return i;
@@ -299,7 +300,7 @@ int filebuf2::underflow()
     }
 
     setg(base, start, start + _lastRead);
-    return (int)(*gptr());
+    return (uint8_t)(*gptr());
 #endif
 }
 
