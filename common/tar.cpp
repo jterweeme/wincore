@@ -39,37 +39,18 @@ void Header::fullInfo(ostream &os, uint8_t width) const
 
 void Header::timeStamp(ostream &os) const
 {
-#if 0
-    MyDateTime mdt;
-    mdt.year = 1900;
-    mdt.month = 6;
-    mdt.day = 5;
-    mdt.hour = 7;
-    mdt.minute = 12;
-    mdt.dump(os);
-#else
     time_t onzin = strtol(_h.mtime, 0, 8);
-    struct tm *ptm;
-    ptm = localtime(&onzin);
-
-    os << ptm->tm_year + 1900 << "-" << setw(2) << setfill('0')
-       << ptm->tm_mon + 1 << "-" << ptm->tm_mday << " " 
-       << (int)ptm->tm_hour << ":" << ptm->tm_min;
-
-    //cerr << onzin << "\n";
-    //for (uint8_t i = 0; i < 12; i++)
-    //    os.put(_h.mtime[i]);
-#endif
+    struct tm *ptm = localtime(&onzin);
+    char s[18] = {0};
+    strftime(s, sizeof(s), "%F %R", ptm);
+    os << s;
 }
 
 uint8_t Header::numDigits() const
 {
     uint8_t digits = 0;
     uint32_t number = size();
-
-    while (number)
-        number /= 10, digits++;
-
+    while (number) number /= 10, digits++;
     return digits;
 }
 

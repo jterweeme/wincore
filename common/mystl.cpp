@@ -10,6 +10,8 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
 
 size_t Util2::strftime(char *p, size_t max, const char *fmt, const tm *tp) const
 {
+    snprintf(p, max, "%u-%02u-%02u %02u:%02u",
+        tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday + 1, tp->tm_hour, tp->tm_min);
     return 0;
 }
 
@@ -371,6 +373,7 @@ namespace mystl
     int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }
     size_t strlen(const char *s) { Util2 u; return u.strlen(s); }
     uint32_t strtol(const char *a, const char *b, int c) { Util2 u; return u.strtol(a, b, c); }
+    tm *gmtime(time_t *t) { Util2 u; return u.gmtime(t); }
     tm *localtime(time_t *t) { Util2 u; return u.localtime(t); }
 
     size_t strftime(char *p, size_t max, const char *fmt, const tm *tp)

@@ -1,6 +1,7 @@
 namespace mystl { }
 using namespace mystl;
 #include "mystl.h"
+#include "myassert.h"
 
 void assertEquals(uint32_t a, uint32_t b)
 {
@@ -43,10 +44,11 @@ int main()
     testisdigit();
     testctoi('5');
     testupow(2, 8);
-    assertEquals(u.upow(2, 8), 256);
-    assertEquals(u.upow(10, 3), 1000);
-    assertEquals(u.upow(10, 1), 10);
-    assertEquals(u.upow(10, 0), 1);
+    MyAssert ma;
+    ma.equals(u.upow(2, 8), 256);
+    ma.equals(u.upow(10, 3), 1000);
+    ma.equals(u.upow(10, 1), 10);
+    ma.equals(u.upow(10, 0), 1);
     cout << strtol("123", "123", 10) << "\n";
     cerr << "\e[1;32mTest Mystl1: OK\e[0m\n";
     return 0;

@@ -68,7 +68,8 @@ public:
     uint32_t strtol(const char *a, const char *b, int base);
     size_t strftime(char *p, size_t max, const char *fmt, const tm *tp) const;
     static bool smaller(uint32_t a, uint32_t b) { return a < b; }
-    tm *localtime(time_t *t) { return new tm; }
+    tm *gmtime(const time_t *timer) { tm *tm1 = new tm; tm1->tm_year = 70; return tm1; }
+    tm *localtime(const time_t *t) { tm *tim = gmtime(t); tim->tm_hour++; return tim; }
     time_t time(time_t *timer) { return 0; }
     time_t mktime(tm *timeptr) { return 0; }
     template <typename T> inline void swap(T &a, T &b) { T tmp = a; a = b; b = tmp; }
@@ -400,16 +401,6 @@ public:
     streamsize showmanyc() { return _eof ? -1 : 1; }
     filebuf2 *open(const char *fn, ios::openmode m);
     int underflow();
-
-#if 0
-    streamsize xsgetn(char *s, streamsize n)
-    {
-        multiFlag = true;
-        _lastRead = fread(s, 1, n, _fp);
-        _eof = _lastRead != n;
-        return _lastRead;
-    }
-#endif
 };
 
 namespace mystl
@@ -464,7 +455,6 @@ class istream2 : public ios2
 {
 protected:
     size_t _lastRead = 0;
-    //bool _eof = false;
 public:
     istream2() { }
     istream2(streambuf2 *sb) : ios2(sb) { }
@@ -473,7 +463,6 @@ public:
     virtual istream2 &ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
     virtual int tellg() { return _sb->pubseekoff(0, 0, 0); }
     int gcount() { return _lastRead; }
-    //operator void * () const { return (void *)!_eof; }
     operator void * () const { return _sb->in_avail() == -1 ? (void *)false : (void *)true; }
     virtual void getline(char *dest, size_t size);
     virtual void read(char *s, size_t length) { _lastRead = _sb->sgetn(s, length); }
@@ -544,8 +533,6 @@ public:
 class ostream2 : public ios2
 {
 protected:
-    typedef Util2::uint8_t uint8_t;
-    typedef Util2::uint32_t uint32_t;
     base2 _base;
     fill2 _fill;
     width2 _width;
@@ -666,6 +653,7 @@ namespace mystl
 #endif
 #ifndef _TIME_H
     typedef Util2::time_t time_t;
+    tm *gmtime(time_t *t);
     tm *localtime(time_t *t);
     time_t time(time_t *timer);
     time_t mktime(tm *timeptr);

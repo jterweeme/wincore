@@ -1,13 +1,16 @@
 CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = valgrind $(VALFLAGS)
-COMMON_H = common.h mystl.h mystl.tcc
+MYSTL_H = mystl.h mystl.tcc
+COMMON_H = common.h $(MYSTL_H)
+BITINPUT_H = bitinput.h $(COMMON_H)
+BUFTEST_H = buftest.h $(COMMON_H)
 
 TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
     cppcom01 cppcom02 \
     jpg2tga kompakt ls md5s nl od rm tar tee test1 test2 test3 testbinp \
-    teststl1 tgunzip1 touch tr unix2dos uuidgen weekday wingroup yes zcat
+    teststl1 tgmtime1 tgunzip1 touch tr unix2dos uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
 	g++ $(CXXFLAGS) -c -o $@ $<
@@ -50,6 +53,7 @@ test2: test2.o mystl.o
 test3: test3.o mystl.o
 testbinp: testbinp.o bitinput.o mystl.o
 teststl1: teststl1.o mystl.o
+tgmtime1: tgmtime1.o mystl.o
 tgunzip1: tgunzip1.o gunzip.o
 touch: touch.o
 tr: tr.o mystl.o
@@ -59,13 +63,13 @@ weekday: weekday.o mystl.o
 wingroup: wingroup.o
 yes: yes.o
 zcat: zcat.o gunzip.o
-base64.o: base64.cpp
-bitinput.o: bitinput.cpp bitinput.h
-bunzip2.o: bunzip2.cpp bunzip2.h bitinput.h fector.h
-bzcat.o: bzcat.cpp bunzip2.h bitinput.h
-bzinfo.o: bzinfo.cpp bitinput.h fector.h
+base64.o: base64.cpp $(COMMON_H)
+bitinput.o: bitinput.cpp $(BITINPUT_H)
+bunzip2.o: bunzip2.cpp bunzip2.h fector.h $(BITINPUT_H)
+bzcat.o: bzcat.cpp bunzip2.h $(BITINPUT_H)
+bzinfo.o: bzinfo.cpp fector.h $(BITINPUT_H)
 bzip2.o: bzip2.cpp
-bzmd5.o: bzmd5.cpp buftest.h
+bzmd5.o: bzmd5.cpp $(BUFTEST_H)
 cat.o: cat.cpp $(COMMON_H)
 cp.o: cp.cpp
 cppcom01.o: cppcom01.cpp
@@ -86,9 +90,9 @@ jpg2tga.o: jpg2tga.cpp
 kompakt.o: kompakt.cpp kompakt.h $(COMMON_H)
 ls.o: ls.cpp
 main.o: main.cpp
-mystl.o: mystl.cpp mystl.h mystl.tcc
+mystl.o: mystl.cpp $(MYSTL_H)
 nl.o: nl.cpp
-od.o: od.cpp od.h common.h mystl.h mystl.tcc
+od.o: od.cpp od.h $(COMMON_H)
 odmain.o: odmain.cpp
 rm.o: rm.cpp
 tar.o: tar.cpp tar.h
@@ -98,10 +102,11 @@ test1.o: test1.cpp
 test2.o: test2.cpp
 test3.o: test3.cpp
 testbinp.o: testbinp.cpp
-teststl1.o: teststl1.cpp mystl.h
+teststl1.o: teststl1.cpp $(MYSTL_H)
+tgmtime1.o: tgmtime1.cpp $(COMMON_H)
 tgunzip1.o: tgunzip1.cpp
 touch.o: touch.cpp
-tr.o: tr.cpp
+tr.o: tr.cpp $(COMMON_H)
 unix2dos.o: unix2dos.cpp
 uuidgen.o: uuidgen.cpp
 weekday.o: weekday.cpp
