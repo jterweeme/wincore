@@ -11,7 +11,6 @@ struct tm
     int tm_min;
     int tm_hour;
     int tm_mday;
-    int tm_day;
     int tm_mon;
     int tm_year;
     int tm_wday;
@@ -86,10 +85,17 @@ class Time2 : public Util2
     static tm _tm;
 public:
     void set(uint32_t y, uint32_t yd, uint32_t mon, uint32_t d, uint32_t h, uint32_t min);
-    void reset();
+    void reset() { set(70, 0, 0, 1, 0, 0); }
     size_t strftime(char *p, size_t max, const char *fmt, const tm *tp) const;
     tm *gmtime(const time_t *timer);
     tm *localtime(const time_t *t);
+    bool isLeap(uint32_t year) const;
+    int daysInMonth(uint32_t month) const;
+    void incSec();
+    void incHour();
+    void incDay();
+    void incSec(uint32_t s) { for (uint32_t i = 0; i < s; i++) incSec(); }
+    void set(uint32_t s) { reset(); incSec(s); }
     time_t time(time_t *timer) { return 0; }
     time_t mktime(tm *timeptr) { return 0; }
 };
@@ -287,6 +293,7 @@ public:
     void incSec(uint32_t s);
     void set(uint32_t t);
     void exportTM(tm &t);
+    bool isDST() const;
 };
 
 enum _Ios_Seekdir2
