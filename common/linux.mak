@@ -148,7 +148,10 @@ testmd5sum:
 testbunzip2:
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
 
-tests1: testgunzip2 testkompakt testbunzip2 testmd5sum
+testgmtime1:
+	$(VALGRIND) ./tgmtime1
+
+tests1: testgunzip2 testkompakt testbunzip2 testmd5sum testgmtime1
 
 test: tests1 test1go tgunzip1go testod testtar testbase64 teststl1go
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga

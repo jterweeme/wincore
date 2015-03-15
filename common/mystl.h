@@ -15,6 +15,7 @@ struct tm
     int tm_mon;
     int tm_year;
     int tm_wday;
+    int tm_yday;
 };
 #endif
 }
@@ -66,12 +67,7 @@ public:
     uint8_t ctoi(char c);
     uint32_t upow(uint32_t base, uint32_t exp);
     uint32_t strtol(const char *a, const char *b, int base);
-    size_t strftime(char *p, size_t max, const char *fmt, const tm *tp) const;
     static bool smaller(uint32_t a, uint32_t b) { return a < b; }
-    tm *gmtime(const time_t *timer) { tm *tm1 = new tm; tm1->tm_year = 70; return tm1; }
-    tm *localtime(const time_t *t) { tm *tim = gmtime(t); tim->tm_hour++; return tim; }
-    time_t time(time_t *timer) { return 0; }
-    time_t mktime(tm *timeptr) { return 0; }
     template <typename T> inline void swap(T &a, T &b) { T tmp = a; a = b; b = tmp; }
     template <typename T> void iter_swap(T a, T b) { return swap(*a, *b); }
     template <typename T> inline const T &min(const T &a, const T &b) { return b < a ? b : a; }
@@ -83,6 +79,19 @@ public:
     template <typename BI1, typename BI2> BI2 copy_move_back_a(BI1 f, BI1 l, BI2 result);
     template <typename T, typename U> void destroy(T first, T last, U &alloc);
     template <typename T, typename T2> T2 uninitialized_copy(T first, T last, T2 result);
+};
+
+class Time2 : public Util2
+{
+    static tm _tm;
+public:
+    void set(uint32_t y, uint32_t yd, uint32_t mon, uint32_t d, uint32_t h, uint32_t min);
+    void reset();
+    size_t strftime(char *p, size_t max, const char *fmt, const tm *tp) const;
+    tm *gmtime(const time_t *timer);
+    tm *localtime(const time_t *t);
+    time_t time(time_t *timer) { return 0; }
+    time_t mktime(tm *timeptr) { return 0; }
 };
 
 template <typename T> struct iterator_traits2
@@ -251,6 +260,33 @@ protected:
     void _M_insert_aux(iterator position, const V &x);
     size_t _M_check_len(size_t n, const char * s) const;
     template<typename Ptr> Ptr _M_data_ptr(Ptr ptr) const { return ptr; }
+};
+
+class UnixTime : public Util2
+{
+    uint32_t _year = 1970;
+    uint32_t _yday = 0;
+    uint32_t _mon = 0;
+    uint32_t _day = 1;
+    uint32_t _hour = 0;
+    uint32_t _min = 0;
+    uint32_t _sec = 0;
+    bool isLeap(uint32_t year) const;
+    uint32_t daysInMonth(uint32_t month) const;
+public:
+    uint32_t year() const { return _year; }
+    uint32_t yday() const { return _yday; }
+    uint32_t mon() const { return _mon; }
+    uint32_t day() const { return _day; }
+    uint32_t hour() const { return _hour; }
+    uint32_t min() const { return _min; }
+    uint32_t sec() const { return _sec; }
+    void incSec();
+    void incHour();
+    void incDay();
+    void incSec(uint32_t s);
+    void set(uint32_t t);
+    void exportTM(tm &t);
 };
 
 enum _Ios_Seekdir2

@@ -8,10 +8,11 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
     return dest;
 }
 
-size_t Util2::strftime(char *p, size_t max, const char *fmt, const tm *tp) const
+size_t Time2::strftime(char *p, size_t max, const char *fmt, const tm *tp) const
 {
     snprintf(p, max, "%u-%02u-%02u %02u:%02u",
-        tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday + 1, tp->tm_hour, tp->tm_min);
+        tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday, tp->tm_hour, tp->tm_min);
+
     return 0;
 }
 
@@ -32,6 +33,124 @@ Util2::uint32_t Util2::strtol(const char *a, const char *b, int base)
     uint32_t result = 0;
     for (uint32_t i = strlen(a), j = 0; i > 0; i--, j++) result += ctoi(a[i - 1]) * upow(base, j);
     return result;
+}
+
+bool UnixTime::isLeap(uint32_t year) const
+{
+    switch (year)
+    {
+    case 1972:
+    case 1976:
+    case 1980:
+    case 1984:
+    case 1988:
+    case 1992:
+    case 1996:
+    case 2000:
+    case 2004:
+    case 2008:
+    case 2012:
+    case 2016:
+        return true;
+    }
+
+    return false;
+}
+
+uint32_t UnixTime::daysInMonth(uint32_t month) const
+{
+    switch (month)
+    {
+    case 1:
+        return isLeap(_year) ? 29 : 28;
+    case 3:
+    case 5:
+    case 8:
+    case 10:
+        return 30;
+    default:
+        return 31;
+    }
+}
+
+void UnixTime::exportTM(tm &t)
+{
+    t.tm_year = year() - 1900;
+    t.tm_yday = yday();
+    t.tm_mon = mon();
+    t.tm_mday = day();
+    t.tm_hour = hour();
+    t.tm_min = min();   
+}
+
+void Time2::set(uint32_t y, uint32_t yd, uint32_t mon, uint32_t d, uint32_t h, uint32_t min)
+{
+    _tm.tm_year = 70;
+    _tm.tm_yday = 0;
+    _tm.tm_mon = 0;
+    _tm.tm_mday = 1;
+}
+
+void UnixTime::set(uint32_t t)
+{
+
+
+    incSec(t);
+}
+
+void UnixTime::incSec()
+{
+    if (++_sec < 60) return;
+    _sec = 0;
+    if (++_min < 60) return;
+    _min = 0;
+    incHour();
+}
+
+void UnixTime::incHour()
+{
+    if (++_hour < 24) return;
+    _hour = 0;
+    incDay();
+}
+
+void UnixTime::incDay()
+{
+    ++_yday;
+    if (++_day <= daysInMonth(_mon)) return;
+    _day = 1;
+    if (++_mon < 12) return;
+    _yday = 0;
+    _mon = 0;
+    _year++;   
+}
+
+void UnixTime::incSec(uint32_t s)
+{
+    for (; s >= 3600; s -= 3600)
+        incHour();
+
+    for (uint32_t i = 0; i < s; i++)
+        incSec();
+}
+
+tm Time2::_tm;
+
+tm *Time2::gmtime(const time_t *timer)
+{
+    UnixTime ut;
+    ut.set(*timer);
+    ut.exportTM(_tm);
+    return &_tm;
+}
+
+tm *Time2::localtime(const time_t *timer)
+{
+    UnixTime ut;
+    ut.set(*timer);
+    ut.incSec(3600);
+    ut.exportTM(_tm);
+    return &_tm;
 }
 
 int fpinbuf::underflow()
@@ -124,11 +243,11 @@ char *Util2::strtok(char *str, const char *delimiters)
     if(str && !sp) sp = str;
     char* p_start = sp;
 
-    while(true)
+    while (true)
     {
-        for(i = 0; i < len; i ++)
+        for (i = 0; i < len; i ++)
         {
-            if(*p_start == delimiters[i])
+            if (*p_start == delimiters[i])
             {
                 p_start ++;
                 break;
@@ -278,10 +397,6 @@ int streambuf2::sungetc()
 
 int filebuf2::underflow()
 {
-#if 0
-    _pos++;
-    return fgetc(_fp);
-#else
     Util2 u;
     if (gptr() < egptr()) return (int)(*gptr());
     char *base = _buffer;
@@ -303,7 +418,6 @@ int filebuf2::underflow()
 
     setg(base, start, start + _lastRead);
     return (uint8_t)(*gptr());
-#endif
 }
 
 ostream2& ostream2::printInt(const uint32_t u)
@@ -334,6 +448,7 @@ int Util2::strcmp(const char *s1, const char *s2)
     while (*s1 == *s2++)
         if (*s1++ == 0)
             return (0);
+
     return (*(const unsigned char *)s1 - *(const unsigned char *)(s2 - 1));
 }
 
@@ -373,14 +488,14 @@ namespace mystl
     int strcmp(const char *s1, const char *s2) { Util2 u; return u.strcmp(s1, s2); }
     size_t strlen(const char *s) { Util2 u; return u.strlen(s); }
     uint32_t strtol(const char *a, const char *b, int c) { Util2 u; return u.strtol(a, b, c); }
-    tm *gmtime(time_t *t) { Util2 u; return u.gmtime(t); }
-    tm *localtime(time_t *t) { Util2 u; return u.localtime(t); }
+    tm *gmtime(time_t *t) { Time2 u; return u.gmtime(t); }
+    tm *localtime(time_t *t) { Time2 u; return u.localtime(t); }
 
     size_t strftime(char *p, size_t max, const char *fmt, const tm *tp)
-    { Util2 u; return u.strftime(p, max, fmt, tp); }
+    { Time2 u; return u.strftime(p, max, fmt, tp); }
 
-    time_t time(time_t *timer) { Util2 u; return u.time(timer); }
-    time_t mktime(tm *timeptr) { Util2 u; return u.mktime(timeptr); }
+    time_t time(time_t *timer) { Time2 u; return u.time(timer); }
+    time_t mktime(tm *timeptr) { Time2 u; return u.mktime(timeptr); }
     base2 hex(base2::HEX);
     base2 oct(base2::OCT);
     base2 dec(base2::DEC);
