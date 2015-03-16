@@ -74,10 +74,10 @@ class DecStreamBuf : public streambuf
 {
     DecStream _ds;
     const uint32_t _put_back = 8;
-    vector<char> _buffer;
+    char _buffer[264];
     uint32_t _pos = 0;
 public:
-    DecStreamBuf(BitInput *bi) : _ds(bi), _buffer(264) { }
+    DecStreamBuf(BitInput *bi) : _ds(bi) { }
     DecStreamBuf(FILE *fp) : _ds(new BitInputFile(fp)) { }
     //fpos2<mbstate_t> seekoff(int64_t off, ios::seekdir way, ios::openmode m);
     int underflow();

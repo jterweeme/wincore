@@ -21,26 +21,10 @@ size_t Time2::strftime(char *p, size_t max, const char *fmt, const tm *tp) const
     return 0;
 }
 
-Util2::streampos fpinbuf::seekoff(int64_t off, seekdir way, openmode m)
-{
-    uint32_t pb = ftell(_fp) > _lastRead ? 8 : 0;
-    return (uint64_t)gptr() - (uint64_t)eback() + ftell(_fp) - _lastRead - pb;
-}
-
 Util2::streamsize streambuf2::in_avail()
 {
     uint64_t a = (uint64_t)egptr() - (uint64_t)gptr(); return a == 0 ? showmanyc() : a;
 }
-
-#if 0
-bool UnixTime::isDST() const
-{
-    if (_yday > 50 && _yday < 298)
-        return true;
-
-    return false;
-}
-#endif
 
 Util2::uint8_t Util2::ctoi(char c)
 {
@@ -83,30 +67,6 @@ bool Time2::isLeap(uint32_t year) const
     return false;
 }
 
-#if 0
-bool UnixTime::isLeap(uint32_t year) const
-{
-    switch (year)
-    {
-    case 1972:
-    case 1976:
-    case 1980:
-    case 1984:
-    case 1988:
-    case 1992:
-    case 1996:
-    case 2000:
-    case 2004:
-    case 2008:
-    case 2012:
-    case 2016:
-        return true;
-    }
-
-    return false;
-}
-#endif
-
 int Time2::daysInMonth(uint32_t month) const
 {
     switch (month)
@@ -123,35 +83,6 @@ int Time2::daysInMonth(uint32_t month) const
     }
 }
 
-#if 0
-uint32_t UnixTime::daysInMonth(uint32_t month) const
-{
-    switch (month)
-    {
-    case 1:
-        return isLeap(_year) ? 29 : 28;
-    case 3:
-    case 5:
-    case 8:
-    case 10:
-        return 30;
-    default:
-        return 31;
-    }
-}
-
-void UnixTime::exportTM(tm &t)
-{
-    t.tm_year = year() - 1900;
-    t.tm_yday = yday();
-    t.tm_mon = mon();
-    t.tm_mday = day();
-    t.tm_hour = hour();
-    t.tm_min = min();
-    t.tm_sec = sec();
-}
-#endif
-
 void Time2::set(int y, int yd, int mon, int d, int h, int min, int s)
 {
     _tm.tm_year = y;
@@ -162,24 +93,6 @@ void Time2::set(int y, int yd, int mon, int d, int h, int min, int s)
     _tm.tm_min = min;
     _tm.tm_sec = s;
 }
-
-#if 0
-void UnixTime::incSec()
-{
-    if (++_sec < 60) return;
-    _sec = 0;
-    if (++_min < 60) return;
-    _min = 0;
-    incHour();
-}
-
-void UnixTime::incHour()
-{
-    if (++_hour < 24) return;
-    _hour = 0;
-    incDay();
-}
-#endif
 
 void Time2::incSec()
 {
@@ -208,31 +121,6 @@ void Time2::incDay()
     _tm.tm_year++;
 }
 
-#if 0
-void UnixTime::incDay()
-{
-    ++_yday;
-    if (++_day <= daysInMonth(_mon)) return;
-    _day = 1;
-    if (++_mon < 12) return;
-    _yday = 0;
-    _mon = 0;
-    _year++;   
-}
-
-void UnixTime::incSec(uint32_t s)
-{
-    for (; s >= 86400; s -= 86400)
-        incDay();
-
-    for (; s >= 3600; s -= 3600)
-        incHour();
-
-    for (uint32_t i = 0; i < s; i++)
-        incSec();
-}
-#endif
-
 void Time2::incSec(uint32_t s)
 {
     for (; s>= 86400; s -= 86400)
@@ -246,36 +134,16 @@ tm Time2::_tm;
 
 tm *Time2::gmtime(const time_t *timer)
 {
-#if 1
     set(*timer);
     return &_tm;
-#else
-    UnixTime ut;
-    ut.set(*timer);
-    ut.exportTM(_tm);
-    return &_tm;
-#endif
 }
 
 tm *Time2::localtime(const time_t *timer)
 {
-#if 1
     set(*timer);
     if (isDST()) incHour();
     incHour();
     return &_tm;
-    return gmtime(timer);
-#else
-    UnixTime ut;
-    ut.set(*timer);
-
-    if (ut.isDST())
-        ut.incSec(3600);
-
-    ut.incSec(3600);
-    ut.exportTM(_tm);
-    return &_tm;
-#endif
 }
 
 void *Util2::memmove(char *dst, const char *src, uint32_t n)
@@ -468,21 +336,6 @@ void istream2::getline(char *dest, size_t size)
 
         dest[pos] = c;
     }
-}
-
-void ofstream2::open(const char *fn, openmode om)
-{
-#if 0
-    switch (om)
-    {
-    case out:
-        _fp = fopen(fn, "wb+");
-        break;
-    default:
-        _fp = fopen(fn, "wb+");
-        break;
-    }
-#endif
 }
 
 int fpinbuf::underflow()

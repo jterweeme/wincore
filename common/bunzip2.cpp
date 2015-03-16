@@ -56,10 +56,8 @@ fpos2<mbstate_t> DecStreamBuf::seekoff(int64_t off, ios::seekdir way, ios::openm
 
 int DecStreamBuf::underflow()
 {
-    if (gptr() < egptr())
-        return (int)(*gptr());
-
-    char *base = &_buffer.front();
+    if (gptr() < egptr()) return (int)(*gptr());
+    char *base = _buffer;
     char *start = base;
 
     if (eback() == base)
@@ -68,11 +66,8 @@ int DecStreamBuf::underflow()
         start += _put_back;
     }
 
-    uint32_t n = _ds.read(start, _buffer.size());
-
-    if (n == 0)
-        return EOF;
-
+    uint32_t n = _ds.read(start, 264);
+    if (n == 0) return EOF;
     setg(base, start, start + n);
     return (int)(*gptr());
 }

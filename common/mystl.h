@@ -80,6 +80,18 @@ public:
     template <typename T, typename T2> T2 uninitialized_copy(T first, T last, T2 result);
 };
 
+namespace mystl
+{
+#ifndef _STDINT_H
+    typedef Util2::uint8_t uint8_t;
+    typedef Util2::uint16_t uint16_t;
+    typedef Util2::int32_t int32_t;
+    typedef Util2::uint32_t uint32_t;
+    typedef Util2::int64_t int64_t;
+    typedef Util2::uint64_t uint64_t;
+#endif
+}
+
 class Time2 : public Util2
 {
     static tm _tm;
@@ -284,7 +296,6 @@ struct mbstate_t2
 
 template <typename T> class fpos2
 {
-    typedef Util2::uint64_t uint64_t;
 public:
     fpos2(uint64_t off) { }
 };
@@ -316,23 +327,25 @@ class streambuf2 : public ios_base2
     char *_outBeg = 0;
     char *_outCur = 0;
     char *_outEnd = 0;
+    streampos _pos = 0;
 protected:
     char *gptr() const { return _inCur; }
     char *egptr() const { return _inEnd; }
     char *eback() const { return _inBeg; }
     void setg(char *beg, char *next, char *end) { _inBeg = beg; _inCur = next; _inEnd = end; }
-    void gbump(int n) { _inCur += n; }
+    void gbump(int n) { _inCur += n; _pos += n; }
     virtual int overflow(int c) { throw "Overflow not implemented"; return 0; }
     virtual int underflow() { throw "Underflow not implemented"; return 0; }
-    virtual int uflow() { return underflow() == EOF ? EOF : (uint8_t)*_inCur++; }
-    virtual streampos seekoff(int64_t, seekdir, openmode) { throw "Seekoff"; return 0; }
+    virtual int uflow() { return underflow() == EOF ? EOF : _bumpy(); }
+    virtual streampos seekoff(int64_t, seekdir, openmode) { return _pos; }
     virtual streamsize xsgetn(char *s, streamsize n);
     virtual streamsize showmanyc() { throw "Showmanyc not implemented"; return 0; }
     virtual int sync() { return 0; }
+    uint8_t _bumpy() { int ret = sgetc(); gbump(1); return (uint8_t)ret; }
 public:
     streamsize in_avail();
     int sputc(char c) { return overflow(c); }
-    int sbumpc() { return ((!gptr()) || (gptr() == egptr())) ? uflow() : (uint8_t)*_inCur++; }
+    int sbumpc() { return ((!gptr()) || (gptr() == egptr())) ? uflow() : _bumpy(); }
     int sgetc() { return ((!gptr()) || gptr() == egptr()) ? underflow() : *gptr(); }
     int snextc() { return sbumpc() == EOF ? EOF : sgetc(); }
     int sgetn(char *s, int n) { return xsgetn(s, n); }
@@ -371,7 +384,7 @@ protected:
     streamsize _lastRead = 0;
     bool _eof = false;
 public:
-    virtual streampos seekoff(int64_t off, seekdir way, openmode m);
+    //virtual streampos seekoff(int64_t off, seekdir way, openmode m);
     fpinbuf *open(FILE *fp) { _fp = fp; return this; }
     virtual int underflow();
     virtual streamsize showmanyc() { return _eof ? -1 : 1; }
@@ -399,8 +412,6 @@ namespace mystl
 
 class string2
 {
-    typedef Util2::size_t size_t;
-    typedef Util2::uint32_t uint32_t;
     char _s[255];
     uint32_t _pos = 0;
 public:
@@ -424,8 +435,6 @@ public:
 
 template <Util2::size_t T> class bitset2
 {
-    typedef Util2::uint32_t uint32_t;
-    typedef Util2::size_t size_t;
     uint32_t _set;
 public:
     bitset2(uint32_t val) : _set(val) { }
@@ -475,7 +484,6 @@ class ifstream2 : public istream2
 {
     filebuf2 _fb;
 public:
-    typedef Util2::uint8_t uint8_t;
     ifstream2() : istream2(&_fb) { }
     ifstream2(const char *s, int m = 1) : istream2(&_fb) { _fb.open(s, ios::in); }
     bool is_open() { return true; }
@@ -508,7 +516,6 @@ public:
 
 class base2
 {
-    typedef Util2::uint8_t uint8_t;
     uint8_t _type;
 public:
     static const uint8_t DEC = 1;
@@ -568,7 +575,7 @@ class ofstream2 : public ostream2
 {
     filebuf2 _fb;
 public:
-    void open(const char *fn, openmode om = out);
+    void open(const char *fn, openmode om = out) { _fb.open(fn, om); }
     void close() { }
     ofstream2() : ostream2(&_fb) { }
     ofstream2(const char *f) : ostream2(&_fb) { _fb.open(f, ios::out); }
@@ -580,37 +587,6 @@ class ostringstream2 : public ostream2
 public:
     ostringstream2() : ostream2(&_sb) { }
     string2 str() const { return _sb.str(); }
-};
-
-template <class T> class vector3
-{
-    typedef Util2::uint32_t uint32_t;
-    T _buf[100];
-    uint32_t _capacity;
-    uint32_t _size;
-    int _busy;
-public:
-    typedef T *const_iterator;
-    vector3() : _capacity(100), _size(0) { }
-    void push_back(const T &a) { _buf[_size++] = a; }
-    const_iterator begin() { return _buf; }
-    const_iterator end() { return _buf + _size; }
-};
-
-template <class T> class vector4
-{
-    typedef Util2::uint32_t uint32_t;
-    T *_buf;
-    uint32_t _capacity;
-    uint32_t _size;
-    int _busy;
-public:
-    typedef T *iterator;
-    typedef T *const_iterator;
-    vector4() : _capacity(100), _size(0) { }
-    void push_back(const T &a) { _buf[_size++] = a; }
-    iterator begin() { return _buf; }
-    iterator end() { return _buf + _size; }   
 };
 
 template <typename T, size_t N> struct array2
@@ -632,14 +608,6 @@ namespace mystl
     template <class T> using vector = vector2<T>;
     template <typename T, size_t N> using array = array2<T, N>;
     template <Util2::size_t T> using bitset = bitset2<T>;
-#ifndef _STDINT_H
-    typedef Util2::uint8_t uint8_t;
-    typedef Util2::uint16_t uint16_t;
-    typedef Util2::int32_t int32_t;
-    typedef Util2::uint32_t uint32_t;
-    typedef Util2::int64_t int64_t;
-    typedef Util2::uint64_t uint64_t;
-#endif
 #ifndef _TIME_H
     typedef Util2::time_t time_t;
     tm *gmtime(time_t *t);
