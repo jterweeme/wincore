@@ -291,7 +291,7 @@ public:
     void incHour();
     void incDay();
     void incSec(uint32_t s);
-    void set(uint32_t t);
+    void set(uint32_t t) { incSec(t); }
     void exportTM(tm &t);
     bool isDST() const;
 };
@@ -319,7 +319,6 @@ public:
 class ios_base2 : public Util2
 {
 public:
-    //typedef _Ios_Seekdir2 seekdir;
     typedef int seekdir;
     typedef int openmode;
     static const uint8_t in = 1;
@@ -355,23 +354,16 @@ protected:
     virtual int uflow() { return underflow() == EOF ? EOF : (uint8_t)*_inCur++; }
     virtual streampos seekoff(int64_t, seekdir, openmode) { throw "Seekoff"; return 0; }
     virtual streamsize xsgetn(char *s, streamsize n);
-    //virtual uint32_t xsputn(const char *s, uint32_t n) { return 0; }
-    //virtual streambuf2 *setbuf(char *s, uint32_t n) { return this; }
-    //virtual streampos seekpos(streampos sp, uint8_t which) { return 0; }
     virtual streamsize showmanyc() { throw "Showmanyc not implemented"; return 0; }
-    //virtual int pbackfail(int c) { return 0; }
     virtual int sync() { return 0; }
 public:
-    streamsize in_avail()
-    { uint64_t a = (uint64_t)egptr() - (uint64_t)gptr(); return a == 0 ? showmanyc() : a; }
-
+    streamsize in_avail();
     int sputc(char c) { return overflow(c); }
     int sbumpc() { return ((!gptr()) || (gptr() == egptr())) ? uflow() : (uint8_t)*_inCur++; }
     int sgetc() { return ((!gptr()) || gptr() == egptr()) ? underflow() : *gptr(); }
     int snextc() { return sbumpc() == EOF ? EOF : sgetc(); }
     int sgetn(char *s, int n) { return xsgetn(s, n); }
     int pubsync() { return sync(); }
-    //streampos pubseekpos(streampos pos, uint8_t which) { return seekpos(pos, which); }
     streampos pubseekoff(int64_t off, seekdir way, openmode m) { return seekoff(off, way, m); }
     virtual ~streambuf2() { }
 };
@@ -399,15 +391,18 @@ namespace mystl
 
 class fpinbuf : public streambuf2
 {
+protected:
     FILE *_fp;
-    typedef Util2::uint32_t uint32_t;
     const uint32_t _put_back = 8;
     char _buffer[264];
-    uint32_t _pos = 0;
+    streamsize _lastRead = 0;
+    bool _eof = false;
 public:
+    virtual streampos seekoff(int64_t off, seekdir way, openmode m);
     fpinbuf *open(FILE *fp) { _fp = fp; return this; }
-    int underflow();
-    streamsize xsgetn(char *s, streamsize n) { return fread(s, n, 1, _fp); }
+    virtual int underflow();
+    virtual streamsize showmanyc() { return _eof ? -1 : 1; }
+    virtual int overflow(int c) { return fputc(c, _fp); }
 };
 
 class fpoutbuf : public streambuf2
@@ -418,32 +413,10 @@ public:
     int overflow(int c) { return fputc(c, _fp); }
 };
 
-class filebuf2 : public streambuf2
+class filebuf2 : public fpinbuf
 {
-    FILE *_fp;
-    const uint32_t _put_back = 8;
-    char _buffer[264];
-    uint32_t _pos = 0;
-    streamsize _lastRead = 0;
-    bool multiFlag = false;
-    bool _eof = false;
 public:
-    streampos seekoff(int64_t off, seekdir way, openmode m)
-    {
-        if (multiFlag)
-        {
-            multiFlag = false;
-            return ftell(_fp);
-        }
-
-        uint32_t pb = ftell(_fp) > _lastRead ? 8 : 0;
-        return (uint64_t)gptr() - (uint64_t)eback() + ftell(_fp) - _lastRead - pb;
-    }
-
-    int overflow(int c) { return fputc(c, _fp); }
-    streamsize showmanyc() { return _eof ? -1 : 1; }
     filebuf2 *open(const char *fn, ios::openmode m);
-    int underflow();
 };
 
 namespace mystl

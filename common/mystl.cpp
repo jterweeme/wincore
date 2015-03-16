@@ -16,6 +16,17 @@ size_t Time2::strftime(char *p, size_t max, const char *fmt, const tm *tp) const
     return 0;
 }
 
+Util2::streampos fpinbuf::seekoff(int64_t off, seekdir way, openmode m)
+{
+    uint32_t pb = ftell(_fp) > _lastRead ? 8 : 0;
+    return (uint64_t)gptr() - (uint64_t)eback() + ftell(_fp) - _lastRead - pb;
+}
+
+Util2::streamsize streambuf2::in_avail()
+{
+    uint64_t a = (uint64_t)egptr() - (uint64_t)gptr(); return a == 0 ? showmanyc() : a;
+}
+
 bool UnixTime::isDST() const
 {
     if (_yday > 50 && _yday < 298)
@@ -139,13 +150,6 @@ void Time2::set(uint32_t y, uint32_t yd, uint32_t mon, uint32_t d, uint32_t h, u
     _tm.tm_min = min;
 }
 
-void UnixTime::set(uint32_t t)
-{
-
-
-    incSec(t);
-}
-
 void UnixTime::incSec()
 {
     if (++_sec < 60) return;
@@ -238,24 +242,6 @@ tm *Time2::localtime(const time_t *timer)
     ut.incSec(3600);
     ut.exportTM(_tm);
     return &_tm;
-}
-
-int fpinbuf::underflow()
-{
-    if (gptr() < egptr()) return (int)(*gptr());
-    char *base = _buffer;
-    char *start = base;
-
-    if (eback() == base)
-    {
-        memmove(base, egptr() - _put_back, _put_back);
-        start += _put_back;
-    }
-
-    uint32_t n = fread(start, 1, 264 - (start - base), _fp);
-    if (n == 0) return EOF;
-    setg(base, start, start + n);
-    return (uint8_t)(*gptr());
 }
 
 void *Util2::memmove(char *dst, const char *src, uint32_t n)
@@ -421,14 +407,7 @@ Util2::streamsize streambuf2::xsgetn(char *s, streamsize length)
     for (streamsize i = 0; i < length; i++)
     {
         int c = sbumpc();
-
-        if (c == EOF)
-        //if (in_avail() <= 0)
-        {
-            //_eof = true;
-            return i;
-        }
-
+        if (c == EOF) return i;
         s[i] = c;
     }
 
@@ -443,7 +422,6 @@ void istream2::getline(char *dest, size_t size)
 
         if (c == EOF)
         {
-            //_eof = true;
             dest[pos] = '\0';
             return;
         }
@@ -473,25 +451,15 @@ void ofstream2::open(const char *fn, openmode om)
 #endif
 }
 
-#if 0
-int streambuf2::sungetc()
+int fpinbuf::underflow()
 {
-    if ((!gptr()) || (gptr()==eback()));
-    gbump(-1);
-    return *gptr();
-}
-#endif
-
-int filebuf2::underflow()
-{
-    Util2 u;
     if (gptr() < egptr()) return (int)(*gptr());
     char *base = _buffer;
     char *start = base;
 
     if (eback() == base)
     {
-        u.memmove(base, egptr() - _put_back, _put_back);
+        memmove(base, egptr() - _put_back, _put_back);
         start += _put_back;
     }
 
