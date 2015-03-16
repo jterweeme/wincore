@@ -57,11 +57,11 @@ public:
     void *memcpy(void *dest, const void *src, size_t n);
     void *memset(void *s, const int c, const size_t n);
     void *memmove(char *dst, const char *src, uint32_t n);
-    char *strcpy(char *dest, const char *src);
-    char *strncpy(char *dest, const char *src, size_t n);
+    char *strcpy(char *dest, const char *src) const;
+    char *strncpy(char *dest, const char *src, size_t n) const;
     size_t strlen(const char *s);
-    int strcmp(const char* s1, const char *s2);
-    int strncmp(const char *s1, const char *s2, size_t n);
+    int strcmp(const char* s1, const char *s2) const;
+    int strncmp(const char *s1, const char *s2, size_t n) const;
     char *strtok(char *str, const char *delimiters);
     uint8_t ctoi(char c);
     uint32_t upow(uint32_t base, uint32_t exp);
@@ -84,8 +84,8 @@ class Time2 : public Util2
 {
     static tm _tm;
 public:
-    void set(uint32_t y, uint32_t yd, uint32_t mon, uint32_t d, uint32_t h, uint32_t min);
-    void reset() { set(70, 0, 0, 1, 0, 0); }
+    void set(int y, int yd, int mon, int d, int h, int min, int s);
+    void reset() { set(70, 0, 0, 1, 0, 0, 0); }
     size_t strftime(char *p, size_t max, const char *fmt, const tm *tp) const;
     tm *gmtime(const time_t *timer);
     tm *localtime(const time_t *t);

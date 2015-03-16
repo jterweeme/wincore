@@ -10,8 +10,13 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
 
 size_t Time2::strftime(char *p, size_t max, const char *fmt, const tm *tp) const
 {
-    snprintf(p, max, "%u-%02u-%02u %02u:%02u",
-        tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday, tp->tm_hour, tp->tm_min);
+    if (strcmp(fmt, "%F %T") == 0)
+        snprintf(p, max, "%u-%02u-%02u %02u:%02u:%02u",
+            tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec);
+
+    if (strcmp(fmt, "%F %R") == 0)
+        snprintf(p, max, "%u-%02u-%02u %02u:%02u",
+            tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday, tp->tm_hour, tp->tm_min);
 
     return 0;
 }
@@ -137,10 +142,11 @@ void UnixTime::exportTM(tm &t)
     t.tm_mon = mon();
     t.tm_mday = day();
     t.tm_hour = hour();
-    t.tm_min = min();   
+    t.tm_min = min();
+    t.tm_sec = sec();
 }
 
-void Time2::set(uint32_t y, uint32_t yd, uint32_t mon, uint32_t d, uint32_t h, uint32_t min)
+void Time2::set(int y, int yd, int mon, int d, int h, int min, int s)
 {
     _tm.tm_year = y;
     _tm.tm_yday = yd;
@@ -148,6 +154,7 @@ void Time2::set(uint32_t y, uint32_t yd, uint32_t mon, uint32_t d, uint32_t h, u
     _tm.tm_mday = d;
     _tm.tm_hour = h;
     _tm.tm_min = min;
+    _tm.tm_sec = s;
 }
 
 void UnixTime::incSec()
@@ -220,7 +227,7 @@ tm Time2::_tm;
 
 tm *Time2::gmtime(const time_t *timer)
 {
-#if 0
+#if 1
     set(*timer);
     return &_tm;
 #else
@@ -498,7 +505,7 @@ ostream2& ostream2::printInt(const uint32_t u)
     return *this;
 }
 
-int Util2::strcmp(const char *s1, const char *s2)
+int Util2::strcmp(const char *s1, const char *s2) const
 {
     while (*s1 == *s2++)
         if (*s1++ == 0)
@@ -507,7 +514,7 @@ int Util2::strcmp(const char *s1, const char *s2)
     return (*(const unsigned char *)s1 - *(const unsigned char *)(s2 - 1));
 }
 
-int Util2::strncmp(const char *s1, const char *s2, size_t n)
+int Util2::strncmp(const char *s1, const char *s2, size_t n) const
 {
     for ( ; n > 0; s1++, s2++, --n)
         if (*s1 != *s2)
@@ -517,7 +524,7 @@ int Util2::strncmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
-char *Util2::strncpy(char *dest, const char *src, size_t n)
+char *Util2::strncpy(char *dest, const char *src, size_t n) const
 {
     size_t i;
     for (i = 0; i < n && src[i] != '\0'; i++) dest[i] = src[i];
@@ -525,7 +532,7 @@ char *Util2::strncpy(char *dest, const char *src, size_t n)
     return dest;
 }
 
-char *Util2::strcpy(char *dest, const char *src)
+char *Util2::strcpy(char *dest, const char *src) const
 {
     char *save = dest;
     while ((*dest++ = *src++));
