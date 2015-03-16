@@ -84,6 +84,7 @@ class Time2 : public Util2
 {
     static tm _tm;
 public:
+    bool isDST() const { return _tm.tm_yday > 50 && _tm.tm_yday < 298; }
     void set(int y, int yd, int mon, int d, int h, int min, int s);
     void reset() { set(70, 0, 0, 1, 0, 0, 0); }
     size_t strftime(char *p, size_t max, const char *fmt, const tm *tp) const;
@@ -94,7 +95,7 @@ public:
     void incSec();
     void incHour();
     void incDay();
-    void incSec(uint32_t s) { for (uint32_t i = 0; i < s; i++) incSec(); }
+    void incSec(uint32_t s);
     void set(uint32_t s) { reset(); incSec(s); }
     time_t time(time_t *timer) { return 0; }
     time_t mktime(tm *timeptr) { return 0; }
@@ -266,34 +267,6 @@ protected:
     void _M_insert_aux(iterator position, const V &x);
     size_t _M_check_len(size_t n, const char * s) const;
     template<typename Ptr> Ptr _M_data_ptr(Ptr ptr) const { return ptr; }
-};
-
-class UnixTime : public Util2
-{
-    uint32_t _year = 1970;
-    uint32_t _yday = 0;
-    uint32_t _mon = 0;
-    uint32_t _day = 1;
-    uint32_t _hour = 0;
-    uint32_t _min = 0;
-    uint32_t _sec = 0;
-    bool isLeap(uint32_t year) const;
-    uint32_t daysInMonth(uint32_t month) const;
-public:
-    uint32_t year() const { return _year; }
-    uint32_t yday() const { return _yday; }
-    uint32_t mon() const { return _mon; }
-    uint32_t day() const { return _day; }
-    uint32_t hour() const { return _hour; }
-    uint32_t min() const { return _min; }
-    uint32_t sec() const { return _sec; }
-    void incSec();
-    void incHour();
-    void incDay();
-    void incSec(uint32_t s);
-    void set(uint32_t t) { incSec(t); }
-    void exportTM(tm &t);
-    bool isDST() const;
 };
 
 enum _Ios_Seekdir2

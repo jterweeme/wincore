@@ -32,6 +32,7 @@ Util2::streamsize streambuf2::in_avail()
     uint64_t a = (uint64_t)egptr() - (uint64_t)gptr(); return a == 0 ? showmanyc() : a;
 }
 
+#if 0
 bool UnixTime::isDST() const
 {
     if (_yday > 50 && _yday < 298)
@@ -39,6 +40,7 @@ bool UnixTime::isDST() const
 
     return false;
 }
+#endif
 
 Util2::uint8_t Util2::ctoi(char c)
 {
@@ -81,6 +83,7 @@ bool Time2::isLeap(uint32_t year) const
     return false;
 }
 
+#if 0
 bool UnixTime::isLeap(uint32_t year) const
 {
     switch (year)
@@ -102,6 +105,7 @@ bool UnixTime::isLeap(uint32_t year) const
 
     return false;
 }
+#endif
 
 int Time2::daysInMonth(uint32_t month) const
 {
@@ -119,6 +123,7 @@ int Time2::daysInMonth(uint32_t month) const
     }
 }
 
+#if 0
 uint32_t UnixTime::daysInMonth(uint32_t month) const
 {
     switch (month)
@@ -145,6 +150,7 @@ void UnixTime::exportTM(tm &t)
     t.tm_min = min();
     t.tm_sec = sec();
 }
+#endif
 
 void Time2::set(int y, int yd, int mon, int d, int h, int min, int s)
 {
@@ -157,6 +163,7 @@ void Time2::set(int y, int yd, int mon, int d, int h, int min, int s)
     _tm.tm_sec = s;
 }
 
+#if 0
 void UnixTime::incSec()
 {
     if (++_sec < 60) return;
@@ -172,6 +179,7 @@ void UnixTime::incHour()
     _hour = 0;
     incDay();
 }
+#endif
 
 void Time2::incSec()
 {
@@ -200,6 +208,7 @@ void Time2::incDay()
     _tm.tm_year++;
 }
 
+#if 0
 void UnixTime::incDay()
 {
     ++_yday;
@@ -222,6 +231,16 @@ void UnixTime::incSec(uint32_t s)
     for (uint32_t i = 0; i < s; i++)
         incSec();
 }
+#endif
+
+void Time2::incSec(uint32_t s)
+{
+    for (; s>= 86400; s -= 86400)
+        incDay();
+
+    for (uint32_t i = 0; i < s; i++)
+        incSec();
+}
 
 tm Time2::_tm;
 
@@ -240,6 +259,13 @@ tm *Time2::gmtime(const time_t *timer)
 
 tm *Time2::localtime(const time_t *timer)
 {
+#if 1
+    set(*timer);
+    if (isDST()) incHour();
+    incHour();
+    return &_tm;
+    return gmtime(timer);
+#else
     UnixTime ut;
     ut.set(*timer);
 
@@ -249,6 +275,7 @@ tm *Time2::localtime(const time_t *timer)
     ut.incSec(3600);
     ut.exportTM(_tm);
     return &_tm;
+#endif
 }
 
 void *Util2::memmove(char *dst, const char *src, uint32_t n)
