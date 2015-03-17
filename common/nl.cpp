@@ -1,10 +1,20 @@
-#include <stdio.h>
+#include "common.h"
 int main()
 {
     char onzin[255] = {0};
-    fread(onzin, 10, 1, stdin);
-    int count = ftell(stdin);
-    printf("%d\n", count);
+
+    for (int i = 1; !cin.eof();)
+    {
+        cin.getline(onzin, 255);
+
+        if (cin.eof())
+            break;
+
+        if (strlen(onzin) > 0)
+            cout << setw(6) << i++ << "\t" << onzin << "\n";
+        else
+            cout << "       " << onzin << "\n";
+    }
     return 0;
 }
 

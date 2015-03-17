@@ -43,7 +43,7 @@ jpg2tga: jpg2tga.o
 kompakt: kompakt.o main.o mystl.o filesys.o
 ls: ls.o
 md5s: md5s.o mystl.o hasher.o
-nl: nl.o
+nl: nl.o mystl.o
 od: od.o mystl.o odmain.o
 rm: rm.o mystl.o
 tar: tar.o tarm.o bitinput.o bunzip2.o fector.o mystl.o
@@ -91,7 +91,7 @@ kompakt.o: kompakt.cpp kompakt.h $(COMMON_H)
 ls.o: ls.cpp
 main.o: main.cpp
 mystl.o: mystl.cpp $(MYSTL_H)
-nl.o: nl.cpp
+nl.o: nl.cpp $(COMMON_H)
 od.o: od.cpp od.h $(COMMON_H)
 odmain.o: odmain.cpp
 rm.o: rm.cpp
@@ -149,10 +149,13 @@ testmd5sum:
 testbunzip2:
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
 
+testnl:
+	$(VALGRIND) ./cat tr.cpp | ./nl | diff nl.out -
+
 testgmtime1:
 	$(VALGRIND) ./tgmtime1
 
-tests1: testgunzip2 testkompakt testbunzip2 testmd5sum testgmtime1
+tests1: testgunzip2 testkompakt testbunzip2 testmd5sum testgmtime1 testnl
 
 test: tests1 test1go tgunzip1go testod testtar testbase64 teststl1go
 	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga

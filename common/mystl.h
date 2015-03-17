@@ -370,6 +370,7 @@ public:
     streambuf2 *rdbuf(streambuf2 *sb) { return _sb = sb; }
     ios2(streambuf2 *sb) : _sb(sb) { }
     ios2() { }
+    bool eof() const { return _sb->in_avail() == -1; }
 };
 
 namespace mystl

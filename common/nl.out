@@ -1,0 +1,12 @@
+     1	#include "common.h"
+     2	   
+     3	int main(int argc, char **argv)
+     4	{
+     5	    for (int i = 0; i < 10; i++)
+     6	        cout.put('e');
+       
+     7	    cout << "\n";
+     8	    return 0;
+     9	}
+       
+       
