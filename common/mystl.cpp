@@ -274,7 +274,7 @@ void *Util2::memset(void *s, int c, size_t n)
     return s;
 }
 
-filebuf2 *filebuf2::open(const char *fn, ios::openmode m)
+filebuf2 *filebuf2::open(const char *fn, ios2::openmode m)
 {
     switch (m)
     {

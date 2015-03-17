@@ -140,6 +140,7 @@ teststl1go:
 
 testtar:
 	$(VALGRIND) ./tar -tvf dinges.tar | ./diff -s dinges.out -
+	$(VALGRIND) ./tar -tvjf dinges.tar.bz2 | ./diff -s dinges.out -
 
 testmd5sum:
 	$(VALGRIND) ./md5s zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -

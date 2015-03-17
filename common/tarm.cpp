@@ -94,14 +94,16 @@ int AppTar::run(int argc, char **argv)
 {
     Options o(argc, argv);
     FILE *fp = fopen(o.archive().c_str(), "r");
-    TarStream *ts;
+    BitInputFile bif;
     streambuf *bt;
     istream *is;
+    TarStream *ts;
     
     switch (o.compression())
     {
     case 3:
-        bt = new DecStreamBuf(fp);
+        bif.open(fp);
+        bt = new DecStreamBuf(&bif);
         break;
     default:
         bt = new buftest(fp);

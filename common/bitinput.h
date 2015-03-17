@@ -21,6 +21,7 @@ class BitInputStream : public BitInput
     istream *_is;
 public:
     BitInputStream(istream *is) : _is(is) { }
+protected:
     int getc() { return _is->get(); }
 };
 
@@ -28,7 +29,10 @@ class BitInputFile : public BitInput
 {
     FILE *_fp;
 public:
+    BitInputFile() { }
     BitInputFile(FILE *fp) : _fp(fp) { }
+    void open(FILE *fp) { _fp = fp; }
+protected:
     int getc() { return fgetc(_fp); }
 };
 

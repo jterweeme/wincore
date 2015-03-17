@@ -33,6 +33,7 @@ public:
     typedef long int ptrdiff_t;
     typedef uint32_t streampos;
     typedef int32_t streamsize;
+    typedef int32_t streamoff;
 #ifndef _TIME_H
     typedef uint32_t time_t;
 #endif
@@ -82,6 +83,7 @@ public:
 
 namespace mystl
 {
+    typedef Util2::streampos streampos;
 #ifndef _STDINT_H
     typedef Util2::uint8_t uint8_t;
     typedef Util2::uint16_t uint16_t;
@@ -337,7 +339,7 @@ protected:
     virtual int overflow(int c) { throw "Overflow not implemented"; return 0; }
     virtual int underflow() { throw "Underflow not implemented"; return 0; }
     virtual int uflow() { return underflow() == EOF ? EOF : _bumpy(); }
-    virtual streampos seekoff(int64_t, seekdir, openmode) { return _pos; }
+    virtual streampos seekoff(streamoff, seekdir, openmode) { return _pos; }
     virtual streamsize xsgetn(char *s, streamsize n);
     virtual streamsize showmanyc() { throw "Showmanyc not implemented"; return 0; }
     virtual int sync() { return 0; }
@@ -384,7 +386,6 @@ protected:
     streamsize _lastRead = 0;
     bool _eof = false;
 public:
-    //virtual streampos seekoff(int64_t off, seekdir way, openmode m);
     fpinbuf *open(FILE *fp) { _fp = fp; return this; }
     virtual int underflow();
     virtual streamsize showmanyc() { return _eof ? -1 : 1; }
@@ -402,7 +403,7 @@ public:
 class filebuf2 : public fpinbuf
 {
 public:
-    filebuf2 *open(const char *fn, ios::openmode m);
+    filebuf2 *open(const char *fn, ios2::openmode m);
 };
 
 namespace mystl

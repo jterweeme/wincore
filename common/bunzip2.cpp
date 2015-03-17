@@ -43,16 +43,23 @@ void Table::calc()
 int DecStream::read(char *buf, int n)
 {
     int i = 0;
-    for (int c; (c = read()) != -1 && i < n; i++) buf[i] = c;
+    for (i = 0; i < n; i++)
+    {
+        int c = read();
+
+        if (c == -1)
+            return i;
+
+        buf[i] = c;
+    }
     return i;
 }
 
-#if 0
-fpos2<mbstate_t> DecStreamBuf::seekoff(int64_t off, ios::seekdir way, ios::openmode m)
+streampos DecStreamBuf::seekoff(ios::streamoff off, ios::seekdir way, ios::openmode m)
 {
-    return (uint64_t)_M_in_cur - (uint64_t)_M_in_beg;
+    streampos pos = _pos2 - ((uint64_t)egptr() - (uint64_t)gptr());
+    return pos;
 }
-#endif
 
 int DecStreamBuf::underflow()
 {
@@ -66,10 +73,11 @@ int DecStreamBuf::underflow()
         start += _put_back;
     }
 
-    uint32_t n = _ds.read(start, 264);
-    if (n == 0) return EOF;
-    setg(base, start, start + n);
-    return (int)(*gptr());
+    _lastRead2 = _ds.read(start, 264 - (start - base));
+    _pos2 += _lastRead2;
+    if (_lastRead2 == 0) return EOF;
+    setg(base, start, start + _lastRead2);
+    return (uint8_t)(*gptr());
 }
 
 void Table::dump(ostream &os) const
