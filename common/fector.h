@@ -19,18 +19,8 @@ public:
 
     ~Fector() { delete[] _buf; }
     uint32_t size() const { return _size; }
-
-    T at(uint32_t i) const
-    {
-        //if (i >= _size) throw out_of_range("Fector");
-        return _buf[i];
-    }
-
-    T set(uint32_t i, T val)
-    {
-        //if (i >= _size) throw out_of_range("Fector");
-        return _buf[i] = val;
-    }
+    T at(uint32_t i) const { return _buf[i]; }
+    T set(uint32_t i, T val) { return _buf[i] = val; }
 
     T max(uint32_t range)
     {

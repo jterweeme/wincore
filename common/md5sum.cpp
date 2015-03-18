@@ -6,15 +6,25 @@ class Options
 {
     bool _check = false;
     bool _cin = false;
+    bool _compare = false;
+    string _compareSum;
     bool _help;
     Vest _files;
 public:
     Vest files() const { return _files; }
+    bool compare() const { return _compare; }
+    string compareSum() const { return _compareSum; }
     bool check() const { return _check; }
     void parse(int argc, char **argv);
     bool cin() const { return _cin; }
 };
 
+/*
+Class Paar stores a known MD5 sum in _hash and
+a filename in _fn. Given the filename, a file can
+be opened and hashed. The hash can be compared to the
+known good hash in _hash.
+*/
 class Paar
 {
     const Hash _hash;
@@ -51,6 +61,10 @@ void Options::parse(const int argc, char **argv)
             {
             case 'c':
                 _check = true;
+                break;
+            case 'x':
+                _compare = true;
+                _compareSum = string(argv[++i]);
                 break;
             case '\0':
                 _cin = true;
@@ -112,6 +126,19 @@ int AppMD5Sum::run(int argc, char **argv)
 
     if (options.cin())
         _hashCin(cout);
+
+    if (options.compare())
+    {
+        _hasher.stream(cin);
+        Hash h(options.compareSum().c_str());
+
+        if (_hasher.hash().isEqual(h))
+            cout << "\e[1;32mOK\e[0m\n";
+        else
+            cout << "\e[1;31mFAILED\e[0m\n";
+
+        //cout << _hasher.hash().toString() << "\n";
+    }
 
     Vest files = options.files();
 
