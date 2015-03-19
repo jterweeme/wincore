@@ -120,6 +120,9 @@ wingroup.o: wingroup.cpp
 yes.o: yes.cpp fector.h $(COMMON_H)
 zcat.o: zcat.cpp $(GUNZIP_H)
 
+download:
+	$(VALGRIND) wget -i download.get
+
 test1go: test1
 	$(VALGRIND) ./test1
 
@@ -134,12 +137,11 @@ testgunzip2:
 
 testbzcat:
 	$(VALGRIND) ./bzcat battery.bz2 | ./md5sum -x efc57edfaf907b5707878f544b39d6d5
-	#$(VALGRIND) ./bzcat 7z920.tar.bz2 | ./md5sum -x 30df35882f3b6e20007e2e9aef07554b
 
 testzcat:
 	$(VALGRIND) ./zcat znew.gz | ./md5sum -x 742b0b4d1543c6df46e35b77ec6baa53
-	$(VALGRIND) ./zcat arduinousb_release_004.tar.gz | ./md5sum -x 7e830e169f38ad7f28cc5e8da51c515d
-	$(VALGRIND) ./zcat cdrtools-3.01a24.tar.gz | ./md5sum -x aa1660fe345a247cf9d7fa116d3ab1d6
+	$(VALGRIND) ./zcat octave-3.8.2.tar.gz | ./md5sum -x 1da9f884aefbf5191243ed64286695e9
+	$(VALGRIND) ./zcat mc-4.6.1.tar.gz | ./md5sum -x b11aac7c755bc5b4ad2cec64d6274d6d
 
 testkompakt:
 	$(VALGRIND) ./bzcat battery.bz2 | ./kompakt -l -s | ./diff -s kompakt1.out -
