@@ -137,6 +137,7 @@ testgunzip2:
 
 testbzcat:
 	$(VALGRIND) ./bzcat battery.bz2 | ./md5sum -x efc57edfaf907b5707878f544b39d6d5
+	$(VALGRIND) ./bzcat dinges.tar.bz2 | ./md5sum -x cffd664a74cbbd3d9f6877668c42fa03
 
 testzcat:
 	$(VALGRIND) ./zcat znew.gz | ./md5sum -x 742b0b4d1543c6df46e35b77ec6baa53
@@ -165,6 +166,7 @@ testmd5sum:
 
 testbunzip2:
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
+	$(VALGRIND) ./bunzip2 dinges.tar.bz2 dinges.tar
 
 testnl:
 	$(VALGRIND) ./cat tr.cpp | ./nl | diff nl.out -
