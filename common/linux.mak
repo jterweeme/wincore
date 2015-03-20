@@ -15,10 +15,13 @@ TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
     cppcom01 cppcom02 \
     jpg2tga kompakt ls md5sum nl od rm tar tee test1 test2 test3 testbinp \
-    teststl1 tgmtime1 tgunzip1 touch tr unix2dos uuidgen weekday wingroup yes zcat
+    teststl1 tgmtime1 tgunzip1 touch tr tstdio1 unix2dos uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
 	g++ $(CXXFLAGS) -c -o $@ $<
+
+%.o: %.asm
+	yasm -f elf64 $<
 
 %: %.o
 	g++ -o $@ $^
@@ -62,6 +65,7 @@ tgmtime1: tgmtime1.o mystl.o
 tgunzip1: tgunzip1.o gunzip.o
 touch: touch.o
 tr: tr.o mystl.o
+tstdio1: tstdio1.o linux64.o
 unix2dos: unix2dos.o mystl.o
 uuidgen: uuidgen.o
 weekday: weekday.o mystl.o
@@ -113,6 +117,7 @@ tgmtime1.o: tgmtime1.cpp $(COMMON_H)
 tgunzip1.o: tgunzip1.cpp
 touch.o: touch.cpp
 tr.o: tr.cpp $(COMMON_H)
+tstdio1.o: tstdio1.cpp
 unix2dos.o: unix2dos.cpp
 uuidgen.o: uuidgen.cpp
 weekday.o: weekday.cpp
