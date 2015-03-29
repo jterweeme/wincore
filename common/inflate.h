@@ -1,11 +1,14 @@
 #ifndef _INFLATE_H_
 #define _INFLATE_H_
+//#include "common.h"
+#if 1
 #include <iostream>
 #include <fstream>
 #include <stdint.h>
 #include <algorithm>
 #include <sstream>
 #include <vector>
+#endif
 
 typedef vector<int> Vint;
 typedef vector<uint8_t> Vugt;

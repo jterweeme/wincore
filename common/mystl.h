@@ -1,44 +1,46 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
+#include "mytypes.h"
+#if 1
 #include <cstdio>
+#else
+#include "mystdio.h"
+#endif
 
 namespace mystl
 {
-#ifndef _TIME_H
-struct tm
-{
-    int tm_sec;
-    int tm_min;
-    int tm_hour;
-    int tm_mday;
-    int tm_mon;
-    int tm_year;
-    int tm_wday;
-    int tm_yday;
-};
+    typedef MyTypes::streampos streampos;
+    typedef MyTypes::size_t size_t;
+#ifndef _STDINT_H
+    typedef MyTypes::uint8_t uint8_t;
+    typedef MyTypes::uint16_t uint16_t;
+    typedef MyTypes::int32_t int32_t;
+    typedef MyTypes::uint32_t uint32_t;
+    typedef MyTypes::int64_t int64_t;
+    typedef MyTypes::uint64_t uint64_t;
 #endif
 }
 
-class Util2
+#ifndef _TIME_H
+#include "mytime.h"
+
+namespace mystl
+{
+    typedef uint32_t time_t;
+    tm *gmtime(time_t *t);
+    tm *localtime(time_t *t);
+    time_t time(time_t *timer);
+    time_t mktime(tm *timeptr);
+    size_t strftime(char *p, size_t max, const char *fmt, const tm *tp);
+}
+#endif
+
+class Util2 : public MyTypes
 {
 public:
-    typedef unsigned char uint8_t;
-    typedef short int16_t;
-    typedef unsigned short uint16_t;
-    typedef int int32_t;
-    typedef unsigned uint32_t;
-    typedef long long int64_t;
-    typedef unsigned long long uint64_t;
-    typedef long unsigned size_t;
-    typedef long int ptrdiff_t;
-    typedef uint32_t streampos;
-    typedef int32_t streamsize;
-    typedef int32_t streamoff;
 #ifndef _TIME_H
-    typedef uint32_t time_t;
+    //typedef uint32_t time_t;
 #endif
-    struct __true_type { };
-    struct __false_type { };
     struct true_type { };
     struct false_type { };
     void reverse(char *str, const int length);
@@ -81,19 +83,6 @@ public:
     template <typename T, typename T2> T2 uninitialized_copy(T first, T last, T2 result);
 };
 
-namespace mystl
-{
-    typedef Util2::streampos streampos;
-#ifndef _STDINT_H
-    typedef Util2::uint8_t uint8_t;
-    typedef Util2::uint16_t uint16_t;
-    typedef Util2::int32_t int32_t;
-    typedef Util2::uint32_t uint32_t;
-    typedef Util2::int64_t int64_t;
-    typedef Util2::uint64_t uint64_t;
-#endif
-}
-
 class Time2 : public Util2
 {
     static tm _tm;
@@ -115,42 +104,23 @@ public:
     time_t mktime(tm *timeptr) { return 0; }
 };
 
-template <typename T> struct iterator_traits2
+template <typename T, typename U = int> class ni
 {
-    typedef typename T::pointer pointer;
-    typedef typename T::reference reference;
-};
-
-template <typename T> struct iterator_traits2<T*>
-{
-    typedef T *pointer;
-    typedef T &reference;
-};
-
-template <typename T> struct iterator_traits2<const T*>
-{
-    typedef const T* pointer;
-    typedef const T& reference;
-};
-
-template <typename T, typename U> class ni
-{
-protected:
+public:
     T _M_current;
 public:
     typedef T iterator_type;
     typedef Util2::ptrdiff_t difference_type;
-    typedef typename iterator_traits2<T>::reference reference;
-    typedef typename iterator_traits2<T>::pointer pointer;
     ni() : _M_current(T()) { }
     explicit ni(const T &i) : _M_current(i) { }
-    reference operator*() const { return *_M_current; }
-    pointer operator->() const { return _M_current; }
+    template <typename T2> struct itts;
+    template <typename T2> struct itts<T2*> { typedef T2 &ref; };
+    typename itts<T>::ref operator*() const { return *_M_current; }
+    T operator->() const { return _M_current; }
     ni& operator++() { ++_M_current; return *this; }
     ni operator++(int) { return ni(_M_current++); }
     ni operator--() { --_M_current; return *this; }
     ni operator--(int) { return ni(_M_current--); }
-    reference operator[](difference_type __n) const { return _M_current[__n]; }
     ni& operator+=(difference_type __n) { _M_current += __n; return *this; }
     ni operator+(difference_type n) const { return ni(_M_current + n); }
     ni& operator-=(difference_type __n) { _M_current -= __n; return *this; }
@@ -158,17 +128,19 @@ public:
     const T& base() const { return _M_current; }
 };
 
-template <typename T, typename U> inline bool operator==(const ni<T, U>& lhs, const ni<T, U>& rhs)
+template <typename T = int, typename U = int> inline bool
+operator==(const ni<T>& lhs, const ni<T>& rhs)
 { return lhs.base() == rhs.base(); }
 
-template<typename L, typename R, typename C> bool operator!=(const ni<L, C> &l, const ni<R, C> &r)
+template<typename L = int, typename R = int> bool
+operator!=(const ni<L> &l, const ni<R> &r)
 { return l.base() != r.base(); }
 
-template<typename I, typename C> inline bool operator<(const ni<I, C> &lhs, const ni<I, C> &rhs)
+template<typename T = int> inline bool operator<(const ni<T> &lhs, const ni<T> &rhs)
 { return lhs.base() < rhs.base(); }
 
-template<typename T, typename C> inline typename ni<T, C>::difference_type
-operator-(const ni<T, C>& lhs, const ni<T, C>& rhs)
+template<typename T = int, typename C = int> inline typename ni<T, C>::difference_type
+operator-(const ni<T>& lhs, const ni<T>& rhs)
 { return lhs.base() - rhs.base(); }
 
 template <typename T, bool> struct Iter_base { static T _S_base(T it) { return it; } };
@@ -189,12 +161,8 @@ inline void* operator new(Util2::size_t, void* p) noexcept { return p; }
 template<typename T> class allocator2
 {
 public:
-    typedef Util2::size_t size_type;
-    typedef Util2::ptrdiff_t difference_type;
     typedef T *pointer;
     typedef const T *const_pointer;
-    typedef T &reference;
-    typedef const T& const_reference;
     allocator2() { }
     template<typename T1> allocator2(const allocator2<T1>&) { }
     ~allocator2() { }
@@ -217,7 +185,7 @@ template <typename T> struct alloc_traits
     static const T &_S_select_on_copy(const T &a) { return a; }
 };
 
-template <typename T, typename U> struct Vector_impl2 : public allocator2<T>
+template <typename T> struct Vector_impl2 : public allocator2<T>
 {
     T *start = 0;
     T *fin = 0;
@@ -230,7 +198,7 @@ template<typename T> struct Vector_base
 {
     typedef allocator2<T> A;
     void _M_create_storage(size_t n);
-    Vector_impl2<T, allocator2<T> > _M_impl;
+    Vector_impl2<T> _M_impl;
     A& _M_get_Tp_allocator() { return *static_cast<A*>(&_M_impl); }
     const A& _M_get_Tp_allocator() const { return *static_cast<const A*>(&_M_impl); }
     allocator2<T> get_allocator() const { return allocator2<T>(_M_get_Tp_allocator()); }
@@ -243,44 +211,44 @@ template<typename T> struct Vector_base
     void _M_deallocate(T *p, size_t n) { if (p) alloc_traits<A>::deallocate(_M_impl, p, n); }
 };
 
-template <typename V> class vector2 : public Vector_base<V>
+template <typename T> class vector2 : public Vector_base<T>
 {
-    typedef Vector_base<V> Base;
-    typedef alloc_traits<typename Vector_base<V>::A> atraits;
+    typedef Vector_base<T> Base;
+    typedef alloc_traits<typename Vector_base<T>::A> atraits;
 protected:
     using Base::_M_allocate;
     using Base::_M_deallocate;
     using Base::_M_impl;
     using Base::_M_get_Tp_allocator;
 public:
-    typedef ni<V *, vector2> iterator;
-    typedef ni<const V *, vector2> const_iterator;
-    void _M_fill_initialize(size_t n, const V &value) { _M_impl.fin = _M_impl.eos; }
+    typedef ni<T*> iterator;
+    typedef ni<const T*> const_iterator;
+    void _M_fill_initialize(size_t n, const T &value) { _M_impl.fin = _M_impl.eos; }
     vector2() : Base() { }
-    explicit vector2(size_t n) : Base(n, allocator2<V>()) { _M_fill_initialize(n, V()); }
+    explicit vector2(size_t n) : Base(n, allocator2<T>()) { _M_fill_initialize(n, T()); }
     vector2(const vector2 &x);
-    V &front() { return *begin(); }
-    ~vector2();
-    void assign(size_t n, const V &val) { _M_fill_assign(n, val); }
-    iterator begin() { return iterator(_M_impl.start); }
     const_iterator begin() const { return const_iterator(_M_impl.start); }
+    iterator begin() { return iterator(_M_impl.start); }
+    T &front() { return *begin(); }
+    ~vector2();
+    void assign(size_t n, const T &val) { _M_fill_assign(n, val); }
     iterator end() { return iterator(_M_impl.fin); }
     const_iterator end() const { return const_iterator(_M_impl.fin); }
+    T &back() { return *end(); }
     size_t size() const { return size_t(_M_impl.fin - _M_impl.start); }
     size_t max_size() const { return atraits::max_size(_M_get_Tp_allocator()); }
     void reserve(size_t n);
-    const V& operator[](size_t n) const { return *(_M_impl.start + n); }
-    void push_back(const V &x);
+    const T& operator[](size_t n) const { return *(_M_impl.start + n); }
+    void push_back(const T &x);
     void pop_back() { --_M_impl.fin; atraits::destroy(_M_impl, _M_impl.fin); }
-    void insert(iterator pos, size_t n, const V &x) { _M_fill_insert(pos, n, x); }
-    const V &at(size_t n) const { return (*this)[n]; }
-    void clear() { _M_erase_at_end(this->_M_impl.start); }
+    void insert(iterator pos, size_t n, const T &x) { _M_fill_insert(pos, n, x); }
+    const T &at(size_t n) const { return (*this)[n]; }
+    void clear() { _M_erase_at_end(_M_impl.start); }
 protected:
-    void _M_fill_assign(size_t n, const V &val);
-    void _M_fill_insert(iterator pos, size_t n, const V &x);
-    void _M_insert_aux(iterator position, const V &x);
+    void _M_fill_assign(size_t n, const T &val);
+    void _M_fill_insert(iterator pos, size_t n, const T &x);
+    void _M_insert_aux(iterator position, const T &x);
     size_t _M_check_len(size_t n, const char * s) const;
-    template<typename Ptr> Ptr _M_data_ptr(Ptr ptr) const { return ptr; }
 };
 
 enum _Ios_Seekdir2
@@ -435,7 +403,7 @@ public:
     string2 str() const { return _buf; }
 };
 
-template <Util2::size_t T> class bitset2
+template <size_t T> class bitset2
 {
     uint32_t _set;
 public:
@@ -610,14 +578,6 @@ namespace mystl
     template <class T> using vector = vector2<T>;
     template <typename T, size_t N> using array = array2<T, N>;
     template <Util2::size_t T> using bitset = bitset2<T>;
-#ifndef _TIME_H
-    typedef Util2::time_t time_t;
-    tm *gmtime(time_t *t);
-    tm *localtime(time_t *t);
-    time_t time(time_t *timer);
-    time_t mktime(tm *timeptr);
-    size_t strftime(char *p, size_t max, const char *fmt, const tm *tp);
-#endif
 #ifndef _STRING_H
     void *memcpy(void *dest, const void *src, size_t n);
     char *strcpy(char *dest, const char *src);
@@ -666,6 +626,8 @@ namespace mystl
     typedef mbstate_t2 mbstate_t;
 #endif
     template<typename T> inline T* addressof(T& r) { Util2 u; return u.addressof(r); }
+    template <class T> T max_element(T first, T last);
+    template <class I, class N, class T> I fill_n(I first, N n, const T &v); 
 };
 
 #include "mystl.tcc"

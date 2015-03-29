@@ -66,7 +66,7 @@ template <typename T> size_t vector2<T>::_M_check_len(size_t n, const char *s) c
     return (__len < size() || __len > max_size()) ? max_size() : __len;
 }
 
-template<typename BI1, typename BI2> BI2 Util2::copy_move_back_a(BI1 f, BI1 l, BI2 result)
+template<typename T, typename BI2> BI2 Util2::copy_move_back_a(T f, T l, BI2 result)
 {
     while (f != l) *--result = *--l;
     return result;
@@ -126,6 +126,34 @@ template<typename T> void vector2<T>::_M_insert_aux(iterator pos, const T &x)
     }
 }
 
+namespace mystl
+{
+
+template <class T> T max_element(T first, T last)
+{
+    if (first == last) return last;
+    T largest = first;
+
+    while (++first != last)
+        if (*largest < *first)
+            largest = first;
+
+    return largest;
+};
+
+template <class I, class N, class T> I fill_n(I first, N n, const T &v)
+{
+    while (n > 0)
+    {
+        *first = v;
+        ++first;
+        --n;
+    }
+
+    return first;
+}
+
+}
 
 #endif
 

@@ -1,8 +1,8 @@
 section .text
     global create
-    global print
+    global print2
 
-    print:
+    print2:
         push rdx
         mov rdx, rsi
         mov rsi, rdi

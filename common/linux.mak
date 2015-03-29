@@ -10,6 +10,8 @@ TAR_H = tar.h $(BUNZIP2_H)
 INFLATE_H = inflate.h
 GUNZIP_H = gunzip.h $(INFLATE_H)
 OD_H = od.h $(COMMON_H)
+MYSTDIO_O = mystdio.o linux64.o
+MYSTL_O = mystl.o mytime.o #$(MYSTDIO_O)
 
 TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
@@ -29,48 +31,48 @@ TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
 .PHONY: all
 
 all: $(TARGETS)
-base64: base64.o mystl.o
-bunzip2: bunzip2m.o bunzip2.o bitinput.o fector.o mystl.o
-bzcat: bzcat.o bitinput.o bunzip2.o fector.o mystl.o
-bzinfo: bzinfo.o bitinput.o mystl.o
+base64: base64.o $(MYSTL_O)
+bunzip2: bunzip2m.o bunzip2.o bitinput.o fector.o $(MYSTL_O)
+bzcat: bzcat.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
+bzinfo: bzinfo.o bitinput.o $(MYSTL_O)
 bzip2: bzip2.o
 bzmd5: bzmd5.o
-cat: cat.o mystl.o
+cat: cat.o $(MYSTL_O)
 cp: cp.o
-cppcom01: cppcom01.o mystl.o
-cppcom02: cppcom02.o mystl.o
+cppcom01: cppcom01.o $(MYSTL_O)
+cppcom02: cppcom02.o $(MYSTL_O)
 crc32: crc32.o
-date: date.o mystl.o
+date: date.o $(MYSTL_O)
 dd: dd.o
 diff: diff.o
-dos2unix: dos2unix.o mystl.o
+dos2unix: dos2unix.o $(MYSTL_O)
 grep: grep.o
 gunzip: gunzip.o gunzipm.o
 gzip: gzip.o
 jpg2tga: jpg2tga.o
-kompakt: kompakt.o main.o mystl.o filesys.o
+kompakt: kompakt.o main.o filesys.o $(MYSTL_O)
 ls: ls.o
-md5sum: md5sum.o mystl.o hasher.o
-nl: nl.o mystl.o
-od: od.o mystl.o odmain.o
-rm: rm.o mystl.o
-tar: tarm.o tar.o bitinput.o bunzip2.o fector.o mystl.o
-tee: tee.o mystl.o
-test1: test1.o mystl.o hasher.o
-test2: test2.o mystl.o
-test3: test3.o mystl.o
-testbinp: testbinp.o bitinput.o mystl.o
-teststl1: teststl1.o mystl.o
-tgmtime1: tgmtime1.o mystl.o
+md5sum: md5sum.o hasher.o $(MYSTL_O)
+nl: nl.o $(MYSTL_O)
+od: od.o odmain.o $(MYSTL_O)
+rm: rm.o $(MYSTL_O)
+tar: tarm.o tar.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
+tee: tee.o $(MYSTL_O)
+test1: test1.o hasher.o $(MYSTL_O)
+test2: test2.o $(MYSTL_O)
+test3: test3.o $(MYSTL_O)
+testbinp: testbinp.o bitinput.o $(MYSTL_O)
+teststl1: teststl1.o $(MYSTL_O)
+tgmtime1: tgmtime1.o $(MYSTL_O)
 tgunzip1: tgunzip1.o gunzip.o
 touch: touch.o
-tr: tr.o mystl.o
-tstdio1: tstdio1.o linux64.o
-unix2dos: unix2dos.o mystl.o
+tr: tr.o $(MYSTL_O)
+tstdio1: tstdio1.o $(MYSTDIO_O)
+unix2dos: unix2dos.o $(MYSTL_O)
 uuidgen: uuidgen.o
-weekday: weekday.o mystl.o
+weekday: weekday.o $(MYSTL_O)
 wingroup: wingroup.o
-yes: yes.o fector.o mystl.o
+yes: yes.o fector.o $(MYSTL_O)
 zcat: zcat.o gunzip.o
 base64.o: base64.cpp $(COMMON_H)
 bitinput.o: bitinput.cpp $(BITINPUT_H)
@@ -100,7 +102,9 @@ kompakt.o: kompakt.cpp kompakt.h $(COMMON_H)
 ls.o: ls.cpp
 main.o: main.cpp
 md5sum.o: md5sum.cpp
+mystdio.o: mystdio.cpp mystdio.h
 mystl.o: mystl.cpp $(MYSTL_H)
+mytime.o: mytime.cpp
 nl.o: nl.cpp $(COMMON_H)
 od.o: od.cpp od.h $(COMMON_H)
 odmain.o: odmain.cpp $(OD_H)

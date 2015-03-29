@@ -142,6 +142,12 @@ int AppMD5Sum::run(int argc, char **argv)
 
     Vest files = options.files();
 
+    // test
+#if 0
+    for (auto it:files)
+        _hashFile(it, cout);
+#endif
+
     for (Vest::iterator it = files.begin(); !options.check() && it != files.end(); it++)
         _hashFile(*it, cout);
 
