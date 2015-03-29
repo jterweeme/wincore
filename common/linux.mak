@@ -47,7 +47,7 @@ dd: dd.o
 diff: diff.o
 dos2unix: dos2unix.o $(MYSTL_O)
 grep: grep.o
-gunzip: gunzip.o gunzipm.o
+gunzip: gunzip.o gunzipm.o $(MYSTL_O)
 gzip: gzip.o
 jpg2tga: jpg2tga.o
 kompakt: kompakt.o main.o filesys.o $(MYSTL_O)
@@ -64,7 +64,7 @@ test3: test3.o $(MYSTL_O)
 testbinp: testbinp.o bitinput.o $(MYSTL_O)
 teststl1: teststl1.o $(MYSTL_O)
 tgmtime1: tgmtime1.o $(MYSTL_O)
-tgunzip1: tgunzip1.o gunzip.o
+tgunzip1: tgunzip1.o gunzip.o $(MYSTL_O)
 touch: touch.o
 tr: tr.o $(MYSTL_O)
 tstdio1: tstdio1.o $(MYSTDIO_O)
@@ -73,7 +73,7 @@ uuidgen: uuidgen.o
 weekday: weekday.o $(MYSTL_O)
 wingroup: wingroup.o
 yes: yes.o fector.o $(MYSTL_O)
-zcat: zcat.o gunzip.o
+zcat: zcat.o gunzip.o $(MYSTL_O)
 base64.o: base64.cpp $(COMMON_H)
 bitinput.o: bitinput.cpp $(BITINPUT_H)
 bunzip2.o: bunzip2.cpp $(BUNZIP2_H)

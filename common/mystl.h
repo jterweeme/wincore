@@ -239,6 +239,7 @@ public:
     size_t max_size() const { return atraits::max_size(_M_get_Tp_allocator()); }
     void reserve(size_t n);
     const T& operator[](size_t n) const { return *(_M_impl.start + n); }
+    T& operator[](size_t n) { return *(_M_impl.start + n); }
     void push_back(const T &x);
     void pop_back() { --_M_impl.fin; atraits::destroy(_M_impl, _M_impl.fin); }
     void insert(iterator pos, size_t n, const T &x) { _M_fill_insert(pos, n, x); }
@@ -248,6 +249,14 @@ protected:
     void _M_fill_assign(size_t n, const T &val);
     void _M_fill_insert(iterator pos, size_t n, const T &x);
     void _M_insert_aux(iterator position, const T &x);
+
+    void _M_erase_at_end(T* pos)
+    {
+        Util2 u;
+        u.destroy(pos, _M_impl.fin, _M_get_Tp_allocator());
+        _M_impl.fin = pos;
+    }
+
     size_t _M_check_len(size_t n, const char * s) const;
 };
 

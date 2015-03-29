@@ -9,17 +9,18 @@
 #include <sstream>
 #include <vector>
 #endif
+//#include "fector.h"
 
-typedef vector<int> Vint;
-typedef vector<uint8_t> Vugt;
+typedef std::vector<int> Vint;
+typedef std::vector<uint8_t> Vugt;
 
 class BitInput
 {
-    istream *_is;
+    std::istream *_is;
     int _nextBits, _bitPos = 8;
     uint8_t _getBitPos() { return _bitPos % 8; }
 public:
-    BitInput(istream *is) : _is(is) { }
+    BitInput(std::istream *is) : _is(is) { }
     uint32_t readBit();
     bool readBool() { return readBit() == 1; }
     void ignore(int n) { while (n--) readBool(); }
@@ -44,12 +45,12 @@ public:
     Nau copyOfRange(int a, int b) const;
     Nau copyOf(int n) const { return copyOfRange(0, n); }
     int length() const { return _length; }
-    int max() const { return *max_element(_a, _a + _length); }
-    void summary(ostream &os) const { os << "Length: " << _length << ", Max: " << max(); }
-    string summary() const { ostringstream o; summary(o); return o.str(); }
-    void dumpCompleet(ostream &os) const { summary(os); os << "\n"; dump(os); }
-    void dump(ostream &os) const { for (int i = 0; i < _length; i++) os << _a[i] << " "; }
-    string toString() const { ostringstream o; dumpCompleet(o); return o.str(); }
+    int max() const { return *std::max_element(_a, _a + _length); }
+    void summary(std::ostream &os) const { os << "Length: " << _length << ", Max: " << max(); }
+    std::string summary() const { std::ostringstream o; summary(o); return o.str(); }
+    void dumpCompleet(std::ostream &os) const { summary(os); os << "\n"; dump(os); }
+    void dump(std::ostream &os) const { for (int i = 0; i < _length; i++) os << _a[i] << " "; }
+    std::string toString() const { std::ostringstream o; dumpCompleet(o); return o.str(); }
 };
 
 struct Node
@@ -64,7 +65,7 @@ struct Node
 class CodeTree
 {   
     Node _root;
-    vector<Node> _nodes;
+    std::vector<Node> _nodes;
 public:
     void import(Nau &x);
     CodeTree(Node root) : _root(root) { }
@@ -87,7 +88,7 @@ class CircularDict
 public:
     CircularDict(int n) : _data(n), _mask(n > 0 && (n & (n - 1)) == 0 ? n - 1 : 0) { }
     void append(int b);
-    void copy(int dist, int len, ostream &os);
+    void copy(int dist, int len, std::ostream &os);
 };
 
 
@@ -96,9 +97,9 @@ class Inflate
     BitInput *_bi;
     CircularDict _dict;
     Node _lit, _dist;
-    vector<Node> _nodeDump;
-    void _decRaw(ostream &os);
-    void _decHuff(Node lit, Node dist, ostream &os);
+    std::vector<Node> _nodeDump;
+    void _decRaw(std::ostream &os);
+    void _decHuff(Node lit, Node dist, std::ostream &os);
     int _decSym(Node *code);
     int _decRll(int sym);
     int _decDist(int sym);
@@ -106,7 +107,7 @@ class Inflate
     Node _toct(Nau &x);
 public:
     Inflate(BitInput *bi);
-    void extractTo(ostream &os);
+    void extractTo(std::ostream &os);
 };
 
 
