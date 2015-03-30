@@ -250,12 +250,14 @@ protected:
     void _M_fill_insert(iterator pos, size_t n, const T &x);
     void _M_insert_aux(iterator position, const T &x);
 
+#if 1
     void _M_erase_at_end(T* pos)
     {
         Util2 u;
         u.destroy(pos, _M_impl.fin, _M_get_Tp_allocator());
         _M_impl.fin = pos;
     }
+#endif
 
     size_t _M_check_len(size_t n, const char * s) const;
 };

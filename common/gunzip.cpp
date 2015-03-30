@@ -1,7 +1,7 @@
 //using namespace std;
 #include "gunzip.h"
 
-void GzipStream::extractTo(std::ostream &os)
+void GzipStream::extractTo(ostream &os)
 {
     uint8_t x[10];
     _bi->read(x, 10);
@@ -16,21 +16,21 @@ void GzipStream::extractTo(std::ostream &os)
     }
 
     if (flags & 8)
-        std::cout << _readString();
+        cout << _readString();
 
     if (flags & 2)
         _bi->ignoreBytes(2);
 
     if (flags & 0x10)
-        std::cout << _readString();
+        cout << _readString();
 
     Inflate d(_bi);
     d.extractTo(os);
 }
 
-std::string GzipStream::_readString()
+string GzipStream::_readString()
 {
-    std::string s;
+    string s;
     for (int c = _bi->readByte(); c != 0; c = _bi->readByte()) s.push_back(c);
     return s;
 }
@@ -82,7 +82,7 @@ Node Inflate::_toct(Nau &x)
     return Node(nodes[0], nodes[1]);
 }
 
-void Inflate::extractTo(std::ostream &os)
+void Inflate::extractTo(ostream &os)
 {
     for (bool isFinal = false; !isFinal;)
     {
@@ -116,10 +116,10 @@ void Inflate::extractTo(std::ostream &os)
 Inflate::Inflate(BitInput *bi) : _bi(bi), _dict(32 * 1024)
 {
     Vint llcodelens(288);
-    fill_n(llcodelens.begin(), 144, 8);
-    fill_n(llcodelens.begin() + 144, 112, 9);
-    fill_n(llcodelens.begin() + 256, 24, 7);
-    fill_n(llcodelens.begin() + 280, 8, 8);
+    std::fill_n(llcodelens.begin(), 144, 8);
+    std::fill_n(llcodelens.begin() + 144, 112, 9);
+    std::fill_n(llcodelens.begin() + 256, 24, 7);
+    std::fill_n(llcodelens.begin() + 280, 8, 8);
     Nau llcodeLens2(llcodelens);
     _lit = _toct(llcodeLens2);
     Nau distcodelens(32, 5);
@@ -184,7 +184,7 @@ Pair2 Inflate::_makePair()
     return Pair2(litLenCode, distCode);
 }
 
-void Inflate::_decRaw(std::ostream &os)
+void Inflate::_decRaw(ostream &os)
 {
     //cout << "Decraw begin\n";
     _bi->ignoreBuf();
@@ -199,7 +199,7 @@ void Inflate::_decRaw(std::ostream &os)
     }
 }
 
-void Inflate::_decHuff(Node lit, Node dist, std::ostream &os)
+void Inflate::_decHuff(Node lit, Node dist, ostream &os)
 {
     for (int sym; (sym = _decSym(&lit)) != 256;)
     {
@@ -245,7 +245,7 @@ void CircularDict::append(int b)
     _index = _mask != 0 ? (_index + 1) & _mask : (_index + 1) % _data.size();
 }
 
-void CircularDict::copy(int dist, int len, std::ostream &os)
+void CircularDict::copy(int dist, int len, ostream &os)
 {
     for (int readIndex = (_index - dist + _data.size()) & _mask; len > 0 && _mask != 0; len--)
     {

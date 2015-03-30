@@ -2,13 +2,13 @@
 #define _GUNZIP_H_
 #include "inflate.h"
 
-class GzipStream : public std::istream
+class GzipStream : public istream
 {
     BitInput *_bi;
-    std::string _readString();
+    string _readString();
 public:
     GzipStream(BitInput *bi) : _bi(bi) { }
-    void extractTo(std::ostream &os);
+    void extractTo(ostream &os);
 };
 
 #endif
