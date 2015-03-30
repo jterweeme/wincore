@@ -1,6 +1,4 @@
-#include <iostream>
-#include <stdint.h>
-using namespace std;
+#include "common.h"
 
 #if 0
 template <class T> class MyVector

@@ -1,11 +1,4 @@
-#if 0
-#include <iostream>
-#include <fstream>
-#include <cstring>
-using namespace std;
-#else
 #include "common.h"
-#endif
 
 class buftest : public streambuf
 {
@@ -58,7 +51,7 @@ int App::run(int argc, char **argv)
     //buftest bt(stdin);
     filebuf bt;
     bt.open("grep.o", ios::in);
-    fprintf(stderr, "%u\n", bt.pubseekoff(0, ios::beg, ios::in));
+    //fprintf(stderr, "%u\n", bt.pubseekoff(0, ios::beg, ios::in));
    
     for (int i = 0; i < 765771; i++)
     {
@@ -66,7 +59,7 @@ int App::run(int argc, char **argv)
         cout.put(c);
     }
 
-    fprintf(stderr, "\n%d\n", bt.in_avail());
+    //fprintf(stderr, "\n%d\n", bt.in_avail());
 
 #if 0
     for (int i = 0; i < 10; i++)

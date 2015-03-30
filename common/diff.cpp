@@ -1,8 +1,12 @@
+#if 1
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <cstring>
 using namespace std;
+#else
+#include "common.h"
+#endif
 
 typedef vector<string> Vest;
 

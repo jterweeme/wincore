@@ -1,4 +1,3 @@
-//using namespace std;
 #include "gunzip.h"
 
 class AppZcat

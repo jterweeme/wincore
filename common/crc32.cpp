@@ -1,9 +1,13 @@
+#if 0
 #include <stdint.h>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <vector>
 using namespace std;
+#else
+#include "common.h"
+#endif
 
 typedef vector<string> Files;
 
@@ -91,10 +95,10 @@ int main(int argc, char **argv)
     {
         Files files = o.files();
         
-        for (Files::const_iterator it = files.begin(); it != files.end(); it++)
+        for (Files::const_iterator it = files.cbegin(); it != files.cend(); it++)
         {
             crc.reset();
-            ifs.open(*it);
+            ifs.open(it->c_str());
             crc.crc32a(ifs);
             cout << hex << crc.reverse() << "\n";
             ifs.close();

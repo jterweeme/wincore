@@ -38,10 +38,10 @@ bzinfo: bzinfo.o bitinput.o $(MYSTL_O)
 bzip2: bzip2.o
 bzmd5: bzmd5.o
 cat: cat.o $(MYSTL_O)
-cp: cp.o
+cp: cp.o $(MYSTL_O)
 cppcom01: cppcom01.o $(MYSTL_O)
 cppcom02: cppcom02.o $(MYSTL_O)
-crc32: crc32.o
+crc32: crc32.o $(MYSTL_O)
 date: date.o $(MYSTL_O)
 dd: dd.o
 diff: diff.o
@@ -144,6 +144,12 @@ testgunzip2:
 	$(VALGRIND) ./md5sum -c znew.md5
 	rm -f znew.txt
 
+# moet een andere file worden, want dinges.tar zit niet in git!
+testcp:
+	rm dinges2.tar
+	$(VALGRIND) ./cp dinges.tar dinges2.tar
+	$(VALGRIND) ./cat dinges2.tar | ./md5sum -x cffd664a74cbbd3d9f6877668c42fa03
+
 testbzcat:
 	$(VALGRIND) ./bzcat battery.bz2 | ./md5sum -x efc57edfaf907b5707878f544b39d6d5
 	$(VALGRIND) ./bzcat dinges.tar.bz2 | ./md5sum -x cffd664a74cbbd3d9f6877668c42fa03
@@ -180,13 +186,20 @@ testbunzip2:
 testnl:
 	$(VALGRIND) ./cat tr.cpp | ./nl | diff nl.out -
 
+testcrc32:
+	$(VALGRIND) ./crc32 diff.cpp
+
+testjpg2tga:
+	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
+
 testgmtime1:
 	$(VALGRIND) ./tgmtime1
 
 tests1: testgunzip2 testkompakt testbunzip2 testmd5sum testgmtime1 testnl testbzcat testzcat
+tests2: testcrc32 test1go tgunzip1go testod testtar testbase64 teststl1go
+tests3: testjpg2tga testcp
 
-test: tests1 test1go tgunzip1go testod testtar testbase64 teststl1go
-	$(VALGRIND) ./jpg2tga whouse.jpg whouse.tga
+test: tests1 tests2 tests3
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 	$(VALGRIND) ./test2
 	$(VALGRIND) ./cppcom01

@@ -228,12 +228,14 @@ public:
     explicit vector2(size_t n) : Base(n, allocator2<T>()) { _M_fill_initialize(n, T()); }
     vector2(const vector2 &x);
     const_iterator begin() const { return const_iterator(_M_impl.start); }
+    const_iterator cbegin() const { return const_iterator(_M_impl.start); }
     iterator begin() { return iterator(_M_impl.start); }
     T &front() { return *begin(); }
     ~vector2();
     void assign(size_t n, const T &val) { _M_fill_assign(n, val); }
     iterator end() { return iterator(_M_impl.fin); }
     const_iterator end() const { return const_iterator(_M_impl.fin); }
+    const_iterator cend() const { return const_iterator(_M_impl.fin); }
     T &back() { return *end(); }
     size_t size() const { return size_t(_M_impl.fin - _M_impl.start); }
     size_t max_size() const { return atraits::max_size(_M_get_Tp_allocator()); }
@@ -521,6 +523,7 @@ private:
     ostream2 &printChar(char c) { put(c); return *this; }
     ostream2 &print(const char *s) { while (*s) put(*s++); return *this; }
     ostream2 &printInt(uint32_t u);
+    void printStreambuf(streambuf2 *sb) { for (int x; (x = sb->sbumpc()) != EOF;) put(x); }
 public:
     ostream2& operator << (char c) { return printChar(c); }
     ostream2& operator << (uint8_t c) { return printChar(c); }
@@ -534,6 +537,7 @@ public:
     ostream2& operator << (int32_t u) { return printInt(u); }
     ostream2& operator << (size_t u) { return printInt(u); }
     ostream2& operator << (uint32_t u) { return printInt(u); }
+    ostream2& operator << (streambuf2 *sb) { printStreambuf(sb); return *this; }
     ostream2 &write(const char *s, int n) { for (int i = 0; i < n; i++) put(s[i]); return *this; }
     virtual ~ostream2() { }
 };
