@@ -1,15 +1,13 @@
+#if 1
 using namespace std;
-#include <stdlib.h>
-#include <stdio.h>
-#include <memory.h>
-#include <math.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdint.h>
+#include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <array>
+#else
+#include "common.h"
+#endif
 
 typedef enum
 {
@@ -326,7 +324,9 @@ int App::print_usage(ostream &os) const
        << "dest_file: Output .TGA file\n"
        << "reduce: Optional, if 1 the JPEG file is quickly decoded to ~1/8th resolution.\n"
        << "\nOutputs 8-bit grayscale or truecolor 24-bit TGA files.\n";
-    return EXIT_FAILURE;
+
+    return -1;
+    //return EXIT_FAILURE;
 }
 
 uint8_t *App::pjpegLoadFromFile(istream &ginfile, int *x, int *y, int *comps,
@@ -356,7 +356,7 @@ uint8_t *App::pjpegLoadFromFile(istream &ginfile, int *x, int *y, int *comps,
     decoded_width = image_info.m_width;
     decoded_height = image_info.m_height;
     unsigned row_pitch = decoded_width * image_info.m_comps;
-    pImage = (uint8_t *)malloc(row_pitch * decoded_height);
+    pImage = new uint8_t[row_pitch * decoded_height];
 
     while (true)
     {
@@ -368,7 +368,7 @@ uint8_t *App::pjpegLoadFromFile(istream &ginfile, int *x, int *y, int *comps,
 
         if (mcu_y >= image_info.m_MCUSPerCol)
         {
-            free(pImage);
+            delete[] pImage;
             return NULL;
         }
 
@@ -503,24 +503,18 @@ int App::run(int argc, char **argv)
     pjpeg_scan_type_t scan_type;
     uint8_t *pImage;
     printf("picojpeg example v1.1, Rich Geldreich, Compiled " __TIME__ " " __DATE__ "\n");
-
-    if ((argc < 3) || (argc > 4))
-        return print_usage(cout);
-   
+    if ((argc < 3) || (argc > 4)) return print_usage(cout);
     pSrc_filename = argv[1];
     pDst_filename = argv[2];
     printf("Source file:      \"%s\"\n", pSrc_filename);
     printf("Destination file: \"%s\"\n", pDst_filename);
     pImage = pjpeg_load_from_file(pSrc_filename, &width, &height, &comps, &scan_type);
-
-    if (!pImage)
-        throw "Failed loading source image!";
-
+    if (!pImage) throw "Failed loading source image!";
     printf("Width: %i, Height: %i, Comps: %i\n", width, height, comps);
     TGAWriter tgaw;
     tgaw.write_tga(pDst_filename, width, height, comps, pImage);
     printf("Successfully wrote destination file %s\n", pDst_filename);
-    free(pImage);
+    delete[] pImage;
     return 0;
 }
 

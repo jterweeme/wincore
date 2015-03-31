@@ -1,3 +1,4 @@
+#if 1
 #include <stdint.h>
 #include <fstream>
 #include <iostream>
@@ -5,6 +6,9 @@
 #include <vector>
 #include <algorithm>
 using namespace std;
+#else
+#include "common.h"
+#endif
 
 class Options
 {
@@ -71,7 +75,7 @@ string Items::toString()
     ostringstream oss;
     
     for (iterator it = begin(); it != end(); it++)
-        oss << *it << std::endl;
+        oss << *it << "\n";
 
     return oss.str();
 }
@@ -81,8 +85,8 @@ string CItem::toString()
     ostringstream oss;
     oss << "[Item]\n";
     oss << "Command:        " << _command2 << "\n";
-    oss << "Name:           " << name() << std::endl;
-    oss << "Command:        " << command() << std::endl;
+    oss << "Name:           " << name() << "\n";
+    oss << "Command:        " << command() << "\n";
     return oss.str();
 }
 

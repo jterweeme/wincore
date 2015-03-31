@@ -1,6 +1,4 @@
-//#include "common.h"
-#include <iostream>
-using namespace std;
+#include "common.h"
 
 int main(int argc, const char **argv)
 {
@@ -17,7 +15,7 @@ int main(int argc, const char **argv)
         {
             cout << argv[1];
 
-            for (int i = 2; i <= argc; i++)
+            for (int i = 2; i <= argc - 1; i++)
                 cout << " " << argv[i];
             
             cout << "\n";

@@ -1,13 +1,4 @@
-#if 0
-#include <stdint.h>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <vector>
-using namespace std;
-#else
 #include "common.h"
-#endif
 
 typedef vector<string> Files;
 

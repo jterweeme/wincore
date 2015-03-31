@@ -49,7 +49,7 @@ dos2unix: dos2unix.o $(MYSTL_O)
 grep: grep.o
 gunzip: gunzip.o gunzipm.o $(MYSTL_O)
 gzip: gzip.o
-jpg2tga: jpg2tga.o
+jpg2tga: jpg2tga.o $(MYSTL_O)
 kompakt: kompakt.o main.o filesys.o $(MYSTL_O)
 ls: ls.o
 md5sum: md5sum.o hasher.o $(MYSTL_O)

@@ -1,46 +1,18 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
-#include "mytypes.h"
+
 #if 1
 #include <cstdio>
 #else
 #include "mystdio.h"
 #endif
 
-namespace mystl
-{
-    typedef MyTypes::streampos streampos;
-    typedef MyTypes::size_t size_t;
-#ifndef _STDINT_H
-    typedef MyTypes::uint8_t uint8_t;
-    typedef MyTypes::uint16_t uint16_t;
-    typedef MyTypes::int32_t int32_t;
-    typedef MyTypes::uint32_t uint32_t;
-    typedef MyTypes::int64_t int64_t;
-    typedef MyTypes::uint64_t uint64_t;
-#endif
-}
-
-#ifndef _TIME_H
+#include "mytypes.h"
 #include "mytime.h"
-
-namespace mystl
-{
-    typedef uint32_t time_t;
-    tm *gmtime(time_t *t);
-    tm *localtime(time_t *t);
-    time_t time(time_t *timer);
-    time_t mktime(tm *timeptr);
-    size_t strftime(char *p, size_t max, const char *fmt, const tm *tp);
-}
-#endif
 
 class Util2 : public MyTypes
 {
 public:
-#ifndef _TIME_H
-    //typedef uint32_t time_t;
-#endif
     struct true_type { };
     struct false_type { };
     void reverse(char *str, const int length);
@@ -295,6 +267,7 @@ public:
     static const uint8_t app = 16;
     static const uint8_t trunc = 32;
     static const uint8_t beg = 0;
+    static const uint8_t end = 1;
 };
 
 namespace mystl
@@ -321,6 +294,7 @@ protected:
     virtual int underflow() { throw "Underflow not implemented"; return 0; }
     virtual int uflow() { return underflow() == EOF ? EOF : _bumpy(); }
     virtual streampos seekoff(streamoff, seekdir, openmode) { return _pos; }
+    virtual streampos seekpos(streampos sp, openmode which) { return 0; }
     virtual streamsize xsgetn(char *s, streamsize n);
     virtual streamsize showmanyc() { throw "Showmanyc not implemented"; return 0; }
     virtual int sync() { return 0; }
@@ -334,6 +308,7 @@ public:
     int sgetn(char *s, int n) { return xsgetn(s, n); }
     int pubsync() { return sync(); }
     streampos pubseekoff(int64_t off, seekdir way, openmode m) { return seekoff(off, way, m); }
+    streampos pubseekpos(streampos pos, openmode which) { return seekpos(pos, which); }
     virtual ~streambuf2() { }
 };
 
@@ -447,6 +422,8 @@ public:
     operator void * () const { return _sb->in_avail() == -1 ? (void *)false : (void *)true; }
     virtual void getline(char *dest, size_t size);
     virtual void read(char *s, size_t length) { _lastRead = _sb->sgetn(s, length); }
+    void seekg(streampos pos) { }
+    void seekg(streamoff off, ios_base2::seekdir way) { _sb->pubseekpos(off, way); }
 };
 
 class iostream2 : public istream2
