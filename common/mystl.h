@@ -13,8 +13,6 @@
 class Util2 : public MyTypes
 {
 public:
-    struct true_type { };
-    struct false_type { };
     void reverse(char *str, const int length);
     template<typename T> inline void reverse2(T first, T last);
     char *itoa(const uint32_t num, char *str, const int base);
@@ -34,7 +32,7 @@ public:
     void *memmove(char *dst, const char *src, uint32_t n);
     char *strcpy(char *dest, const char *src) const;
     char *strncpy(char *dest, const char *src, size_t n) const;
-    size_t strlen(const char *s);
+    size_t strlen(const char *s) const;
     int strcmp(const char* s1, const char *s2) const;
     int strncmp(const char *s1, const char *s2, size_t n) const;
     char *strtok(char *str, const char *delimiters);
@@ -119,7 +117,7 @@ template <typename T, bool> struct Iter_base { static T _S_base(T it) { return i
 template <typename T> struct Iter_base<T, true> { static T _S_base(T it) { return it.base(); } };
 template <typename> struct ini { enum { value = 0 }; };
 template <typename T, typename U> struct ini<ni<T, U> > { enum { value = 1 }; };
-template <typename> struct imi { enum { value = 0 }; typedef Util2::false_type __type; };
+template <typename> struct imi { enum { value = 0 }; };
 template <typename T> struct Nb : Iter_base<T, ini<T>::value> { };
 template <typename T> T nb(T it) { return Nb<T>::_S_base(it); }
 template <typename T> struct Mb : Iter_base<T, imi<T>::value> { };
@@ -346,6 +344,14 @@ public:
     fpinbuf *open(FILE *fp) { _fp = fp; return this; }
     virtual int underflow();
     virtual streamsize showmanyc() { return _eof ? -1 : 1; }
+
+    virtual streampos seekpos(streampos sp, openmode which)
+    {
+        fseek(_fp, sp, SEEK_SET);
+        setg(0,0,0);
+        return 0;
+    }
+
     virtual int overflow(int c) { return fputc(c, _fp); }
 };
 
@@ -368,19 +374,24 @@ namespace mystl
     typedef filebuf2 filebuf;
 };
 
-class string2
+class string2 : public Util2
 {
-    char _s[255];
+    char *_s = new char[255];
     uint32_t _pos = 0;
 public:
-    string2() { Util2 u; u.memset(_s, 0, sizeof(_s)); }
-    string2(const char *s) { Util2 util; util.strcpy(_s, s); }
+    string2() { memset(_s, 0, 255); }
+    string2(const char *s) { memset(_s, 0, 255); strcpy(_s, s); }
     string2(const char *s1, const char *s2);
     string2(const char *s1, size_t n);
     string2(size_t n, char c) { _s[n] = '\0'; while (n) _s[--n] = c; }
+    string2(const string2 &s) : _pos(s._pos) { strcpy(_s, s._s); }
+    string2& operator= (const string2 &s) { strcpy(_s, s._s); _pos = s._pos; return *this; }
+    ~string2() { delete[] _s; }
     const char *c_str() const { return _s; }
-    size_t length() const { Util2 util; return util.strlen(_s); }
+    size_t length() const { return strlen(_s); }
     void push_back(char c) { _s[_pos++] = c; }
+    int compare(const string2 &s) { return 0; }
+    int compare(const char *s) { return 0; }
 };
 
 class stringbuf2 : public streambuf2

@@ -104,7 +104,7 @@ string Group::toString()
 {
     ostringstream oss;
     oss << "[" << _description << "]" << endl;
-    oss << "Magic:          " << string(gf.magic, gf.magic + 4) << endl;
+    oss << "Magic:          " << string((char *)gf.magic, (char *)gf.magic + 4) << endl;
     oss << "StringPointer   " << gf.stringPointer << "\n";
     oss << "Description:    " << _description << endl;
     oss << "Icon size:      " << gf.iconWidth << "x" << gf.iconHeight << endl;

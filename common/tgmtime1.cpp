@@ -1,11 +1,4 @@
-#if 1
 #include "common.h"
-#else
-#include <iostream>
-#include <ctime>
-using namespace std;
-#endif
-
 #include "myassert.h"
 
 void

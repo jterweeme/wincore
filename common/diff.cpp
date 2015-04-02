@@ -24,7 +24,8 @@ public:
 class App
 {
 public:
-    istream *getStream(string fn) const { return fn.compare("-") == 0 ? &cin : new ifstream(fn); }
+    istream *getStream(string fn) const
+    { return fn.compare("-") == 0 ? (istream *)&cin : new ifstream(fn.c_str()); }
     bool diff(istream &is1, istream &is2) const;
     int run(int argc, char **argv);
 };

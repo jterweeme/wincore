@@ -1,9 +1,14 @@
+#if 1
 #include <iostream>
 #include <stdlib.h>
 #include <time.h>
 #include <stdint.h>
 #include <iomanip>
 using namespace std;
+#else
+#include "common.h"
+#include <stdlib.h>
+#endif
 
 class UUID
 {

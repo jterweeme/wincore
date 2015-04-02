@@ -146,7 +146,7 @@ char *Util2::strtok(char *str, const char *delimiters)
     return p_start;
 }
 
-Util2::size_t Util2::strlen(const char *s)
+Util2::size_t Util2::strlen(const char *s) const
 {
     const char *t;
     for (t = s; *t; ++t) { }

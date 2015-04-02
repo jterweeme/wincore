@@ -44,7 +44,7 @@ cppcom02: cppcom02.o $(MYSTL_O)
 crc32: crc32.o $(MYSTL_O)
 date: date.o $(MYSTL_O)
 dd: dd.o
-diff: diff.o
+diff: diff.o $(MYSTL_O)
 dos2unix: dos2unix.o $(MYSTL_O)
 grep: grep.o
 gunzip: gunzip.o gunzipm.o $(MYSTL_O)
@@ -69,9 +69,9 @@ touch: touch.o
 tr: tr.o $(MYSTL_O)
 tstdio1: tstdio1.o $(MYSTDIO_O)
 unix2dos: unix2dos.o $(MYSTL_O)
-uuidgen: uuidgen.o
+uuidgen: uuidgen.o $(MYSTL_O)
 weekday: weekday.o $(MYSTL_O)
-wingroup: wingroup.o
+wingroup: wingroup.o $(MYSTL_O)
 yes: yes.o fector.o $(MYSTL_O)
 zcat: zcat.o gunzip.o $(MYSTL_O)
 base64.o: base64.cpp $(COMMON_H)

@@ -35,6 +35,35 @@ void testupow(uint32_t base, uint32_t exp)
     cout << u.upow(base, exp) << "\n";
 }
 
+string retString()
+{
+    return string("nonsens");
+}
+
+void testString()
+{
+    string s1("Hello world\n");
+    string s2 = retString();
+    cout << s2 << "\n";
+}
+
+void testFileBuf()
+{
+    filebuf fb;
+    fb.open("gzip.cpp", ios::in);
+    
+    for (int i = 0; i < 10; i++)
+        cout.put(fb.sbumpc());
+
+    cout.put('\n');
+    fb.pubseekpos(100, ios::in | ios::out);
+
+    for (int i = 0; i < 10; i++)
+        cout.put(fb.sbumpc());
+
+    cout.put('\n');
+}
+
 int main()
 {
     Util2 u;
@@ -48,6 +77,8 @@ int main()
     ma.equals(u.upow(10, 1), 10);
     ma.equals(u.upow(10, 0), 1);
     //cout << strtol("123", "123", 10) << "\n";
+    testFileBuf();
+    testString();
     cerr << "\e[1;32mTest Mystl1: OK\e[0m\n";
     return 0;
 }
