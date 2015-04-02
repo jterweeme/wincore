@@ -390,8 +390,9 @@ public:
     const char *c_str() const { return _s; }
     size_t length() const { return strlen(_s); }
     void push_back(char c) { _s[_pos++] = c; }
-    int compare(const string2 &s) { return 0; }
-    int compare(const char *s) { return 0; }
+    int compare(const char *s) { return strlen(s) != length(); }
+    int compare(const string2 &s) { return compare(s.c_str()); }
+
 };
 
 class stringbuf2 : public streambuf2

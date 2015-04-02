@@ -1,12 +1,4 @@
-#if 1
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <cstring>
-using namespace std;
-#else
 #include "common.h"
-#endif
 
 typedef vector<string> Vest;
 
@@ -62,13 +54,22 @@ void Options::parse(int argc, char **argv)
 int App::run(int argc, char **argv)
 {
     Options o(argc, argv);
+#if 0
     istream *ifs1 = getStream(o.filenames().front());
     istream *ifs2 = getStream(o.filenames().back());
+#else
+    istream *ifs1 = getStream(o.filenames().at(0));
+    istream *ifs2 = getStream(o.filenames().at(1));
+#endif
 
     if (diff(*ifs1, *ifs2))
     {
+#if 1
+        cout << "OK\n";
+#else
         cout << "\e[1;32mFiles " << o.filenames().front() << " and " << o.filenames().back()
              << " are identical\e[0m\n";
+#endif
     }
     else
     {
