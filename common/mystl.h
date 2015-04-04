@@ -283,8 +283,8 @@ class streambuf2 : public ios_base2
     char *_outBeg = 0;
     char *_outCur = 0;
     char *_outEnd = 0;
-    streampos _pos = 0;
 protected:
+    streampos _pos = 0;
     char *gptr() const { return _inCur; }
     char *egptr() const { return _inEnd; }
     char *eback() const { return _inBeg; }
@@ -349,8 +349,18 @@ public:
 
     virtual streampos seekpos(streampos sp, openmode which)
     {
-        fseek(_fp, sp, SEEK_SET);
-        setg(0,0,0);
+        switch (which)
+        {
+        case ios_base2::end:
+            fseek(_fp, sp, SEEK_END);
+            _pos = ftell(_fp);
+            setg(0,0,0);
+            break;
+        default:
+            fseek(_fp, sp, SEEK_SET);
+            _pos = ftell(_fp);
+            setg(0,0,0);
+        }
         return 0;
     }
 
@@ -683,6 +693,8 @@ namespace mystl
     void toupper(const char *src, char *dest);
     void toupper(char *s);
     bool regex_search(const char *s, const regex &rx);
+    void srand(unsigned seed);
+    int rand();
     template <typename T, typename U> void sort(T f, T l, U c) { Util2 u; u.sort(f, l, c); }
     template <typename T> void sort(T f, T l) { Util2 u; u.sort(f, l); }
     template <typename T> void reverse(T first, T last) { Util2 u; u.reverse2(first, last); }

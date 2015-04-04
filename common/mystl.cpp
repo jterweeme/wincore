@@ -417,6 +417,8 @@ namespace mystl
     int toupper(int c) { Util2 u; return u.toupper(c); }
     char *strtok(char *s, const char *delim) { Util2 u; return u.strtok(s, delim); }
     int isdigit(int c) { Util2 u; return u.isdigit(c); }
+    void srand(unsigned seed) { }
+    int rand() { return 5; }
 
     bool regex_search(const char *s, const regex &rx)
     { regex_functions r; return r.regex_search(s, rx); }

@@ -1,10 +1,7 @@
-#if 1
-#include <iostream>
-#include <fstream>
 #include "common.h"
-#else
-#include "common.h"
-#endif
+
+typedef istream tistream;
+typedef ifstream tifstream;
 
 typedef enum
 {
@@ -52,13 +49,13 @@ public:
 
 class TGAWriter
 {
-public:
-    int write_tga(ostream &os, int x, int y, int comp, void *data) const;
-    int write_tga(char const *filename, int x, int y, int comp, void *data) const;
     void write8(ostream &os, int x) const { uint8_t z = (uint8_t)x; os.put(z); }
 
     void write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad) const;
+public:
+    int write_tga(ostream &os, int x, int y, int comp, void *data) const;
+    int write_tga(char const *filename, int x, int y, int comp, void *data) const;
 };
 
 struct Bitmap
@@ -151,49 +148,43 @@ class JpegDec
     void convertCr(uint8_t dstOfs);
     uint8_t initFrame();
     void createWinogradQuant(int16_t* pQuant) const;
-    uint8_t readDQTMarker(std::istream &is);
-    uint16_t getBits(uint8_t numBits, uint8_t FFCheck, std::istream &is);
-    uint16_t getBits2(uint8_t numBits, std::istream &is) { return getBits(numBits, 1, is); }
-    uint16_t getBits1(uint8_t numBits, std::istream &is) { return getBits(numBits, 0, is); }
-    uint8_t getOctet(uint8_t FFCheck, std::istream &is);
+    uint8_t readDQTMarker(tistream &is);
+    uint16_t getBits(uint8_t numBits, uint8_t FFCheck, tistream &is);
+    uint16_t getBits2(uint8_t numBits, tistream &is) { return getBits(numBits, 1, is); }
+    uint16_t getBits1(uint8_t numBits, tistream &is) { return getBits(numBits, 0, is); }
+    uint8_t getOctet(uint8_t FFCheck, tistream &is);
     void stuffChar(uint8_t i);
-    uint8_t getChar(std::istream &is);
-    void fillInBuf(std::istream &is);
-    uint8_t locateSOIMarker(std::istream &is);
-    uint8_t locateSOSMarker(uint8_t *pFoundEOI, std::istream &is);
-    uint8_t locateSOFMarker(std::istream &is);
-    uint8_t processMarkers(uint8_t *pMarker, std::istream &is);
-    uint8_t nextMarker(std::istream &is);
-    uint8_t readDRIMarker(std::istream &is);
-    uint8_t readSOSMarker(std::istream &is);
-    uint8_t readDHTMarker(std::istream &is);
-    uint8_t readSOFMarker(std::istream &is);
+    uint8_t getChar(tistream &is);
+    void fillInBuf(tistream &is);
+    uint8_t locateSOIMarker(tistream &is);
+    uint8_t locateSOSMarker(uint8_t *pFoundEOI, tistream &is);
+    uint8_t locateSOFMarker(tistream &is);
+    uint8_t processMarkers(uint8_t *pMarker, tistream &is);
+    uint8_t nextMarker(tistream &is);
+    uint8_t readDRIMarker(tistream &is);
+    uint8_t readSOSMarker(tistream &is);
+    uint8_t readDHTMarker(tistream &is);
+    uint8_t readSOFMarker(tistream &is);
     void huffCreate(const uint8_t *pBits, HuffTable *pHuffTable);
-    uint8_t skipVariableMarker(std::istream &is);
+    uint8_t skipVariableMarker(tistream &is);
     int16_t getExtendOffset(uint8_t i);
     uint16_t getExtendTest(uint8_t i);
-    uint8_t getBit(std::istream &is);
-    uint8_t huffDecode(const HuffTable *pHuffTable, const uint8_t* pHuffVal, std::istream &is);
+    uint8_t getBit(tistream &is);
+    uint8_t huffDecode(const HuffTable *pHuffTable, const uint8_t* pHuffVal, tistream &is);
     int16_t huffExtend(uint16_t x, uint8_t s);
-    void fixInBuffer(std::istream &is);
-    uint8_t processRestart(std::istream &is);
+    void fixInBuffer(tistream &is);
+    uint8_t processRestart(tistream &is);
     void checkHuffTables() const;
     void checkQuantTables() const;
     void get_pixel(int* pDst, const uint8_t *pSrc, int luma_only, int num_comps);
-    uint8_t initScan(std::istream &is);
+    uint8_t initScan(tistream &is);
     void transformBlockReduce(uint8_t mcuBlock);
     void transformBlock(uint8_t mcuBlock);
-    uint8_t init(std::istream &is);
-    uint8_t pjpeg_decode_mcu(std::istream &is);
-    uint8_t decodeNextMCU(std::istream &is);
-    uint8_t pjpeg_decode_init(pjpeg_image_info_t *pInfo, std::istream &is);
-
-    uint8_t *pjpegLoadFromFile(std::istream &ginfile, int *x, int *y, int *comps,
-                pjpeg_scan_type_t *pScan_type);
-
-    uint8_t *pjpeg_load_from_file(const char *pFilename, int *x, int *y, int *comps,
-            pjpeg_scan_type_t *pScan_type);
-
+    uint8_t init(tistream &is);
+    uint8_t pjpeg_decode_mcu(tistream &is);
+    uint8_t decodeNextMCU(tistream &is);
+    uint8_t pjpeg_decode_init(pjpeg_image_info_t *pInfo, tistream &is);
+    uint8_t *pjpegLoadFromFile(tistream &f, int *x, int *y, int *c, pjpeg_scan_type_t *st);
 public:
     void loadFromJpeg(const char *fn, Bitmap &b);
 };
@@ -339,7 +330,7 @@ int App::print_usage(ostream &os) const
     return -1;
 }
 
-uint8_t *JpegDec::pjpegLoadFromFile(std::istream &ginfile, int *x, int *y, int *comps,
+uint8_t *JpegDec::pjpegLoadFromFile(tistream &ginfile, int *x, int *y, int *comps,
                 pjpeg_scan_type_t *pScan_type)
 {
     pjpeg_image_info_t image_info;
@@ -451,19 +442,12 @@ uint8_t *JpegDec::pjpegLoadFromFile(std::istream &ginfile, int *x, int *y, int *
     return pImage;
 }
 
-uint8_t *JpegDec::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
-                int *comps, pjpeg_scan_type_t *pScan_type)
-{
-    std::ifstream ginfile;
-    ginfile.open(pFilename);
-    uint8_t *ret = pjpegLoadFromFile(ginfile, x, y, comps, pScan_type);
-    ginfile.close();
-    return ret;
-}
-
 void JpegDec::loadFromJpeg(const char *fn, Bitmap &b)
 {
-    b.pImage = pjpeg_load_from_file(fn, &b.width, &b.height, &b.comps, &b.scan_type);
+    tifstream ginfile;
+    ginfile.open(fn);
+    b.pImage = pjpegLoadFromFile(ginfile, &b.width, &b.height, &b.comps, &b.scan_type);
+    ginfile.close();
 }
 
 void JpegDec::get_pixel(int *pDst, const uint8_t *pSrc, int luma_only, int num_comps)
@@ -500,8 +484,9 @@ int main(int argc, char **argv)
     {
         app.run(argc, argv);
     }
-    catch (...)
+    catch (const char *s)
     {
+        cerr << s << "\n";
         retval = -1;
     }
 
@@ -589,7 +574,7 @@ const int8_t ZAG[] =
     53, 60, 61, 54, 47, 55, 62, 63,
 };
 
-void JpegDec::fillInBuf(std::istream &is)
+void JpegDec::fillInBuf(tistream &is)
 {
     gInBufOfs = 4;
     gInBufLeft = 0;
@@ -599,7 +584,7 @@ void JpegDec::fillInBuf(std::istream &is)
     g_nInFileOfs += n;
 }
 
-uint8_t JpegDec::getChar(std::istream &is)
+uint8_t JpegDec::getChar(tistream &is)
 {
     if (!gInBufLeft)
     {
@@ -623,7 +608,7 @@ void JpegDec::stuffChar(uint8_t i)
     gInBufLeft++;
 }
 
-uint8_t JpegDec::getOctet(uint8_t FFCheck, std::istream &is)
+uint8_t JpegDec::getOctet(uint8_t FFCheck, tistream &is)
 {
     uint8_t c = getChar(is);
       
@@ -641,7 +626,7 @@ uint8_t JpegDec::getOctet(uint8_t FFCheck, std::istream &is)
     return c;
 }
 
-uint16_t JpegDec::getBits(uint8_t numBits, uint8_t FFCheck, std::istream &is)
+uint16_t JpegDec::getBits(uint8_t numBits, uint8_t FFCheck, tistream &is)
 {
     uint8_t origBits = numBits;
     uint16_t ret = gBitBuf;
@@ -671,7 +656,7 @@ uint16_t JpegDec::getBits(uint8_t numBits, uint8_t FFCheck, std::istream &is)
     return ret >> 16 - origBits;
 }
 
-uint8_t JpegDec::getBit(std::istream &is)
+uint8_t JpegDec::getBit(tistream &is)
 {
     uint8_t ret = gBitBuf & 0x8000 ? 1 : 0;
    
@@ -739,7 +724,7 @@ int16_t JpegDec::huffExtend(uint16_t x, uint8_t s)
     return x < getExtendTest(s) ? (int16_t)x + getExtendOffset(s) : x;
 }
 
-uint8_t JpegDec::huffDecode(const HuffTable *pHuffTable, const uint8_t *pHuffVal, std::istream &is)
+uint8_t JpegDec::huffDecode(const HuffTable *pHuffTable, const uint8_t *pHuffVal, tistream &is)
 {
     uint8_t i = 0;
     uint16_t code = getBit(is);
@@ -790,7 +775,7 @@ void JpegDec::huffCreate(const uint8_t *pBits, HuffTable *pHuffTable)
     }
 }
 
-uint8_t JpegDec::readDHTMarker(std::istream &is)
+uint8_t JpegDec::readDHTMarker(tistream &is)
 {
     uint8_t bits[16];
     uint16_t left = getBits1(16, is);
@@ -864,7 +849,7 @@ void JpegDec::createWinogradQuant(int16_t *pQuant) const
     }
 }
 
-uint8_t JpegDec::readDQTMarker(std::istream &is)
+uint8_t JpegDec::readDQTMarker(tistream &is)
 {
     uint16_t left = getBits1(16, is);
 
@@ -911,7 +896,7 @@ uint8_t JpegDec::readDQTMarker(std::istream &is)
     return 0;
 }
 
-uint8_t JpegDec::readSOFMarker(std::istream &is)
+uint8_t JpegDec::readSOFMarker(tistream &is)
 {
     uint16_t left = getBits1(16, is);
 
@@ -950,7 +935,7 @@ uint8_t JpegDec::readSOFMarker(std::istream &is)
     return 0;
 }
 
-uint8_t JpegDec::skipVariableMarker(std::istream &is)
+uint8_t JpegDec::skipVariableMarker(tistream &is)
 {
     uint16_t left = getBits1(16, is);
 
@@ -968,7 +953,7 @@ uint8_t JpegDec::skipVariableMarker(std::istream &is)
     return 0;
 }
 
-uint8_t JpegDec::readDRIMarker(std::istream &is)
+uint8_t JpegDec::readDRIMarker(tistream &is)
 {
     if (getBits1(16, is) != 4)
         throw "PJPG_BAD_DRI_LENGTH";
@@ -977,7 +962,7 @@ uint8_t JpegDec::readDRIMarker(std::istream &is)
     return 0;
 }
 
-uint8_t JpegDec::readSOSMarker(std::istream &is)
+uint8_t JpegDec::readSOSMarker(tistream &is)
 {
     uint16_t left = getBits1(16, is);
     gCompsInScan = (uint8_t)getBits1(8, is);
@@ -1019,7 +1004,7 @@ uint8_t JpegDec::readSOSMarker(std::istream &is)
     return 0;
 }
 
-uint8_t JpegDec::nextMarker(std::istream &is)
+uint8_t JpegDec::nextMarker(tistream &is)
 {
     uint8_t c;
     uint8_t bytes = 0;
@@ -1045,7 +1030,7 @@ uint8_t JpegDec::nextMarker(std::istream &is)
     return c;
 }
 
-uint8_t JpegDec::processMarkers(uint8_t *pMarker, std::istream &is)
+uint8_t JpegDec::processMarkers(uint8_t *pMarker, tistream &is)
 {
     while (true)
     {
@@ -1100,7 +1085,7 @@ uint8_t JpegDec::processMarkers(uint8_t *pMarker, std::istream &is)
     }
 }
 
-uint8_t JpegDec::locateSOIMarker(std::istream &is)
+uint8_t JpegDec::locateSOIMarker(tistream &is)
 {
     uint8_t lastchar = (uint8_t)getBits1(8, is);
     uint8_t thischar = (uint8_t)getBits1(8, is);
@@ -1113,7 +1098,7 @@ uint8_t JpegDec::locateSOIMarker(std::istream &is)
     while (true)
     {
         if (--bytesleft == 0)
-            throw "PJPG_NOT_JPEG";
+            throw "PJPG_NOT_JPEG1";
 
         lastchar = thischar;
         thischar = (uint8_t)getBits1(8, is);
@@ -1123,19 +1108,19 @@ uint8_t JpegDec::locateSOIMarker(std::istream &is)
             if (thischar == M_SOI)
                 break;
             else if (thischar == M_EOI)
-                throw "PJPG_NOT_JPEG";
+                throw "PJPG_NOT_JPEG2";
         }
     }
 
     thischar = (uint8_t)((gBitBuf >> 8) & 0xFF);
 
     if (thischar != 0xFF)
-        throw "PJPG_NOT_JPEG";
+        throw "PJPG_NOT_JPEG3";
       
     return 0;
 }
 
-uint8_t JpegDec::locateSOFMarker(std::istream &is)
+uint8_t JpegDec::locateSOFMarker(tistream &is)
 {
     uint8_t c;
     locateSOIMarker(is);
@@ -1158,7 +1143,7 @@ uint8_t JpegDec::locateSOFMarker(std::istream &is)
     return 0;
 }
 
-uint8_t JpegDec::locateSOSMarker(uint8_t* pFoundEOI, std::istream &is)
+uint8_t JpegDec::locateSOSMarker(uint8_t* pFoundEOI, tistream &is)
 {
     uint8_t c;
     *pFoundEOI = 0;  
@@ -1177,7 +1162,7 @@ uint8_t JpegDec::locateSOSMarker(uint8_t* pFoundEOI, std::istream &is)
     return readSOSMarker(is);
 }
 
-uint8_t JpegDec::init(std::istream &is)
+uint8_t JpegDec::init(tistream &is)
 {
     gImageXSize = 0;
     gImageYSize = 0;
@@ -1196,7 +1181,7 @@ uint8_t JpegDec::init(std::istream &is)
     return 0;
 }
 
-void JpegDec::fixInBuffer(std::istream &is)
+void JpegDec::fixInBuffer(tistream &is)
 {
     if (gBitsLeft > 0)  
         stuffChar((uint8_t)gBitBuf);
@@ -1207,7 +1192,7 @@ void JpegDec::fixInBuffer(std::istream &is)
     getBits2(8, is);
 }
 
-uint8_t JpegDec::processRestart(std::istream &is)
+uint8_t JpegDec::processRestart(tistream &is)
 {
     uint16_t i;
     uint8_t c = 0;
@@ -1266,7 +1251,7 @@ void JpegDec::checkQuantTables() const
     }
 }
 
-uint8_t JpegDec::initScan(std::istream &is)
+uint8_t JpegDec::initScan(tistream &is)
 {
     uint8_t foundEOI;
     uint8_t status = locateSOSMarker(&foundEOI, is);
@@ -1971,7 +1956,7 @@ void JpegDec::transformBlockReduce(uint8_t mcuBlock)
     }
 }
 
-uint8_t JpegDec::decodeNextMCU(std::istream &is)
+uint8_t JpegDec::decodeNextMCU(tistream &is)
 {
     uint8_t status;
     uint8_t mcuBlock;   
@@ -2069,7 +2054,7 @@ uint8_t JpegDec::decodeNextMCU(std::istream &is)
     return 0;
 }
 
-uint8_t JpegDec::pjpeg_decode_mcu(std::istream &is)
+uint8_t JpegDec::pjpeg_decode_mcu(tistream &is)
 {
     if (!gNumMCUSRemaining)
         return PJPG_NO_MORE_BLOCKS;
@@ -2079,7 +2064,7 @@ uint8_t JpegDec::pjpeg_decode_mcu(std::istream &is)
     return 0;
 }
 
-uint8_t JpegDec::pjpeg_decode_init(pjpeg_image_info_t *pInfo, std::istream &is)
+uint8_t JpegDec::pjpeg_decode_init(pjpeg_image_info_t *pInfo, tistream &is)
 {
     pInfo->m_width = 0;
     pInfo->m_height = 0;
