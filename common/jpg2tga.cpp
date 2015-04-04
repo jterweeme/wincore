@@ -61,6 +61,13 @@ public:
                 int comp, void *data, int write_alpha, int scanline_pad) const;
 };
 
+struct Bitmap
+{
+    int width, height, comps;
+    pjpeg_scan_type_t scan_type;
+    uint8_t *pImage;
+};
+
 class HuffVals
 {
     uint8_t gHuffVal0[16];
@@ -73,7 +80,6 @@ public:
 
 class JpegDec
 {
-protected:
     unsigned _filesize;
     int16_t gCoeffBuf[8*8];
     uint8_t gMCUBufR[256];
@@ -122,7 +128,6 @@ protected:
     int16_t gLastDC[3];
     array<HuffTable, 4> _hufftabs;
     HuffVals _hv;
-public:
     void idctCols();
     void idctRows();
     uint32_t min(const uint32_t &a, const uint32_t &b) const { return a < b ? a : b; }
@@ -188,6 +193,9 @@ public:
 
     uint8_t *pjpeg_load_from_file(const char *pFilename, int *x, int *y, int *comps,
             pjpeg_scan_type_t *pScan_type);
+
+public:
+    void loadFromJpeg(const char *fn, Bitmap &b);
 };
 
 class App
@@ -453,6 +461,11 @@ uint8_t *JpegDec::pjpeg_load_from_file(const char *pFilename, int *x, int *y,
     return ret;
 }
 
+void JpegDec::loadFromJpeg(const char *fn, Bitmap &b)
+{
+    b.pImage = pjpeg_load_from_file(fn, &b.width, &b.height, &b.comps, &b.scan_type);
+}
+
 void JpegDec::get_pixel(int *pDst, const uint8_t *pSrc, int luma_only, int num_comps)
 {
     int r, g, b;
@@ -502,22 +515,20 @@ int App::run(int argc, char **argv)
     options.parse(argc, argv);
     const char *pSrc_filename;
     const char *pDst_filename;
-    int width, height, comps;
-    pjpeg_scan_type_t scan_type;
-    uint8_t *pImage;
     printf("picojpeg example v1.1, Rich Geldreich, Compiled " __TIME__ " " __DATE__ "\n");
     if ((argc < 3) || (argc > 4)) return print_usage(cout);
     pSrc_filename = argv[1];
     pDst_filename = argv[2];
     printf("Source file:      \"%s\"\n", pSrc_filename);
     printf("Destination file: \"%s\"\n", pDst_filename);
-    pImage = j.pjpeg_load_from_file(pSrc_filename, &width, &height, &comps, &scan_type);
-    if (!pImage) throw "Failed loading source image!";
-    printf("Width: %i, Height: %i, Comps: %i\n", width, height, comps);
+    Bitmap b;
+    j.loadFromJpeg(pSrc_filename, b);
+    if (!b.pImage) throw "Failed loading source image!";
+    printf("Width: %i, Height: %i, Comps: %i\n", b.width, b.height, b.comps);
     TGAWriter tgaw;
-    tgaw.write_tga(pDst_filename, width, height, comps, pImage);
+    tgaw.write_tga(pDst_filename, b.width, b.height, b.comps, b.pImage);
     printf("Successfully wrote destination file %s\n", pDst_filename);
-    delete[] pImage;
+    delete[] b.pImage;
     return 0;
 }
 
@@ -1861,19 +1872,19 @@ void JpegDec::transformBlockReduce(uint8_t mcuBlock)
                break;
             case 2:
                cbG = ((c * 88U) >> 8U) - 44U;
-               gMCUBufG[0] = j.subAndClamp(gMCUBufG[0], cbG);
-               gMCUBufG[128] = j.subAndClamp(gMCUBufG[128], cbG);
+               gMCUBufG[0] = subAndClamp(gMCUBufG[0], cbG);
+               gMCUBufG[128] = subAndClamp(gMCUBufG[128], cbG);
                cbB = (c + ((c * 198U) >> 8U)) - 227U;
-               gMCUBufB[0] = j.addAndClamp(gMCUBufB[0], cbB);
-               gMCUBufB[128] = j.addAndClamp(gMCUBufB[128], cbB);
+               gMCUBufB[0] = addAndClamp(gMCUBufB[0], cbB);
+               gMCUBufB[128] = addAndClamp(gMCUBufB[128], cbB);
                break;
             case 3:
                crR = (c + ((c * 103U) >> 8U)) - 179;
-               gMCUBufR[0] = j.addAndClamp(gMCUBufR[0], crR);
-               gMCUBufR[128] = j.addAndClamp(gMCUBufR[128], crR);
+               gMCUBufR[0] = addAndClamp(gMCUBufR[0], crR);
+               gMCUBufR[128] = addAndClamp(gMCUBufR[128], crR);
                crG = ((c * 183U) >> 8U) - 91;
-               gMCUBufG[0] = j.subAndClamp(gMCUBufG[0], crG);
-               gMCUBufG[128] = j.subAndClamp(gMCUBufG[128], crG);
+               gMCUBufG[0] = subAndClamp(gMCUBufG[0], crG);
+               gMCUBufG[128] = subAndClamp(gMCUBufG[128], crG);
                break;
          }
          break;
@@ -1892,11 +1903,11 @@ void JpegDec::transformBlockReduce(uint8_t mcuBlock)
                break;
             case 2:
                cbG = ((c * 88U) >> 8U) - 44U;
-               gMCUBufG[0] = j.subAndClamp(gMCUBufG[0], cbG);
-               gMCUBufG[64] = j.subAndClamp(gMCUBufG[64], cbG);
+               gMCUBufG[0] = subAndClamp(gMCUBufG[0], cbG);
+               gMCUBufG[64] = subAndClamp(gMCUBufG[64], cbG);
                cbB = (c + ((c * 198U) >> 8U)) - 227U;
-               gMCUBufB[0] = j.addAndClamp(gMCUBufB[0], cbB);
-               gMCUBufB[64] = j.addAndClamp(gMCUBufB[64], cbB);
+               gMCUBufB[0] = addAndClamp(gMCUBufB[0], cbB);
+               gMCUBufB[64] = addAndClamp(gMCUBufB[64], cbB);
                break;
             case 3:
                crR = (c + ((c * 103U) >> 8U)) - 179;
