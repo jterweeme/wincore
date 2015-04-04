@@ -1,10 +1,7 @@
 #if 1
-//using namespace std;
-#include <cstdint>
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <array>
+#include "common.h"
 #else
 #include "common.h"
 #endif
@@ -41,12 +38,12 @@ struct HuffTable
     uint8_t mValPtr[16];
 };
 
-typedef std::vector<std::string> Filenames;
+typedef vector<string> Filenames;
 
 class Options
 {
     bool _help = false;
-    std::string _output;
+    string _output;
     Filenames _fns;
 public:
     void parse(int argc, char **argv);
@@ -56,11 +53,11 @@ public:
 class TGAWriter
 {
 public:
-    int write_tga(std::ostream &os, int x, int y, int comp, void *data) const;
+    int write_tga(ostream &os, int x, int y, int comp, void *data) const;
     int write_tga(char const *filename, int x, int y, int comp, void *data) const;
-    void write8(std::ostream &os, int x) const { uint8_t z = (uint8_t)x; os.put(z); }
+    void write8(ostream &os, int x) const { uint8_t z = (uint8_t)x; os.put(z); }
 
-    void write_pixels(std::ostream &f, int rgb_dir, int vdir, int x, int y,
+    void write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad) const;
 };
 
@@ -113,7 +110,7 @@ class App
     int16_t gQuant0[8*8];
     int16_t gQuant1[8*8];
     int16_t gLastDC[3];
-    std::array<HuffTable, 4> _hufftabs;
+    array<HuffTable, 4> _hufftabs;
     HuffVals _hv;
     int16_t gCoeffBuf[8*8];
     uint8_t gMCUBufR[256];
@@ -178,7 +175,7 @@ class App
     uint8_t processRestart(std::istream &is);
     uint8_t initFrame();
     uint8_t decodeNextMCU(std::istream &is);
-    int print_usage(std::ostream &os) const;
+    int print_usage(ostream &os) const;
     uint8_t pjpeg_decode_mcu(std::istream &is);
     void get_pixel(int* pDst, const uint8_t *pSrc, int luma_only, int num_comps);
     uint8_t initScan(std::istream &is);
@@ -218,7 +215,7 @@ void Options::parse(int argc, char **argv)
                 _help = true;
                 break;
             case 'o':
-                _output = std::string(argv[++i]);
+                _output = string(argv[++i]);
                 break;
             }
         }
@@ -229,7 +226,7 @@ void Options::parse(int argc, char **argv)
     }
 }
 
-void TGAWriter::write_pixels(std::ostream &f, int rgb_dir, int vdir, int x, int y,
+void TGAWriter::write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
                 int comp, void *data, int write_alpha, int scanline_pad) const
 {
     uint8_t bg[3] = { 255, 0, 255}, px[3];
@@ -284,7 +281,7 @@ void TGAWriter::write_pixels(std::ostream &f, int rgb_dir, int vdir, int x, int 
     }
 }
 
-int TGAWriter::write_tga(std::ostream &f, int x, int y, int comp, void *data) const
+int TGAWriter::write_tga(ostream &f, int x, int y, int comp, void *data) const
 {
     int has_alpha = !(comp & 1);
     write8(f, 0);
@@ -311,13 +308,13 @@ int TGAWriter::write_tga(std::ostream &f, int x, int y, int comp, void *data) co
 
 int TGAWriter::write_tga(char const *filename, int x, int y, int comp, void *data) const
 {
-    std::ofstream f(filename);
+    ofstream f(filename);
     write_tga(f, x, y, comp, data);
     f.close();
     return 0;
 }
 
-int App::print_usage(std::ostream &os) const
+int App::print_usage(ostream &os) const
 {
     os << "Usage: jpg2tga [source_file] [dest_file] <reduce>\n"
        << "source_file: JPEG file to decode. Note: Progressive files are not supported.\n"
@@ -503,7 +500,7 @@ int App::run(int argc, char **argv)
     pjpeg_scan_type_t scan_type;
     uint8_t *pImage;
     printf("picojpeg example v1.1, Rich Geldreich, Compiled " __TIME__ " " __DATE__ "\n");
-    if ((argc < 3) || (argc > 4)) return print_usage(std::cout);
+    if ((argc < 3) || (argc > 4)) return print_usage(cout);
     pSrc_filename = argv[1];
     pDst_filename = argv[2];
     printf("Source file:      \"%s\"\n", pSrc_filename);
