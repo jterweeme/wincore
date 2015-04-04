@@ -1,11 +1,5 @@
 // comparing apples with apples
-#if 1
-#include <iostream>
-#include <string>
-using namespace std;
-#else
 #include "common.h"
-#endif
 
 int main ()
 {

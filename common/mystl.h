@@ -380,6 +380,8 @@ class string2 : public Util2
 {
     char *_s = new char[255];
     uint32_t _pos = 0;
+    void _append(const string2 &s, size_t subpos, size_t n) { append(s.substr(subpos, n)); }
+    void _append(const char *f, const char *l) { for (;f != l; f++) push_back(*f); }
 public:
     typedef size_t size_type;
     typedef char * iterator;
@@ -395,9 +397,12 @@ public:
     ~string2() { delete[] _s; }
     const char *c_str() const { return _s; }
     size_t length() const { return strlen(_s); }
+    size_t size() const { return length(); }
     void push_back(char c) { _s[_pos++] = c; }
     int compare(const char *s) const { return strcmp(_s, s); }
     int compare(const string2 &s) const { return compare(s.c_str()); }
+    int compare(size_t p, size_t n, const string2 &s) const { return 0; }
+    int compare(size_t p, size_t n, const string2 &s, size_t sp, size_t sn) const { return 0; }
     iterator begin() { return _s; }
     iterator end() { return _s + length(); }
     const_iterator cbegin() const { return _s; }
@@ -406,50 +411,20 @@ public:
     string2 substr(size_t pos) const;
     string2 substr(size_t pos, size_t len) const;
     void clear() { memset(_s, 0, 255); _pos = 0; }
-
-    string2& append(const string2 &s)
-    {
-        for (string2::const_iterator it = s.cbegin(); it != s.cend(); it++)
-            push_back(*it);
-
-        return *this;
-    }
-
-    string2& append(const string2 &s, size_t subpos, size_t sublen)
-    {
-        append(s.substr(subpos, sublen));
-        return *this;
-    }
-
+    string2& append(const string2 &s);
+    string2& append(const string2 &s, size_t p, size_t n) { _append(s, p, n); return *this; }
     string2& append(const char *s) { append(string2(s)); return *this; }
     string2& append(const char *s, size_t n) { append(string2(s, n)); return *this; }
-
     string2& append(size_t n, char c) { while (n-- > 0) push_back(c); return *this; }
 
     template <class T> string2& append(size_t n, T value)
     { while (n-- > 0) push_back(value); return *this; }
 
-    string2& append(const char *f, const char *l)
-    {
-        for (;f != l; f++)
-            push_back(*f);
-
-        return *this;
-    }
-
+    string2& append(const char *f, const char *l) { _append(f, l); return *this; }
     size_t find(const string2 &s, size_t pos = 0) const;
     size_t find(const char *s, size_t pos = 0) const { string2 str(s); return find(str, pos); }
-
-    size_t find(const char *s, size_t pos, size_t n) const
-    {
-        return 44;
-    }
-
-    size_t find(char c, size_t pos = 0)
-    {
-        return 51;
-    }
-
+    size_t find(const char *s, size_t pos, size_t n) const { return 44; }
+    size_t find(char c, size_t pos = 0) { return 51; }
     string2& replace(size_t pos, size_t len, const string2 &str);
 };
 

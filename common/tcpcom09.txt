@@ -1,0 +1,4 @@
+green apple is not red apple
+still, green apple is an apple
+and red apple is also an apple
+therefore, both are apples

@@ -255,6 +255,14 @@ int fpinbuf::underflow()
     return (uint8_t)(*gptr());
 }
 
+string2& string2::append(const string2 &s)
+{
+    for (string2::const_iterator it = s.cbegin(); it != s.cend(); it++)
+        push_back(*it);
+
+    return *this;
+}
+
 ostream2& ostream2::printInt(const uint32_t u)
 {
     Util2 util;
