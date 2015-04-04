@@ -1,6 +1,6 @@
 CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
-VALGRIND = valgrind $(VALFLAGS)
+VALGRIND = #valgrind $(VALFLAGS)
 MYSTL_H = mystl.h mystl.tcc
 COMMON_H = common.h $(MYSTL_H)
 BITINPUT_H = bitinput.h $(COMMON_H)
@@ -16,7 +16,9 @@ MYSTL_O = mystl.o mytime.o #$(MYSTDIO_O)
 TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
     cppcom01 cppcom02 \
-    jpg2tga kompakt ls md5sum nl od rm tar tee test1 test2 test3 testbinp \
+    jpg2tga kompakt ls md5sum nl od rm tar \
+    tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 \
+    tee test1 test2 test3 testbinp \
     teststl1 tgmtime1 tgunzip1 touch tr tstdio1 unix2dos uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
@@ -43,10 +45,10 @@ cppcom01: cppcom01.o $(MYSTL_O)
 cppcom02: cppcom02.o $(MYSTL_O)
 crc32: crc32.o $(MYSTL_O)
 date: date.o $(MYSTL_O)
-dd: dd.o
+dd: dd.o $(MYSTL_O)
 diff: diff.o $(MYSTL_O)
 dos2unix: dos2unix.o $(MYSTL_O)
-grep: grep.o
+grep: grep.o $(MYSTL_O)
 gunzip: gunzip.o gunzipm.o $(MYSTL_O)
 gzip: gzip.o
 jpg2tga: jpg2tga.o $(MYSTL_O)
@@ -57,6 +59,14 @@ nl: nl.o $(MYSTL_O)
 od: od.o odmain.o $(MYSTL_O)
 rm: rm.o $(MYSTL_O)
 tar: tarm.o tar.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
+tcpcom03: tcpcom03.o $(MYSTL_O)
+tcpcom04: tcpcom04.o $(MYSTL_O)
+tcpcom05: tcpcom05.o $(MYSTL_O)
+tcpcom06: tcpcom06.o $(MYSTL_O)
+tcpcom07: tcpcom07.o $(MYSTL_O)
+tcpcom08: tcpcom08.o $(MYSTL_O)
+tcpcom09: tcpcom09.o $(MYSTL_O)
+tcpcom10: tcpcom10.o $(MYSTL_O)
 tee: tee.o $(MYSTL_O)
 test1: test1.o hasher.o $(MYSTL_O)
 test2: test2.o $(MYSTL_O)
@@ -87,8 +97,8 @@ cppcom01.o: cppcom01.cpp
 cppcom02.o: cppcom02.cpp
 crc32.o: crc32.cpp
 date.o: date.cpp $(COMMON_H)
-dd.o: dd.cpp
-diff.o: diff.cpp
+dd.o: dd.cpp $(COMMON_H)
+diff.o: diff.cpp $(COMMON_H)
 dos2unix.o: dos2unix.cpp
 fector.o: fector.cpp
 filesys.o: filesys.cpp filesys.h
@@ -111,6 +121,14 @@ odmain.o: odmain.cpp $(OD_H)
 rm.o: rm.cpp
 tar.o: tar.cpp $(TAR_H)
 tarm.o: tarm.cpp $(TAR_H)
+tcpcom03.o: tcpcom03.cpp $(COMMON_H)
+tcpcom04.o: tcpcom04.cpp $(COMMON_H)
+tcpcom05.o: tcpcom05.cpp $(COMMON_H)
+tcpcom06.o: tcpcom06.cpp $(COMMON_H)
+tcpcom07.o: tcpcom07.cpp $(COMMON_H)
+tcpcom08.o: tcpcom08.cpp $(COMMON_H)
+tcpcom09.o: tcpcom09.cpp $(COMMON_H)
+tcpcom10.o: tcpcom10.cpp $(COMMON_H)
 tee.o: tee.cpp $(COMMON_H)
 test1.o: test1.cpp
 test2.o: test2.cpp
@@ -125,7 +143,7 @@ tstdio1.o: tstdio1.cpp
 unix2dos.o: unix2dos.cpp
 uuidgen.o: uuidgen.cpp
 weekday.o: weekday.cpp
-wingroup.o: wingroup.cpp
+wingroup.o: wingroup.cpp $(COMMON_H)
 yes.o: yes.cpp fector.h $(COMMON_H)
 zcat.o: zcat.cpp $(GUNZIP_H)
 
@@ -195,15 +213,38 @@ testjpg2tga:
 testgmtime1:
 	$(VALGRIND) ./tgmtime1
 
+testgrep:
+	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
+
+testcppcom01:
+	$(VALGRIND) ./cppcom01 | ./diff -s tcpcom01.txt -
+
+testcppcom02:
+	$(VALGRIND) ./cppcom02
+
+testcppcom03:
+	$(VALGRIND) ./tcpcom03 | ./diff -s tcpcom03.txt -
+
+testcppcom04:
+	$(VALGRIND) ./tcpcom04 | ./diff -s tcpcom04.txt -
+
+testcppcom05:
+	$(VALGRIND) ./tcpcom05 | ./diff -s tcpcom05.txt -
+
+testcppcom06:
+	$(VALGRIND) ./tcpcom06 | ./diff -s tcpcom06.txt -
+
+testcppcom07:
+	$(VALGRIND) ./tcpcom07 | ./diff -s tcpcom07.txt -
+
+test2go:
+	$(VALGRIND) ./test2
+
 tests1: testgunzip2 testkompakt testbunzip2 testmd5sum testgmtime1 testnl testbzcat testzcat
 tests2: testcrc32 test1go tgunzip1go testod testtar testbase64 teststl1go
-tests3: testjpg2tga testcp
-
-test: tests1 tests2 tests3
-	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
-	$(VALGRIND) ./test2
-	$(VALGRIND) ./cppcom01
-	$(VALGRIND) ./cppcom02
+tests3: testjpg2tga testcp testgrep 
+tests4: testcppcom01 testcppcom03 testcppcom04 testcppcom05 testcppcom06 testcppcom07
+test: tests1 tests2 tests3 tests4
 
 clean:
 	rm -Rf *.o jpg2tga *.tga $(TARGETS)

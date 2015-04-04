@@ -1,7 +1,11 @@
+#if 0
 #include <regex>
 #include <iostream>
 #include <fstream>
 using namespace std;
+#else
+#include "common.h"
+#endif
 
 void grep(istream &is, const regex rx)
 {

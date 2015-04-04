@@ -200,14 +200,16 @@ public:
     const_iterator begin() const { return const_iterator(_M_impl.start); }
     const_iterator cbegin() const { return const_iterator(_M_impl.start); }
     iterator begin() { return iterator(_M_impl.start); }
-    T &front() { return *begin(); }
+    //T &front() { return *begin(); }
+    const T &front() { return at(0); }
     ~vector2();
     void assign(size_t n, const T &val) { _M_fill_assign(n, val); }
     iterator end() { return iterator(_M_impl.fin); }
     const_iterator end() const { return const_iterator(_M_impl.fin); }
     const_iterator cend() const { return const_iterator(_M_impl.fin); }
-    T &back() { return *end(); }
+    //T &back() { return *end(); }
     size_t size() const { return size_t(_M_impl.fin - _M_impl.start); }
+    const T &back() { return at(size() - 1); }
     size_t max_size() const { return atraits::max_size(_M_get_Tp_allocator()); }
     void reserve(size_t n);
     const T& operator[](size_t n) const { return *(_M_impl.start + n); }
@@ -379,6 +381,9 @@ class string2 : public Util2
     char *_s = new char[255];
     uint32_t _pos = 0;
 public:
+    typedef size_t size_type;
+    typedef const char * const_iterator;
+    static const size_t npos = -1;
     string2() { memset(_s, 0, 255); }
     string2(const char *s) { memset(_s, 0, 255); strcpy(_s, s); }
     string2(const char *s1, const char *s2);
@@ -390,9 +395,28 @@ public:
     const char *c_str() const { return _s; }
     size_t length() const { return strlen(_s); }
     void push_back(char c) { _s[_pos++] = c; }
-    int compare(const char *s) { return strlen(s) != length(); }
-    int compare(const string2 &s) { return compare(s.c_str()); }
+    int compare(const char *s) const { return strcmp(_s, s); }
+    int compare(const string2 &s) const { return compare(s.c_str()); }
+    const_iterator cbegin() const { return _s; }
+    const_iterator cend() const { return _s + length(); }
+    char at(size_t pos) const { return _s[pos]; }
+    string2 substr(size_t pos) const;
+    string2 substr(size_t pos, size_t len) const;
+    void clear() { memset(_s, 0, 255); _pos = 0; }
+    size_t find(const string2 &s, size_t pos = 0) const;
+    size_t find(const char *s, size_t pos = 0) const { string2 str(s); return find(str, pos); }
 
+    size_t find(const char *s, size_t pos, size_t n) const
+    {
+        return 44;
+    }
+
+    size_t find(char c, size_t pos = 0)
+    {
+        return 51;
+    }
+
+    string2& replace(size_t pos, size_t len, const string2 &str);
 };
 
 class stringbuf2 : public streambuf2
@@ -428,7 +452,7 @@ public:
     istream2(streambuf2 *sb) : ios2(sb) { }
     virtual ~istream2() { }
     virtual int get() { return _sb->sbumpc(); }
-    virtual istream2 &ignore(size_t n = 1, int d = '\n') { while (n--) get(); return *this; }
+    virtual istream2 &ignore(int n = 1, int d = '\n') { while (n-- > 0) get(); return *this; }
     virtual int tellg() { return _sb->pubseekoff(0, 0, 0); }
     int gcount() { return _lastRead; }
     operator void * () const { return _sb->in_avail() == -1 ? (void *)false : (void *)true; }
@@ -511,6 +535,7 @@ public:
 private:
     ostream2 &printChar(char c) { put(c); return *this; }
     ostream2 &print(const char *s) { while (*s) put(*s++); return *this; }
+    ostream2 &printInt2(int32_t u);
     ostream2 &printInt(uint32_t u);
     void printStreambuf(streambuf2 *sb) { for (int x; (x = sb->sbumpc()) != EOF;) put(x); }
 public:
@@ -523,7 +548,7 @@ public:
     ostream2& operator << (const fill2 &f) { _fill = f; return *this; }
     ostream2& operator << (const base2 &base) { _base = base; return *this; }
     ostream2& operator << (uint16_t u) { return printInt(u); }
-    ostream2& operator << (int32_t u) { return printInt(u); }
+    ostream2& operator << (int32_t u) { return printInt2(u); }
     ostream2& operator << (size_t u) { return printInt(u); }
     ostream2& operator << (uint32_t u) { return printInt(u); }
     ostream2& operator << (streambuf2 *sb) { printStreambuf(sb); return *this; }
@@ -565,6 +590,7 @@ public:
 
 template <typename T, size_t N> struct array2
 {
+    typedef T *iterator;
     T elems[N];
     constexpr size_t size() const { return N; }
     constexpr size_t max_size() const { return N; }
@@ -575,6 +601,32 @@ template <typename T, size_t N> struct array2
     constexpr const T &at(size_t n) const { return const_cast<T&>(elems[n]); }
     void fill(const T &u) { for (size_t i = 0; i < size(); i++) at(i) = u; }
     constexpr const T &front() const { return const_cast<T&>(elems[0]); }
+    iterator begin() { return elems; }
+    iterator end() { return elems + N; }
+};
+
+class regex2 : public Util2
+{
+    char _r[255];
+    const char *_s() const { return _r; }
+public:
+    regex2(const char *s) { strcpy(_r, s); }
+    friend class regex_functions;
+};
+
+namespace mystl
+{
+    typedef regex2 regex;
+}
+
+class regex_functions : public Util2
+{
+public:
+    bool regex_search(const char *s, const regex2 &rx)
+    {
+        string2 str(s);
+        return str.find(rx._s()) < 999999;
+    }
 };
 
 namespace mystl
@@ -621,6 +673,7 @@ namespace mystl
     int toupper(int c);
     void toupper(const char *src, char *dest);
     void toupper(char *s);
+    bool regex_search(const char *s, const regex &rx);
     template <typename T, typename U> void sort(T f, T l, U c) { Util2 u; u.sort(f, l, c); }
     template <typename T> void sort(T f, T l) { Util2 u; u.sort(f, l); }
     template <typename T> void reverse(T first, T last) { Util2 u; u.reverse2(first, last); }

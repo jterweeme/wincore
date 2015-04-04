@@ -26,6 +26,7 @@ using namespace std;
 #include <sstream>
 #include <vector>
 #include <ctime>
+#include <regex>
 #endif
 #include "mystl.h"
 

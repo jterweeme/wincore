@@ -54,7 +54,7 @@ void Options::parse(int argc, char **argv)
 int App::run(int argc, char **argv)
 {
     Options o(argc, argv);
-#if 0
+#if 1
     istream *ifs1 = getStream(o.filenames().front());
     istream *ifs2 = getStream(o.filenames().back());
 #else
@@ -64,7 +64,7 @@ int App::run(int argc, char **argv)
 
     if (diff(*ifs1, *ifs2))
     {
-#if 1
+#if 0
         cout << "OK\n";
 #else
         cout << "\e[1;32mFiles " << o.filenames().front() << " and " << o.filenames().back()

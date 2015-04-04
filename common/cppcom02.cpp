@@ -12,8 +12,8 @@ int main ()
   //myints.insert (myints.end(),10,100);
   //cout << "2. size: " << myints.size() << '\n';
 
-  //myints.pop_back();
-  //cout << "3. size: " << myints.size() << '\n';
+  myints.pop_back();
+  cout << "3. size: " << myints.size() << '\n';
 
   return 0;
 }

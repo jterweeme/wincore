@@ -1,0 +1,5 @@
+first 'needle' found at: 14
+second 'needle' found at: 44
+'haystack' also found at: 30
+Period found at: 51
+There are two prepositions in this haystack with needles.

@@ -1,9 +1,4 @@
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <cstring>
-#include <stdint.h>
-using namespace std;
+#include "common.h"
 
 class Options
 {

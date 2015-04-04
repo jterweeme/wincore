@@ -51,6 +51,13 @@ char *Util2::itoa(uint32_t num, char *str, int base)
 {
     int i = 0;
 
+    if (num == 0)
+    {
+        str[0] = '0';
+        str[1] = '\0';
+        return str;
+    }
+
     while (num != 0)
     {
         uint32_t rem = num % base;
@@ -271,6 +278,29 @@ ostream2& ostream2::printInt(const uint32_t u)
     return *this;
 }
 
+ostream2& ostream2::printInt2(int32_t u)
+{
+    Util2 util;
+    char s[10] = {0};
+
+    switch (_base.type())
+    {
+    case base2::OCT:
+        util.itoa(u, s, 8);
+        break;
+    case base2::HEX:
+        util.itoa(u, s, 16);
+        break;
+    default:
+        util.itoa(u, s, 10);
+    }
+
+    uint32_t fill = (uint32_t)_width.size() > util.strlen(s) ? _width.size() - util.strlen(s) : 0;
+    for (uint32_t i = 0; i < fill; i++) put(_fill.fill());
+    print(s);
+    return *this;
+}
+
 int Util2::strcmp(const char *s1, const char *s2) const
 {
     while (*s1 == *s2++) if (*s1++ == 0) return 0;
@@ -300,6 +330,52 @@ char *Util2::strcpy(char *dest, const char *src) const
     char *save = dest;
     while ((*dest++ = *src++));
     return save;
+}
+
+string2 string2::substr(size_t pos) const
+{
+    string2 s;
+    
+    for (const_iterator it = cbegin() + pos; it != cend(); it++)
+        s.push_back(*it);
+
+    return s;
+}
+
+string2 string2::substr(size_t pos, size_t len) const
+{
+    string2 s;
+
+    for (const_iterator it = cbegin() + pos; it != cend() && it < cbegin() + len + pos; it++)
+        s.push_back(*it);
+
+    return s;
+}
+
+size_t string2::find(const string2 &s, size_t pos) const
+{
+    for (; pos + s.length() < length(); pos++)
+        if (s.compare(substr(pos, s.length())) == 0)
+            return pos;
+
+    return npos;
+}
+
+string2& string2::replace(size_t pos, size_t len, const string2 &str)
+{
+    string s(_s);
+    clear();
+
+    for (string2::const_iterator it = s.cbegin(); it != s.cbegin() + pos; it++)
+        push_back(*it);
+
+    for (string2::const_iterator it = str.cbegin(); it != str.cend(); it++)
+        push_back(*it);
+
+    for (string2::const_iterator it = s.cbegin() + pos + len; it != s.cend(); it++)
+        push_back(*it);
+
+    return *this;
 }
 
 namespace mystl
@@ -333,5 +409,8 @@ namespace mystl
     int toupper(int c) { Util2 u; return u.toupper(c); }
     char *strtok(char *s, const char *delim) { Util2 u; return u.strtok(s, delim); }
     int isdigit(int c) { Util2 u; return u.isdigit(c); }
+
+    bool regex_search(const char *s, const regex &rx)
+    { regex_functions r; return r.regex_search(s, rx); }
 }
 

@@ -1,0 +1,1 @@
+myarray contains: 5 5 5 5 5 5

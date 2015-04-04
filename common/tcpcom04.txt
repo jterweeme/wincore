@@ -1,0 +1,2 @@
+size of myints: 5
+sizeof(myints): 20

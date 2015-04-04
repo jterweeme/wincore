@@ -13,6 +13,10 @@ void functie()
 
 int main(int argc, char **argv)
 {
+    string s1("nonsens");
+    string s2("nonsens2");
+    int x = s1.compare(s2);
+    cout << x << "\n";
 #if 0
     vector<uint32_t> v1;
     v1.push_back(5800);

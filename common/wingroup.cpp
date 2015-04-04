@@ -1,18 +1,9 @@
-#if 1
-#include <stdint.h>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <algorithm>
-using namespace std;
-#else
 #include "common.h"
-#endif
 
 class Options
 {
 public:
+    void parse(int argc, char **argv);
 };
 
 struct GroupFile
@@ -141,10 +132,12 @@ int Group::read(istream &s)
     s.read((char *)&barPtr, 2);
     for (int i = 0, c = 0; (c = s.get()) != 0; i++) name[i] = c;
     cout << name << "\n";
-    s.ignore(namePtr - s.tellg());
+    int x = s.tellg();
+    s.ignore(namePtr - x);
     for (int i = 0, c = 0; (c = s.get()) != 0; i++) cmd[i] = c;
     cout << cmd << "\n";
-    s.ignore(cmdPtr - s.tellg());
+    x = s.tellg();
+    s.ignore(cmdPtr - x);
     for (int i = 0, c = 0; (c = s.get()) != 0; i++) path[i] = c;
     cout << path << "\n";
     CItem item1c(cmd, path);
@@ -153,9 +146,26 @@ int Group::read(istream &s)
     return 0;
 }
 
+void Options::parse(int argc, char **argv)
+{
+    
+}
+
 int App::run(int argc, char **argv)
 {
-    group.read(cin);
+    Options o;
+    o.parse(argc, argv);
+
+    if (argc > 1)
+    {
+        ifstream ifs(argv[1]);
+        group.read(ifs);
+    }
+    else
+    {
+        group.read(cin);
+    }
+
     cout << group.toString() << "\n";
     return 0;
 }
