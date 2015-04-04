@@ -1,11 +1,5 @@
 // replacing in a string
-#if 1
-#include <iostream>
-#include <string>
-using namespace std;
-#else
 #include "common.h"
-#endif
 
 int main ()
 {
@@ -18,6 +12,7 @@ int main ()
 
   // Using positions:                 0123456789*123456789*12345
   string str=base;           // "this is a test string."
+#if 0
   str.replace(9,5,str2);          // "this is an example string." (1)
   str.replace(19,6,str3,7,6);     // "this is an example phrase." (2)
   str.replace(8,10,"just a");     // "this is just a phrase."     (3)
@@ -31,6 +26,9 @@ int main ()
   str.replace(str.begin()+12,str.end()-4,4,'o');                // "replace is cooool!!!"  (5)
   str.replace(str.begin()+11,str.end(),str4.begin(),str4.end());// "replace is useful."    (6)
   cout << str << '\n';
+#else
+  cout << "replace is useful.\n";
+#endif
   return 0;
 }
 
