@@ -237,6 +237,9 @@ testcppcom06:
 testcppcom07:
 	$(VALGRIND) ./tcpcom07 | ./diff -s tcpcom07.txt -
 
+testcppcom10:
+	$(VALGRIND) ./tcpcom10 | ./diff -s tcpcom10.txt -
+
 test2go:
 	$(VALGRIND) ./test2
 
@@ -244,7 +247,8 @@ tests1: testgunzip2 testkompakt testbunzip2 testmd5sum testgmtime1 testnl testbz
 tests2: testcrc32 test1go tgunzip1go testod testtar testbase64 teststl1go
 tests3: testjpg2tga testcp testgrep 
 tests4: testcppcom01 testcppcom03 testcppcom04 testcppcom05 testcppcom06 testcppcom07
-test: tests1 tests2 tests3 tests4
+tests5: testcppcom10
+test: tests1 tests2 tests3 tests4 tests5
 
 clean:
 	rm -Rf *.o jpg2tga *.tga $(TARGETS)

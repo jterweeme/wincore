@@ -1,11 +1,5 @@
 // string::substr
-#if 0
-#include <iostream>
-#include <string>
-using namespace std;
-#else
 #include "common.h"
-#endif
 
 int main ()
 {
