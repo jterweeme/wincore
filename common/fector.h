@@ -53,6 +53,7 @@ public:
     T *begin() const { return _buf; }
     T *end() const { return _buf + _size; }
     void push_back(const T &x) { testFull(); _buf[_pos++] = x; }
+    T &operator[](uint32_t i) { return _buf[i]; }
 };
 
 class Fugt : public Fector<uint8_t>

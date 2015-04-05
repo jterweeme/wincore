@@ -1,60 +1,6 @@
 #ifndef _INFLATE_H_
 #define _INFLATE_H_
-#if 1
-#include "common.h"
-#else
-#include <iostream>
-#include <fstream>
-#include <stdint.h>
-#include <algorithm>
-#include <sstream>
-#include <vector>
-#endif
-//#include "common.h"
-//#include "fector.h"
-
-template<class T> class FectorTemp
-{
-    uint32_t _size;
-    uint32_t _pos = 0;
-    T *_buf;
-    T _max(T a, T b) { return a > b ? a : b; }
-    T _min(T a, T b) { return a < b ? a : b; }
-public:
-    typedef T *iterator;
-    typedef T *const_iterator;
-    FectorTemp(uint32_t size) : _size(size), _buf(new T[size]) { }
-
-    FectorTemp(const FectorTemp &f) : _size(f._size), _buf(new T[_size])
-    { for (uint32_t i = 0; i < _size; i++) _buf[i] = f._buf[i]; }
-
-    ~FectorTemp() { delete[] _buf; }
-    uint32_t size() const { return _size; }
-    T at(uint32_t i) const { return _buf[i]; }
-    T set(uint32_t i, T val) { return _buf[i] = val; }
-    T &operator[](uint32_t i) { return _buf[i]; }
-
-    T max(uint32_t range)
-    {
-        T a = 0;
-        for (uint32_t i = 0; i < range; i++) a = _max(_buf[i], a);
-        return a;
-    }
-
-    T min(uint32_t range)
-    {
-        T a = 0;
-        for (uint32_t i = 0; i < range; i++) a = _min(_buf[i], a);
-        return a;
-    }
-
-    T max() { return max(_size); }
-    T min() { return min(_size); }
-    T *begin() const { return _buf; }
-    T *end() const { return _buf + _size; }
-    void push_back(const T &x) { _buf[_pos++] = x; }
-};
-
+#include "fector.h"
 
 typedef vector<int> Vint;
 typedef vector<uint8_t> Vugt;
@@ -127,7 +73,7 @@ public:
 
 class CircularDict
 {
-    FectorTemp<uint8_t> _data;
+    Fector<uint8_t> _data;
     int _index = 0;
     const int _mask;
 public:

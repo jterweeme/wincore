@@ -1,6 +1,6 @@
 CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
-VALGRIND = valgrind $(VALFLAGS)
+VALGRIND = #valgrind $(VALFLAGS)
 MYSTL_H = mystl.h mystl.tcc
 COMMON_H = common.h $(MYSTL_H)
 BITINPUT_H = bitinput.h $(COMMON_H)

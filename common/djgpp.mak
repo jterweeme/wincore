@@ -4,12 +4,12 @@ COMMON_H = common.h $(MYSTL_H)
 MYSTL_O = mystl.o mytime.o
 
 TARGETS = base64 bunzip2 bzcat bzinfo cat cp crc32 date dd diff \
-    dos2unix grep gunzip gzip \
+    dos2unix grep gunzip \
     cppcom01 cppcom02 \
-    jpg2tga kompakt ls md5sum nl od rm tar \
+    jpg2tga md5sum nl od rm tar \
     tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 \
     tee test1 test2 test3 testbinp \
-    teststl1 tgmtime1 tgunzip1 touch tr tstdio1 unix2dos uuidgen weekday wingroup yes zcat
+    teststl1 tgmtime1 tgunzip1 touch tr unix2dos uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
 	@gpp $(CXXFLAGS) -c -o $@ $<
@@ -36,7 +36,7 @@ dd: dd.o $(MYSTL_O)
 diff: diff.o $(MYSTL_O)
 dos2unix: dos2unix.o $(MYSTL_O)
 grep: grep.o $(MYSTL_O)
-gunzip: gunzip.o gunzipm.o $(MYSTL_O)
+gunzip: gunzip.o gunzipm.o inflate.o $(MYSTL_O)
 gzip: gzip.o
 jpg2tga: jpg2tga.o $(MYSTL_O)
 kompakt: kompakt.o main.o filesys.o $(MYSTL_O)
@@ -61,7 +61,7 @@ test3: test3.o $(MYSTL_O)
 testbinp: testbinp.o bitinput.o $(MYSTL_O)
 teststl1: teststl1.o $(MYSTL_O)
 tgmtime1: tgmtime1.o $(MYSTL_O)
-tgunzip1: tgunzip1.o gunzip.o $(MYSTL_O)
+tgunzip1: tgunzip1.o gunzip.o inflate.o $(MYSTL_O)
 touch: touch.o
 tr: tr.o $(MYSTL_O)
 tstdio1: tstdio1.o $(MYSTDIO_O)
@@ -70,7 +70,7 @@ uuidgen: uuidgen.o $(MYSTL_O)
 weekday: weekday.o $(MYSTL_O)
 wingroup: wingroup.o $(MYSTL_O)
 yes: yes.o fector.o $(MYSTL_O)
-zcat: zcat.o gunzip.o $(MYSTL_O)
+zcat: zcat.o gunzip.o inflate.o $(MYSTL_O)
 base64.o: base64.cpp $(COMMON_H)
 bitinput.o: bitinput.cpp $(BITINPUT_H)
 bunzip2.o: bunzip2.cpp $(BUNZIP2_H)
@@ -94,6 +94,7 @@ gunzip.o: gunzip.cpp $(GUNZIP_H)
 gunzipm.o: gunzipm.cpp $(GUNZIP_H)
 gzip.o: gzip.cpp
 hasher.o: hasher.cpp hasher.h
+inflate.o: inflate.cpp inflate.h
 jpg2tga.o: jpg2tga.cpp
 kompakt.o: kompakt.cpp kompakt.h $(COMMON_H)
 ls.o: ls.cpp
@@ -133,6 +134,46 @@ weekday.o: weekday.cpp
 wingroup.o: wingroup.cpp $(COMMON_H)
 yes.o: yes.cpp fector.h $(COMMON_H)
 zcat.o: zcat.cpp $(GUNZIP_H)
+
+testnl:
+	cat tr.cpp | nl | diff nl.out -
+
+testcrc32:
+	crc32 diff.cpp
+
+testgrep:
+	grep include Makefile | diff -s grep1.out -
+
+testcppcom01:
+	tcpcom01 | diff -s tcpcom01.txt
+
+testcppcom02:
+	tcpcom02
+
+testcppcom03:
+	tcpcom03 | diff -s tcpcom03.txt
+
+testcppcom04:
+	tcpcom04 | diff -s tcpcom04.txt
+
+testcppcom05:
+	tcpcom05 | diff -s tcpcom05.txt
+
+testcppcom06:
+	tcpcom06 | diff -s tcpcom06.txt
+
+testcppcom07:
+	tcpcom07 | diff -s tcpcom07.txt
+
+testcppcom10:
+	tcpcom10 | diff -s tcpcom10.txt
+
+tests1: testnl
+tests2: testcrc32
+tests3: testgrep
+tests4: testcppcom01 testcppcom03 testcppcom04 testcppcom05 testcppcom06 testcppcom07
+tests5: testcppcom10
+test: tests1 tests2 tests4 tests5
 
 clean:
 	deltree /y *.obj *.o *.exe
