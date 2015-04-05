@@ -1,7 +1,7 @@
 #ifndef _HASHER_H_
 #define _HASHER_H_
 #include "common.h"
-#include <endian.h>
+//#include <endian.h>
 //#include <stdlib.h>
 
 class Hash

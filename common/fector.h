@@ -12,6 +12,16 @@ template<class T> class Fector
 public:
     typedef T *iterator;
     typedef T *const_iterator;
+
+    Fector& operator= (const Fector &f)
+    {
+        _pos = f._pos;
+        _size = f._size;
+        _buf = new T[_size];
+        for (uint32_t i = 0; i < _size; i++) _buf[i] = f._buf[i];
+        return *this;
+    }
+
     Fector(uint32_t size) : _size(size), _buf(new T[size]) { }
 
     Fector(const Fector &f) : _size(f._size), _buf(new T[_size])
@@ -36,11 +46,13 @@ public:
         return a;
     }
 
+    bool isFull() const { return _pos >= _size; }
+    void testFull() const { if (isFull()) throw "Fector is full"; }
     T max() { return max(_size); }
     T min() { return min(_size); }
     T *begin() const { return _buf; }
     T *end() const { return _buf + _size; }
-    void push_back(const T &x) { _buf[_pos++] = x; }
+    void push_back(const T &x) { testFull(); _buf[_pos++] = x; }
 };
 
 class Fugt : public Fector<uint8_t>

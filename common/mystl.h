@@ -51,6 +51,7 @@ public:
     template <typename BI1, typename BI2> BI2 copy_move_back_a(BI1 f, BI1 l, BI2 result);
     template <typename T, typename U> void destroy(T first, T last, U &alloc);
     template <typename T, typename T2> T2 uninitialized_copy(T first, T last, T2 result);
+    uint32_t be32toh(uint32_t v) const;
 };
 
 class Time2 : public Util2
@@ -209,7 +210,8 @@ public:
     const_iterator cend() const { return const_iterator(_M_impl.fin); }
     //T &back() { return *end(); }
     size_t size() const { return size_t(_M_impl.fin - _M_impl.start); }
-    const T &back() { return at(size() - 1); }
+    T &back() { return at(size() - 1); }
+    const T &back() const { return at(size() - 1); }
     size_t max_size() const { return atraits::max_size(_M_get_Tp_allocator()); }
     void reserve(size_t n);
     const T& operator[](size_t n) const { return *(_M_impl.start + n); }
@@ -217,6 +219,7 @@ public:
     void push_back(const T &x);
     void pop_back() { --_M_impl.fin; atraits::destroy(_M_impl, _M_impl.fin); }
     void insert(iterator pos, size_t n, const T &x) { _M_fill_insert(pos, n, x); }
+    T &at(size_t n) { return (*this)[n]; }
     const T &at(size_t n) const { return (*this)[n]; }
     void clear() { _M_erase_at_end(_M_impl.start); }
 protected:
@@ -705,7 +708,8 @@ namespace mystl
 #endif
     template<typename T> inline T* addressof(T& r) { Util2 u; return u.addressof(r); }
     template <class T> T max_element(T first, T last);
-    template <class I, class N, class T> I fill_n(I first, N n, const T &v); 
+    template <class I, class N, class T> I fill_n(I first, N n, const T &v);
+    uint32_t be32toh(uint32_t value);
 };
 
 #include "mystl.tcc"

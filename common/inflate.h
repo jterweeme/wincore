@@ -2,7 +2,6 @@
 #define _INFLATE_H_
 #if 1
 #include "common.h"
-#include <vector>
 #else
 #include <iostream>
 #include <fstream>
@@ -57,8 +56,8 @@ public:
 };
 
 
-typedef std::vector<int> Vint;
-typedef std::vector<uint8_t> Vugt;
+typedef vector<int> Vint;
+typedef vector<uint8_t> Vugt;
 
 class BitInput
 {
@@ -111,7 +110,7 @@ struct Node
 class CodeTree
 {   
     Node _root;
-    std::vector<Node> _nodes;
+    vector<Node> _nodes;
 public:
     void import(Nau &x);
     CodeTree(Node root) : _root(root) { }
@@ -143,7 +142,7 @@ class Inflate
     BitInput *_bi;
     CircularDict _dict;
     Node _lit, _dist;
-    std::vector<Node> _nodeDump;
+    vector<Node> _nodeDump;
     void _decRaw(ostream &os);
     void _decHuff(Node lit, Node dist, ostream &os);
     int _decSym(Node *code);

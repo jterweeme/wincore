@@ -1,12 +1,141 @@
-CXXFLAGS = -O2 -Wall -Wno-parentheses
+CXXFLAGS = -O2 -Wall -Wno-parentheses --std=c++11
+MYSTL_H = mystl.h mystl.tcc
+COMMON_H = common.h $(MYSTL_H)
+MYSTL_O = mystl.o mytime.o
+
+TARGETS = base64 bunzip2 bzcat bzinfo cat cp crc32 date dd diff \
+    dos2unix grep gunzip gzip \
+    cppcom01 cppcom02 \
+    jpg2tga kompakt ls md5sum nl od rm tar \
+    tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 \
+    tee test1 test2 test3 testbinp \
+    teststl1 tgmtime1 tgunzip1 touch tr tstdio1 unix2dos uuidgen weekday wingroup yes zcat
+
+%.o: %.cpp
+	@gpp $(CXXFLAGS) -c -o $@ $<
+
+%: %.o
+	@gpp -o $@ $^
 
 .PHONY: all
 
-all:
-	gpp $(CXXFLAGS) -o md5sum main.cpp mystl.cpp hasher.cpp
-	gpp $(CXXFLAGS) -o test1 test1.cpp mystl.cpp hasher.cpp
-
+all: $(TARGETS)
+base64: base64.o $(MYSTL_O)
+bunzip2: bunzip2m.o bunzip2.o bitinput.o fector.o $(MYSTL_O)
+bzcat: bzcat.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
+bzinfo: bzinfo.o bitinput.o $(MYSTL_O)
+bzip2: bzip2.o
+bzmd5: bzmd5.o
+cat: cat.o $(MYSTL_O)
+cp: cp.o $(MYSTL_O)
+cppcom01: cppcom01.o $(MYSTL_O)
+cppcom02: cppcom02.o $(MYSTL_O)
+crc32: crc32.o $(MYSTL_O)
+date: date.o $(MYSTL_O)
+dd: dd.o $(MYSTL_O)
+diff: diff.o $(MYSTL_O)
+dos2unix: dos2unix.o $(MYSTL_O)
+grep: grep.o $(MYSTL_O)
+gunzip: gunzip.o gunzipm.o $(MYSTL_O)
+gzip: gzip.o
+jpg2tga: jpg2tga.o $(MYSTL_O)
+kompakt: kompakt.o main.o filesys.o $(MYSTL_O)
+ls: ls.o
+md5sum: md5sum.o hasher.o $(MYSTL_O)
+nl: nl.o $(MYSTL_O)
+od: od.o odmain.o $(MYSTL_O)
+rm: rm.o $(MYSTL_O)
+tar: tarm.o tar.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
+tcpcom03: tcpcom03.o $(MYSTL_O)
+tcpcom04: tcpcom04.o $(MYSTL_O)
+tcpcom05: tcpcom05.o $(MYSTL_O)
+tcpcom06: tcpcom06.o $(MYSTL_O)
+tcpcom07: tcpcom07.o $(MYSTL_O)
+tcpcom08: tcpcom08.o $(MYSTL_O)
+tcpcom09: tcpcom09.o $(MYSTL_O)
+tcpcom10: tcpcom10.o $(MYSTL_O)
+tee: tee.o $(MYSTL_O)
+test1: test1.o hasher.o $(MYSTL_O)
+test2: test2.o $(MYSTL_O)
+test3: test3.o $(MYSTL_O)
+testbinp: testbinp.o bitinput.o $(MYSTL_O)
+teststl1: teststl1.o $(MYSTL_O)
+tgmtime1: tgmtime1.o $(MYSTL_O)
+tgunzip1: tgunzip1.o gunzip.o $(MYSTL_O)
+touch: touch.o
+tr: tr.o $(MYSTL_O)
+tstdio1: tstdio1.o $(MYSTDIO_O)
+unix2dos: unix2dos.o $(MYSTL_O)
+uuidgen: uuidgen.o $(MYSTL_O)
+weekday: weekday.o $(MYSTL_O)
+wingroup: wingroup.o $(MYSTL_O)
+yes: yes.o fector.o $(MYSTL_O)
+zcat: zcat.o gunzip.o $(MYSTL_O)
+base64.o: base64.cpp $(COMMON_H)
+bitinput.o: bitinput.cpp $(BITINPUT_H)
+bunzip2.o: bunzip2.cpp $(BUNZIP2_H)
+bzcat.o: bzcat.cpp $(BUNZIP2_H)
+bzinfo.o: bzinfo.cpp fector.h $(BITINPUT_H)
+bzip2.o: bzip2.cpp
+bzmd5.o: bzmd5.cpp $(BUFTEST_H)
+cat.o: cat.cpp $(COMMON_H)
+cp.o: cp.cpp
+cppcom01.o: cppcom01.cpp
+cppcom02.o: cppcom02.cpp
+crc32.o: crc32.cpp
+date.o: date.cpp $(COMMON_H)
+dd.o: dd.cpp $(COMMON_H)
+diff.o: diff.cpp $(COMMON_H)
+dos2unix.o: dos2unix.cpp
+fector.o: fector.cpp
+filesys.o: filesys.cpp filesys.h
+grep.o: grep.cpp
+gunzip.o: gunzip.cpp $(GUNZIP_H)
+gunzipm.o: gunzipm.cpp $(GUNZIP_H)
+gzip.o: gzip.cpp
+hasher.o: hasher.cpp hasher.h
+jpg2tga.o: jpg2tga.cpp
+kompakt.o: kompakt.cpp kompakt.h $(COMMON_H)
+ls.o: ls.cpp
+main.o: main.cpp
+md5sum.o: md5sum.cpp
+mystdio.o: mystdio.cpp mystdio.h
+mystl.o: mystl.cpp $(MYSTL_H)
+mytime.o: mytime.cpp
+nl.o: nl.cpp $(COMMON_H)
+od.o: od.cpp od.h $(COMMON_H)
+odmain.o: odmain.cpp $(OD_H)
+rm.o: rm.cpp
+tar.o: tar.cpp $(TAR_H)
+tarm.o: tarm.cpp $(TAR_H)
+tcpcom03.o: tcpcom03.cpp $(COMMON_H)
+tcpcom04.o: tcpcom04.cpp $(COMMON_H)
+tcpcom05.o: tcpcom05.cpp $(COMMON_H)
+tcpcom06.o: tcpcom06.cpp $(COMMON_H)
+tcpcom07.o: tcpcom07.cpp $(COMMON_H)
+tcpcom08.o: tcpcom08.cpp $(COMMON_H)
+tcpcom09.o: tcpcom09.cpp $(COMMON_H)
+tcpcom10.o: tcpcom10.cpp $(COMMON_H)
+tee.o: tee.cpp $(COMMON_H)
+test1.o: test1.cpp
+test2.o: test2.cpp
+test3.o: test3.cpp
+testbinp.o: testbinp.cpp
+teststl1.o: teststl1.cpp $(MYSTL_H)
+tgmtime1.o: tgmtime1.cpp $(COMMON_H)
+tgunzip1.o: tgunzip1.cpp
+touch.o: touch.cpp
+tr.o: tr.cpp $(COMMON_H)
+tstdio1.o: tstdio1.cpp
+unix2dos.o: unix2dos.cpp
+uuidgen.o: uuidgen.cpp
+weekday.o: weekday.cpp
+wingroup.o: wingroup.cpp $(COMMON_H)
+yes.o: yes.cpp fector.h $(COMMON_H)
+zcat.o: zcat.cpp $(GUNZIP_H)
 
 clean:
 	deltree /y *.obj *.o *.exe
+
+rebuild: clean all
 

@@ -369,6 +369,16 @@ size_t string2::find(const string2 &s, size_t pos) const
     return npos;
 }
 
+uint32_t Util2::be32toh(uint32_t v) const
+{
+    uint32_t r = 0;
+    r |= (v & 0x000000ff) << 24;
+    r |= (v & 0x0000ff00) << 8;
+    r |= (v & 0x00ff0000) >> 8;
+    r |= (v & 0xff000000) >> 24;
+    return r;
+}
+
 string2& string2::replace(size_t pos, size_t len, const string2 &str)
 {
     string s(_s);
@@ -419,6 +429,7 @@ namespace mystl
     int isdigit(int c) { Util2 u; return u.isdigit(c); }
     void srand(unsigned seed) { }
     int rand() { return 5; }
+    uint32_t be32toh(uint32_t value) { Util2 u; return u.be32toh(value); }
 
     bool regex_search(const char *s, const regex &rx)
     { regex_functions r; return r.regex_search(s, rx); }

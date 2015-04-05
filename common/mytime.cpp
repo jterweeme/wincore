@@ -3,12 +3,26 @@
 size_t Time2::strftime(char *p, size_t max, const char *fmt, const tm *tp) const
 {
     if (strcmp(fmt, "%F %T") == 0)
+    {
+#if 0
         snprintf(p, max, "%u-%02u-%02u %02u:%02u:%02u",
             tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec);
+#else
+        sprintf(p, "%u-%02u-%02u %02u:%02u:%02u",
+            tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday, tp->tm_hour, tp->tm_min, tp->tm_sec);
+#endif
+    }
 
     if (strcmp(fmt, "%F %R") == 0)
+    {
+#if 0
         snprintf(p, max, "%u-%02u-%02u %02u:%02u",
             tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday, tp->tm_hour, tp->tm_min);
+#else
+        sprintf(p, "%u-%02u-%02u %02u:%02u",
+            tp->tm_year + 1900, tp->tm_mon + 1, tp->tm_mday, tp->tm_hour, tp->tm_min);
+#endif
+    }
 
     return 0;
 }

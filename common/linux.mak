@@ -1,6 +1,6 @@
 CXXFLAGS = -Wall -Wno-parentheses -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
-VALGRIND = #valgrind $(VALFLAGS)
+VALGRIND = valgrind $(VALFLAGS)
 MYSTL_H = mystl.h mystl.tcc
 COMMON_H = common.h $(MYSTL_H)
 BITINPUT_H = bitinput.h $(COMMON_H)
@@ -49,7 +49,7 @@ dd: dd.o $(MYSTL_O)
 diff: diff.o $(MYSTL_O)
 dos2unix: dos2unix.o $(MYSTL_O)
 grep: grep.o $(MYSTL_O)
-gunzip: gunzip.o gunzipm.o $(MYSTL_O)
+gunzip: gunzip.o gunzipm.o inflate.o $(MYSTL_O)
 gzip: gzip.o
 jpg2tga: jpg2tga.o $(MYSTL_O)
 kompakt: kompakt.o main.o filesys.o $(MYSTL_O)
@@ -74,7 +74,7 @@ test3: test3.o $(MYSTL_O)
 testbinp: testbinp.o bitinput.o $(MYSTL_O)
 teststl1: teststl1.o $(MYSTL_O)
 tgmtime1: tgmtime1.o $(MYSTL_O)
-tgunzip1: tgunzip1.o gunzip.o $(MYSTL_O)
+tgunzip1: tgunzip1.o gunzip.o inflate.o $(MYSTL_O)
 touch: touch.o
 tr: tr.o $(MYSTL_O)
 tstdio1: tstdio1.o $(MYSTDIO_O)
@@ -83,7 +83,7 @@ uuidgen: uuidgen.o $(MYSTL_O)
 weekday: weekday.o $(MYSTL_O)
 wingroup: wingroup.o $(MYSTL_O)
 yes: yes.o fector.o $(MYSTL_O)
-zcat: zcat.o gunzip.o $(MYSTL_O)
+zcat: zcat.o gunzip.o inflate.o $(MYSTL_O)
 base64.o: base64.cpp $(COMMON_H)
 bitinput.o: bitinput.cpp $(BITINPUT_H)
 bunzip2.o: bunzip2.cpp $(BUNZIP2_H)
@@ -107,6 +107,7 @@ gunzip.o: gunzip.cpp $(GUNZIP_H)
 gunzipm.o: gunzipm.cpp $(GUNZIP_H)
 gzip.o: gzip.cpp
 hasher.o: hasher.cpp hasher.h
+inflate.o: inflate.cpp inflate.h
 jpg2tga.o: jpg2tga.cpp
 kompakt.o: kompakt.cpp kompakt.h $(COMMON_H)
 ls.o: ls.cpp
