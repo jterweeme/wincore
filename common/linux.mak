@@ -10,14 +10,15 @@ TAR_H = tar.h $(BUNZIP2_H)
 INFLATE_H = inflate.h
 GUNZIP_H = gunzip.h $(INFLATE_H)
 OD_H = od.h $(COMMON_H)
-MYSTDIO_O = mystdio.o linux64.o
-MYSTL_O = mystl.o mytime.o #$(MYSTDIO_O)
+MYSTDIO_O = mystdio.o util2.o linux64.o
+MYSTL_O = mystl.o mytime.o util2.o #$(MYSTDIO_O)
 
 TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
     cppcom01 cppcom02 \
     jpg2tga kompakt ls md5sum nl od rm tar \
     tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 \
+    tcpref01 \
     tee test1 test2 test3 testbinp \
     teststl1 tgmtime1 tgunzip1 touch tr tstdio1 unix2dos uuidgen weekday wingroup yes zcat
 
@@ -67,6 +68,7 @@ tcpcom07: tcpcom07.o $(MYSTL_O)
 tcpcom08: tcpcom08.o $(MYSTL_O)
 tcpcom09: tcpcom09.o $(MYSTL_O)
 tcpcom10: tcpcom10.o $(MYSTL_O)
+tcpref01: tcpref01.o
 tee: tee.o $(MYSTL_O)
 test1: test1.o hasher.o $(MYSTL_O)
 test2: test2.o $(MYSTL_O)
@@ -130,6 +132,7 @@ tcpcom07.o: tcpcom07.cpp $(COMMON_H)
 tcpcom08.o: tcpcom08.cpp $(COMMON_H)
 tcpcom09.o: tcpcom09.cpp $(COMMON_H)
 tcpcom10.o: tcpcom10.cpp $(COMMON_H)
+tcpref01.o: tcpref01.cpp
 tee.o: tee.cpp $(COMMON_H)
 test1.o: test1.cpp
 test2.o: test2.cpp
@@ -142,6 +145,7 @@ touch.o: touch.cpp
 tr.o: tr.cpp $(COMMON_H)
 tstdio1.o: tstdio1.cpp
 unix2dos.o: unix2dos.cpp
+util2.o: util2.cpp util2.h
 uuidgen.o: uuidgen.cpp
 weekday.o: weekday.cpp
 wingroup.o: wingroup.cpp $(COMMON_H)
@@ -241,6 +245,9 @@ testcppcom07:
 testcppcom10:
 	$(VALGRIND) ./tcpcom10 | ./diff -s tcpcom10.txt -
 
+testcppref01:
+	$(VALGRIND) ./tcpref01 | ./diff -s tcpref01.txt -
+
 test2go:
 	$(VALGRIND) ./test2
 
@@ -249,7 +256,8 @@ tests2: testcrc32 test1go tgunzip1go testod testtar testbase64 teststl1go
 tests3: testjpg2tga testcp testgrep 
 tests4: testcppcom01 testcppcom03 testcppcom04 testcppcom05 testcppcom06 testcppcom07
 tests5: testcppcom10
-test: tests1 tests2 tests3 tests4 tests5
+tests6: testcppref01
+test: tests1 tests2 tests3 tests4 tests5 tests6
 
 clean:
 	rm -Rf *.o jpg2tga *.tga $(TARGETS)

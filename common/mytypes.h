@@ -19,6 +19,22 @@ public:
     typedef int32_t streamoff;
 };
 
+struct stat2
+{
+    unsigned long st_dev;
+    unsigned long st_ino;
+    unsigned int st_mode;
+    unsigned int st_nlink;
+    unsigned int st_uid;
+    unsigned int st_gid;
+    unsigned long st_rdev;
+    long st_size;
+    int st_blksize;
+    long st_blocks;
+    //long st_atime;
+    //long st_mtime;
+};
+
 namespace mystl
 {
     typedef MyTypes::streampos streampos;

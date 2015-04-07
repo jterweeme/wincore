@@ -370,7 +370,7 @@ uint8_t *JpegDec::pjpegLoadFromFile(tistream &ginfile, int *x, int *y, int *comp
         if (mcu_y >= image_info.m_MCUSPerCol)
         {
             delete[] pImage;
-            return NULL;
+            return 0;
         }
 
         pDst_row = pImage + (mcu_y * image_info.m_MCUHeight) *
@@ -562,7 +562,7 @@ typedef enum
 }
 JPEG_MARKER;
 
-const int8_t ZAG[] = 
+const uint8_t ZAG[] = 
 {
     0,  1,  8, 16,  9,  2,  3, 10,
     17, 24, 32, 25, 18, 11,  4,  5,

@@ -27,7 +27,7 @@ void UUID::dump(ostream &os)
 
 int main()
 {
-    srand(time(NULL));
+    srand(time(0));
     UUID uuid;
     uuid.generate();
     uuid.dump(cout);
