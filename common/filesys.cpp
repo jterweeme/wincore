@@ -2,9 +2,9 @@
 #include <sys/stat.h>
 #include "filesys.h"
 
-void FileSystem::chdir(const char *path)
+void FileSystem::chdirx(const char *path)
 {
-    if (::chdir(path) != 0)
+    if (chdir(path) != 0)
         throw "Cannot change directory";
 
     _pwd.push_back(path);

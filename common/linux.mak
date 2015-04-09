@@ -1,6 +1,6 @@
 CXXFLAGS = -Wall -Wno-parentheses -O0 -g --std=c++11
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
-VALGRIND = valgrind $(VALFLAGS)
+VALGRIND = #valgrind $(VALFLAGS)
 UTIL2_H = util2.h mytypes.h
 MYSTL_H = mystl.h mystl.tcc
 COMMON_H = common.h $(MYSTL_H)
@@ -11,12 +11,13 @@ TAR_H = tar.h $(BUNZIP2_H)
 INFLATE_H = inflate.h fector.h
 GUNZIP_H = gunzip.h $(INFLATE_H)
 OD_H = od.h $(COMMON_H)
+HASHER_H = hasher.h $(COMMON_H)
 MYSTDIO_O = mystdio.o util2.o linux64.o
 MYSTL_O = mystl.o mytime.o util2.o $(MYSTDIO_O)
 
 TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
-    cppcom01 cppcom02 \
+    tcpcom01 tcpcom02 \
     jpg2tga kompakt ls md5sum nl od rm tar \
     tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 \
     tcpref01 \
@@ -43,8 +44,8 @@ bzip2: bzip2.o
 bzmd5: bzmd5.o
 cat: cat.o $(MYSTL_O)
 cp: cp.o $(MYSTL_O)
-cppcom01: cppcom01.o $(MYSTL_O)
-cppcom02: cppcom02.o $(MYSTL_O)
+tcpcom01: tcpcom01.o $(MYSTL_O)
+tcpcom02: tcpcom02.o $(MYSTL_O)
 crc32: crc32.o $(MYSTL_O)
 date: date.o $(MYSTL_O)
 dd: dd.o $(MYSTL_O)
@@ -96,8 +97,8 @@ bzip2.o: bzip2.cpp
 bzmd5.o: bzmd5.cpp $(BUFTEST_H)
 cat.o: cat.cpp $(COMMON_H)
 cp.o: cp.cpp
-cppcom01.o: cppcom01.cpp
-cppcom02.o: cppcom02.cpp
+tcpcom01.o: tcpcom01.cpp
+tcpcom02.o: tcpcom02.cpp
 crc32.o: crc32.cpp
 date.o: date.cpp $(COMMON_H)
 dd.o: dd.cpp $(COMMON_H)
@@ -115,8 +116,8 @@ jpg2tga.o: jpg2tga.cpp $(COMMON_H)
 kompakt.o: kompakt.cpp kompakt.h $(COMMON_H)
 ls.o: ls.cpp
 main.o: main.cpp
-md5sum.o: md5sum.cpp
-mystdio.o: mystdio.cpp mystdio.h
+md5sum.o: md5sum.cpp $(HASHER_H)
+mystdio.o: mystdio.cpp $(MYSTDIO_H)
 mystl.o: mystl.cpp $(MYSTL_H)
 mytime.o: mytime.cpp
 nl.o: nl.cpp $(COMMON_H)
@@ -223,10 +224,10 @@ testgrep:
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 
 testcppcom01:
-	$(VALGRIND) ./cppcom01 | ./diff -s tcpcom01.txt -
+	$(VALGRIND) ./tcpcom01 | ./diff -s tcpcom01.txt -
 
 testcppcom02:
-	$(VALGRIND) ./cppcom02
+	$(VALGRIND) ./tcpcom02
 
 testcppcom03:
 	$(VALGRIND) ./tcpcom03 | ./diff -s tcpcom03.txt -

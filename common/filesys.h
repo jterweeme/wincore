@@ -14,7 +14,7 @@ class FileSystem
     FSPath _pwd;
 public:
     void mkdir(const char *name);
-    void chdir(const char *path);
+    void chdirx(const char *path);
     void chmkdir(const char *path);
     void chmkdir(FSPath &path);
     void rmdir(const char *path);

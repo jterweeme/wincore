@@ -1,12 +1,14 @@
 CXXFLAGS = -O2 -Wall -Wno-parentheses --std=c++11
 MYSTL_H = mystl.h mystl.tcc
 COMMON_H = common.h $(MYSTL_H)
-MYSTL_O = mystl.o mytime.o
+MYSTL_O = mystl.o mytime.o util2.o
+BITINPUT_H = bitinput.h $(COMMON_H)
+BUNZIP2_H = bunzip2.h fector.h $(BITINPUT_H)
 
 TARGETS = base64 bunzip2 bzcat bzinfo cat cp crc32 date dd diff \
     dos2unix grep gunzip \
-    cppcom01 cppcom02 \
-    jpg2tga md5sum nl od rm tar \
+    tcpcom01 tcpcom02 \
+    jpg2tga kompakt md5sum nl od rm tar \
     tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 \
     tee test1 test2 test3 testbinp \
     teststl1 tgmtime1 tgunzip1 touch tr unix2dos uuidgen weekday wingroup yes zcat
@@ -28,8 +30,8 @@ bzip2: bzip2.o
 bzmd5: bzmd5.o
 cat: cat.o $(MYSTL_O)
 cp: cp.o $(MYSTL_O)
-cppcom01: cppcom01.o $(MYSTL_O)
-cppcom02: cppcom02.o $(MYSTL_O)
+tcpcom01: tcpcom01.o $(MYSTL_O)
+tcpcom02: tcpcom02.o $(MYSTL_O)
 crc32: crc32.o $(MYSTL_O)
 date: date.o $(MYSTL_O)
 dd: dd.o $(MYSTL_O)
@@ -57,7 +59,7 @@ tcpcom10: tcpcom10.o $(MYSTL_O)
 tee: tee.o $(MYSTL_O)
 test1: test1.o hasher.o $(MYSTL_O)
 test2: test2.o $(MYSTL_O)
-test3: test3.o $(MYSTL_O)
+test3: test3.o bunzip2.o fector.o bitinput.o $(MYSTL_O)
 testbinp: testbinp.o bitinput.o $(MYSTL_O)
 teststl1: teststl1.o $(MYSTL_O)
 tgmtime1: tgmtime1.o $(MYSTL_O)
@@ -80,8 +82,8 @@ bzip2.o: bzip2.cpp
 bzmd5.o: bzmd5.cpp $(BUFTEST_H)
 cat.o: cat.cpp $(COMMON_H)
 cp.o: cp.cpp
-cppcom01.o: cppcom01.cpp
-cppcom02.o: cppcom02.cpp
+tcpcom01.o: tcpcom01.cpp
+tcpcom02.o: tcpcom02.cpp
 crc32.o: crc32.cpp
 date.o: date.cpp $(COMMON_H)
 dd.o: dd.cpp $(COMMON_H)
@@ -129,6 +131,7 @@ touch.o: touch.cpp
 tr.o: tr.cpp $(COMMON_H)
 tstdio1.o: tstdio1.cpp
 unix2dos.o: unix2dos.cpp
+util2.o: util2.cpp
 uuidgen.o: uuidgen.cpp
 weekday.o: weekday.cpp
 wingroup.o: wingroup.cpp $(COMMON_H)
