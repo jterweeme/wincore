@@ -10,6 +10,7 @@ FILE *stderr = &_stderr;
 
 MyStdio m;
 
+#if 0
 int MyStdio::snprintf(char *s, int size, const char *fmt) const
 {
     for (int i = 0; i < size; i++)
@@ -17,12 +18,27 @@ int MyStdio::snprintf(char *s, int size, const char *fmt) const
 
     return 0;
 }
+#endif
+
+bool MyStdio::_find(const char *s, char c) const
+{
+    for (size_t i = 0; i < strlen(s); i++)
+        if (s[i] == c)
+            return true;
+
+    return false;
+}
 
 FILE *MyStdio::fopen(const char *fn, const char *mode)
 {
     int i = _getFileSlot();
     if (i < 0) throw "Too many open files";
-    _files[i] = open(fn, 0, 0);
+
+    if (_find(mode, 'w'))
+        _files[i] = open(fn, O_WRONLY | O_CREAT, 0644);
+    else
+        _files[i] = open(fn, O_RDONLY, 0);
+
     return &_files[i];
 }
 

@@ -6,7 +6,7 @@ class BitInput
 {
 protected:
     uint32_t _bitBuffer = 0, _bitCount = 0;
-    virtual int getc() = 0;
+    virtual int _getc() = 0;
 public:
     uint32_t readBits(uint32_t count);
     bool readBool() { return readBits(1); }
@@ -22,7 +22,7 @@ class BitInputStream : public BitInput
 public:
     BitInputStream(istream *is) : _is(is) { }
 protected:
-    int getc() { return _is->get(); }
+    int _getc() { return _is->get(); }
 };
 
 class BitInputFile : public BitInput
@@ -33,7 +33,7 @@ public:
     BitInputFile(FILE *fp) : _fp(fp) { }
     void open(FILE *fp) { _fp = fp; }
 protected:
-    int getc() { return fgetc(_fp); }
+    int _getc() { return fgetc(_fp); }
 };
 
 #endif

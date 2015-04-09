@@ -8,9 +8,13 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
     return dest;
 }
 
-char *Util2::strchr(const char *str, int ch)
+char *Util2::strchr(const char *s, int c) const
 {
-    return 0;
+    while (*s != (char)c)
+        if (!*s++)
+            return 0;
+
+    return (char *)s;
 }
 
 Util2::uint8_t Util2::ctoi(char c)
@@ -208,6 +212,10 @@ void *Util2::memset(void *s, int c, size_t n)
     return s;
 }
 
+namespace mystl
+{
+    char *strchr(const char *s, int c) { Util2 u; return u.strchr(s, c); }
+}
 
 
 

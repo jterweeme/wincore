@@ -1,4 +1,4 @@
-#include "mystdio.h"
+#include "common.h"
 
 int main()
 {
@@ -11,10 +11,9 @@ int main()
     char s[100] = {0};
     fread((char *)s, 4, 1, fp);
     puts(s);
-    
-    if (*fp == 3)
-        printf("Hallo printf\n", 1, 1);
-
+    //printf("Hallo printf\n", 1, 1);
+    fclose(fp);
+    fp = fopen("nieuw.txt", "w");
     fclose(fp);
     return 0;
 }

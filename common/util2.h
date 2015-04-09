@@ -28,7 +28,7 @@ public:
     int strcmp(const char* s1, const char *s2) const;
     int strncmp(const char *s1, const char *s2, size_t n) const;
     char *strtok(char *str, const char *delimiters);
-    char *strchr(const char *str, int ch);
+    char *strchr(const char *s, int c) const;
     uint8_t ctoi(char c);
     uint32_t upow(uint32_t base, uint32_t exp);
     uint32_t strtol(const char *a, const char *b, int base);
@@ -47,6 +47,10 @@ public:
     uint32_t be32toh(uint32_t v) const;
 };
 
+namespace mystl
+{
+    char *strchr(const char *s, int c);
+}
 
 #endif
 

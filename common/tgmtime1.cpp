@@ -1,6 +1,12 @@
 #include "common.h"
 #include "myassert.h"
 
+class App
+{
+public:
+    int run();
+};
+
 void
 test(time_t tt, uint32_t y, uint32_t yday, uint32_t mon, uint32_t day, uint32_t h, uint32_t min)
 {
@@ -35,7 +41,7 @@ test(time_t tt, uint32_t y, uint32_t yday,
     ma.equals(tm1->tm_sec, sec);
 }
 
-int main(int argc, char **argv)
+int App::run()
 {
     test(0, 70, 0, 0, 1, 0, 0, 0);
     test(60, 70, 0, 0, 1, 0, 1, 0);
@@ -57,4 +63,20 @@ int main(int argc, char **argv)
     return 0;
 }
 
+int main()
+{
+    App app;
+    int ret = -1;
+
+    try
+    {
+        ret = app.run();
+    }
+    catch (const char *e)
+    {
+        cerr << e << "\n";
+    }
+
+    return ret;
+}
 

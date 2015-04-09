@@ -1,7 +1,7 @@
 #ifndef _MYSTL_H_
 #define _MYSTL_H_
 
-#if 1
+#if 0
 #include <cstdio>
 #else
 #include "mystdio.h"
