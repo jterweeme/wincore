@@ -60,7 +60,7 @@ template <typename T> T mb(T it) { return Mb<T>::_S_base(it); }
 
 #ifndef _NEW
 #define _NEW
-inline void* operator new(Util2::size_t, void* p) noexcept { return p; }
+inline void* operator new(size_t, void* p) { return p; }
 #endif
 
 template<typename T> class allocator2
@@ -505,7 +505,9 @@ public:
     ostream2& operator << (const base2 &base) { _base = base; return *this; }
     ostream2& operator << (uint16_t u) { return printInt(u); }
     ostream2& operator << (int32_t u) { return printInt2(u); }
+#ifndef WIN32
     ostream2& operator << (size_t u) { return printInt(u); }
+#endif
     ostream2& operator << (uint32_t u) { return printInt(u); }
     ostream2& operator << (streambuf2 *sb) { printStreambuf(sb); return *this; }
     ostream2 &write(const char *s, int n) { for (int i = 0; i < n; i++) put(s[i]); return *this; }
@@ -589,7 +591,7 @@ namespace mystl
 {
     template <class T> using vector = vector2<T>;
     template <typename T, size_t N> using array = array2<T, N>;
-    template <Util2::size_t T> using bitset = bitset2<T>;
+    template <size_t T> using bitset = bitset2<T>;
 #ifndef _STRING_H
     void *memcpy(void *dest, const void *src, size_t n);
     char *strcpy(char *dest, const char *src);

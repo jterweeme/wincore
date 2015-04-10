@@ -12,7 +12,9 @@ public:
     typedef unsigned uint32_t;
     typedef long long int64_t;
     typedef unsigned long long uint64_t;
+#ifndef WIN32
     typedef long unsigned size_t;
+#endif
     typedef long int ptrdiff_t;
     typedef uint32_t streampos;
     typedef int32_t streamsize;
@@ -38,7 +40,9 @@ struct stat2
 namespace mystl
 {
     typedef MyTypes::streampos streampos;
+#ifndef WIN32
     typedef MyTypes::size_t size_t;
+#endif
 #ifndef _STDINT_H
     typedef MyTypes::int8_t int8_t;
     typedef MyTypes::uint8_t uint8_t;
