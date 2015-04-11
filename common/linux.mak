@@ -13,7 +13,7 @@ GUNZIP_H = gunzip.h $(INFLATE_H)
 OD_H = od.h $(COMMON_H)
 HASHER_H = hasher.h $(COMMON_H)
 MYSTDIO_O = mystdio.o util2.o linux64.o
-MYSTL_O = mystl.o mytime.o util2.o $(MYSTDIO_O)
+MYSTL_O = mystl.o mytime.o util2.o #$(MYSTDIO_O)
 GUNZIP_O = gunzip.o bitinput.o inflate.o $(MYSTL_O)
 
 TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
