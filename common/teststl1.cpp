@@ -1,12 +1,6 @@
 #include "common.h"
 #include "myassert.h"
 
-void assertEquals(uint32_t a, uint32_t b)
-{
-    if (a != b)
-        throw "error";
-}
-
 void teststrlen1(const char *s, uint32_t len)
 {
     uint32_t x = strlen(s);

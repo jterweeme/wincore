@@ -1,26 +1,10 @@
 #ifndef _INFLATE_H_
 #define _INFLATE_H_
 #include "fector.h"
+#include "bitinput.h"
 
 typedef vector<int> Vint;
 typedef vector<uint8_t> Vugt;
-
-class BitInput
-{
-    istream *_is;
-    int _nextBits, _bitPos = 8;
-    uint8_t _getBitPos() { return _bitPos % 8; }
-public:
-    BitInput(istream *is) : _is(is) { }
-    uint32_t readBit();
-    bool readBool() { return readBit() == 1; }
-    void ignore(int n) { while (n--) readBool(); }
-    void ignoreBuf() { ignore(_getBitPos()); }
-    void ignoreBytes(int n) { while (n--) readByte(); }
-    int readByte() { return _is->get(); }
-    void read(uint8_t *s, int n) { _is->read((char *)s, n); }
-    int readInt(int n);
-};
 
 class Nau
 {
@@ -85,7 +69,7 @@ public:
 
 class Inflate
 {
-    BitInput *_bi;
+    BitInput2 *_bi;
     CircularDict _dict;
     Node _lit, _dist;
     vector<Node> _nodeDump;
@@ -97,7 +81,7 @@ class Inflate
     Pair2 _makePair();
     Node _toct(Nau &x);
 public:
-    Inflate(BitInput *bi);
+    Inflate(BitInput2 *bi);
     void extractTo(ostream &os);
 };
 

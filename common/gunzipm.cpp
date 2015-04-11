@@ -22,7 +22,7 @@ int AppGunzip::run(int argc, char **argv)
     _options.parse(argc, argv);
     ifstream ifs(argv[1]);
     ofstream ofs(argv[2]);
-    BitInput bi(&ifs);
+    BitInput2 bi(&ifs);
     GzipStream gz(&bi);
     gz.extractTo(ofs);
     ofs.close();

@@ -4,10 +4,10 @@
 
 class GzipStream : public istream
 {
-    BitInput *_bi;
+    BitInput2 *_bi;
     string _readString();
 public:
-    GzipStream(BitInput *bi) : _bi(bi) { }
+    GzipStream(BitInput2 *bi) : _bi(bi) { }
     void extractTo(ostream &os);
 };
 
