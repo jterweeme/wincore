@@ -333,7 +333,8 @@ void lm_init (int pack_level, ush *flags)
     if (pack_level < 1 || pack_level > 9) error((char *)"bad pack level");
     compr_level = pack_level;
 
-    memzero((char*)head, HASH_SIZE*sizeof(*head));
+    //memzero((char*)head, HASH_SIZE*sizeof(*head));
+    memset((char*)head, 0, HASH_SIZE*sizeof(*head));
     rsync_chunk_end = 0xFFFFFFFFUL;
     rsync_sum = 0;
 
@@ -2460,7 +2461,8 @@ int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft 
   int y;                     
   unsigned z;                
 
-  memzero(c, sizeof(c));
+  //memzero(c, sizeof(c));
+    memset(c, 0, sizeof(c));
   p = b;  i = n;
   do {
     Tracecv(*p, (stderr, (n-i >= ' ' && n-i <= '~' ? "%c %d\n" : "0x%x %d\n"), 

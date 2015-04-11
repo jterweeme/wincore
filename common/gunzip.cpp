@@ -15,13 +15,13 @@ void GzipStream::extractTo(ostream &os)
     }
 
     if (flags & 8)
-        cout << _readString();
+        _readString();
 
     if (flags & 2)
         _bi->ignoreBytes(2);
 
     if (flags & 0x10)
-        cout << _readString();
+        _readString();
 
     Inflate d(_bi);
     d.extractTo(os);
