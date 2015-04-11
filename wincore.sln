@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.22310.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "base64", "common\base64.vcxproj", "{28F96B41-56D9-4524-8455-5AE92BC7B485}"
 EndProject
@@ -30,6 +30,12 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tr", "common\tr.vcxproj", "{6298D8B3-A141-4255-AD98-72A0F20B6EA4}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uuidgen", "common\uuidgen.vcxproj", "{903F2EC3-E626-4A9D-86BD-76010713E36D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bzip2", "common\bzip2.vcxproj", "{F2EAF226-1F30-489C-9109-1220079C3C29}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "yes", "common\yes.vcxproj", "{D5EFA80E-3C63-4157-A370-0857BB7B5EBE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zcat", "common\zcat.vcxproj", "{6BCB76B0-C576-4238-B516-EFEEEB8523DF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -93,6 +99,18 @@ Global
 		{903F2EC3-E626-4A9D-86BD-76010713E36D}.Debug|Win32.Build.0 = Debug|Win32
 		{903F2EC3-E626-4A9D-86BD-76010713E36D}.Release|Win32.ActiveCfg = Release|Win32
 		{903F2EC3-E626-4A9D-86BD-76010713E36D}.Release|Win32.Build.0 = Release|Win32
+		{F2EAF226-1F30-489C-9109-1220079C3C29}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F2EAF226-1F30-489C-9109-1220079C3C29}.Debug|Win32.Build.0 = Debug|Win32
+		{F2EAF226-1F30-489C-9109-1220079C3C29}.Release|Win32.ActiveCfg = Release|Win32
+		{F2EAF226-1F30-489C-9109-1220079C3C29}.Release|Win32.Build.0 = Release|Win32
+		{D5EFA80E-3C63-4157-A370-0857BB7B5EBE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D5EFA80E-3C63-4157-A370-0857BB7B5EBE}.Debug|Win32.Build.0 = Debug|Win32
+		{D5EFA80E-3C63-4157-A370-0857BB7B5EBE}.Release|Win32.ActiveCfg = Release|Win32
+		{D5EFA80E-3C63-4157-A370-0857BB7B5EBE}.Release|Win32.Build.0 = Release|Win32
+		{6BCB76B0-C576-4238-B516-EFEEEB8523DF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6BCB76B0-C576-4238-B516-EFEEEB8523DF}.Debug|Win32.Build.0 = Debug|Win32
+		{6BCB76B0-C576-4238-B516-EFEEEB8523DF}.Release|Win32.ActiveCfg = Release|Win32
+		{6BCB76B0-C576-4238-B516-EFEEEB8523DF}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

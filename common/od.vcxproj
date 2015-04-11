@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="od.cpp" />
+    <ClCompile Include="odmain.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{78A6E2F7-3515-47E7-851D-33FDDE640235}</ProjectGuid>

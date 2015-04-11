@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="base64.cpp" />
+    <ClCompile Include="zcat.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6bcb76b0-c576-4238-b516-efeeeb8523df}</ProjectGuid>

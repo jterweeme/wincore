@@ -3,7 +3,7 @@
 int main(int argc, char **argv)
 {
 #ifdef _WIN32
-    _setmode(_fileno(stdin), O_BINARY);
+    //_setmode(_fileno(stdin), O_BINARY);
 #endif
     AppOd app;
     int ret = -1;
