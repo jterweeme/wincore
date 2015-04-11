@@ -221,6 +221,9 @@ testjpg2tga:
 testgmtime1:
 	$(VALGRIND) ./tgmtime1
 
+testbinpgo:
+	$(VALGRIND) ./testbinp
+
 testgrep:
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
 
@@ -258,9 +261,10 @@ testgzip:
 	rm -v bzip2.gz
 	$(VALGRIND) ./gzip -c bzip2.cpp > bzip2.gz
 	$(VALGRIND) ./zcat bzip2.gz | ./diff bzip2.cpp -
+	$(VALGRIND) ./gzip -c -d znew.gz | ./md5sum -x 742b0b4d1543c6df46e35b77ec6baa53
 
 tests1: testkompakt
-tests2: testcp testjpg2tga testtar testgzip
+tests2: testcp testjpg2tga testtar testgzip testbinpgo
 tests3: testgmtime1 tgunzip1go testbunzip2 testmd5sum testgunzip2
 tests4: testcppcom01 testcppcom03 testcppcom04 testcppcom05 testcppcom06 testcppcom07
 tests5: testcppcom10
@@ -273,5 +277,6 @@ clean:
 	rm -Rf battery.iso
 
 rebuild: clean all
+
 
 

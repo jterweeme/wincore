@@ -20,12 +20,7 @@
 #include <stdint.h>
 
 static const uint8_t MAX_SUFFIX = 30;
-#define OF(args)  args
-
 typedef void *voidp;
-
-#define memzero(s, n)     memset ((voidp)(s), 0, (n))
-
 typedef unsigned char  uch;
 typedef unsigned short ush;
 typedef unsigned long  ulg;
@@ -34,48 +29,36 @@ static const uint8_t ERROR = 1;
 static const uint8_t STORED = 0;
 static const uint8_t DEFLATED = 8;
 extern int method;
-
-
 static const uint32_t INBUFSIZ = 0x8000;
 static const uint8_t INBUF_EXTRA = 64;
 static const int32_t OUTBUFSIZ = 16384;
 static const uint16_t OUTBUF_EXTRA = 2048;
 static const uint32_t DIST_BUFSIZE = 0x8000;
-#define EXTERN(type, array)  extern type array[]
-#define DECLARE(type, array, size)  type array[size]
-
-EXTERN(uch, inbuf);          
-EXTERN(uch, outbuf);         
-EXTERN(ush, d_buf);          
-EXTERN(uch, window);         
-#define head (prev+WSIZE)  
-EXTERN(ush, prev);
-
+extern uch inbuf[];
+extern uch outbuf[];
+extern ush d_buf[];
+extern uch window[];
+extern ush prev[];
 extern unsigned insize; 
 extern unsigned inptr;  
 extern unsigned outcnt;
 extern int rsync; 
-
 extern off_t bytes_in;
 extern off_t bytes_out;
 extern off_t header_bytes;
-
 extern int  ifd;       
 extern int  ofd;        
 extern char ifname[];   
 extern char ofname[];   
 extern char *progname;  
-
 extern time_t time_stamp;
 extern off_t ifile_size;
-
-typedef int file_t;    
-#define	PACK_MAGIC     "\037\036" 
-#define	GZIP_MAGIC     "\037\213" 
-#define	OLD_GZIP_MAGIC "\037\236" 
-#define	LZH_MAGIC      "\037\240" 
-#define PKZIP_MAGIC    "\120\113\003\004" 
-
+typedef int file_t;
+const char PACK_MAGIC[] = "\037\036";
+const char GZIP_MAGIC[] = "\037\213";
+const char OLD_GZIP_MAGIC[] = "\037\236";
+const char LZH_MAGIC[] = "\037\240";
+const char PKZIP_MAGIC[] = "\120\113\003\004";
 static const uint8_t CONTINUATION = 2;
 static const uint8_t ORIG_NAME = 8;
 static const uint8_t RESERVED = 0xc0;
@@ -86,7 +69,6 @@ static const uint16_t MIN_MATCH = 3;
 static const uint16_t MAX_MATCH = 258;
 static const uint16_t MIN_LOOKAHEAD = 262;
 static const uint32_t MAX_DIST = WSIZE - 262;
-
 extern int decrypt;       
 extern int exit_code;     
 extern int verbose;       
@@ -95,84 +77,38 @@ extern int level;
 extern int test;          
 extern int to_stdout;     
 extern int save_orig_name;
-
-#define get_byte()  (inptr < insize ? inbuf[inptr++] : fill_inbuf(0))
-#define try_byte()  (inptr < insize ? inbuf[inptr++] : fill_inbuf(1))
-
-#define put_byte(c) {outbuf[outcnt++]=(uch)(c); if (outcnt==OUTBUFSIZ)\
-   flush_outbuf();}
-#define put_ubyte(c) {window[outcnt++]=(uch)(c); if (outcnt==WSIZE)\
-   flush_window();}
-#define put_short(w) \
-{ if (outcnt < OUTBUFSIZ-2) { \
-    outbuf[outcnt++] = (uch) ((w) & 0xff); \
-    outbuf[outcnt++] = (uch) ((ush)(w) >> 8); \
-  } else { \
-    put_byte((uch)((w) & 0xff)); \
-    put_byte((uch)((ush)(w) >> 8)); \
-  } \
-}
-
-#define put_long(n) { \
-    put_short((n) & 0xffff); \
-    put_short(((ulg)(n)) >> 16); \
-}
-
-#define seekable()    0  
-#define translate_eol 0  
-
-#define tolow(c)  (isupper (c) ? tolower (c) : (c))
-
-#define SH(p) ((ush)(uch)((p)[0]) | ((ush)(uch)((p)[1]) << 8))
-#define LG(p) ((ulg)(SH(p)) | ((ulg)(SH((p)+2)) << 16))
-
-#  define Assert(cond,msg)
-#  define Trace(x)
-#  define Tracev(x)
-#  define Tracevv(x)
-#  define Tracec(c,x)
-#  define Tracecv(c,x)
-
-#define WARN(msg) {if (!quiet) fprintf msg ; \
-		   if (exit_code == OK) exit_code = 2;}
-
-extern int zip        OF((int in, int out));
-extern int file_read  OF((char *buf,  unsigned size));
-extern int unzip      OF((int in, int out));
-extern int check_zipfile OF((int in));
-extern int unpack     OF((int in, int out));
-extern int unlzh      OF((int in, int out));
-void abort_gzip_signal OF((void));
-int  ct_tally    OF((int dist, int lc));
-off_t flush_block OF((char *buf, ulg stored_len, int pad, int eof));
-extern int copy           OF((int in, int out));
-extern ulg  updcrc        OF((uch *s, unsigned n));
-extern void clear_bufs    OF((void));
-extern int  fill_inbuf    OF((int eof_ok));
-extern void flush_outbuf  OF((void));
-extern void flush_window  OF((void));
-extern void write_buf     OF((int fd, voidp buf, unsigned cnt));
-extern char *strlwr       OF((char *s));
-extern char *base_name    OF((char *fname));
-extern int xunlink        OF((char *fname));
-extern void error         OF((char *m));
-extern void warning       OF((char *m));
-extern void read_error    OF((void));
-extern void write_error   OF((void));
-extern void display_ratio OF((off_t num, off_t den, FILE *file));
-extern void fprint_off    OF((FILE *, off_t, int));
-extern voidp xmalloc      OF((unsigned int size));
-extern int yesno OF((void));
-
+extern int zip(int in, int out);
+extern int file_read(char *buf,  unsigned size);
+extern int unzip(int in, int out);
+extern int check_zipfile(int in);
+extern int unpack(int in, int out);
+extern int unlzh(int in, int out);
+void abort_gzip_signal(void);
+int  ct_tally(int dist, int lc);
+off_t flush_block(char *buf, ulg stored_len, int pad, int eof);
+extern int copy(int in, int out);
+extern ulg  updcrc(uch *s, unsigned n);
+extern void clear_bufs(void);
+extern int  fill_inbuf(int eof_ok);
+extern void flush_outbuf(void);
+extern void flush_window(void);
+extern void write_buf     (int fd, voidp buf, unsigned cnt);
+extern char *strlwr       (char *s);
+extern char *base_name    (char *fname);
+extern int xunlink        (char *fname);
+extern void error         (char *m);
+extern void warning       (char *m);
+extern void read_error    (void);
+extern void write_error   (void);
+extern void display_ratio (off_t num, off_t den, FILE *file);
+extern void fprint_off    (FILE *, off_t, int);
+extern voidp xmalloc      (unsigned int size);
+extern int yesno (void);
 static file_t zfile; 
-
 static unsigned short bi_buf;
-
-#define Buf_size (8 * 2*sizeof(char))
-
+static const uint32_t Buf_size = 8 * 2 * sizeof(char);
 static int bi_valid;
-
-int (*read_buf) OF((char *buf, unsigned size));
+int (*read_buf) (char *buf, unsigned size);
 
 void bi_init (file_t zipfile)
 {
@@ -180,10 +116,32 @@ void bi_init (file_t zipfile)
     bi_buf = 0;
     bi_valid = 0;
 
-    if (zfile != -1) {
-	read_buf  = file_read;
+    if (zfile != -1)
+	    read_buf = file_read;
+}
+
+void put_byte(int c)
+{
+    outbuf[outcnt++] = (uch)(c);
+
+    if (outcnt == OUTBUFSIZ)
+        flush_outbuf();
+}
+
+void put_short(int w)
+{
+    if (outcnt < OUTBUFSIZ - 2)
+    {
+        outbuf[outcnt++] = (uch)((w) & 0xff);
+        outbuf[outcnt++] = (uch)((ush)(w) >> 8);
+    }
+    else
+    {
+        put_byte((uch)((w) & 0xff));
+        put_byte((uch)((ush)(w) >> 8));
     }
 }
+
 
 void send_bits(int value, int length)
 {
@@ -223,6 +181,7 @@ void bi_windup()
 }
 
 
+
 void copy_block(char *buf, unsigned len, int header)
 {
     bi_windup(); 
@@ -237,52 +196,35 @@ void copy_block(char *buf, unsigned len, int header)
     }
 }
 
-#define BITS 16
+static const uint8_t BITS = 16;
 static const uint8_t INIT_BITS = 9;
-
-#define	LZW_MAGIC  "\037\235" 
-
+const char LZW_MAGIC[] = "\037\235";
 static const uint8_t BLOCK_MODE = 0x80;
-#define LZW_RESERVED 0x60
+static const uint8_t LZW_RESERVED = 0x60;
 static const uint16_t FIRST = 257;
-
 extern int maxbits;
 extern int block_mode;
-
-extern int lzw    OF((int in, int out));
-extern int unlzw  OF((int in, int out));
-
-
-#define HASH_SIZE (unsigned)(1<<15)
-#define HASH_MASK (HASH_SIZE-1)
-#define WMASK     (WSIZE-1)
+extern int lzw(int in, int out);
+extern int unlzw(int in, int out);
+static const uint32_t HASH_SIZE = (uint32_t)(1<<15);
+static const uint32_t HASH_MASK = HASH_SIZE - 1;
+static const uint32_t WMASK = WSIZE - 1;
 static const uint8_t NIL = 0;
-#define RSYNC_SUM_MATCH(sum) ((sum) % 4096 == 0)
+
 
 typedef ush Pos;
 typedef unsigned IPos;
-
 ulg window_size = (ulg)2*WSIZE;
-
-
 long block_start;
-
 static unsigned ins_h;
-
 static const uint8_t H_SHIFT = 17/3;
-
 unsigned int prev_length;
-
-      unsigned strstart;     
-      unsigned match_start;  
-static int           eofile;       
-static unsigned      lookahead;    
-
+unsigned strstart;     
+unsigned match_start;  
+static int eofile;
+static unsigned lookahead;    
 unsigned max_chain_length;
-
 static unsigned int max_lazy_match;
-#define max_insert_length  max_lazy_match
-
 static int compr_level;
 unsigned good_match;
 static ulg rsync_sum;  
@@ -312,32 +254,20 @@ static config configuration_table[10] = {
 
 
 
-static void fill_window   OF((void));
-static off_t deflate_fast OF((void));
-
-      int  longest_match OF((IPos cur_match));
-
-#define UPDATE_HASH(h,c) (h = (((h)<<H_SHIFT) ^ (c)) & HASH_MASK)
+static void fill_window(void);
+static off_t deflate_fast(void);
+int longest_match(IPos cur_match);
 
 
-#define INSERT_STRING(s, match_head) \
-   (UPDATE_HASH(ins_h, window[(s) + MIN_MATCH-1]), \
-    prev[(s) & WMASK] = match_head = head[ins_h], \
-    head[ins_h] = (s))
 
-
-void lm_init (int pack_level, ush *flags)
+void lm_init(int pack_level, ush *flags)
 {
     register unsigned j;
-
     if (pack_level < 1 || pack_level > 9) error((char *)"bad pack level");
     compr_level = pack_level;
-
-    //memzero((char*)head, HASH_SIZE*sizeof(*head));
-    memset((char*)head, 0, HASH_SIZE*sizeof(*head));
+    memset((char*)prev + WSIZE, 0, HASH_SIZE*sizeof(*(prev+WSIZE)));
     rsync_chunk_end = 0xFFFFFFFFUL;
     rsync_sum = 0;
-
     max_lazy_match   = configuration_table[pack_level].max_lazy;
     good_match       = configuration_table[pack_level].good_length;
     nice_match       = configuration_table[pack_level].nice_length;
@@ -360,7 +290,9 @@ void lm_init (int pack_level, ush *flags)
     while (lookahead < MIN_LOOKAHEAD && !eofile) fill_window();
 
     ins_h = 0;
-    for (j=0; j<MIN_MATCH-1; j++) UPDATE_HASH(ins_h, window[j]);
+
+    for (j=0; j<MIN_MATCH-1; j++)
+        ins_h = (((ins_h)<<H_SHIFT) ^ (window[j])) & HASH_MASK;
 
 }
 
@@ -381,10 +313,8 @@ int longest_match(IPos cur_match)
     if (prev_length >= good_match) {
         chain_length >>= 2;
     }
-    Assert(strstart <= window_size-MIN_LOOKAHEAD, "insufficient lookahead");
 
     do {
-        Assert(cur_match < strstart, "no future");
         match = window + cur_match;
 
         if (match[best_len]   != scan_end  ||
@@ -420,6 +350,8 @@ int longest_match(IPos cur_match)
     return best_len;
 }
 
+
+
 static void fill_window()
 {
     register unsigned n, m;
@@ -428,7 +360,6 @@ static void fill_window()
     if (more == (unsigned)EOF) {
         more--;
     } else if (strstart >= WSIZE+MAX_DIST) {
-        Assert(window_size == (ulg)2*WSIZE, "no sliding with BIG_MEM");
 
         memcpy((char*)window, (char*)window+WSIZE, (unsigned)WSIZE);
         match_start -= WSIZE;
@@ -439,8 +370,8 @@ static void fill_window()
         block_start -= (long) WSIZE;
 
         for (n = 0; n < HASH_SIZE; n++) {
-            m = head[n];
-            head[n] = (Pos)(m >= WSIZE ? m-WSIZE : NIL);
+            m = (prev+WSIZE)[n];
+            (prev+WSIZE)[n] = (Pos)(m >= WSIZE ? m-WSIZE : NIL);
         }
         for (n = 0; n < WSIZE; n++) {
             m = prev[n];
@@ -462,28 +393,30 @@ static void rsync_roll(unsigned start, unsigned num)
 {
     unsigned i;
 
-    if (start < 4096) {
-	for (i = start; i < 4096; i++) {
-	    if (i == start + num) return;
-	    rsync_sum += (ulg)window[i];
-	}
-	num -= (4096 - start);
-	start = 4096;
+    if (start < 4096)
+    {
+        for (i = start; i < 4096; i++)
+        {
+            if (i == start + num) return;
+            rsync_sum += (ulg)window[i];
+        }
+    	num -= (4096 - start);
+        start = 4096;
     }
 
-    for (i = start; i < start+num; i++) {
-	rsync_sum += (ulg)window[i];
-	rsync_sum -= (ulg)window[i - 4096];
-	if (rsync_chunk_end == 0xFFFFFFFFUL && RSYNC_SUM_MATCH(rsync_sum))
-	    rsync_chunk_end = i;
+    for (i = start; i < start+num; i++)
+    {
+        rsync_sum += (ulg)window[i];
+    	rsync_sum -= (ulg)window[i - 4096];
+
+        if (rsync_chunk_end == 0xFFFFFFFFUL && rsync_sum % 4096 == 0)
+            rsync_chunk_end = i;
     }
 }
-#define RSYNC_ROLL(s, n) \
-   do { if (rsync) rsync_roll((s), (n)); } while(0)
 
-#define FLUSH_BLOCK(eof) \
-   flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : \
-                (char*)NULL, (long)strstart - block_start, flush-1, (eof))
+#define INSERT_STRING(s, match_head) \
+    ((ins_h = (((ins_h)<<H_SHIFT) ^ (window[(s) + MIN_MATCH - 1])) & HASH_MASK), \
+    prev[(s) & WMASK] = match_head = (prev+WSIZE)[ins_h], (prev+WSIZE)[ins_h] = (s))
 
 static off_t deflate_fast()
 {
@@ -506,8 +439,9 @@ static off_t deflate_fast()
 
             lookahead -= match_length;
 
-	    RSYNC_ROLL(strstart, match_length);
-            if (match_length <= max_insert_length) {
+            do { if (rsync) rsync_roll((strstart), (match_length)); } while (0);
+
+            if (match_length <= max_lazy_match) {
                 match_length--;
                 do {
                     strstart++;
@@ -519,26 +453,40 @@ static off_t deflate_fast()
 	        strstart += match_length;
 	        match_length = 0;
 	        ins_h = window[strstart];
-	        UPDATE_HASH(ins_h, window[strstart+1]);
+            ins_h = (((ins_h) << H_SHIFT) ^ (window[strstart + 1])) & HASH_MASK;
             }
         } else {
-            Tracevv((stderr,"%c",window[strstart]));
             flush = ct_tally (0, window[strstart]);
-	    RSYNC_ROLL(strstart, 1);
+            do { if (rsync) rsync_roll((strstart), (1)); } while (0);
             lookahead--;
-	    strstart++; 
+            strstart++; 
         }
 	if (rsync && strstart > rsync_chunk_end) {
 	    rsync_chunk_end = 0xFFFFFFFFUL;
 	    flush = 2;
 	} 
-        if (flush) FLUSH_BLOCK(0), block_start = strstart;
+        if (flush)
+        {
+           flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : 
+                (char*)NULL, (long)strstart - block_start, flush-1, (0));
+
+            block_start = strstart;
+        }
 
         while (lookahead < MIN_LOOKAHEAD && !eofile) fill_window();
 
     }
-    return FLUSH_BLOCK(1);
+
+   return flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : 
+                (char*)NULL, (long)strstart - block_start, flush-1, (1));
+
 }
+
+#define FLUSH_BLOCK(eof) \
+   flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : \
+                (char*)NULL, (long)strstart - block_start, flush-1, (eof))
+
+#define RSYNC_ROLL(s, n) do { if (rsync) rsync_roll((s), (n)); } while(0)
 
 off_t deflate()
 {
@@ -588,7 +536,6 @@ off_t deflate()
 	    }
             if (flush) FLUSH_BLOCK(0), block_start = strstart;
         } else if (match_available) {
-            Tracevv((stderr,"%c",window[strstart-1]));
 	    flush = ct_tally (0, window[strstart-1]);
 	    if (rsync && strstart > rsync_chunk_end) {
 		rsync_chunk_end = 0xFFFFFFFFUL;
@@ -609,7 +556,6 @@ off_t deflate()
             strstart++;
             lookahead--;
         }
-        Assert (strstart <= bytes_in && lookahead <= bytes_in, "a bit too far");
 
         while (lookahead < MIN_LOOKAHEAD && !eofile) fill_window();
     }
@@ -617,7 +563,7 @@ off_t deflate()
 
     return FLUSH_BLOCK(1);
 }
-#define _(msgid)	(msgid)
+
 
 extern "C" {
 
@@ -651,6 +597,8 @@ extern int _getopt_internal (int __argc, char *const *__argv,
 
 }
 
+
+
 char *optarg;
 int optind = 1;
 int __getopt_initialized;
@@ -680,6 +628,8 @@ my_index (const char *str, int chr)
 
 static int first_nonopt;
 static int last_nonopt;
+
+
 
 static void exchange (char **argv)
 {
@@ -721,6 +671,8 @@ static void exchange (char **argv)
   last_nonopt = optind;
 }
 
+
+
 static const char *_getopt_initialize (int, char *const *, const char *);
 static const char * _getopt_initialize(int argc, char * const *argv, const char *optstring)
 {
@@ -748,6 +700,8 @@ static const char * _getopt_initialize(int argc, char * const *argv, const char 
 
   return optstring;
 }
+
+#define _(msgid) (msgid)
 
 int
 _getopt_internal(int argc, char * const *argv, const char *optstring,
@@ -1107,7 +1061,7 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
 		if (print_errors)
 		  {
 		    fprintf (stderr,
-			     _("%s: option requires an argument -- %c\n"),
+			     "%s: option requires an argument -- %c\n",
 			     argv[0], c);
 		  }
 		optopt = c;
@@ -1142,7 +1096,7 @@ static char  *license_msg[] = {
 (char *)"under the terms of the GNU General Public License.",
 (char *)"For more information about these matters, see the file named COPYING.",
 0};
-typedef void (*sig_type) OF((int));
+typedef void (*sig_type) (int);
 static const uint8_t O_BINARY = 0;
 #define RW_USER (S_IRUSR | S_IWUSR)
 static const uint16_t MAX_PATH_LEN = 1024;
@@ -1150,11 +1104,11 @@ static const uint16_t MAX_PATH_LEN = 1024;
 #define OFF_T_MAX (~ (off_t) 0 - OFF_T_MIN)
 #define PART_SEP "-"
 
-DECLARE(uch, inbuf,  INBUFSIZ +INBUF_EXTRA);
-DECLARE(uch, outbuf, OUTBUFSIZ+OUTBUF_EXTRA);
-DECLARE(ush, d_buf,  DIST_BUFSIZE);
-DECLARE(uch, window, 2L*WSIZE);
-DECLARE(ush, prev, 1L<<BITS);
+uch inbuf[INBUFSIZ + INBUF_EXTRA];
+uch outbuf[OUTBUFSIZ + OUTBUF_EXTRA];
+ush d_buf[DIST_BUFSIZE];
+uch window[2L*WSIZE];
+ush prev[1L<<BITS];
 
 int ascii = 0;        
 int to_stdout = 0;    
@@ -1228,22 +1182,21 @@ struct option longopts[] =
     { 0, 0, 0, 0 }
 };
 
-static void treat_stdin  OF((void));
-static void treat_file   OF((char *iname));
-static int create_outfile OF((void));
-static int  get_istat    OF((char *iname, struct stat *sbuf));
-static int  make_ofname  OF((void));
-static int name_too_long OF((char *name, struct stat *statb));
-static void shorten_name  OF((char *name));
-static int  get_method   OF((int in));
-static void do_list      OF((int ifd, int method));
-static int  check_ofname OF((void));
-static void copy_stat    OF((struct stat *ifstat));
-static void do_exit      OF((int exitcode));
-int (*work) OF((int infile, int outfile)) = zip;
-
-static void treat_dir    OF((char *dir));
-static void reset_times  OF((char *name, struct stat *statb));
+static void treat_stdin  (void);
+static void treat_file   (char *iname);
+static int create_outfile (void);
+static int  get_istat    (char *iname, struct stat *sbuf);
+static int  make_ofname  (void);
+static int name_too_long (char *name, struct stat *statb);
+static void shorten_name  (char *name);
+static int  get_method   (int in);
+static void do_list      (int ifd, int method);
+static int  check_ofname (void);
+static void copy_stat    (struct stat *ifstat);
+static void do_exit      (int exitcode);
+int (*work) (int infile, int outfile) = zip;
+static void treat_dir    (char *dir);
+static void reset_times  (char *name, struct stat *statb);
 
 bool strequ(const char *s1, const char *s2)
 {
@@ -1601,6 +1554,8 @@ static void treat_stdin()
     }
 }
 
+#define WARN(msg) {if (!quiet) fprintf msg ; if (exit_code == OK) exit_code = 2;}
+
 static void treat_file(char *iname)
 {
     if (strequ(iname, "-")) {
@@ -1898,6 +1853,9 @@ static int make_ofname()
     return 2;
 }
 
+#define get_byte() (inptr < insize ? inbuf[inptr++] : fill_inbuf(0))
+#define try_byte() (inptr < insize ? inbuf[inptr++] : fill_inbuf(1))
+
 static int get_method(int in)
 {
     uch flags;     
@@ -2065,6 +2023,9 @@ static int get_method(int in)
     }
 }
 
+#define SH(p) ((ush)(uch)((p)[0]) | ((ush)(uch)((p)[1]) << 8))
+#define LG(p) ((ulg)(SH(p)) | ((ulg)(SH((p)+2)) << 16))
+
 static void do_list(int ifd, int method)
 {
     ulg crc;
@@ -2175,7 +2136,6 @@ static int name_too_long(char *name, struct stat *statb)
     name[s-1] = '\0';
     res = lstat(name, &tstat) == 0 && same_file(statb, &tstat);
     name[s-1] = c;
-    Trace((stderr, " too_long(%s) => %d\n", name, res));
     return res;
 }
 
@@ -2394,8 +2354,8 @@ struct huft {
   } v;
 };
 
-int huft_build OF((unsigned *, unsigned, unsigned, ush *, ush *, struct huft **, int *));
-int huft_free OF((struct huft *));
+int huft_build (unsigned *, unsigned, unsigned, ush *, ush *, struct huft **, int *);
+int huft_free (struct huft *);
 
 #define wp outcnt
 #define flush_output(w) (outcnt=(w),flush_window())
@@ -2465,8 +2425,6 @@ int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft 
     memset(c, 0, sizeof(c));
   p = b;  i = n;
   do {
-    Tracecv(*p, (stderr, (n-i >= ' ' && n-i <= '~' ? "%c %d\n" : "0x%x %d\n"), 
-	    n-i, *p));
     c[*p]++;            
     p++;                   
   } while (--i);
@@ -2648,7 +2606,6 @@ int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
     if (e == 16)  
     {
       window[w++] = (uch)t->v.n;
-      Tracevv((stderr, "%c", window[w-1]));
       if (w == WSIZE)
       {
         flush_output(w);
@@ -2676,7 +2633,6 @@ int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
       NEEDBITS(e)
       d = w - t->v.n - ((unsigned)b & mask_bits[e]);
       DUMPBITS(e)
-      Tracevv((stderr,"\\[%d,%d]", w-d, n));
 
       do {
         n -= (e = (e = WSIZE - ((d &= WSIZE-1) > w ? d : w)) > n ? n : e);
@@ -2689,7 +2645,6 @@ int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
         else  
           do {
             window[w++] = window[d++];
-	    Tracevv((stderr, "%c", window[w-1]));
           } while (--e);
         if (w == WSIZE)
         {
@@ -3057,29 +3012,19 @@ typedef struct tree_desc {
     int     max_code;           
 } tree_desc;
 
-static tree_desc l_desc =
-{dyn_ltree, static_ltree, extra_lbits, LITERALS+1, L_CODES, MAX_BITS, 0};
+#define head (prev+WSIZE)
 
-static tree_desc d_desc =
-{dyn_dtree, static_dtree, extra_dbits, 0,          D_CODES, MAX_BITS, 0};
-
-static tree_desc bl_desc =
-{bl_tree, (ct_data *)0, extra_blbits, 0,      BL_CODES, 7, 0};
-
-
+static tree_desc l_desc = {dyn_ltree, static_ltree, extra_lbits, LITERALS+1, L_CODES, MAX_BITS, 0};
+static tree_desc d_desc = {dyn_dtree, static_dtree, extra_dbits, 0, D_CODES, MAX_BITS, 0};
+static tree_desc bl_desc = {bl_tree, (ct_data *)0, extra_blbits, 0,      BL_CODES, 7, 0};
 static ush bl_count[MAX_BITS+1];
-static uch bl_order[BL_CODES]
-   = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};
-
+static uch bl_order[BL_CODES] = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};
 static int heap[2*L_CODES+1]; 
 static int heap_len;               
 static int heap_max;               
-
 static uch depth[2*L_CODES+1];
-
 static uch length_code[MAX_MATCH-MIN_MATCH+1];
 static uch dist_code[512];
-
 static int base_length[LENGTH_CODES];
 static int base_dist[D_CODES];
 static uch flag_buf[(LIT_BUFSIZE/8)];
@@ -3088,38 +3033,28 @@ static unsigned last_dist;
 static unsigned last_flags; 
 static uch flags;           
 static uch flag_bit;        
-
 static ulg opt_len;    
 static ulg static_len; 
-
 static off_t compressed_len; 
-
 static off_t input_len;
 ush *file_type;        
 int *file_method;      
 extern long block_start;       
 extern unsigned strstart; 
-
-static void init_block     OF((void));
-static void pqdownheap     OF((ct_data *tree, int k));
-static void gen_bitlen     OF((tree_desc *desc));
-static void gen_codes      OF((ct_data *tree, int max_code));
-static void build_tree_1     OF((tree_desc *desc));
-static void scan_tree      OF((ct_data *tree, int max_code));
-static void send_tree      OF((ct_data *tree, int max_code));
-static int  build_bl_tree  OF((void));
-static void send_all_trees OF((int lcodes, int dcodes, int blcodes));
-static void compress_block OF((ct_data *ltree, ct_data *dtree));
-static void set_file_type  OF((void));
-
+static void init_block     (void);
+static void pqdownheap     (ct_data *tree, int k);
+static void gen_bitlen     (tree_desc *desc);
+static void gen_codes      (ct_data *tree, int max_code);
+static void build_tree_1     (tree_desc *desc);
+static void scan_tree      (ct_data *tree, int max_code);
+static void send_tree      (ct_data *tree, int max_code);
+static int  build_bl_tree  (void);
+static void send_all_trees (int lcodes, int dcodes, int blcodes);
+static void compress_block (ct_data *ltree, ct_data *dtree);
+static void set_file_type  (void);
 
 #define send_code(c, tree) send_bits(tree[c].Code, tree[c].Len)
-
-#define d_code(dist) \
-   ((dist) < 256 ? dist_code[dist] : dist_code[256+((dist)>>7)])
-
-
-
+#define d_code(dist) ((dist) < 256 ? dist_code[dist] : dist_code[256+((dist)>>7)])
 
 void ct_init(ush *attr, int *methodp)
 {
@@ -3141,7 +3076,6 @@ void ct_init(ush *attr, int *methodp)
             length_code[length++] = (uch)code;
         }
     }
-    Assert (length == 256, "ct_init: length != 256");
     length_code[length-1] = (uch)code;
 
     dist = 0;
@@ -3151,7 +3085,6 @@ void ct_init(ush *attr, int *methodp)
             dist_code[dist++] = (uch)code;
         }
     }
-    Assert (dist == 256, "ct_init: dist != 256");
     dist >>= 7;
     for ( ; code < D_CODES; code++) {
         base_dist[code] = dist << 7;
@@ -3159,7 +3092,6 @@ void ct_init(ush *attr, int *methodp)
             dist_code[256 + dist++] = (uch)code;
         }
     }
-    Assert (dist == 256, "ct_init: 256+dist != 512");
 
     for (bits = 0; bits <= MAX_BITS; bits++) bl_count[bits] = 0;
     n = 0;
@@ -3246,7 +3178,6 @@ static void gen_bitlen(tree_desc *desc)
     }
     if (overflow == 0) return;
 
-    Trace((stderr,"\nbit length overflow\n"));
     do {
         bits = max_length-1;
         while (bl_count[bits] == 0) bits--;
@@ -3264,7 +3195,6 @@ static void gen_bitlen(tree_desc *desc)
             m = heap[--h];
             if (m > max_code) continue;
             if (tree[m].Len != (unsigned) bits) {
-                Trace((stderr,"code %d bits %d->%d\n", m, tree[m].Len, bits));
                 opt_len += ((long)bits-(long)tree[m].Len)*(long)tree[m].Freq;
                 tree[m].Len = (ush)bits;
             }
@@ -3283,17 +3213,12 @@ static void gen_codes (ct_data *tree, int max_code)
     for (bits = 1; bits <= MAX_BITS; bits++) {
         next_code[bits] = code = (code + bl_count[bits-1]) << 1;
     }
-    Assert (code + bl_count[MAX_BITS]-1 == (1<<MAX_BITS)-1,
-            "inconsistent bit counts");
-    Tracev((stderr,"\ngen_codes: max_code %d ", max_code));
 
     for (n = 0;  n <= max_code; n++) {
         int len = tree[n].Len;
         if (len == 0) continue;
         tree[n].Code = bi_reverse(next_code[len]++, len);
 
-        Tracec(tree != static_ltree, (stderr,"\nn %3d %c l %2d c %4x (%x) ",
-             n, (isgraph(n) ? n : ' '), len, tree[n].Code, next_code[len]-1));
     }
 }
 
@@ -3415,7 +3340,6 @@ static void send_tree (ct_data *tree, int max_code)
             if (curlen != prevlen) {
                 send_code(curlen, bl_tree); count--;
             }
-            Assert(count >= 3 && count <= 6, " 3_6?");
             send_code(16, bl_tree); send_bits(count-3, 2);
 
         } else if (count <= 10) {
@@ -3446,7 +3370,6 @@ static int build_bl_tree()
         if (bl_tree[bl_order[max_blindex]].Len != 0) break;
     }
     opt_len += 3*(max_blindex+1) + 5+5+4;
-    Tracev((stderr, "\ndyn trees: dyn %lu, stat %lu", opt_len, static_len));
 
     return max_blindex;
 }
@@ -3456,15 +3379,10 @@ static void send_all_trees(int lcodes, int dcodes, int blcodes)
 {
     int rank;
 
-    Assert (lcodes >= 257 && dcodes >= 1 && blcodes >= 4, "not enough codes");
-    Assert (lcodes <= L_CODES && dcodes <= D_CODES && blcodes <= BL_CODES,
-            "too many codes");
-    Tracev((stderr, "\nbl counts: "));
     send_bits(lcodes-257, 5);
     send_bits(dcodes-1,   5);
     send_bits(blcodes-4,  4);
     for (rank = 0; rank < blcodes; rank++) {
-        Tracev((stderr, "\nbl code %2d ", bl_order[rank]));
         send_bits(bl_tree[bl_order[rank]].Len, 3);
     }
 
@@ -3481,23 +3399,18 @@ off_t flush_block(char *buf, ulg stored_len, int pad, int eof)
     flag_buf[last_flags] = flags;
     if (*file_type == (ush)0xffff) set_file_type();
     build_tree_1((tree_desc *)(&l_desc));
-    Tracev((stderr, "\nlit data: dyn %lu, stat %lu", opt_len, static_len));
     build_tree_1((tree_desc *)(&d_desc));
-    Tracev((stderr, "\ndist data: dyn %lu, stat %lu", opt_len, static_len));
     max_blindex = build_bl_tree();
 
     opt_lenb = (opt_len+3+7)>>3;
     static_lenb = (static_len+3+7)>>3;
     input_len += stored_len;
 
-    Trace((stderr, "\nopt %lu(%lu) stat %lu(%lu) stored %lu lit %u dist %u ",
-            opt_lenb, opt_len, static_lenb, static_len, stored_len,
-            last_lit, last_dist));
 
     if (static_lenb <= opt_lenb) opt_lenb = static_lenb;
 
 
-    if (stored_len <= opt_lenb && eof && compressed_len == 0L && seekable()) {
+    if (stored_len <= opt_lenb && eof && compressed_len == 0L && 0) {
         if (buf == (char*)0) error ((char *)"block vanished");
 
         copy_block(buf, (unsigned)stored_len, 0);
@@ -3521,11 +3434,9 @@ off_t flush_block(char *buf, ulg stored_len, int pad, int eof)
         compress_block((ct_data *)dyn_ltree, (ct_data *)dyn_dtree);
         compressed_len += 3 + opt_len;
     }
-    Assert (compressed_len == bits_sent, "bad compressed size");
     init_block();
 
     if (eof) {
-        Assert (input_len == bytes_in, "bad input size");
         bi_windup();
         compressed_len += 7; 
     } else if (pad && (compressed_len % 8) != 0) {
@@ -3545,10 +3456,6 @@ int ct_tally (int dist, int lc)
         dyn_ltree[lc].Freq++;
     } else {
         dist--;
-        Assert((ush)dist < (ush)MAX_DIST &&
-               (ush)lc <= (ush)(MAX_MATCH-MIN_MATCH) &&
-               (ush)d_code(dist) < (ush)D_CODES,  "ct_tally: bad match");
-
         dyn_ltree[length_code[lc]+LITERALS+1].Freq++;
         dyn_dtree[d_code(dist)].Freq++;
 
@@ -3569,9 +3476,7 @@ int ct_tally (int dist, int lc)
             out_length += (ulg)dyn_dtree[dcode].Freq*(5L+extra_dbits[dcode]);
         }
         out_length >>= 3;
-        Trace((stderr,"\nlast_lit %u, last_dist %u, in %ld, out ~%ld(%ld%%) ",
-               last_lit, last_dist, in_length, out_length,
-               100L - out_length*100L/in_length));
+        
         if (last_dist < last_lit/2 && out_length < in_length/2) return 1;
     }
     return (last_lit == LIT_BUFSIZE-1 || last_dist == DIST_BUFSIZE);
@@ -3594,7 +3499,6 @@ static void compress_block(ct_data *ltree, ct_data *dtree)
         lc = inbuf[lx++];
         if ((flag & 1) == 0) {
             send_code(lc, ltree);
-            Tracecv(isgraph(lc), (stderr," '%c' ", lc));
         } else {
             code = length_code[lc];
             send_code(code+LITERALS+1, ltree);
@@ -3605,7 +3509,6 @@ static void compress_block(ct_data *ltree, ct_data *dtree)
             }
             dist = d_buf[dx++];
             code = d_code(dist);
-            Assert (code < D_CODES, "bad d_code");
 
             send_code(code, dtree);
             extra = extra_dbits[code];
@@ -3629,21 +3532,21 @@ static void set_file_type()
     while (n < 128)    ascii_freq += dyn_ltree[n++].Freq;
     while (n < LITERALS) bin_freq += dyn_ltree[n++].Freq;
     *file_type = bin_freq > (ascii_freq >> 2) ? BINARY : ASCII;
-    if (*file_type == BINARY && translate_eol) {
+    if (*file_type == BINARY && 0) {
         warning ((char *)"-l used on binary file");
     }
 }
 
-static unsigned  decode  OF((unsigned count, uch buffer[]));
-static void decode_start OF((void));
-static void huf_decode_start OF((void));
-static unsigned decode_c     OF((void));
-static unsigned decode_p     OF((void));
-static void read_pt_len      OF((int nn, int nbit, int i_special));
-static void read_c_len       OF((void));
-static void fillbuf      OF((int n));
-static unsigned getbits  OF((int n));
-static void init_getbits OF((void));
+static unsigned  decode  (unsigned count, uch buffer[]);
+static void decode_start (void);
+static void huf_decode_start (void);
+static unsigned decode_c     (void);
+static unsigned decode_p     (void);
+static void read_pt_len      (int nn, int nbit, int i_special);
+static void read_c_len       (void);
+static void fillbuf      (int n);
+static unsigned getbits  (int n);
+static void init_getbits (void);
 
 static const uint32_t DICSIZ = 1 << 13;
 #define BITBUFSIZ (CHAR_BIT * 2 * sizeof(char))
@@ -3948,7 +3851,7 @@ union	bytes {
    }
 
 #define tab_prefixof(i) prev[i]
-#define clear_tab_prefixof()	memzero(prev, 256);
+#define clear_tab_prefixof()	memset(prev, 0, 256);
 #define de_stack        ((char_type *)(&d_buf[DIST_BUFSIZE-1]))
 #define tab_suffixof(i) window[i]
 
@@ -4041,7 +3944,6 @@ int unlzw(int in, int out)
 		goto resetbuf;
 	    }
 	    input(inbuf,posbits,code,n_bits,bitmask);
-	    Tracev((stderr, "%d ", code));
 
 	    if (oldcode == -1) {
 		if (code >= 256) error((char *)"corrupt input.");
@@ -4122,7 +4024,7 @@ int unlzw(int in, int out)
     return OK;
 }
 
-#define MIN(a,b) ((a) <= (b) ? (a) : (b))
+
 
 static ulg orig_len;  
 static int max_len;   
@@ -4134,14 +4036,10 @@ static int peek_bits;
 static ulg bitbuf;
 static int valid;
 
-#define look_bits(code,bits,mask) \
-{ \
-  while (valid < (bits)) bitbuf = (bitbuf<<8) | (ulg)get_byte(), valid += 8; \
-  code = (bitbuf >> (valid-(bits))) & (mask); \
-}
 
-static void read_tree  OF((void));
-static void build_tree OF((void));
+
+static void read_tree  (void);
+static void build_tree (void);
 
 static void read_tree()
 {
@@ -4165,8 +4063,6 @@ static void read_tree()
     if (n > LITERALS) {
 	error((char *)"too many leaves in Huffman tree");
     }
-    Trace((stderr, "orig_len %lu, max_len %d, leaves %d\n",
-	   orig_len, max_len, n));
     
     leaves[max_len]++;
     base = 0;
@@ -4179,6 +4075,7 @@ static void read_tree()
     leaves[max_len]++;
 }
 
+#define MIN(a,b) ((a) <= (b) ? (a) : (b))
 
 static void build_tree()
 {
@@ -4204,6 +4101,13 @@ static void build_tree()
     while (prefixp > outbuf) *--prefixp = 0;
 }
 
+#define look_bits(code,bits,mask) \
+{ \
+  while (valid < (bits)) bitbuf = (bitbuf<<8) | (ulg)get_byte(), valid += 8; \
+  code = (bitbuf >> (valid-(bits))) & (mask); \
+}
+
+#define put_ubyte(c) {window[outcnt++]=(uch)(c); if (outcnt==WSIZE) flush_window();}
 
 int unpack(int in, int out)
 {
@@ -4220,7 +4124,6 @@ int unpack(int in, int out)
     peek_mask = (1<<peek_bits)-1;
 
     eob = leaves[max_len]-1;
-    Trace((stderr, "eob %d %x\n", max_len, eob));
 
     for (;;) {
 	look_bits(peek, peek_bits, peek_mask);
@@ -4237,8 +4140,6 @@ int unpack(int in, int out)
 	}
 	if (peek == eob && len == max_len) break;
 	put_ubyte(literal[peek+lit_base[len]]);
-	Tracev((stderr,"%02d %04x %c\n", len, peek,
-		literal[peek+lit_base[len]]));
     valid -= len;
     }
 
@@ -4491,6 +4392,8 @@ void write_buf(int fd, voidp buf, unsigned cnt)
     }
 }
 
+#define tolow(c)  (isupper (c) ? tolower (c) : (c))
+
 char *strlwr(char *s)
 {
     char *t;
@@ -4672,6 +4575,12 @@ yesno ()
 static ulg crc;
 off_t header_bytes;
 
+void put_long(int n)
+{
+    put_short((n) & 0xffff);
+    put_short(((ulg)(n)) >> 16);
+}
+
 int zip(int in, int out)
 {
     uch  flags = 0;         
@@ -4686,19 +4595,15 @@ int zip(int in, int out)
     put_byte(GZIP_MAGIC[1]);
     put_byte(DEFLATED);     
 
-    if (save_orig_name) {
-	flags |= ORIG_NAME;
-    }
+    if (save_orig_name)
+	    flags |= ORIG_NAME;
+
     put_byte(flags);
-    put_long(time_stamp == (time_stamp & 0xffffffff)
-	     ? (ulg)time_stamp : (ulg)0);
-
+    put_long(time_stamp == (time_stamp & 0xffffffff) ? (ulg)time_stamp : (ulg)0);
     crc = updcrc(0, 0);
-
     bi_init(out);
     ct_init(&attr, &method);
     lm_init(level, &deflate_flags);
-
     put_byte((uch)deflate_flags);
     put_byte(3);
 
@@ -4721,7 +4626,6 @@ int file_read(char *buf, unsigned size)
 {
     unsigned len;
 
-    Assert(insize == 0, "inbuf not empty");
 
     len = read(ifd, buf, size);
     if (len == 0) return (int)len;

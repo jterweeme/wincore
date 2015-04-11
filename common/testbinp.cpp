@@ -46,6 +46,7 @@ int App::run()
     ma.equals(true, b.readBool());
 #endif
     ifs.close();
+    cerr << "\e[1;32mTestBitinput: OK\e[0m\n";
     return 0;
 }
 
