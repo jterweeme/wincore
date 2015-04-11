@@ -258,13 +258,18 @@ test2go:
 	$(VALGRIND) ./test2
 
 testgzip:
-	rm -v bzip2.gz
+	rm -vf bzip2.gz
 	$(VALGRIND) ./gzip -c bzip2.cpp > bzip2.gz
 	$(VALGRIND) ./zcat bzip2.gz | ./diff bzip2.cpp -
 	$(VALGRIND) ./gzip -c -d znew.gz | ./md5sum -x 742b0b4d1543c6df46e35b77ec6baa53
 
+testbzip2:
+	rm -vf gzip.bz2
+	$(VALGRIND) ./bzip2 -c gzip.cpp > gzip.bz2
+	$(VALGRIND) ./bzip2 -c -d battery.bz2 | ./md5sum -x efc57edfaf907b5707878f544b39d6d5
+
 tests1: testkompakt
-tests2: testcp testjpg2tga testtar testgzip testbinpgo
+tests2: testcp testjpg2tga testtar testgzip testbinpgo testbzip2
 tests3: testgmtime1 tgunzip1go testbunzip2 testmd5sum testgunzip2
 tests4: testcppcom01 testcppcom03 testcppcom04 testcppcom05 testcppcom06 testcppcom07
 tests5: testcppcom10

@@ -1,3 +1,4 @@
+#if 1
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/times.h>
+#else
+#include "common.h"
+#define NULL 0
+#endif
 
 typedef 
    struct {

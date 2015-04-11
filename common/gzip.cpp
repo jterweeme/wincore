@@ -486,8 +486,6 @@ static off_t deflate_fast()
    flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : \
                 (char*)NULL, (long)strstart - block_start, flush-1, (eof))
 
-#define RSYNC_ROLL(s, n) do { if (rsync) rsync_roll((s), (n)); } while(0)
-
 off_t deflate()
 {
     IPos hash_head;      
@@ -496,11 +494,12 @@ off_t deflate()
     int match_available = 0;
     register unsigned match_length = MIN_MATCH-1;
 
-    if (compr_level <= 3) return deflate_fast();
-    while (lookahead != 0) {
-    
-        INSERT_STRING(strstart, hash_head);
+    if (compr_level <= 3)
+        return deflate_fast();
 
+    while (lookahead != 0)
+    {
+        INSERT_STRING(strstart, hash_head);
         prev_length = match_length, prev_match = match_start;
         match_length = MIN_MATCH-1;
 
@@ -521,7 +520,11 @@ off_t deflate()
 
             lookahead -= prev_length-1;
             prev_length -= 2;
-	    RSYNC_ROLL(strstart, prev_length+1);
+
+
+            do { if (rsync) rsync_roll((strstart), (prev_length + 1)); } while (0);
+
+
             do {
                 strstart++;
                 INSERT_STRING(strstart, hash_head);
@@ -542,7 +545,9 @@ off_t deflate()
 		flush = 2;
 	    }
             if (flush) FLUSH_BLOCK(0), block_start = strstart;
-	    RSYNC_ROLL(strstart, 1);
+
+            do { if (rsync) rsync_roll((strstart), (1 + 1)); } while (0);
+
             strstart++;
             lookahead--;
         } else {
@@ -552,7 +557,8 @@ off_t deflate()
 		FLUSH_BLOCK(0), block_start = strstart;
 	    }
             match_available = 1;
-	    RSYNC_ROLL(strstart, 1);
+            
+            do { if (rsync) rsync_roll((strstart), (1 + 1)); } while (0);
             strstart++;
             lookahead--;
         }
@@ -701,8 +707,6 @@ static const char * _getopt_initialize(int argc, char * const *argv, const char 
   return optstring;
 }
 
-#define _(msgid) (msgid)
-
 int
 _getopt_internal(int argc, char * const *argv, const char *optstring,
     const struct option *longopts, int *longind, int long_only)
@@ -826,7 +830,7 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
       if (ambig && !exact)
 	{
 	  if (print_errors)
-	    fprintf (stderr, _("%s: option `%s' is ambiguous\n"),
+	    fprintf (stderr, "%s: option `%s' is ambiguous\n",
 		     argv[0], argv[optind]);
 	  nextchar += strlen (nextchar);
 	  optind++;
@@ -848,11 +852,11 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
 		    {
 		      if (argv[optind - 1][1] == '-')
 			fprintf (stderr,
-				 _("%s: option `--%s' doesn't allow an argument\n"),
+				 "%s: option `--%s' doesn't allow an argument\n",
 				 argv[0], pfound->name);
 		      else
 			fprintf (stderr,
-				 _("%s: option `%c%s' doesn't allow an argument\n"),
+				 "%s: option `%c%s' doesn't allow an argument\n",
 				 argv[0], argv[optind - 1][0], pfound->name);
 		    }
 
@@ -870,7 +874,7 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
 		{
 		  if (print_errors)
 		    fprintf (stderr,
-			   _("%s: option `%s' requires an argument\n"),
+			   "%s: option `%s' requires an argument\n",
 			   argv[0], argv[optind - 1]);
 		  nextchar += strlen (nextchar);
 		  optopt = pfound->val;
@@ -895,10 +899,10 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
 	  if (print_errors)
 	    {
 	      if (argv[optind][1] == '-')
-		fprintf (stderr, _("%s: unrecognized option `--%s'\n"),
+		fprintf (stderr, "%s: unrecognized option `--%s'\n",
 			 argv[0], nextchar);
 	      else
-		fprintf (stderr, _("%s: unrecognized option `%c%s'\n"),
+		fprintf (stderr, "%s: unrecognized option `%c%s'\n",
 			 argv[0], argv[optind][0], nextchar);
 	    }
 	  nextchar = (char *) "";
@@ -920,10 +924,10 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
 	if (print_errors)
 	  {
 	    if (posixly_correct)
-	      fprintf (stderr, _("%s: illegal option -- %c\n"),
+	      fprintf (stderr, "%s: illegal option -- %c\n",
 		       argv[0], c);
 	    else
-	      fprintf (stderr, _("%s: invalid option -- %c\n"),
+	      fprintf (stderr, "%s: invalid option -- %c\n",
 		       argv[0], c);
 	  }
 	optopt = c;
@@ -948,7 +952,7 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
 	  {
 	    if (print_errors)
 	      {
-		fprintf (stderr, _("%s: option requires an argument -- %c\n"),
+		fprintf (stderr, "%s: option requires an argument -- %c\n",
 			 argv[0], c);
 	      }
 	    optopt = c;
@@ -985,7 +989,7 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
 	if (ambig && !exact)
 	  {
 	    if (print_errors)
-	      fprintf (stderr, _("%s: option `-W %s' is ambiguous\n"),
+	      fprintf (stderr, "%s: option `-W %s' is ambiguous\n",
 		       argv[0], argv[optind]);
 	    nextchar += strlen (nextchar);
 	    optind++;
@@ -1001,8 +1005,8 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
 		else
 		  {
 		    if (print_errors)
-		      fprintf (stderr, _("\
-%s: option `-W %s' doesn't allow an argument\n"),
+		      fprintf (stderr, "\
+%s: option `-W %s' doesn't allow an argument\n",
 			       argv[0], pfound->name);
 
 		    nextchar += strlen (nextchar);
@@ -1017,7 +1021,7 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
 		  {
 		    if (print_errors)
 		      fprintf (stderr,
-			       _("%s: option `%s' requires an argument\n"),
+			       "%s: option `%s' requires an argument\n",
 			       argv[0], argv[optind - 1]);
 		    nextchar += strlen (nextchar);
 		    return optstring[0] == ':' ? ':' : '?';
@@ -1098,11 +1102,9 @@ static char  *license_msg[] = {
 0};
 typedef void (*sig_type) (int);
 static const uint8_t O_BINARY = 0;
-#define RW_USER (S_IRUSR | S_IWUSR)
+static const uint32_t RW_USER = S_IRUSR | S_IWUSR;
 static const uint16_t MAX_PATH_LEN = 1024;
-#define OFF_T_MIN (~ (off_t) 0 << (sizeof (off_t) * CHAR_BIT - 1))
-#define OFF_T_MAX (~ (off_t) 0 - OFF_T_MIN)
-#define PART_SEP "-"
+
 
 uch inbuf[INBUFSIZ + INBUF_EXTRA];
 uch outbuf[OUTBUFSIZ + OUTBUF_EXTRA];
@@ -2025,6 +2027,8 @@ static int get_method(int in)
 
 #define SH(p) ((ush)(uch)((p)[0]) | ((ush)(uch)((p)[1]) << 8))
 #define LG(p) ((ulg)(SH(p)) | ((ulg)(SH((p)+2)) << 16))
+#define OFF_T_MIN (~ (off_t) 0 << (sizeof (off_t) * CHAR_BIT - 1))
+#define OFF_T_MAX (~ (off_t) 0 - OFF_T_MIN)
 
 static void do_list(int ifd, int method)
 {
@@ -2179,7 +2183,7 @@ static void shorten_name(char *name)
 	} while (*trunc++);
 	trunc--;
     } else {
-	trunc = strrchr(name, PART_SEP[0]);
+	trunc = strrchr(name, '-');
 	if (trunc == NULL) error((char *)"internal error in shorten_name");
 	if (trunc[1] == '\0') trunc--;
     }
@@ -4075,8 +4079,6 @@ static void read_tree()
     leaves[max_len]++;
 }
 
-#define MIN(a,b) ((a) <= (b) ? (a) : (b))
-
 static void build_tree()
 {
     int nodes = 0; 
@@ -4092,7 +4094,7 @@ static void build_tree()
 	nodes += leaves[len];
     }
 
-    peek_bits = MIN(max_len, 12);
+    peek_bits = max_len <= 12 ? max_len : 12;
     prefixp = &outbuf[1<<peek_bits];
     for (len = 1; len <= peek_bits; len++) {
 	int prefixes = leaves[len] << (peek_bits-len);
@@ -4392,13 +4394,16 @@ void write_buf(int fd, voidp buf, unsigned cnt)
     }
 }
 
-#define tolow(c)  (isupper (c) ? tolower (c) : (c))
+//#define tolow(c)  (isupper (c) ? tolower (c) : (c))
 
 char *strlwr(char *s)
 {
     char *t;
+
     for (t = s; *t; t++)
-      *t = tolow ((unsigned char) *t);
+        *t = isupper((uint8_t)*t) ? tolower((uint8_t)*t) : (uint8_t)*t;
+        //*t = tolow ((uint8_t)*t);
+
     return s;
 }
 
