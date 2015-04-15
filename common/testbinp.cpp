@@ -12,7 +12,7 @@ int App::run()
 {
     MyAssert ma;
     ifstream ifs("minimal.gif");
-#if 0
+#if 1
     BitInputStream b(&ifs);
     ma.equals(false, b.readBool());
     ma.equals(true, b.readBool());
@@ -26,6 +26,7 @@ int App::run()
     ma.equals(true, b.readBool());
     ma.equals(false, b.readBool());
     ma.equals(false, b.readBool());
+    
 #else
     //BitInput2 b(&ifs);
     BitInputStreamRev b(&ifs);

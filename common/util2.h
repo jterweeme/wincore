@@ -29,6 +29,8 @@ public:
     int strncmp(const char *s1, const char *s2, size_t n) const;
     char *strtok(char *str, const char *delimiters);
     char *strchr(const char *s, int c) const;
+    char *strcat(char *dest, const char *src) const;
+    char *strstr(const char *haystack, const char *needle) const;
     uint8_t ctoi(char c);
     uint32_t upow(uint32_t base, uint32_t exp);
     uint32_t strtol(const char *a, const char *b, int base);
@@ -44,12 +46,22 @@ public:
     template <typename BI1, typename BI2> BI2 copy_move_back_a(BI1 f, BI1 l, BI2 result);
     template <typename T, typename U> void destroy(T first, T last, U &alloc);
     template <typename T, typename T2> T2 uninitialized_copy(T first, T last, T2 result);
+#ifndef _STDLIB_H
     uint32_t be32toh(uint32_t v) const;
+#endif
 };
 
 namespace mystl
 {
     char *strchr(const char *s, int c);
+    char *strcat(char *dest, const char *src);
+    char *strstr(const char *haystack, const char *needle);
+    int isdigit(int c);
+    int isspace(int c);
+    int isupper(int c);
+    int islower(int c);
+    int isalpha(int c);
+    int isxdigit(int c);
 }
 
 #endif

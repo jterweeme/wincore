@@ -12,10 +12,9 @@ uint32_t BitInput::readBits(uint32_t count)
     return _bitBuffer >> _bitCount & ((1 << count) - 1);
 }
 
-#if 1
 uint32_t BitInput2::_readBit()
 {
-    if (_bitPos == 8) _nextBits = _is->get(), _bitPos = 0;
+    if (_bitPos == 8) _nextBits = _getc(), _bitPos = 0;
     return _nextBits >> _bitPos++ & 1;
 }
 
@@ -25,7 +24,6 @@ uint32_t BitInput2::readBits(uint32_t n)
     for (uint32_t i = 0; i < n; i++) r |= _readBit() << i;
     return r;
 }
-#endif
 
 
 

@@ -23,7 +23,8 @@ TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 \
     tcpref01 \
     tee test1 test2 test3 testbinp \
-    teststl1 tgmtime1 tgunzip1 touch tr tstdio1 unix2dos uuidgen weekday wingroup yes zcat
+    teststl1 tgmtime1 tgunzip1 touch tr tstdio1 unix2dos unzip \
+    uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
 	g++ $(CXXFLAGS) -c -o $@ $<
@@ -41,7 +42,7 @@ base64: base64.o $(MYSTL_O)
 bunzip2: bunzip2m.o bunzip2.o bitinput.o fector.o $(MYSTL_O)
 bzcat: bzcat.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
 bzinfo: bzinfo.o bitinput.o $(MYSTL_O)
-bzip2: bzip2.o
+bzip2: bzip2.o $(MYSTL_O)
 bzmd5: bzmd5.o
 cat: cat.o $(MYSTL_O)
 cp: cp.o $(MYSTL_O)
@@ -84,6 +85,7 @@ touch: touch.o
 tr: tr.o $(MYSTL_O)
 tstdio1: tstdio1.o $(MYSTDIO_O)
 unix2dos: unix2dos.o $(MYSTL_O)
+unzip: unzip.o $(MYSTL_O)
 uuidgen: uuidgen.o $(MYSTL_O)
 weekday: weekday.o $(MYSTL_O)
 wingroup: wingroup.o $(MYSTL_O)
@@ -148,6 +150,7 @@ touch.o: touch.cpp
 tr.o: tr.cpp $(COMMON_H)
 tstdio1.o: tstdio1.cpp $(COMMON_H)
 unix2dos.o: unix2dos.cpp
+unzip.o: unzip.cpp $(COMMON_H)
 util2.o: util2.cpp $(UTIL2_H)
 uuidgen.o: uuidgen.cpp $(COMMON_H)
 weekday.o: weekday.cpp $(COMMON_H)
@@ -264,8 +267,11 @@ testgzip:
 	$(VALGRIND) ./gzip -c -d znew.gz | ./md5sum -x 742b0b4d1543c6df46e35b77ec6baa53
 
 testbzip2:
-	rm -vf gzip.bz2
+	rm -vf gzip.bz2 whouse.bz2
 	$(VALGRIND) ./bzip2 -c gzip.cpp > gzip.bz2
+	$(VALGRIND) ./bzcat gzip.bz2 | ./diff gzip.cpp -
+	$(VALGRIND) ./bzip2 -c whouse.jpg > whouse.bz2
+	$(VALGRIND) ./bzcat whouse.bz2 | ./diff whouse.jpg -
 	$(VALGRIND) ./bzip2 -c -d battery.bz2 | ./md5sum -x efc57edfaf907b5707878f544b39d6d5
 
 tests1: testkompakt

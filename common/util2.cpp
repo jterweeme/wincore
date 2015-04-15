@@ -8,6 +8,36 @@ void *Util2::memcpy(void *dest, const void *src, size_t n)
     return dest;
 }
 
+char *Util2::strcat(char *dest, const char *src) const
+{
+    size_t len = strlen(dest);
+    strcpy(dest + len, src);
+    return dest;
+}
+
+char *Util2::strstr(const char *haystack, const char *needle) const
+{
+    if (!*needle) return (char *)haystack;
+    char *p1 = (char*)haystack;
+
+    while (*p1)
+    {
+        char *p1Begin = p1, *p2 = (char*)needle;
+
+        while (*p1 && *p2 && *p1 == *p2)
+        {
+            p1++;
+            p2++;
+        }
+
+        if (!*p2)
+            return p1Begin;
+
+        p1 = p1Begin + 1;
+  }
+  return 0;
+}
+
 char *Util2::strchr(const char *s, int c) const
 {
     while (*s != (char)c)
@@ -195,6 +225,7 @@ char *Util2::strcpy(char *dest, const char *src) const
     return save;
 }
 
+#ifndef _STDLIB_H
 Util2::uint32_t Util2::be32toh(uint32_t v) const
 {
     uint32_t r = 0;
@@ -204,6 +235,7 @@ Util2::uint32_t Util2::be32toh(uint32_t v) const
     r |= (v & 0xff000000) >> 24;
     return r;
 }
+#endif
 
 void *Util2::memset(void *s, int c, size_t n)
 {
@@ -215,6 +247,10 @@ void *Util2::memset(void *s, int c, size_t n)
 namespace mystl
 {
     char *strchr(const char *s, int c) { Util2 u; return u.strchr(s, c); }
+    char *strcat(char *dest, const char *src) { Util2 u; return u.strcat(dest, src); }
+    char *strstr(const char *hs, const char *needle) { Util2 u; return u.strstr(hs, needle); }
+    int isdigit(int c) { Util2 u; return u.isdigit(c); }
+    int isspace(int c) { Util2 u; return u.isspace(c); }
 }
 
 

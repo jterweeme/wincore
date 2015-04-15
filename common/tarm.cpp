@@ -95,6 +95,7 @@ int AppTar::run(int argc, char **argv)
     Options o(argc, argv);
     FILE *fp = fopen(o.archive().c_str(), "r");
     BitInputFile bif;
+    BitInput2File bif2;
     streambuf *bt;
     istream *is;
     TarStream *ts;
@@ -104,6 +105,10 @@ int AppTar::run(int argc, char **argv)
     case 3:
         bif.open(fp);
         bt = new DecStreamBuf(&bif);
+        break;
+    case 2:
+        bif2.open(fp);
+        bt = new GzipStreambuf(&bif2);
         break;
     default:
         bt = new buftest(fp);

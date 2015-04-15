@@ -44,7 +44,9 @@ namespace mystl
     typedef MyTypes::size_t size_t;
 #endif
 #ifndef _STDINT_H
+#ifndef _SYS_TYPES_H
     typedef MyTypes::int8_t int8_t;
+#endif
     typedef MyTypes::uint8_t uint8_t;
     typedef MyTypes::int16_t int16_t;
     typedef MyTypes::uint16_t uint16_t;

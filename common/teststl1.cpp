@@ -10,6 +10,15 @@ void teststrlen1(const char *s, uint32_t len)
         throw;
 }
 
+void teststrcat()
+{
+    Util2 u;
+    char x[900] = {0};
+    strcpy(x, "Hallo ");
+    u.strcat(x, "wereld");
+    cout << x << "\n";
+}
+
 void testisdigit()
 {
     char c = '9';
@@ -61,6 +70,7 @@ void testFileBuf()
 int main()
 {
     Util2 u;
+    teststrcat();
     teststrlen1("Hello", 5);
     testisdigit();
     testctoi('5');

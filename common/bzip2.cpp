@@ -1,49 +1,43 @@
-#if 1
+#if 0
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 //#include <signal.h>
-#include <math.h>
-#include <errno.h>
-#include <ctype.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <utime.h>
-#include <unistd.h>
+//#include <math.h>
+//#include <errno.h>
+//#include <ctype.h>
+//#include <fcntl.h>
+//#include <sys/types.h>
+//#include <utime.h>
+//#include <unistd.h>
 #include <sys/stat.h>
-#include <sys/times.h>
+//#include <sys/times.h>
 #else
 #include "common.h"
-#define NULL 0
+#include <sys/stat.h>
+//#define NULL 0
 #endif
 
-typedef 
-   struct {
-      char *next_in;
-      unsigned int avail_in;
-      unsigned int total_in_lo32;
-      unsigned int total_in_hi32;
-      char *next_out;
-      unsigned int avail_out;
-      unsigned int total_out_lo32;
-      unsigned int total_out_hi32;
-      void *state;
-      void *(*bzalloc)(void *,int,int);
-      void (*bzfree)(void *,void *);
-      void *opaque;
-   } 
-   bz_stream;
+struct bz_stream
+{
+    char *next_in;
+    unsigned int avail_in;
+    unsigned int total_in_lo32;
+    unsigned int total_in_hi32;
+    char *next_out;
+    unsigned int avail_out;
+    unsigned int total_out_lo32;
+    unsigned int total_out_hi32;
+    void *state;
+    void *(*bzalloc)(void *,int,int);
+    void (*bzfree)(void *,void *);
+    void *opaque;
+};
 
 static const uint16_t BZ_MAX_UNUSED = 5000;
-
 typedef void BZFILE;
-
-
-
-
-
 static const uint8_t BZ_RUN = 0;
 static const uint8_t BZ_FLUSH = 1;
 static const uint8_t BZ_FINISH = 2;
@@ -61,12 +55,7 @@ static const int8_t BZ_IO_ERROR         = -6;
 static const int8_t BZ_UNEXPECTED_EOF   = -7;
 static const int8_t BZ_OUTBUFF_FULL     = -8;
 static const int8_t BZ_CONFIG_ERROR     = -9;
-
-
 int VPrintf0(const char *zf) { return ::fprintf(stderr, zf); }
-
-
-
 static const uint8_t BZ_HDR_B = 0x42;
 static const uint8_t BZ_HDR_Z = 0x5a;
 static const uint8_t BZ_HDR_h = 0x68;
@@ -76,85 +65,67 @@ static const uint8_t BZ_MAX_CODE_LEN = 23;
 static const uint8_t BZ_RUNA = 0;
 static const uint8_t BZ_RUNB = 1;
 static const uint8_t BZ_N_GROUPS = 6;
-
-
-
 extern int32_t BZ2_rNums[512];
-
-
-
-
 extern unsigned BZ2_crc32Table[256];
-
+static const uint16_t BZ_MAX_SELECTORS = 18002;
 
 void BZ_UPDATE_CRC(uint32_t &crcVar, uint8_t &cha)
 {
     crcVar = (crcVar << 8) ^ BZ2_crc32Table[(crcVar >> 24) ^ ((uint8_t)cha)];
 }
 
-static const uint16_t BZ_MAX_SELECTORS = 18002;
-
-typedef
-   struct {
-      bz_stream* strm;
-      int32_t    mode;
-      int32_t    state;
-      unsigned   avail_in_expect;
-      unsigned*  arr1;
-      unsigned*  arr2;
-      uint32_t*  ftab;
-      int32_t    origPtr;
-      uint32_t*  ptr;
-      uint8_t*   block;
-      uint16_t*  mtfv;
-      uint8_t*   zbits;
-      int32_t    workFactor;
-      uint32_t   state_in_ch;
-      int32_t    state_in_len;
-      int32_t rNToGo;                  
-      int32_t rTPos;
-      int32_t    nblock;
-      int32_t    nblockMAX;
-      int32_t    numZ;
-      int32_t    state_out_pos;
-      int32_t    nInUse;
-      uint8_t     inUse[256];
-      uint8_t    unseqToSeq[256];
-      uint32_t   bsBuff;
-      int32_t    bsLive;
-      uint32_t   blockCRC;
-      uint32_t   combinedCRC;
-      int32_t    verbosity;
-      int32_t    blockNo;
-      int32_t    blockSize100k;
-      int32_t    nMTF;
-      int32_t    mtfFreq    [BZ_MAX_ALPHA_SIZE];
-      uint8_t    selector   [BZ_MAX_SELECTORS];
-      uint8_t    selectorMtf[BZ_MAX_SELECTORS];
-      uint8_t  len     [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-      int32_t    code    [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-      int32_t    rfreq   [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-      uint32_t   len_pack[BZ_MAX_ALPHA_SIZE][4];
-
-   }
-   EState;
-
+struct EState
+{
+    bz_stream *strm;
+    int32_t mode;
+    int32_t state;
+    unsigned avail_in_expect;
+    unsigned *arr1;
+    unsigned *arr2;
+    uint32_t *ftab;
+    int32_t origPtr;
+    uint32_t *ptr;
+    uint8_t *block;
+    uint16_t *mtfv;
+    uint8_t *zbits;
+    int32_t    workFactor;
+    uint32_t   state_in_ch;
+    int32_t    state_in_len;
+    int32_t rNToGo;                  
+    int32_t rTPos;
+    int32_t    nblock;
+    int32_t    nblockMAX;
+    int32_t    numZ;
+    int32_t    state_out_pos;
+    int32_t    nInUse;
+    uint8_t     inUse[256];
+    uint8_t    unseqToSeq[256];
+    uint32_t   bsBuff;
+    int32_t    bsLive;
+    uint32_t   blockCRC;
+    uint32_t   combinedCRC;
+    int32_t    verbosity;
+    int32_t    blockNo;
+    int32_t    blockSize100k;
+    int32_t    nMTF;
+    int32_t    mtfFreq    [BZ_MAX_ALPHA_SIZE];
+    uint8_t    selector   [BZ_MAX_SELECTORS];
+    uint8_t    selectorMtf[BZ_MAX_SELECTORS];
+    uint8_t  len     [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    int32_t    code    [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    int32_t    rfreq   [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    uint32_t   len_pack[BZ_MAX_ALPHA_SIZE][4];
+};
 
 static const uint8_t BZ_M_IDLE = 1;
 static const uint8_t BZ_M_RUNNING = 2;
 static const uint8_t BZ_M_FLUSHING = 3;
 static const uint8_t BZ_M_FINISHING = 4;
-
 static const uint8_t BZ_S_OUTPUT = 1;
 static const uint8_t BZ_S_INPUT = 2;
-
 static const uint8_t BZ_N_OVERSHOOT = 34;
-
-
-
 static const uint8_t BZ_X_IDLE = 1;
 static const uint8_t BZ_X_OUTPUT = 2;
-
 static const uint8_t BZ_X_MAGIC_1 = 10;
 static const uint8_t BZ_X_MAGIC_2 = 11;
 static const uint8_t BZ_X_MAGIC_3 = 12;
@@ -187,21 +158,15 @@ static const uint8_t BZ_X_MTF_3 = 38;
 static const uint8_t BZ_X_MTF_4 = 39;
 static const uint8_t BZ_X_MTF_5 = 40;
 static const uint8_t BZ_X_MTF_6 = 41;
-static const uint8_t BZ_X_ENDHDR_2   = 42;
-static const uint8_t BZ_X_ENDHDR_3   = 43;
-static const uint8_t BZ_X_ENDHDR_4   = 44;
-static const uint8_t BZ_X_ENDHDR_5   = 45;
-static const uint8_t BZ_X_ENDHDR_6   = 46;
 static const uint8_t BZ_X_CCRC_1     = 47;
 static const uint8_t BZ_X_CCRC_2     = 48;
 static const uint8_t BZ_X_CCRC_3     = 49;
 static const uint8_t BZ_X_CCRC_4     = 50;
-
 static const uint16_t MTFA_SIZE = 4096;
 static const uint16_t MTFL_SIZE = 16;
 
-typedef
-   struct {
+struct DState
+{
       bz_stream* strm;
       int32_t    state;
       uint8_t    state_out_ch;
@@ -266,8 +231,7 @@ typedef
       int32_t*   save_gLimit;
       int32_t*   save_gBase;
       int32_t*   save_gPerm;
-   }
-   DState;
+};
 
 struct Cell
 {
@@ -275,8 +239,33 @@ struct Cell
     Cell *link;
 };
 
+struct bzFile
+{
+    FILE *handle;
+    char buf[BZ_MAX_UNUSED];
+    int32_t bufN;
+    uint8_t writing;
+    bz_stream strm;
+    int32_t lastErr;
+    uint8_t initialisedOk;
+};
+
 class AppBzip2
 {
+    static const uint8_t BZ_X_ENDHDR_2   = 42;
+    static const uint8_t BZ_X_ENDHDR_3   = 43;
+    static const uint8_t BZ_X_ENDHDR_4   = 44;
+    static const uint8_t BZ_X_ENDHDR_5   = 45;
+    static const uint8_t BZ_X_ENDHDR_6   = 46;
+    static const uint8_t MAIN_QSORT_SMALL_THRESH = 20;
+    static const uint8_t MAIN_QSORT_DEPTH_THRESH = 14;
+    static const uint8_t MAIN_QSORT_STACK_SIZE = 100;
+    static const uint8_t FALLBACK_QSORT_SMALL_THRESH = 10;
+    static const uint8_t FALLBACK_QSORT_STACK_SIZE =  100;
+    static const uint32_t SETMASK = 1 << 21;
+    static const uint32_t CLEARMASK = ~(1<<21);
+    static const uint8_t BZ_GREATER_ICOST = 15;
+
     int BZ2_bzBuffToBuffCompress(char *dest, unsigned int *destLen, char *source, 
                   unsigned int sourceLen, int blockSize100k, int verbosity, int workFactor);
 
@@ -300,8 +289,61 @@ class AppBzip2
     void mainSimpleSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant, int32_t nblock,
                       int32_t lo, int32_t hi, int32_t d, int32_t *budget);
 
+    uint8_t mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* quadrant,
+               uint32_t nblock, int32_t* budget);
+
+    void BZ2_hbCreateDecodeTables(int32_t *limit, int32_t *base, int32_t *perm,
+            uint8_t *length, int32_t minLen, int32_t maxLen, int32_t alphaSize);
+
+    static void *default_bzalloc(void* opaque, int32_t items, int32_t size)
+    {
+        char *ret = new char[items * size];
+        return (void *)ret;
+        //return malloc(items * size);
+    }
+
+    BZFILE *BZ2_bzReadOpen(int *bzerr, FILE *f, int verbosity, int sm, void *unused, int nUnused);
+    static void default_bzfree(void* opaque, void* addr) { if (addr != NULL) free(addr); }
+    //static void default_bzfree(void* opaque, void* addr) { if (addr != NULL) delete addr; }
     BZFILE *BZ2_bzdopen(int fd, const char *mode);
     BZFILE *bzopen_or_bzdopen(const char *path, int fd, const char *mode, int open_mode);
+    Cell *snocString(Cell *root, char *name);
+    void saveInputFileMetaInfo(char *srcName);
+    void ERROR_IF_NOT_ZERO(int i);
+    void ioError();
+    void crcError();
+    void panic(const char *s);
+    int BZ2_bzflush(BZFILE *b);
+    void BZ2_bzReadGetUnused(int *bzerror, BZFILE* b, void **unused, int *nUnused);
+    void unRLE_obuf_to_output_FAST(DState* s);
+    uint8_t copy_output_until_stop(EState* s);
+    void prepare_new_block(EState *s);
+    void BZ_INITIALISE_CRC(uint32_t &crcVar);
+    //void applySavedMetaInfoToOutputFile(char *dstName);
+    uint8_t mapSuffix(char* name, const char* oldSuffix, const char* newSuffix);
+    int BZ2_bzCompressEnd(bz_stream *strm);
+    uint8_t myfeof(FILE* f);
+    uint8_t isempty_RL(EState* s);
+    void init_RL(EState* s);
+    void flush_RL(EState* s);
+    int BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small);
+    int bz_config_ok();
+    void compressedStreamEOF();
+    void add_pair_to_block(EState* s);
+    int BZ2_bzDecompressEnd(bz_stream *strm);
+    void BZ2_bzReadClose(int *bzerror, BZFILE *b);
+    void makeMaps_d(DState *s);
+    uint8_t copy_input_until_stop(EState* s);
+    void unRLE_obuf_to_output_SMALL(DState* s);
+    int32_t BZ2_indexIntoF(int32_t indx, int32_t *cftab);
+    void bsPutUChar(EState* s, uint8_t c);
+    void bsW(EState *s, int32_t n, uint32_t v);
+    void bsFinishWrite(EState *s);
+    int32_t MYMAX(int32_t zz2, int32_t zz3);
+    uint8_t mmed3(uint8_t a, uint8_t b, uint8_t c);
+    void BZ2_bsInitWrite(EState *s);
+    void bsPutUInt32(EState* s, uint32_t u);
+    uint8_t containsDubiousChars(char *name);
     void redundant(char* flag);
     void addFlagsFromEnvVar(Cell **argList, const char *varName);
     void compressStream(FILE *stream, FILE *zStream);
@@ -368,7 +410,7 @@ void AppBzip2::fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, 
       }
     }
 
-    for ( i = hi-1; i >= lo; i-- )
+    for (i = hi-1; i >= lo; i--)
     {
         tmp = fmap[i];
         ec_tmp = eclass[tmp];
@@ -379,14 +421,6 @@ void AppBzip2::fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, 
         fmap[j-1] = tmp;
     }
 }
-
-
-
-
-
-
-static const uint8_t FALLBACK_QSORT_SMALL_THRESH = 10;
-static const uint8_t FALLBACK_QSORT_STACK_SIZE =  100;
 
 const char *AppBzip2::BZ2_bzlibVersion()
 {
@@ -437,7 +471,8 @@ void AppBzip2::BZ2_bz__AssertH__fail(int errcode )
    );
    }
 
-   exit(3);
+   //exit(3);
+    throw "3";
 }
 
 void AppBzip2::AssertH(bool cond, uint32_t errcode)
@@ -446,21 +481,12 @@ void AppBzip2::AssertH(bool cond, uint32_t errcode)
         BZ2_bz__AssertH__fail(errcode);
 }
 
-
-
-
-
-
-
-
 void AppBzip2::fswap(uint32_t &zz1, uint32_t &zz2)
 {
     int32_t zztmp = zz1;
     zz1 = zz2;
     zz2 = zztmp;
 }
-
-
 
 void AppBzip2::fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, int32_t hiSt)
 {
@@ -546,10 +572,8 @@ void AppBzip2::fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, in
             yyp1++; yyp2++; yyn--;
         }
 
-
         n = lo + unLo - ltLo - 1;
         m = hi - (gtHi - unHi) + 1;
-
 
         if (n - lo > hi - m)
         {
@@ -574,8 +598,6 @@ void AppBzip2::fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, in
     }
 }
 
-
-
 void AppBzip2::fallbackSort(uint32_t* fmap, uint32_t* eclass, 
                     uint32_t *bhtab, int32_t nblock, int32_t verb)
 {
@@ -588,6 +610,7 @@ void AppBzip2::fallbackSort(uint32_t* fmap, uint32_t* eclass,
 
     if (verb >= 4)
         fprintf(stderr, "        bucket sorting ...\n" );
+
     for (i = 0; i < 257;    i++) ftab[i] = 0;
     for (i = 0; i < nblock; i++) ftab[eclass8[i]]++;
     for (i = 0; i < 256;    i++) ftabCopy[i] = ftab[i];
@@ -709,15 +732,18 @@ void AppBzip2::fallbackSort(uint32_t* fmap, uint32_t* eclass,
     AssertH ( j < 256, 1005 );
 }
 
-
-
-
-static uint8_t mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* quadrant,
+uint8_t AppBzip2::mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* quadrant,
                uint32_t nblock, int32_t* budget)
 {
-   int32_t k;
-   uint8_t c1, c2;
-   uint16_t s1, s2;
+    int32_t k;
+    uint8_t c1, c2;
+    uint16_t s1, s2;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
    c1 = block[i1]; c2 = block[i2];
    if (c1 != c2) return (c1 > c2);
    i1++; i2++;
@@ -748,16 +774,10 @@ static uint8_t mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* quad
    c1 = block[i1]; c2 = block[i2];
    if (c1 != c2) return (c1 > c2);
    i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-
    k = nblock + 8;
 
-   do {
+    do
+    {
       c1 = block[i1]; c2 = block[i2];
       if (c1 != c2) return (c1 > c2);
       s1 = quadrant[i1]; s2 = quadrant[i2];
@@ -810,8 +830,7 @@ static uint8_t mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* quad
    return 0;
 }
 
-static
-int32_t incs[14] = { 1, 4, 13, 40, 121, 364, 1093, 3280,
+static int32_t incs[14] = { 1, 4, 13, 40, 121, 364, 1093, 3280,
                    9841, 29524, 88573, 265720,
                    797161, 2391484 };
 
@@ -878,38 +897,35 @@ void AppBzip2::mainSimpleSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
    }
 }
 
-static uint8_t mmed3 (uint8_t a, uint8_t b, uint8_t c )
+uint8_t AppBzip2::mmed3(uint8_t a, uint8_t b, uint8_t c)
 {
-   uint8_t t;
-   if (a > b) { t = a; a = b; b = t; };
-   if (b > c) { 
-      b = c;
-      if (a > b) b = a;
-   }
-   return b;
+    uint8_t t;
+
+    if (a > b) { t = a; a = b; b = t; };
+
+    if (b > c)
+    {
+        b = c;
+
+        if (a > b)
+            b = a;
+    }
+
+    return b;
 }
-
-
-
-static const uint8_t MAIN_QSORT_SMALL_THRESH = 20;
-static const uint8_t MAIN_QSORT_DEPTH_THRESH = 14;
-static const uint8_t MAIN_QSORT_STACK_SIZE = 100;
-
-
-
 
 void AppBzip2::mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
                int32_t nblock, int32_t loSt, int32_t hiSt, int32_t dSt, int32_t *budget)
 {
     int32_t unLo, unHi, ltLo, gtHi, n, m, med;
-    int32_t sp, lo, hi, d;
+    int32_t lo, hi, d;
     int32_t stackLo[MAIN_QSORT_STACK_SIZE];
     int32_t stackHi[MAIN_QSORT_STACK_SIZE];
     int32_t stackD [MAIN_QSORT_STACK_SIZE];
     int32_t nextLo[3];
     int32_t nextHi[3];
     int32_t nextD [3];
-    sp = 0;
+    int32_t sp = 0;
 
 
     stackLo[sp] = loSt;
@@ -1039,46 +1055,35 @@ void AppBzip2::mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
         stackHi[sp] = nextHi[0];
         stackD[sp] = nextD[0];
         sp++;
-
         stackLo[sp] = nextLo[1];
         stackHi[sp] = nextHi[1];
         stackD[sp] = nextD[1];
         sp++;
-
         stackLo[sp] = nextLo[2];
         stackHi[sp] = nextHi[2];
         stackD[sp] = nextD[2];
         sp++;
-
-
     }
 }
-
-
-
-static const uint32_t SETMASK = 1 << 21;
-static const uint32_t CLEARMASK = ~(1<<21);
-
-
 
 void AppBzip2::mainSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant, 
                 uint32_t *ftab, int32_t nblock, int32_t verb, int32_t *budget)
 {
-   int32_t i, j, k, ss, sb;
-   int32_t runningOrder[256];
-   uint8_t bigDone[256];
-   int32_t copyStart[256];
-   int32_t copyEnd  [256];
-   uint8_t c1;
-   int32_t numQSorted;
-   uint16_t s;
-   if (verb >= 4) VPrintf0 ( "        main sort initialise ...\n" );
+    int32_t i, j, k, ss, sb;
+    int32_t runningOrder[256];
+    uint8_t bigDone[256];
+    int32_t copyStart[256];
+    int32_t copyEnd  [256];
+    uint8_t c1;
+    int32_t numQSorted;
+    uint16_t s;
+    if (verb >= 4) VPrintf0 ( "        main sort initialise ...\n" );
 
-   for (i = 65536; i >= 0; i--) ftab[i] = 0;
+    for (i = 65536; i >= 0; i--) ftab[i] = 0;
 
-   j = block[0] << 8;
-   i = nblock-1;
-   for (; i >= 3; i -= 4) {
+    j = block[0] << 8;
+    i = nblock-1;
+    for (; i >= 3; i -= 4) {
       quadrant[i] = 0;
       j = (j >> 8) | ( ((uint16_t)block[i]) << 8);
       ftab[j]++;
@@ -1293,7 +1298,7 @@ void AppBzip2::BZ2_blockSort(EState* s)
 }
 
 
-int32_t MYMAX(int32_t zz2, int32_t zz3)
+int32_t AppBzip2::MYMAX(int32_t zz2, int32_t zz3)
 {
     return zz2 > zz3 ? zz2 : zz3;
 }
@@ -1420,29 +1425,22 @@ void AppBzip2::BZ2_hbMakeCodeLengths(uint8_t *len, int32_t *freq,
    }
 }
 
-typedef int32_t Int32;
-typedef int32_t int32;
-typedef uint32_t uint32;
-typedef int16_t Int16;
-typedef int16_t int16;
-typedef uint16_t UInt16;
-typedef uint16_t uint16;
-
 void AppBzip2::BZ2_hbAssignCodes(int32_t *code, uint8_t *length, int32_t minLen, int32_t maxLen,
                        int32_t alphaSize)
 {
-   int32_t n, vec, i;
+    int32_t vec = 0;
 
-   vec = 0;
-   for (n = minLen; n <= maxLen; n++) {
-      for (i = 0; i < alphaSize; i++)
-         if (length[i] == n) { code[i] = vec; vec++; };
-      vec <<= 1;
+    for (int32_t n = minLen; n <= maxLen; n++)
+    {
+        for (int32_t i = 0; i < alphaSize; i++)
+            if (length[i] == n) { code[i] = vec; vec++; };
+
+        vec <<= 1;
    }
 }
 
-void BZ2_hbCreateDecodeTables(int32_t *limit, int32_t *base, int32_t *perm, uint8_t *length,
-                              int32_t minLen, int32_t maxLen, int32_t alphaSize)
+void AppBzip2::BZ2_hbCreateDecodeTables(int32_t *limit, int32_t *base, int32_t *perm,
+            uint8_t *length, int32_t minLen, int32_t maxLen, int32_t alphaSize)
 {
     int32_t pp, i, j, vec;
     pp = 0;
@@ -1451,15 +1449,15 @@ void BZ2_hbCreateDecodeTables(int32_t *limit, int32_t *base, int32_t *perm, uint
         for (j = 0; j < alphaSize; j++)
             if (length[j] == i) { perm[pp] = j; pp++; };
 
-   for (i = 0; i < BZ_MAX_CODE_LEN; i++) base[i] = 0;
-   for (i = 0; i < alphaSize; i++) base[length[i]+1]++;
+    for (i = 0; i < BZ_MAX_CODE_LEN; i++) base[i] = 0;
+    for (i = 0; i < alphaSize; i++) base[length[i]+1]++;
 
-   for (i = 1; i < BZ_MAX_CODE_LEN; i++) base[i] += base[i-1];
+    for (i = 1; i < BZ_MAX_CODE_LEN; i++) base[i] += base[i-1];
 
-   for (i = 0; i < BZ_MAX_CODE_LEN; i++) limit[i] = 0;
-   vec = 0;
+    for (i = 0; i < BZ_MAX_CODE_LEN; i++) limit[i] = 0;
+    vec = 0;
 
-   for (i = minLen; i <= maxLen; i++) {
+    for (i = minLen; i <= maxLen; i++) {
       vec += (base[i+1] - base[i]);
       limit[i] = vec-1;
       vec <<= 1;
@@ -1591,13 +1589,13 @@ int32_t BZ2_rNums[512] = {
    936, 638
 };
 
-void BZ2_bsInitWrite(EState *s)
+void AppBzip2::BZ2_bsInitWrite(EState *s)
 {
    s->bsLive = 0;
    s->bsBuff = 0;
 }
 
-static void bsFinishWrite(EState *s)
+void AppBzip2::bsFinishWrite(EState *s)
 {
     while (s->bsLive > 0)
     {
@@ -1608,7 +1606,7 @@ static void bsFinishWrite(EState *s)
     }
 }
 
-static void bsW(EState *s, int32_t n, uint32_t v)
+void AppBzip2::bsW(EState *s, int32_t n, uint32_t v)
 {
     while (s->bsLive >= 8)
     {
@@ -1622,8 +1620,7 @@ static void bsW(EState *s, int32_t n, uint32_t v)
    s->bsLive += n;
 }
 
-static
-void bsPutUInt32(EState* s, uint32_t u)
+void AppBzip2::bsPutUInt32(EState* s, uint32_t u)
 {
    bsW ( s, 8, (u >> 24) & 0xffL );
    bsW ( s, 8, (u >> 16) & 0xffL );
@@ -1631,9 +1628,9 @@ void bsPutUInt32(EState* s, uint32_t u)
    bsW ( s, 8,  u        & 0xffL );
 }
 
-static void bsPutUChar(EState* s, uint8_t c)
+void AppBzip2::bsPutUChar(EState* s, uint8_t c)
 {
-   bsW( s, 8, (uint32_t)c );
+    bsW(s, 8, (uint32_t)c);
 }
 
 void AppBzip2::makeMaps_e(EState* s)
@@ -1649,25 +1646,22 @@ void AppBzip2::makeMaps_e(EState* s)
 
 void AppBzip2::generateMTFValues(EState *s)
 {
-    uint8_t  yy[256];
-   int32_t   i, j;
-   int32_t   zPend;
-   int32_t   wr;
-   int32_t   EOB;
-   uint32_t* ptr   = s->ptr;
-   uint8_t* block  = s->block;
-   uint16_t* mtfv  = s->mtfv;
+    uint8_t yy[256];
+    int32_t i, j;
+    int32_t zPend;
+    int32_t wr;
+    int32_t EOB;
+    uint32_t* ptr = s->ptr;
+    uint8_t* block = s->block;
+    uint16_t* mtfv = s->mtfv;
+    makeMaps_e ( s );
+    EOB = s->nInUse+1;
+    for (i = 0; i <= EOB; i++) s->mtfFreq[i] = 0;
+    wr = 0;
+    zPend = 0;
+    for (i = 0; i < s->nInUse; i++) yy[i] = (uint8_t)i;
 
-   makeMaps_e ( s );
-   EOB = s->nInUse+1;
-
-   for (i = 0; i <= EOB; i++) s->mtfFreq[i] = 0;
-
-   wr = 0;
-   zPend = 0;
-   for (i = 0; i < s->nInUse; i++) yy[i] = (uint8_t)i;
-
-   for (i = 0; i < s->nblock; i++) {
+    for (i = 0; i < s->nblock; i++) {
       uint8_t ll_i;
       j = ptr[i]-1; if (j < 0) j += s->nblock;
       ll_i = s->unseqToSeq[block[j]];
@@ -1734,8 +1728,6 @@ void AppBzip2::generateMTFValues(EState *s)
 
    s->nMTF = wr;
 }
-
-static const uint8_t BZ_GREATER_ICOST = 15;
 
 void AppBzip2::sendMTFValues(EState* s)
 {
@@ -1960,7 +1952,7 @@ void AppBzip2::sendMTFValues(EState* s)
    nBytes = s->numZ;
 
    for (t = 0; t < nGroups; t++) {
-      Int32 curr = s->len[t][0];
+      int32_t curr = s->len[t][0];
       bsW ( s, 5, curr );
       for (i = 0; i < alphaSize; i++) {
          while (curr < s->len[t][i]) { bsW(s,2,2); curr++;  };
@@ -2013,7 +2005,6 @@ void AppBzip2::sendMTFValues(EState* s)
       fprintf(stderr, "codes %d\n", s->numZ-nBytes );
 }
 
-
 void AppBzip2::BZ2_compressBlock(EState* s, uint8_t is_last_block)
 {
    if (s->nblock > 0) {
@@ -2065,10 +2056,7 @@ void AppBzip2::BZ2_compressBlock(EState* s, uint8_t is_last_block)
    }
 }
 
-
-
-
-static void makeMaps_d(DState *s)
+void AppBzip2::makeMaps_d(DState *s)
 {
    int32_t i;
    s->nInUse = 0;
@@ -2079,9 +2067,9 @@ static void makeMaps_d(DState *s)
       }
 }
 
-void BZ_INITIALISE_CRC(uint32_t &crcVar) { crcVar = 0xffffffff; }
+void AppBzip2::BZ_INITIALISE_CRC(uint32_t &crcVar) { crcVar = 0xffffffff; }
 
-int32_t BZ2_indexIntoF(int32_t indx, int32_t *cftab )
+int32_t AppBzip2::BZ2_indexIntoF(int32_t indx, int32_t *cftab)
 {
     int32_t nb, na, mid;
     nb = 0;
@@ -2098,7 +2086,6 @@ int32_t BZ2_indexIntoF(int32_t indx, int32_t *cftab )
     while (na - nb != 1);
     return nb;
 }
-
 
 int32_t AppBzip2::BZ2_decompress(DState *s)
 {
@@ -2277,11 +2264,17 @@ int32_t AppBzip2::BZ2_decompress(DState *s)
 
         if (s->smallDecompress)
         {
+#if 0
             s->ll16=(uint16_t *)(strm->bzalloc)(strm->opaque,
                 (s->blockSize100k*100000*sizeof(uint16_t)),1);
+#endif
 
+            s->ll16 = new uint16_t[s->blockSize100k*100000];
+            s->ll4 = new uint8_t[(1 + s->blockSize100k*100000) >> 1];
+#if 0
             s->ll4=(uint8_t*)(strm->bzalloc)(strm->opaque,
                 (((1+s->blockSize100k*100000)>>1)*sizeof(uint8_t)),1);
+#endif
 
             if (s->ll16 == NULL || s->ll4 == NULL)
             {
@@ -3425,14 +3418,10 @@ int32_t AppBzip2::BZ2_decompress(DState *s)
    s->save_gLimit      = gLimit;
    s->save_gBase       = gBase;
    s->save_gPerm       = gPerm;
-
    return retVal;   
 }
 
-
-
-static
-int bz_config_ok ( void )
+int AppBzip2::bz_config_ok()
 {
    if (sizeof(int)   != 4) return 0;
    if (sizeof(short) != 2) return 0;
@@ -3440,21 +3429,7 @@ int bz_config_ok ( void )
    return 1;
 }
 
-static
-void* default_bzalloc ( void* opaque, Int32 items, Int32 size )
-{
-   void* v = malloc ( items * size );
-   return v;
-}
-
-static
-void default_bzfree ( void* opaque, void* addr )
-{
-   if (addr != NULL) free ( addr );
-}
-
-static
-void prepare_new_block ( EState* s )
+void AppBzip2::prepare_new_block(EState *s)
 {
    int32_t i;
    s->nblock = 0;
@@ -3465,15 +3440,13 @@ void prepare_new_block ( EState* s )
    s->blockNo++;
 }
 
-static
-void init_RL ( EState* s )
+void AppBzip2::init_RL(EState* s)
 {
    s->state_in_ch  = 256;
    s->state_in_len = 0;
 }
 
-
-static uint8_t isempty_RL ( EState* s )
+uint8_t AppBzip2::isempty_RL(EState* s)
 {
    if (s->state_in_ch < 256 && s->state_in_len > 0)
       return 0; else
@@ -3484,11 +3457,10 @@ int AppBzip2::BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosi
 {
     int32_t   n;
     EState* s;
-
     if (!bz_config_ok()) return BZ_CONFIG_ERROR;
 
     if (strm == NULL || blockSize100k < 1 || blockSize100k > 9 ||
-        workFactor < 0 || workFactor > 250)
+            workFactor < 0 || workFactor > 250)
     {
         return BZ_PARAM_ERROR;
     }
@@ -3496,22 +3468,16 @@ int AppBzip2::BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosi
     if (workFactor == 0) workFactor = 30;
     if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
     if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
-
     s = (EState *)(strm->bzalloc)(strm->opaque,(sizeof(EState)),1);
-
     if (s == NULL) return BZ_MEM_ERROR;
     s->strm = strm;
-
     s->arr1 = NULL;
     s->arr2 = NULL;
     s->ftab = NULL;
-
     n = 100000 * blockSize100k;
     s->arr1 = (unsigned *)(strm->bzalloc)(strm->opaque,(n * sizeof(uint32_t)), 1);
     s->arr2 = (unsigned *)(strm->bzalloc)(strm->opaque,((n+BZ_N_OVERSHOOT)*sizeof(uint32_t)), 1);
     s->ftab = (unsigned *)(strm->bzalloc)(strm->opaque,(65537 * sizeof(uint32_t)), 1);
-
-
 
    if (s->arr1 == NULL || s->arr2 == NULL || s->ftab == NULL) {
       if (s->arr1 != NULL) (strm->bzfree)(strm->opaque,(s->arr1));
@@ -3545,14 +3511,15 @@ int AppBzip2::BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosi
    return BZ_OK;
 }
 
-static void add_pair_to_block ( EState* s )
+void AppBzip2::add_pair_to_block(EState* s)
 {
-   Int32 i;
-   uint8_t ch = (uint8_t)(s->state_in_ch);
-   for (i = 0; i < s->state_in_len; i++) {
-      BZ_UPDATE_CRC( s->blockCRC, ch );
-   }
-   s->inUse[s->state_in_ch] = 1;
+    int32_t i;
+    uint8_t ch = (uint8_t)(s->state_in_ch);
+
+    for (i = 0; i < s->state_in_len; i++)
+        BZ_UPDATE_CRC(s->blockCRC, ch);
+    
+    s->inUse[s->state_in_ch] = 1;
    switch (s->state_in_len) {
       case 1:
          s->block[s->nblock] = (uint8_t)ch; s->nblock++;
@@ -3578,13 +3545,13 @@ static void add_pair_to_block ( EState* s )
    }
 }
 
-static void flush_RL(EState* s)
+void AppBzip2::flush_RL(EState* s)
 {
    if (s->state_in_ch < 256) add_pair_to_block(s);
    init_RL(s);
 }
 
-static uint8_t copy_input_until_stop(EState* s)
+uint8_t AppBzip2::copy_input_until_stop(EState* s)
 {
    uint8_t progress_in = 0;
 
@@ -3663,7 +3630,7 @@ static uint8_t copy_input_until_stop(EState* s)
    return progress_in;
 }
 
-static uint8_t copy_output_until_stop ( EState* s )
+uint8_t AppBzip2::copy_output_until_stop(EState* s)
 {
     uint8_t progress_out = 0;
 
@@ -3788,7 +3755,7 @@ int AppBzip2::BZ2_bzCompress(bz_stream *strm, int action)
    return BZ_OK;
 }
 
-int BZ2_bzCompressEnd(bz_stream *strm)
+int AppBzip2::BZ2_bzCompressEnd(bz_stream *strm)
 {
    EState* s;
    if (strm == NULL) return BZ_PARAM_ERROR;
@@ -3808,7 +3775,7 @@ int BZ2_bzCompressEnd(bz_stream *strm)
    return BZ_OK;
 }
 
-int BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
+int AppBzip2::BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
 {
     DState* s;
     if (!bz_config_ok()) return BZ_CONFIG_ERROR;
@@ -3840,9 +3807,7 @@ int BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
     return BZ_OK;
 }
 
-
-
-static void unRLE_obuf_to_output_FAST(DState* s)
+void AppBzip2::unRLE_obuf_to_output_FAST(DState* s)
 {
     uint8_t k1;
 
@@ -4047,7 +4012,7 @@ return_notr:
 }
 
 
-static void unRLE_obuf_to_output_SMALL(DState* s)
+void AppBzip2::unRLE_obuf_to_output_SMALL(DState* s)
 {
     uint8_t k1;
 
@@ -4181,7 +4146,7 @@ static void unRLE_obuf_to_output_SMALL(DState* s)
          s->tPos = (((uint32_t)s->ll16[s->tPos]) |
             (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF)  << 16));
          s->nblock_used++;
-         s->state_out_len = ((Int32)k1) + 4;
+         s->state_out_len = ((int32_t)k1) + 4;
          s->k0 = BZ2_indexIntoF ( s->tPos, s->cftab );
          s->tPos = (((uint32_t)s->ll16[s->tPos]) |
             (((((uint32_t)(s->ll4[(s->tPos) >> 1])) >> (((s->tPos) << 2) & 0x4)) & 0xF) << 16));
@@ -4243,7 +4208,7 @@ int AppBzip2::BZ2_bzDecompress ( bz_stream *strm )
    return 0;
 }
 
-int BZ2_bzDecompressEnd  ( bz_stream *strm )
+int AppBzip2::BZ2_bzDecompressEnd(bz_stream *strm)
 {
    DState* s;
    if (strm == NULL) return BZ_PARAM_ERROR;
@@ -4261,29 +4226,13 @@ int BZ2_bzDecompressEnd  ( bz_stream *strm )
    return BZ_OK;
 }
 
-
-
-typedef 
-   struct {
-      FILE*     handle;
-      char      buf[BZ_MAX_UNUSED];
-      int32_t     bufN;
-      uint8_t      writing;
-      bz_stream strm;
-      int32_t     lastErr;
-      uint8_t      initialisedOk;
-   }
-   bzFile;
-
-static uint8_t myfeof(FILE* f)
+uint8_t AppBzip2::myfeof(FILE* f)
 {
    int32_t c = fgetc ( f );
    if (c == EOF) return 1;
    ungetc ( c, f );
    return 0;
 }
-
-
 
 BZFILE *AppBzip2::BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
                 int verbosity, int workFactor)
@@ -4313,7 +4262,8 @@ BZFILE *AppBzip2::BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
         return NULL;
     };
 
-    bzf = (bzFile *)malloc ( sizeof(bzFile) );
+    //bzf = (bzFile *)malloc ( sizeof(bzFile) );
+    bzf = new bzFile;
 
     if (bzf == NULL)
     {
@@ -4324,7 +4274,6 @@ BZFILE *AppBzip2::BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
 
     if (bzerror != NULL) *bzerror = BZ_OK;
     if (bzf != NULL) bzf->lastErr = BZ_OK;
-
     bzf->initialisedOk = 0;
     bzf->bufN          = 0;
     bzf->handle        = f;
@@ -4332,16 +4281,16 @@ BZFILE *AppBzip2::BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
     bzf->strm.bzalloc  = NULL;
     bzf->strm.bzfree   = NULL;
     bzf->strm.opaque   = NULL;
-
     if (workFactor == 0) workFactor = 30;
-    ret = BZ2_bzCompressInit ( &(bzf->strm), blockSize100k, 
-                              verbosity, workFactor );
+    ret = BZ2_bzCompressInit(&(bzf->strm), blockSize100k, verbosity, workFactor);
+
     if (ret != BZ_OK)
     {
         if (bzerror != NULL) *bzerror = ret;
         if (bzf != NULL) bzf->lastErr = ret;
 
-        free(bzf);
+        //free(bzf);
+        delete bzf;
         return NULL;
     };
 
@@ -4349,9 +4298,6 @@ BZFILE *AppBzip2::BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
    bzf->initialisedOk = 1;
    return bzf;   
 }
-
-
-
 
 void AppBzip2::BZ2_bzWrite(int *bzerror, BZFILE* b, void *buf, int len)
 {
@@ -4426,9 +4372,6 @@ void AppBzip2::BZ2_bzWrite(int *bzerror, BZFILE* b, void *buf, int len)
          };
    }
 }
-
-
-
 
 void AppBzip2::BZ2_bzWriteClose64(int *bzerror,
      BZFILE *b, int abandon, unsigned int *nbytes_in_lo32,
@@ -4517,7 +4460,8 @@ void AppBzip2::BZ2_bzWriteClose64(int *bzerror,
    if (bzf != NULL) bzf->lastErr = BZ_OK;
 
    BZ2_bzCompressEnd ( &(bzf->strm) );
-   free ( bzf );
+    delete bzf;
+   //free ( bzf );
 }
 
 void AppBzip2::BZ2_bzWriteClose(int *bzerror, BZFILE *b, int abandon, unsigned int *nbytes_in,
@@ -4526,7 +4470,8 @@ void AppBzip2::BZ2_bzWriteClose(int *bzerror, BZFILE *b, int abandon, unsigned i
     BZ2_bzWriteClose64(bzerror, b, abandon, nbytes_in, NULL, nbytes_out, NULL);
 }
 
-BZFILE* BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small, void *unused, int nUnused)
+BZFILE *AppBzip2::BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small, void *unused,
+            int nUnused)
 {
     bzFile* bzf = NULL;
     int     ret;
@@ -4552,7 +4497,8 @@ BZFILE* BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small, void *un
         return NULL;
     };
 
-    bzf = (bzFile *)malloc ( sizeof(bzFile) );
+    //bzf = (bzFile *)malloc ( sizeof(bzFile) );
+    bzf = new bzFile;
 
     if (bzf == NULL) 
     {
@@ -4580,13 +4526,14 @@ BZFILE* BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small, void *un
         nUnused--;
     }
 
-    ret = BZ2_bzDecompressInit ( &(bzf->strm), verbosity, small );
+    ret = BZ2_bzDecompressInit(&(bzf->strm), verbosity, small);
 
     if (ret != BZ_OK)
     {
         if (bzerror != NULL) *bzerror = ret;
         if (bzf != NULL) bzf->lastErr = ret;
-        free(bzf);
+        //free(bzf);
+        delete bzf;
         return NULL;
     };
 
@@ -4597,8 +4544,7 @@ BZFILE* BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small, void *un
    return bzf;   
 }
 
-
-void BZ2_bzReadClose(int *bzerror, BZFILE *b)
+void AppBzip2::BZ2_bzReadClose(int *bzerror, BZFILE *b)
 {
     bzFile* bzf = (bzFile*)b;
 
@@ -4622,7 +4568,8 @@ void BZ2_bzReadClose(int *bzerror, BZFILE *b)
     if (bzf->initialisedOk)
         (void)BZ2_bzDecompressEnd ( &(bzf->strm) );
 
-    free ( bzf );
+    //free ( bzf );
+    delete bzf;
 }
 
 int AppBzip2::BZ2_bzRead(int *bzerror, BZFILE* b, void *buf, int len)
@@ -4717,7 +4664,7 @@ int AppBzip2::BZ2_bzRead(int *bzerror, BZFILE* b, void *buf, int len)
    return 0;
 }
 
-void BZ2_bzReadGetUnused(int *bzerror, BZFILE* b, void **unused, int *nUnused)
+void AppBzip2::BZ2_bzReadGetUnused(int *bzerror, BZFILE* b, void **unused, int *nUnused)
 {
     bzFile* bzf = (bzFile*)b;
 
@@ -4833,9 +4780,6 @@ int AppBzip2::BZ2_bzBuffToBuffDecompress(char *dest, unsigned int* destLen,
    return ret; 
 }
 
-
-
-
 BZFILE *AppBzip2::bzopen_or_bzdopen(const char *path, int fd, const char *mode, int open_mode)
 {
    int    bzerr;
@@ -4930,7 +4874,7 @@ int AppBzip2::BZ2_bzwrite(BZFILE* b, void* buf, int len)
    }
 }
 
-int BZ2_bzflush(BZFILE *b)
+int AppBzip2::BZ2_bzflush(BZFILE *b)
 {
    return 0;
 }
@@ -4983,31 +4927,20 @@ const char * BZ2_bzerror(BZFILE *b, int *errnum)
    return bzerrorstrings[err*-1];
 }
 
-
-
-
-
-
-
-
 int32_t verbosity;
 uint8_t keepInputFiles, smallMode, deleteOutputOnInterrupt;
 uint8_t forceOverwrite, testFailsExist, unzFailsExist, noisy;
 int32_t numFileNames, numFilesProcessed, blockSize100k;
 int32_t exitValue;
-
 static const uint8_t SM_I2O = 1;
 static const uint8_t SM_F2O = 2;
 static const uint8_t SM_F2F = 3;
 static const uint8_t OM_Z = 1;
 static const uint8_t OM_UNZ = 2;
 static const uint8_t OM_TEST = 3;
-
 int32_t opMode;
 int32_t srcMode;
-
 static const uint16_t FILE_NAME_LEN = 1034;
-
 int32_t longestFileName;
 char inName [FILE_NAME_LEN];
 char outName[FILE_NAME_LEN];
@@ -5016,16 +4949,9 @@ char *progName;
 char progNameReally[FILE_NAME_LEN];
 FILE *outputHandleJustInCase;
 int32_t workFactor;
-
-
-
-static void panic(const char *) __attribute__ ((noreturn));
-static void    ioError               ( void )    __attribute__ ((noreturn));
 static void    outOfMemory           ( void )    __attribute__ ((noreturn));
 static void    configError           ( void )    __attribute__ ((noreturn));
-static void    crcError              ( void )    __attribute__ ((noreturn));
 static void    cleanUpAndFail        ( int32_t )   __attribute__ ((noreturn));
-static void    compressedStreamEOF   ( void )    __attribute__ ((noreturn));
 
 typedef
    struct { uint8_t b[8]; } 
@@ -5081,7 +5007,6 @@ static int32_t uInt64_qrm10 ( UInt64* n )
    }
    return rem;
 }
-
 
 static void uInt64_toAscii(char* outbuf, UInt64* n)
 {
@@ -5388,7 +5313,6 @@ uint8_t AppBzip2::testStream(FILE *zStream)
    return 1;
 }
 
-
 static
 void setExit(int32_t v)
 {
@@ -5467,10 +5391,11 @@ static void cleanUpAndFail(int32_t ec)
                 numFileNames, numFileNames - numFilesProcessed );
    }
    setExit(ec);
-   exit(exitValue);
+   //exit(exitValue);
+    throw "exitValue";
 }
 
-static void panic(const char *s)
+void AppBzip2::panic(const char *s)
 {
    fprintf ( stderr,
              "\n%s: PANIC -- internal consistency error:\n"
@@ -5482,8 +5407,7 @@ static void panic(const char *s)
    cleanUpAndFail( 3 );
 }
 
-static 
-void crcError ( void )
+void AppBzip2::crcError()
 {
    fprintf ( stderr,
              "\n%s: Data integrity error when decompressing.\n",
@@ -5493,8 +5417,7 @@ void crcError ( void )
    cleanUpAndFail( 2 );
 }
 
-static 
-void compressedStreamEOF ( void )
+void AppBzip2::compressedStreamEOF()
 {
   if (noisy) {
     fprintf ( stderr,
@@ -5508,8 +5431,7 @@ void compressedStreamEOF ( void )
   cleanUpAndFail( 2 );
 }
 
-static 
-void ioError ( void )
+void AppBzip2::ioError()
 {
    fprintf ( stderr,
              "\n%s: I/O or other error, bailing out.  "
@@ -5607,7 +5529,8 @@ void configError ( void )
              "\tProbably you can fix this by defining them correctly,\n"
              "\tand recompiling.  Bye!\n" );
    setExit(3);
-   exit(exitValue);
+   //exit(exitValue);
+    throw "exitValue";
 }
 
 
@@ -5630,7 +5553,8 @@ void AppBzip2::copyFileName(char* to, const char* from )
          from, FILE_NAME_LEN-10
       );
       setExit(1);
-      exit(exitValue);
+        throw "exitValue";
+      //exit(exitValue);
    }
 
   strncpy(to,from,FILE_NAME_LEN-10);
@@ -5648,6 +5572,7 @@ uint8_t fileExists(char* name )
 
 FILE* fopen_output_safely(char* name, const char* mode )
 {
+#if 0
    FILE*     fp;
    int fh;
    fh = open(name, O_WRONLY|O_CREAT|O_EXCL, S_IWUSR|S_IRUSR);
@@ -5655,6 +5580,9 @@ FILE* fopen_output_safely(char* name, const char* mode )
    fp = fdopen(fh, mode);
    if (fp == NULL) close(fh);
    return fp;
+#else
+    return fopen(name, mode);
+#endif
 }
 
 static uint8_t notAStandardFile (char* name )
@@ -5680,50 +5608,42 @@ static int32_t countHardLinks(char *name)
 
 static struct stat fileMetaInfo;
 
-void ERROR_IF_NOT_ZERO(int i)
+void AppBzip2::ERROR_IF_NOT_ZERO(int i)
 {
     if (i != 0)
         ioError();
 }
 
-static 
-void saveInputFileMetaInfo(char *srcName)
+void AppBzip2::saveInputFileMetaInfo(char *srcName)
 {
    int retVal;
    retVal = stat( srcName, &fileMetaInfo );
    ERROR_IF_NOT_ZERO ( retVal );
 }
 
-
-static 
-void applySavedMetaInfoToOutputFile(char *dstName)
+#if 0
+void AppBzip2::applySavedMetaInfoToOutputFile(char *dstName)
 {
     int retVal;
     struct utimbuf uTimBuf;
-
     uTimBuf.actime = fileMetaInfo.st_atime;
     uTimBuf.modtime = fileMetaInfo.st_mtime;
-
     retVal = chmod ( dstName, fileMetaInfo.st_mode );
     ERROR_IF_NOT_ZERO ( retVal );
-
-   retVal = utime ( dstName, &uTimBuf );
-   ERROR_IF_NOT_ZERO ( retVal );
-
-   retVal = chown ( dstName, fileMetaInfo.st_uid, fileMetaInfo.st_gid );
+    retVal = utime ( dstName, &uTimBuf );
+    ERROR_IF_NOT_ZERO ( retVal );
+    retVal = chown ( dstName, fileMetaInfo.st_uid, fileMetaInfo.st_gid );
 }
+#endif
 
-static uint8_t containsDubiousChars(char* name )
+uint8_t AppBzip2::containsDubiousChars(char *name)
 {
    return 0;
 }
 
 static const uint8_t BZ_N_SUFFIX_PAIRS = 4;
-
-const char* zSuffix[BZ_N_SUFFIX_PAIRS] 
-   = { ".bz2", ".bz", ".tbz2", ".tbz" };
-const char* unzSuffix[BZ_N_SUFFIX_PAIRS] 
-   = { "", "", ".tar", ".tar" };
+const char* zSuffix[BZ_N_SUFFIX_PAIRS] = { ".bz2", ".bz", ".tbz2", ".tbz" };
+const char* unzSuffix[BZ_N_SUFFIX_PAIRS] = { "", "", ".tar", ".tar" };
 
 static uint8_t hasSuffix(const char* s, const char* suffix )
 {
@@ -5734,12 +5654,12 @@ static uint8_t hasSuffix(const char* s, const char* suffix )
     return 0;
 }
 
-static uint8_t mapSuffix(char* name, const char* oldSuffix, const char* newSuffix )
+uint8_t AppBzip2::mapSuffix(char* name, const char* oldSuffix, const char* newSuffix)
 {
-   if (!hasSuffix(name,oldSuffix)) return 0;
-   name[strlen(name)-strlen(oldSuffix)] = 0;
-   strcat ( name, newSuffix );
-   return 1;
+    if (!hasSuffix(name,oldSuffix)) return 0;
+    name[strlen(name)-strlen(oldSuffix)] = 0;
+    strcat(name, newSuffix);
+    return 1;
 }
 
 void AppBzip2::compress(char *name)
@@ -5777,12 +5697,11 @@ void AppBzip2::compress(char *name)
       setExit(1);
       return;
    }
-   if ( srcMode != SM_I2O && !fileExists ( inName ) ) {
-      fprintf ( stderr, "%s: Can't open input file %s: %s.\n",
-                progName, inName, strerror(errno) );
-      setExit(1);
-      return;
-   }
+    if ( srcMode != SM_I2O && !fileExists ( inName ) ) {
+        fprintf(stderr, "%s: Can't open input file %s.\n", progName, inName);
+        setExit(1);
+        return;
+    }
    for (i = 0; i < BZ_N_SUFFIX_PAIRS; i++) {
       if (hasSuffix(inName, zSuffix[i])) {
          if (noisy)
@@ -5837,6 +5756,7 @@ void AppBzip2::compress(char *name)
       case SM_I2O:
          inStr = stdin;
          outStr = stdout;
+#if 0
          if ( isatty ( fileno ( stdout ) ) ) {
             fprintf ( stderr,
                       "%s: I won't write compressed data to a terminal.\n",
@@ -5846,11 +5766,13 @@ void AppBzip2::compress(char *name)
             setExit(1);
             return;
          };
+#endif
          break;
 
       case SM_F2O:
          inStr = fopen ( inName, "rb" );
          outStr = stdout;
+#if 0
          if ( isatty ( fileno ( stdout ) ) ) {
             fprintf ( stderr,
                       "%s: I won't write compressed data to a terminal.\n",
@@ -5861,27 +5783,26 @@ void AppBzip2::compress(char *name)
             setExit(1);
             return;
          };
-         if ( inStr == NULL ) {
-            fprintf ( stderr, "%s: Can't open input file %s: %s.\n",
-                      progName, inName, strerror(errno) );
-            setExit(1);
-            return;
-         };
+#endif
+         if (inStr == NULL)
+            {
+                fprintf(stderr, "%s: Can't open input file %s.\n", progName, inName);
+                setExit(1);
+                return;
+            };
          break;
 
       case SM_F2F:
          inStr = fopen ( inName, "rb" );
          outStr = fopen_output_safely ( outName, "wb" );
          if ( outStr == NULL) {
-            fprintf ( stderr, "%s: Can't create output file %s: %s.\n",
-                      progName, outName, strerror(errno) );
+            fprintf(stderr, "%s: Can't create output file %s.\n", progName, outName);
             if ( inStr != NULL ) fclose ( inStr );
             setExit(1);
             return;
          }
          if ( inStr == NULL ) {
-            fprintf ( stderr, "%s: Can't open input file %s: %s.\n",
-                      progName, inName, strerror(errno) );
+            fprintf(stderr, "%s: Can't open input file %s.\n", progName, inName);
             if ( outStr != NULL ) fclose ( outStr );
             setExit(1);
             return;
@@ -5905,7 +5826,7 @@ void AppBzip2::compress(char *name)
    outputHandleJustInCase = NULL;
 
    if ( srcMode == SM_F2F ) {
-      applySavedMetaInfoToOutputFile ( outName );
+      //applySavedMetaInfoToOutputFile ( outName );
       deleteOutputOnInterrupt = 0;
       if ( !keepInputFiles ) {
          int retVal = remove ( inName );
@@ -5960,8 +5881,8 @@ void AppBzip2::uncompress(char *name)
       return;
    }
    if ( srcMode != SM_I2O && !fileExists ( inName ) ) {
-      fprintf ( stderr, "%s: Can't open input file %s: %s.\n",
-                progName, inName, strerror(errno) );
+      fprintf(stderr, "%s: Can't open input file %s.\n",
+                progName, inName);
       setExit(1);
       return;
    }
@@ -6015,6 +5936,7 @@ void AppBzip2::uncompress(char *name)
       case SM_I2O:
          inStr = stdin;
          outStr = stdout;
+#if 0
          if ( isatty ( fileno ( stdin ) ) ) {
             fprintf ( stderr,
                       "%s: I won't read compressed data from a terminal.\n",
@@ -6024,14 +5946,15 @@ void AppBzip2::uncompress(char *name)
             setExit(1);
             return;
          };
+#endif
          break;
 
       case SM_F2O:
          inStr = fopen ( inName, "rb" );
          outStr = stdout;
          if ( inStr == NULL ) {
-            fprintf ( stderr, "%s: Can't open input file %s:%s.\n",
-                      progName, inName, strerror(errno) );
+            fprintf ( stderr, "%s: Can't open input file %s.\n",
+                      progName, inName);
             if ( inStr != NULL ) fclose ( inStr );
             setExit(1);
             return;
@@ -6042,15 +5965,15 @@ void AppBzip2::uncompress(char *name)
          inStr = fopen ( inName, "rb" );
          outStr = fopen_output_safely ( outName, "wb" );
          if ( outStr == NULL) {
-            fprintf ( stderr, "%s: Can't create output file %s: %s.\n",
-                      progName, outName, strerror(errno) );
+            fprintf ( stderr, "%s: Can't create output file %s.\n",
+                      progName, outName);
             if ( inStr != NULL ) fclose ( inStr );
             setExit(1);
             return;
          }
          if ( inStr == NULL ) {
-            fprintf ( stderr, "%s: Can't open input file %s: %s.\n",
-                      progName, inName, strerror(errno) );
+            fprintf ( stderr, "%s: Can't open input file %s.\n",
+                      progName, inName);
             if ( outStr != NULL ) fclose ( outStr );
             setExit(1);
             return;
@@ -6075,7 +5998,7 @@ void AppBzip2::uncompress(char *name)
 
    if ( magicNumberOK ) {
       if ( srcMode == SM_F2F ) {
-         applySavedMetaInfoToOutputFile ( outName );
+         //applySavedMetaInfoToOutputFile ( outName );
          deleteOutputOnInterrupt = 0;
          if ( !keepInputFiles ) {
             int retVal = remove ( inName );
@@ -6132,8 +6055,8 @@ void AppBzip2::testf(char *name)
       return;
    }
    if ( srcMode != SM_I2O && !fileExists ( inName ) ) {
-      fprintf ( stderr, "%s: Can't open input %s: %s.\n",
-                progName, inName, strerror(errno) );
+      fprintf ( stderr, "%s: Can't open input %s.\n",
+                progName, inName);
       setExit(1);
       return;
    }
@@ -6151,6 +6074,7 @@ void AppBzip2::testf(char *name)
    switch ( srcMode ) {
 
       case SM_I2O:
+#if 0
          if ( isatty ( fileno ( stdin ) ) ) {
             fprintf ( stderr,
                       "%s: I won't read compressed data from a terminal.\n",
@@ -6160,14 +6084,15 @@ void AppBzip2::testf(char *name)
             setExit(1);
             return;
          };
+#endif
          inStr = stdin;
          break;
 
       case SM_F2O: case SM_F2F:
          inStr = fopen ( inName, "rb" );
          if ( inStr == NULL ) {
-            fprintf ( stderr, "%s: Can't open input file %s:%s.\n",
-                      progName, inName, strerror(errno) );
+            fprintf ( stderr, "%s: Can't open input file %s.\n",
+                      progName, inName);
             setExit(1);
             return;
          };
@@ -6201,40 +6126,45 @@ void AppBzip2::redundant(char* flag)
 }
 
 
-
+#if 0
 static void *myMalloc(int32_t n)
 {
+    return malloc(n);
    void* p;
 
    p = malloc ( (size_t)n );
    if (p == NULL) outOfMemory ();
    return p;
 }
+#endif
 
-static  Cell *mkCell ( void )
+static Cell *mkCell()
 {
-   Cell *c;
-
-   c = (Cell*) myMalloc ( sizeof ( Cell ) );
-   c->name = NULL;
-   c->link = NULL;
-   return c;
+    Cell *c;
+    c = new Cell;
+    //c = (Cell*)malloc(sizeof(Cell));
+    c->name = NULL;
+    c->link = NULL;
+    return c;
 }
 
-static 
-Cell *snocString( Cell *root, char *name)
+Cell *AppBzip2::snocString(Cell *root, char *name)
 {
-   if (root == NULL) {
-      Cell *tmp = mkCell();
-      tmp->name = (char*) myMalloc ( 5 + strlen(name) );
-      strcpy ( tmp->name, name );
-      return tmp;
-   } else {
-      Cell *tmp = root;
-      while (tmp->link != NULL) tmp = tmp->link;
-      tmp->link = snocString ( tmp->link, name );
-      return root;
-   }
+    if (root == NULL)
+    {
+        Cell *tmp = mkCell();
+        //tmp->name = (char*)malloc(5 + strlen(name));
+        tmp->name = new char[5 + strlen(name)];
+        strcpy ( tmp->name, name );
+        return tmp;
+    }
+    else
+    {
+        Cell *tmp = root;
+        while (tmp->link != NULL) tmp = tmp->link;
+        tmp->link = snocString ( tmp->link, name );
+        return root;
+    }
 }
 
 void AppBzip2::addFlagsFromEnvVar(Cell **argList, const char *varName)
@@ -6250,8 +6180,8 @@ void AppBzip2::addFlagsFromEnvVar(Cell **argList, const char *varName)
          if (p[i] == 0) break;
          p += i;
          i = 0;
-         while (isspace((Int32)(p[0]))) p++;
-         while (p[i] != 0 && !isspace((Int32)(p[i]))) i++;
+         while (isspace((int32_t)(p[0]))) p++;
+         while (p[i] != 0 && !isspace((int32_t)(p[i]))) i++;
          if (i > 0) {
             k = i; if (k > FILE_NAME_LEN-10) k = FILE_NAME_LEN-10;
             for (j = 0; j < k; j++) tmpName[j] = p[j];
@@ -6261,10 +6191,6 @@ void AppBzip2::addFlagsFromEnvVar(Cell **argList, const char *varName)
       }
    }
 }
-
-
-
-
 
 void AppBzip2::usage(char *fullProgName)
 {
@@ -6386,8 +6312,8 @@ int AppBzip2::run(int argc, char **argv)
 
         if (aa->name[0] == '-' && decode) continue;
       numFileNames++;
-      if (longestFileName < (Int32)strlen(aa->name) )
-         longestFileName = (Int32)strlen(aa->name);
+      if (longestFileName < (int32_t)strlen(aa->name) )
+         longestFileName = (int32_t)strlen(aa->name);
     }
 
    if (numFileNames == 0)
@@ -6564,11 +6490,18 @@ int AppBzip2::run(int argc, char **argv)
       }
    }
 
-   aa = argList;
-   while (aa != NULL) {
-      Cell* aa2 = aa->link;
-      if (aa->name != NULL) free(aa->name);
-      free(aa);
+    aa = argList;
+
+    while (aa != NULL)
+    {
+        Cell* aa2 = aa->link;
+
+        if (aa->name != NULL)
+            //free(aa->name);
+            delete aa->name;
+
+        delete aa;
+      //free(aa);
       aa = aa2;
    }
 

@@ -3,6 +3,7 @@
 
 #if 1
 #include <cstdio>
+#include <cstdlib>
 #else
 #include "mystdio.h"
 #endif
@@ -622,18 +623,14 @@ namespace mystl
     extern base2 dec;
     width2 setw(int length);
     fill2 setfill(char c);
-    int isdigit(int c);
-    int isspace(int c);
-    int isupper(int c);
-    int islower(int c);
-    int isalpha(int c);
-    int isxdigit(int c);
     int toupper(int c);
     void toupper(const char *src, char *dest);
     void toupper(char *s);
     bool regex_search(const char *s, const regex &rx);
+#ifndef _STDLIB_H
     void srand(unsigned seed);
     int rand();
+#endif
     template <typename T, typename U> void sort(T f, T l, U c) { Util2 u; u.sort(f, l, c); }
     template <typename T> void sort(T f, T l) { Util2 u; u.sort(f, l); }
     template <typename T> void reverse(T first, T last) { Util2 u; u.reverse2(first, last); }
@@ -645,7 +642,9 @@ namespace mystl
     template<typename T> inline T* addressof(T& r) { Util2 u; return u.addressof(r); }
     template <class T> T max_element(T first, T last);
     template <class I, class N, class T> I fill_n(I first, N n, const T &v);
+#ifndef _STDLIB_H
     uint32_t be32toh(uint32_t value);
+#endif
 };
 
 #include "mystl.tcc"

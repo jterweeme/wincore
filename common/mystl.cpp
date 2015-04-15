@@ -223,10 +223,11 @@ namespace mystl
     width2 setw(int length) { return width2(length); }
     int toupper(int c) { Util2 u; return u.toupper(c); }
     char *strtok(char *s, const char *delim) { Util2 u; return u.strtok(s, delim); }
-    int isdigit(int c) { Util2 u; return u.isdigit(c); }
+#ifndef _STDLIB_H
     void srand(unsigned seed) { }
     int rand() { return 5; }
     uint32_t be32toh(uint32_t value) { Util2 u; return u.be32toh(value); }
+#endif
 
     bool regex_search(const char *s, const regex &rx)
     { regex_functions r; return r.regex_search(s, rx); }

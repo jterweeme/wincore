@@ -1,6 +1,7 @@
 #ifndef _TAR_H_
 #define _TAR_H_
 #include "bunzip2.h"
+#include "gunzip.h"
 #include "buftest.h"
 
 typedef vector<string> Vest;

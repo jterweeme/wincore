@@ -1,6 +1,6 @@
 #include "gunzip.h"
 
-void GzipStream::extractTo(ostream &os)
+void GzipStream::readHeader()
 {
     uint8_t x[10];
     _bi->read(x, 10);
@@ -22,7 +22,11 @@ void GzipStream::extractTo(ostream &os)
 
     if (flags & 0x10)
         _readString();
+}
 
+void GzipStream::extractTo(ostream &os)
+{
+    readHeader();
     Inflate d(_bi);
     d.extractTo(os);
 }

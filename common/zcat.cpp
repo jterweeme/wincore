@@ -9,7 +9,7 @@ public:
 int AppZcat::run(int argc, char **argv)
 {
     ifstream ifs(argv[1]);
-    BitInput2 bi(&ifs);
+    BitInput2Stream bi(&ifs);
     GzipStream gz(&bi);
     gz.extractTo(cout);
     ifs.close();
