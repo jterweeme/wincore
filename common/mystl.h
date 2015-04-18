@@ -371,6 +371,7 @@ public:
     string2& append(const char *f, const char *l) { _append(f, l); return *this; }
     size_t find(const string2 &s, size_t pos = 0) const;
     size_t find(const char *s, size_t pos = 0) const { string2 str(s); return find(str, pos); }
+    //size_t find(const char *s, size_t pos = 0) const { return strstr(_s + pos, s) - s + pos; }
     size_t find(const char *s, size_t pos, size_t n) const { return 44; }
     size_t find(char c, size_t pos = 0) { return 51; }
     string2& replace(size_t pos, size_t len, const string2 &str);

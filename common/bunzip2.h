@@ -48,25 +48,25 @@ class Block
     int32_t *_merged;
     int32_t _curTbl, _grpIdx, _grpPos, _last, _acc, _repeat, _curp, _length, _dec;
     uint32_t _nextByte() { int r = _curp & 0xff; _curp = _merged[_curp >> 8]; _dec++; return r; }
-    uint32_t _nextSymbol(BitInput *bi, const Tables &t, const Fugt &selectors);
+    uint32_t _nextSymbol(BitInputBase *bi, const Tables &t, const Fugt &selectors);
 public:
     void reset();
     Block() { reset(); }
     ~Block() { delete[] _merged; }
     int read();
-    void init(BitInput *bi);
+    void init(BitInputBase *bi);
 };
 
 class DecStream
 {
-    BitInput *_bi;
+    BitInputBase *_bi;
     Block _bd;
     uint32_t _streamComplete = false;
     bool _initNextBlock();
 public:
     int read();
     int read(char *buf, int n);
-    DecStream(BitInput *bi) : _bi(bi) { _bi->ignore(32); }
+    DecStream(BitInputBase *bi) : _bi(bi) { _bi->ignore(32); }
     void extractTo(ostream &os) { for (int b = read(); b != -1; b = read()) os.put(b); }
 };
 
@@ -78,7 +78,7 @@ class DecStreamBuf : public streambuf
     uint32_t _pos2 = 0;
     uint32_t _lastRead2 = 0;
 public:
-    DecStreamBuf(BitInput *bi) : _ds(bi) { }
+    DecStreamBuf(BitInputBase *bi) : _ds(bi) { }
     streampos seekoff(ios::streamoff off, ios::seekdir way, ios::openmode m);
     int underflow();
 };

@@ -1,4 +1,11 @@
+#if 1
+namespace mystl { }
+using namespace mystl;
+#include "mystl.h"
+#include "mytime.h"
+#else
 #include "common.h"
+#endif
 
 size_t Time2::strftime(char *p, size_t max, const char *fmt, const tm *tp) const
 {

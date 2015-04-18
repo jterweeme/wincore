@@ -1,4 +1,5 @@
 #include "common.h"
+#include "util2.h"
 #include "myassert.h"
 
 void teststrlen1(const char *s, uint32_t len)
@@ -12,10 +13,9 @@ void teststrlen1(const char *s, uint32_t len)
 
 void teststrcat()
 {
-    Util2 u;
     char x[900] = {0};
     strcpy(x, "Hallo ");
-    u.strcat(x, "wereld");
+    strcat(x, "wereld");
     cout << x << "\n";
 }
 

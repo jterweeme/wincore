@@ -8,6 +8,13 @@ public:
     virtual uint32_t readBit() = 0;
     virtual uint32_t readBits(uint32_t n) = 0;
     bool readBool() { return readBit() == 1; }
+    void ignore(int n) { while (n--) readBool(); }
+    uint8_t readByte() { return readBits(8); }
+    uint32_t readUnary() { uint32_t u = 0; while (readBool()) u++; return u; }
+    void read(uint8_t *s, int n) { for (int i = 0; i < n; i++) s[i] = readByte(); }
+    void ignoreBytes(int n) { while (n--) readByte(); }
+    uint32_t readUInt32() { return readBits(16) << 16 | readBits(16); }
+    uint32_t readInt() { return readUInt32(); }
 };
 
 /*
@@ -18,26 +25,9 @@ class BitInput2 : public BitInputBase
 protected:
     int _nextBits, _bitPos = 8;
     virtual int _getc() = 0;
-    uint32_t _readBit();
 public:
-    uint8_t revByte(uint8_t v)
-    {
-        uint8_t ret = 0;
-
-        for (int i = 0; i < 8; i++)
-            ret |= ((v >> i) & 1) << (7 - i);
-        
-        return ret;
-    }
-    uint32_t readBit() { return _readBit(); }
+    uint32_t readBit();
     uint32_t readBits(uint32_t n);
-    void ignore(int n) { while (n--) readBool(); }
-    uint8_t readByte() { return readBits(8); }
-    void ignoreBytes(int n) { while (n--) readByte(); }
-    void read(uint8_t *s, int n) { for (int i = 0; i < n; i++) s[i] = readByte(); }
-    uint32_t readUnary() { uint32_t u = 0; while (readBool()) u++; return u; }
-    uint32_t readUInt32() { return readBits(16) << 16 | readBits(16); }
-    uint32_t readInt() { return readUInt32(); }
 };
 
 class BitInput2Stream : public BitInput2
@@ -68,13 +58,6 @@ protected:
 public:
     uint32_t readBits(uint32_t count);
     uint32_t readBit() { return readBits(1); }
-    uint32_t readUnary() { uint32_t u = 0; while (readBool()) u++; return u; }
-    uint32_t readUInt32() { return readBits(16) << 16 | readBits(16); }
-    uint32_t readInt() { return readUInt32(); }
-    uint8_t readByte() { return readBits(8); }
-    void ignoreBytes(uint32_t n) { while (n--) readByte(); }
-    void ignore(uint32_t n) { while (n--) readBool(); }
-    void read(uint8_t *s, int n) { for (int i = 0; i < n; i++) s[i] = readByte(); }
 };
 
 class BitInputStream : public BitInput

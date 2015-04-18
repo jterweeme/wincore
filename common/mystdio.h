@@ -18,17 +18,6 @@ const unsigned O_WRONLY = 1;
 const unsigned O_RDWR = 2;
 const unsigned O_CREAT = 64;
 
-class File
-{
-    int _fd;
-    int _pos;
-public:
-    int fd() const { return _fd; }
-    File() { }
-    File(int fd) : _fd(fd) { }
-    int close() { return 0; }
-};
-
 typedef int FILE;
 extern FILE *stdin;
 extern FILE *stdout;
@@ -38,7 +27,6 @@ class MyStdio : public Util2
 {
     int _tiep3b(int rdi, int rax) const { return ::tiep3(rdi, 0, 0, rax); }
     FILE _files[10];
-    File _files2[10];
     int _getFileSlot() { for (int i = 0; i < 10; i++) if (_files[i] == 0) return i; return -1; }
     bool _find(const char *s, char c) const;
     void _print(char c) { fputc(c, stdout); }
@@ -71,16 +59,10 @@ public:
     size_t write(int fd, const void *buf, size_t n) const { return ::tiep6(fd, buf, n, 1); }
     int lseek(int fd, int off, int orig) const { return ::tiep1(fd, off, orig, 8); }
     int fputc(int c, FILE *st) { char c1 = c; return write(*st, (const char *)&c1, 1); }
-    int fputc(int c, File *st) { char c1 = c; return write(st->fd(), (const char *)&c1, 1); }
     int fputs(const char *s, FILE *str) const { return write(*str, (const void *)s, strlen(s)); }
-
-    int fputs(const char *s, File *str) const
-    { return write(str->fd(), (const void *)s, strlen(s)); }
-
     int puts(const char *s) const { return fputs(s, stdout); }
     int sprintf(char *s, const char *fmt) const { strcpy(s, fmt); return 0; }
     int fprintf(FILE *stream, const char *s) const { return fputs(s, stream); }
-    int fprintf(File *stream, const char *s) const { return fputs(s, stream); }
     int printf(const char *s) const { return puts(s); }
     FILE *fopen(const char *fn, const char *mode);
 
@@ -103,7 +85,6 @@ public:
     //int fclose(File *fp) const { close(
     int fflush(FILE *stream) const { return 0; }
     int fseek(FILE *stream, long off, int whence) const { return tiep1(*stream, off, whence, 8); }
-    int fseek(File *str, long off, int whence) const { return tiep1(str->fd(), off, whence, 8); }
 
     template <typename T, typename... A> int sprintf(char *s, const char *fmt, T val, A... args)
     {
@@ -167,6 +148,11 @@ template <typename... Args> int sprintf(char *str, const char *fmt, Args... args
 }
 
 template <typename... Args> int scanf(const char *fmt, Args... args)
+{
+    return 0;
+}
+
+template <typename... A> int fprintf(FILE *fp, const char *fmt, A... args)
 {
     return 0;
 }

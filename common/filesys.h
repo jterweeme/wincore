@@ -1,6 +1,15 @@
 #ifndef _FILESYS_H_
 #define _FILESYS_H_
 #include "common.h"
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
+class File
+{
+public:
+    
+};
 
 class FSPath : public vector<string>
 {
@@ -24,6 +33,7 @@ public:
     FSPath pwdir();
     FileSystem() : _root(pwdir()), _pwd(pwdir()) { }
     FSPath root() const { return _root; }
+    void ls(vector<string> *v);
 };
 
 #endif

@@ -1,5 +1,3 @@
-#include <unistd.h>
-#include <sys/stat.h>
 #include "filesys.h"
 
 void FileSystem::chdirx(const char *path)
@@ -14,6 +12,20 @@ void FileSystem::mkdir(const char *name)
 {
     if (::mkdir(name, 500) != 0)
         throw "Cannot create directory";
+}
+
+void FileSystem::ls(vector<string> *v)
+{
+    DIR *dir;
+    struct dirent *ent;
+
+    if ((dir = opendir(".")) != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+            v->push_back(ent->d_name);
+
+        closedir(dir);
+    }
 }
 
 void FileSystem::chmkdir(FSPath &path)

@@ -1,24 +1,6 @@
-#if 0
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
-//#include <signal.h>
-//#include <math.h>
-//#include <errno.h>
-//#include <ctype.h>
-//#include <fcntl.h>
-//#include <sys/types.h>
-//#include <utime.h>
-//#include <unistd.h>
-#include <sys/stat.h>
-//#include <sys/times.h>
-#else
 #include "common.h"
+#include "filesys.h"
 #include <sys/stat.h>
-//#define NULL 0
-#endif
 
 struct bz_stream
 {
@@ -273,7 +255,6 @@ class AppBzip2
                int32_t nblock, int32_t loSt, int32_t hiSt, int32_t dSt, int32_t *budget);
 
     void BZ2_bzclose(BZFILE* b);
-
     int BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosity, int workFactor);
     BZFILE *BZ2_bzopen(const char *path, const char *mode);
 
@@ -3698,20 +3679,19 @@ uint8_t AppBzip2::handle_compress ( bz_stream* strm )
 
 int AppBzip2::BZ2_bzCompress(bz_stream *strm, int action)
 {
-   uint8_t progress;
-   EState* s;
-   if (strm == NULL) return BZ_PARAM_ERROR;
-   s = (EState *)strm->state;
-   if (s == NULL) return BZ_PARAM_ERROR;
-   if (s->strm != strm) return BZ_PARAM_ERROR;
+    uint8_t progress;
+    EState* s;
+    if (strm == NULL) return BZ_PARAM_ERROR;
+    s = (EState *)strm->state;
+    if (s == NULL) return BZ_PARAM_ERROR;
+    if (s->strm != strm) return BZ_PARAM_ERROR;
 
-   preswitch:
-   switch (s->mode) {
-
-      case BZ_M_IDLE:
-         return BZ_SEQUENCE_ERROR;
-
-      case BZ_M_RUNNING:
+    preswitch:
+    switch (s->mode)
+    {
+    case BZ_M_IDLE:
+        return BZ_SEQUENCE_ERROR;
+    case BZ_M_RUNNING:
          if (action == BZ_RUN) {
             progress = handle_compress ( strm );
             return progress ? BZ_RUN_OK : BZ_PARAM_ERROR;
@@ -5332,29 +5312,24 @@ void cadvise ( void )
     );
 }
 
-static 
-void showFileNames ( void )
+static void showFileNames()
 {
-   if (noisy)
-   fprintf (
-      stderr,
-      "\tInput file = %s, output file = %s\n",
-      inName, outName 
-   );
+    if (noisy)
+        fprintf(stderr, "\tInput file = %s, output file = %s\n", inName, outName);
 }
 
 static void cleanUpAndFail(int32_t ec)
 {
-   int      retVal;
-   struct stat statBuf;
+    int retVal;
+    struct stat statBuf;
 
-   if ( srcMode == SM_F2F 
-        && opMode != OM_TEST
-        && deleteOutputOnInterrupt ) {
+    if (srcMode == SM_F2F && opMode != OM_TEST && deleteOutputOnInterrupt )
+    {
+        retVal = stat ( inName, &statBuf );
 
-      retVal = stat ( inName, &statBuf );
-      if (retVal == 0) {
-         if (noisy)
+        if (retVal == 0)
+        {
+            if (noisy)
             fprintf ( stderr, 
                       "%s: Deleting output file %s, if it exists.\n",
                       progName, outName );
@@ -5397,24 +5372,22 @@ static void cleanUpAndFail(int32_t ec)
 
 void AppBzip2::panic(const char *s)
 {
-   fprintf ( stderr,
+    fprintf(stderr,
              "\n%s: PANIC -- internal consistency error:\n"
              "\t%s\n"
              "\tThis is a BUG.  Please report it to me at:\n"
              "\tjseward@acm.org\n",
              progName, s );
-   showFileNames();
-   cleanUpAndFail( 3 );
+    showFileNames();
+    cleanUpAndFail( 3 );
 }
 
 void AppBzip2::crcError()
 {
-   fprintf ( stderr,
-             "\n%s: Data integrity error when decompressing.\n",
-             progName );
-   showFileNames();
-   cadvise();
-   cleanUpAndFail( 2 );
+    fprintf(stderr, "\n%s: Data integrity error when decompressing.\n", progName);
+    showFileNames();
+    cadvise();
+    cleanUpAndFail( 2 );
 }
 
 void AppBzip2::compressedStreamEOF()

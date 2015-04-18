@@ -1,6 +1,6 @@
 #include "bunzip2.h"
 
-uint32_t Block::_nextSymbol(BitInput *bi, const Tables &t, const Fugt &selectors)
+uint32_t Block::_nextSymbol(BitInputBase *bi, const Tables &t, const Fugt &selectors)
 {
     if (++_grpPos % 50 == 0) _curTbl = selectors.at(++_grpIdx);
     Table table = t.at(_curTbl);
@@ -104,16 +104,14 @@ void Block::reset()
     _acc = _repeat = _length = _curp = _dec = _curTbl = 0;   
 }
 
-void Block::init(BitInput *bi)
+void Block::init(BitInputBase *bi)
 {
     reset();
     int32_t _bwtByteCounts[256] = {0};
     uint8_t _symbolMap[256] = {0};
     Fugt _bwtBlock2(9000000);
-
     bi->readInt();
     bi->readBool();
-
     uint32_t bwtStartPointer = bi->readBits(24), symbolCount = 0;
 
     for (uint16_t i = 0, ranges = bi->readBits(16); i < 16; i++)

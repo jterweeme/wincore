@@ -9,13 +9,11 @@
 
 namespace mystl { }
 
-#ifndef WIN32
+#ifndef NO_MYSTL
 using namespace mystl;
+#include "mystl.h"
 #else
 using namespace std;
-#endif
-
-#ifdef WIN32
 #include <algorithm>
 #include <array>
 #include <bitset>
@@ -27,8 +25,6 @@ using namespace std;
 #include <vector>
 #include <ctime>
 #include <regex>
-#else
-#include "mystl.h"
 #endif
 
 #endif

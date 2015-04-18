@@ -1,4 +1,10 @@
-CXXFLAGS = -Wall -Wno-parentheses -O0 -g --std=c++11
+USE_MYSTL = no
+
+ifneq ($(USE_MYSTL),yes)
+NO_MYSTL = -DNO_MYSTL
+endif
+
+CXXFLAGS = -Wall -Wno-parentheses -O0 -g --std=c++11 $(NO_MYSTL)
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = #valgrind $(VALFLAGS)
 UTIL2_H = util2.h mytypes.h
@@ -13,8 +19,14 @@ GUNZIP_H = gunzip.h $(INFLATE_H)
 OD_H = od.h $(COMMON_H)
 HASHER_H = hasher.h $(COMMON_H)
 MYSTDIO_O = mystdio.o util2.o linux64.o
+
+ifeq ($(USE_MYSTL),yes)
 MYSTL_O = mystl.o mytime.o util2.o #$(MYSTDIO_O)
+TARGETS2 = teststl1 tgmtime1 tstdio1
+endif
+
 GUNZIP_O = gunzip.o bitinput.o inflate.o $(MYSTL_O)
+FILESYS_O = filesys.o $(MYSTL_O)
 
 TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
@@ -22,8 +34,8 @@ TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     jpg2tga kompakt ls md5sum nl od rm tar \
     tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 \
     tcpref01 \
-    tee test1 test2 test3 testbinp \
-    teststl1 tgmtime1 tgunzip1 touch tr tstdio1 unix2dos unzip \
+    tee test1 test2 test3 testbinp $(TARGETS2) \
+    tgunzip1 touch tr unix2dos unzip \
     uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
@@ -58,12 +70,12 @@ gunzip: gunzipm.o $(GUNZIP_O)
 gzip: gzip.o
 jpg2tga: jpg2tga.o $(MYSTL_O)
 kompakt: kompakt.o main.o filesys.o $(MYSTL_O)
-ls: ls.o
+ls: ls.o $(FILESYS_O)
 md5sum: md5sum.o hasher.o $(MYSTL_O)
 nl: nl.o $(MYSTL_O)
 od: od.o odmain.o $(MYSTL_O)
 rm: rm.o $(MYSTL_O)
-tar: tarm.o tar.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
+tar: tarm.o tar.o bitinput.o bunzip2.o gunzip2.o fector.o $(MYSTL_O)
 tcpcom03: tcpcom03.o $(MYSTL_O)
 tcpcom04: tcpcom04.o $(MYSTL_O)
 tcpcom05: tcpcom05.o $(MYSTL_O)
@@ -111,6 +123,7 @@ fector.o: fector.cpp
 filesys.o: filesys.cpp filesys.h
 grep.o: grep.cpp
 gunzip.o: gunzip.cpp $(GUNZIP_H)
+gunzip2.o: gunzip2.cpp gunzip2.h
 gunzipm.o: gunzipm.cpp $(GUNZIP_H)
 gzip.o: gzip.cpp
 hasher.o: hasher.cpp hasher.h
@@ -276,11 +289,17 @@ testbzip2:
 
 tests1: testkompakt
 tests2: testcp testjpg2tga testtar testgzip testbinpgo testbzip2
-tests3: testgmtime1 tgunzip1go testbunzip2 testmd5sum testgunzip2
+tests3: tgunzip1go testbunzip2 testmd5sum testgunzip2
 tests4: testcppcom01 testcppcom03 testcppcom04 testcppcom05 testcppcom06 testcppcom07
-tests5: testcppcom10
-tests6: testcppref01
-tests7: testod test1go testgrep testnl testzcat testbzcat testcrc32 testbase64 teststl1go
+tests5: testcppref01
+tests6: testod test1go testgrep testnl testzcat testbzcat testcrc32 testbase64 
+
+ifeq ($(USE_MYSTL),yes)
+tests7: teststl1go testgmtime1 testcppcom10
+else
+tests7: testcppcom10
+endif
+
 test: tests1 tests2 tests3 tests4 tests5 tests6 tests7
 
 clean:

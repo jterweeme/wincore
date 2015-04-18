@@ -2,6 +2,7 @@
 #define _TAR_H_
 #include "bunzip2.h"
 #include "gunzip.h"
+#include "gunzip2.h"
 #include "buftest.h"
 
 typedef vector<string> Vest;

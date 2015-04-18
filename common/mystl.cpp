@@ -1,6 +1,10 @@
-#include "common.h"
+namespace mystl { }
+using namespace mystl;
+#include "mystl.h"
 
-Util2::streamsize streambuf2::in_avail()
+//#include "common.h"
+
+streamsize streambuf2::in_avail()
 {
     uint64_t a = (uint64_t)egptr() - (uint64_t)gptr(); return a == 0 ? showmanyc() : a;
 }
@@ -35,7 +39,7 @@ string2::string2(const char *s1, const char *s2)
     util.strncpy(_s, s1, s2 - s1);
 }
 
-Util2::streamsize streambuf2::xsgetn(char *s, streamsize length)
+streamsize streambuf2::xsgetn(char *s, streamsize length)
 {
     for (streamsize i = 0; i < length; i++)
     {

@@ -40,6 +40,7 @@ struct stat2
 namespace mystl
 {
     typedef MyTypes::streampos streampos;
+    typedef MyTypes::streamsize streamsize;
 #ifndef WIN32
     typedef MyTypes::size_t size_t;
 #endif

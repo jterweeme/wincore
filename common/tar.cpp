@@ -15,13 +15,18 @@ TarStream::TarStream(FILE *fp, uint8_t comp)
 
 bool TarStream::listFile(bool verbose)
 {
+    //cout << _is->tellg() << "\n";
     Header h(*_is);
+    //cout << _is->tellg() << "\n";
     if (h.empty()) return false;
     _width = max(h.numDigits(), _width);
     if (verbose) h.fullInfo(cout, _width); else cout << h.name() << "\n";
-    _is->ignore(512 - _is->tellg() % 512);
+    _is->ignore((512 - _is->tellg() % 512) % 512);
+    //cout << _is->tellg() << "\n";
+    //cout << "size: " << h.size() << "\n";
     _is->ignore(h.size());
-    _is->ignore(512 - _is->tellg() % 512);
+    //cout << _is->tellg() << "\n";
+    _is->ignore((512 - _is->tellg() % 512) % 512);
     return true;
 }
 
