@@ -19,6 +19,13 @@ bool TarStream::listFile(bool verbose)
     Header h(*_is);
     //cout << _is->tellg() << "\n";
     if (h.empty()) return false;
+
+    if (h.uname().length() == 3)
+        _width = max((uint8_t)6, _width);
+
+    if (h.uname().length() + h.gname().length() == 9)
+        _width = max((uint8_t)6, _width);
+
     _width = max(h.numDigits(), _width);
     if (verbose) h.fullInfo(cout, _width); else cout << h.name() << "\n";
     _is->ignore((512 - _is->tellg() % 512) % 512);
@@ -38,8 +45,27 @@ void MyDateTime::dump(ostream &os) const
 
 void Header::fullInfo(ostream &os, uint8_t width) const
 {
-    os << mode() << " " << uname() << "/" << gname() << " " << setw(width) << size() << " "
-       << timeStamp() << " " << name() << "\n";
+    //int pad = (12 - uname().length()) - gname().length();
+    os << mode() << " " << uname() << "/" << gname();
+
+    switch (uname().length() + gname().length())
+    {
+    case 9:
+        os << "   ";
+        break;
+    case 3:
+        os << "      ";
+        break;
+    default:
+        os << " ";
+    }
+
+#if 0
+    for (int i = 0; i < pad + 1; i++)
+        os << " ";
+#endif
+
+    os << setw(width) << size() << " " << timeStamp() << " " << name() << "\n";
 }
 
 void Header::timeStamp(ostream &os) const
@@ -74,7 +100,7 @@ string Header::_mode(char c) const
 
 void Header::mode(ostream &os) const
 {
-    os << "-" << _mode(_h.mode[4]) << _mode(_h.mode[5]) << _mode(_h.mode[6]);
+    os << type() << _mode(_h.mode[4]) << _mode(_h.mode[5]) << _mode(_h.mode[6]);
 }
 
 bool TarStream::extractFile(bool verbose)

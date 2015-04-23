@@ -59,6 +59,17 @@ public:
     void timeStamp(ostream &os) const; // { os << "1990-01-01 00-00"; }
     string timeStamp() const { ostringstream s; timeStamp(s); return s.str(); }
     string mode() const { ostringstream s; mode(s); return s.str(); }
+
+    char type() const
+    {
+        switch (_h.typeflag)
+        {
+        case '5':
+            return 'd';
+        }
+        return '-';
+    }
+
     string fullInfo(uint8_t w) const { ostringstream s; fullInfo(s, w); return s.str(); }
 };
 
