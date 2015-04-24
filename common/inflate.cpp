@@ -4,14 +4,18 @@ bool Inflate::read(ostream &os)
 {
     bool isFinal = _bi->readBool();
     int type = _bi->readBits(2);
+#if 0
     _ss.str("");
     _sslength = 0;
+#else
+    _buf.clear();
+#endif
     
     switch (type)
     {
     case 0:
     {
-        _decRaw(_ss);
+        _decRaw(_buf);
 #if 0       
         for (int i = 0; i < _sslength; i++)
             os.put(_ss.get());
@@ -19,20 +23,25 @@ bool Inflate::read(ostream &os)
     }
         break;
     case 1:
-        _decHuff(_lit, _dist, _ss);
+        _decHuff(_lit, _dist, _buf);
         break;
     case 2:
     {   
         Pair2 temp = _makePair();
-        _decHuff(temp.a, temp.b, _ss);
+        _decHuff(temp.a, temp.b, _buf);
     }   
         break;
     default:
         throw "Assertion Error";
     }
 
+#if 1
+    for (vector<uint8_t>::iterator it = _buf.begin(); it != _buf.end(); it++)
+        os.put(*it);
+#else
     for (int i = 0; i < _sslength; i++)
         os.put(_ss.get());
+#endif
 
     _nodeDump.clear();
     return isFinal;
@@ -120,12 +129,16 @@ void CircularDict::append(int b)
     _index = _mask != 0 ? (_index + 1) & _mask : (_index + 1) % _data.size();
 }
 
-void CircularDict::copy(int dist, int len, ostream &os, int &ssl)
+void CircularDict::copy(int dist, int len, vector<uint8_t> &os)
 {
     for (int readIndex = (_index - dist + _data.size()) & _mask; len > 0 && _mask != 0; len--)
     {
+#if 0
         os.put(_data[readIndex]);
         ssl++;
+#else
+        os.push_back(_data[readIndex]);
+#endif
         _data[_index] = _data[readIndex];
         readIndex = (readIndex + 1) & _mask;
         _index = (_index + 1) & _mask;
@@ -133,8 +146,12 @@ void CircularDict::copy(int dist, int len, ostream &os, int &ssl)
 
     for (int j = (_index - dist + _data.size()) % _data.size(); len > 0 && _mask == 0; len--)
     {
+#if 0
         os.put(_data[j]);
         ssl++;
+#else
+        os.push_back(_data[j]);
+#endif
         _data[_index] = _data[j];
         j = (j + 1) % _data.size();
         _index = (_index + 1) % _data.size();
@@ -148,7 +165,7 @@ Nau Nau::copyOfRange(int start, int end) const
     return r;
 }
 
-int Inflate::_decRaw(ostream &os)
+int Inflate::_decRaw(vector<uint8_t> &os)
 {
     int len = _bi->readBits(16);
     _bi->ignore(16);
@@ -156,28 +173,36 @@ int Inflate::_decRaw(ostream &os)
     for (int i = 0; i < len; i++)
     {
         int temp = _bi->readByte();
+#if 0
         os.put(temp);
         _sslength++;
+#else
+        os.push_back(temp);
+#endif
         _dict.append(temp);
     }
 
     return len;
 }
 
-void Inflate::_decHuff(Node lit, Node dist, ostream &os)
+void Inflate::_decHuff(Node lit, Node dist, vector<uint8_t> &os)
 {
     for (int sym; (sym = _decSym(&lit)) != 256;)
     {
         if (sym < 256)
         {
+#if 0
             os.put(sym);
             _sslength++;
+#else
+            os.push_back(sym);
+#endif
             _dict.append(sym);
         }
         else
         {
             int len = _decRll(sym), distSym = _decSym(&dist);
-            _dict.copy(_decDist(distSym), len, os, _sslength);
+            _dict.copy(_decDist(distSym), len, os);
         }
     }
 }

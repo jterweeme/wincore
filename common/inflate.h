@@ -54,7 +54,7 @@ class CircularDict
 public:
     CircularDict(int n) : _data(n), _mask(n > 0 && (n & (n - 1)) == 0 ? n - 1 : 0) { }
     void append(int b);
-    void copy(int dist, int len, ostream &os, int &ssl);
+    void copy(int dist, int len, vector<uint8_t> &os);
 };
 
 class Inflate
@@ -63,15 +63,19 @@ class Inflate
     CircularDict _dict;
     Node _lit, _dist;
     vector<Node> _nodeDump;
-    int _decRaw(ostream &os);
-    void _decHuff(Node lit, Node dist, ostream &os);
+    int _decRaw(vector<uint8_t> &os);
+    void _decHuff(Node lit, Node dist, vector<uint8_t> &os);
     int _decSym(Node *code);
     int _decRll(int sym);
     int _decDist(int sym);
     Pair2 _makePair();
     Node _toct(Nau &x);
+#if 0
     stringstream _ss;
     int _sslength = 0;
+#else
+    vector<uint8_t> _buf;
+#endif
 public:
     Inflate(BitInput2 *bi);
     bool read(ostream &os);
