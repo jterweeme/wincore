@@ -34,10 +34,30 @@ bool GzipStream::read(ostream &os)
     return _d.read(os);
 }
 
+int GzipStream::read()
+{
+    int ret = _buf.get();
+
+    if (ret == -1)
+    {
+        read(_buf);
+        int v = _buf.get();
+        return v;
+    }
+
+    return ret;
+
+}
+
 void GzipStream::extractTo(ostream &os)
 {
     readHeader();
+#if 1
     _d.extractTo(os);
+#else
+    for (int v = 0; (v = read()) != -1;)
+        os.put((uint8_t)v);
+#endif
 }
 
 string GzipStream::_readString()
@@ -46,5 +66,12 @@ string GzipStream::_readString()
     for (int c = _bi->readByte(); c != 0; c = _bi->readByte()) s.push_back(c);
     return s;
 }
+
+int GzipStreamBuf::underflow()
+{
+    
+    return 0;
+}
+
 
 

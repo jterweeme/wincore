@@ -4,24 +4,35 @@ bool Inflate::read(ostream &os)
 {
     bool isFinal = _bi->readBool();
     int type = _bi->readBits(2);
+    _ss.str("");
+    _sslength = 0;
     
     switch (type)
     {
     case 0:
-        _decRaw(os);
+    {
+        _decRaw(_ss);
+#if 0       
+        for (int i = 0; i < _sslength; i++)
+            os.put(_ss.get());
+#endif
+    }
         break;
     case 1:
-        _decHuff(_lit, _dist, os);
+        _decHuff(_lit, _dist, _ss);
         break;
     case 2:
     {   
         Pair2 temp = _makePair();
-        _decHuff(temp.a, temp.b, os);
+        _decHuff(temp.a, temp.b, _ss);
     }   
         break;
     default:
         throw "Assertion Error";
     }
+
+    for (int i = 0; i < _sslength; i++)
+        os.put(_ss.get());
 
     _nodeDump.clear();
     return isFinal;
@@ -109,11 +120,12 @@ void CircularDict::append(int b)
     _index = _mask != 0 ? (_index + 1) & _mask : (_index + 1) % _data.size();
 }
 
-void CircularDict::copy(int dist, int len, ostream &os)
+void CircularDict::copy(int dist, int len, ostream &os, int &ssl)
 {
     for (int readIndex = (_index - dist + _data.size()) & _mask; len > 0 && _mask != 0; len--)
     {
         os.put(_data[readIndex]);
+        ssl++;
         _data[_index] = _data[readIndex];
         readIndex = (readIndex + 1) & _mask;
         _index = (_index + 1) & _mask;
@@ -122,6 +134,7 @@ void CircularDict::copy(int dist, int len, ostream &os)
     for (int j = (_index - dist + _data.size()) % _data.size(); len > 0 && _mask == 0; len--)
     {
         os.put(_data[j]);
+        ssl++;
         _data[_index] = _data[j];
         j = (j + 1) % _data.size();
         _index = (_index + 1) % _data.size();
@@ -135,7 +148,7 @@ Nau Nau::copyOfRange(int start, int end) const
     return r;
 }
 
-void Inflate::_decRaw(ostream &os)
+int Inflate::_decRaw(ostream &os)
 {
     int len = _bi->readBits(16);
     _bi->ignore(16);
@@ -144,8 +157,11 @@ void Inflate::_decRaw(ostream &os)
     {
         int temp = _bi->readByte();
         os.put(temp);
+        _sslength++;
         _dict.append(temp);
     }
+
+    return len;
 }
 
 void Inflate::_decHuff(Node lit, Node dist, ostream &os)
@@ -155,12 +171,13 @@ void Inflate::_decHuff(Node lit, Node dist, ostream &os)
         if (sym < 256)
         {
             os.put(sym);
+            _sslength++;
             _dict.append(sym);
         }
         else
         {
             int len = _decRll(sym), distSym = _decSym(&dist);
-            _dict.copy(_decDist(distSym), len, os);
+            _dict.copy(_decDist(distSym), len, os, _sslength);
         }
     }
 }

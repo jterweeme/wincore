@@ -4,7 +4,7 @@ ifneq ($(USE_MYSTL),yes)
 NO_MYSTL = -DNO_MYSTL
 endif
 
-CXXFLAGS = -Wall -Wno-parentheses -O3 -g --std=c++11 $(NO_MYSTL)
+CXXFLAGS = -Wall -Wno-parentheses -O0 -g --std=c++11 $(NO_MYSTL)
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
 VALGRIND = #valgrind $(VALFLAGS)
 UTIL2_H = util2.h mytypes.h
