@@ -1,6 +1,6 @@
 #include "gunzip2.h"
 
-int GzipStreambuf::underflow()
+int GzipStreambuf2::underflow()
 {
     if (gptr() < egptr()) return (int)(*gptr());
     

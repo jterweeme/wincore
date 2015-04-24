@@ -56,7 +56,7 @@ public:
     SHeader raw() const { return _h; }
     void fullInfo(ostream &os, uint8_t width) const;
     void mode(ostream &os) const;
-    void timeStamp(ostream &os) const; // { os << "1990-01-01 00-00"; }
+    void timeStamp(ostream &os) const;
     string timeStamp() const { ostringstream s; timeStamp(s); return s.str(); }
     string mode() const { ostringstream s; mode(s); return s.str(); }
 

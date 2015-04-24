@@ -1,38 +1,17 @@
 #include "tar.h"
 
-#if 0
-TarStream::TarStream(FILE *fp, uint8_t comp)
-{
-    //switch (comp)
-    {
-    //case 1:
-        //_is.rdbuf(new DecStreamBuf(fp));
-    //default:
-        //_is(buftest(fp))
-    }
-}
-#endif
-
 bool TarStream::listFile(bool verbose)
 {
-    //cout << _is->tellg() << "\n";
     Header h(*_is);
-    //cout << _is->tellg() << "\n";
     if (h.empty()) return false;
 
-    if (h.uname().length() == 3)
-        _width = max((uint8_t)6, _width);
-
     if (h.uname().length() + h.gname().length() == 9)
-        _width = max((uint8_t)6, _width);
+        _width = max((uint8_t)7, _width);
 
     _width = max(h.numDigits(), _width);
     if (verbose) h.fullInfo(cout, _width); else cout << h.name() << "\n";
     _is->ignore((512 - _is->tellg() % 512) % 512);
-    //cout << _is->tellg() << "\n";
-    //cout << "size: " << h.size() << "\n";
     _is->ignore(h.size());
-    //cout << _is->tellg() << "\n";
     _is->ignore((512 - _is->tellg() % 512) % 512);
     return true;
 }
@@ -45,13 +24,12 @@ void MyDateTime::dump(ostream &os) const
 
 void Header::fullInfo(ostream &os, uint8_t width) const
 {
-    //int pad = (12 - uname().length()) - gname().length();
     os << mode() << " " << uname() << "/" << gname();
 
     switch (uname().length() + gname().length())
     {
     case 9:
-        os << "   ";
+        os << "  ";
         break;
     case 3:
         os << "      ";
@@ -59,11 +37,6 @@ void Header::fullInfo(ostream &os, uint8_t width) const
     default:
         os << " ";
     }
-
-#if 0
-    for (int i = 0; i < pad + 1; i++)
-        os << " ";
-#endif
 
     os << setw(width) << size() << " " << timeStamp() << " " << name() << "\n";
 }

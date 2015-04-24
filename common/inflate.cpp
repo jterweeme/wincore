@@ -1,34 +1,30 @@
 #include "inflate.h"
 
-void Inflate::extractTo(ostream &os)
+bool Inflate::read(ostream &os)
 {
-    for (bool isFinal = false; !isFinal;)
+    bool isFinal = _bi->readBool();
+    int type = _bi->readBits(2);
+    
+    switch (type)
     {
-        isFinal = _bi->readBool();
-        int type = _bi->readBits(2);
-        
-        //cout << "Type: " << type << "\n";
-        
-        switch (type)
-        {
-        case 0:
-            _decRaw(os);
-            break;
-        case 1:
-            _decHuff(_lit, _dist, os);
-            break;
-        case 2:
-        {   
-            Pair2 temp = _makePair();
-            _decHuff(temp.a, temp.b, os);
-        }   
-            break;
-        default:
-            throw "Assertion Error";
-        }
-
-        _nodeDump.clear();
+    case 0:
+        _decRaw(os);
+        break;
+    case 1:
+        _decHuff(_lit, _dist, os);
+        break;
+    case 2:
+    {   
+        Pair2 temp = _makePair();
+        _decHuff(temp.a, temp.b, os);
+    }   
+        break;
+    default:
+        throw "Assertion Error";
     }
+
+    _nodeDump.clear();
+    return isFinal;
 }
 
 int Inflate::_decDist(int sym)
@@ -94,7 +90,6 @@ Pair2 Inflate::_makePair()
     return Pair2(litLenCode, distCode);
 }
 
-
 Inflate::Inflate(BitInput2 *bi) : _bi(bi), _dict(32 * 1024)
 {
     Vint llcodelens(288);
@@ -108,18 +103,9 @@ Inflate::Inflate(BitInput2 *bi) : _bi(bi), _dict(32 * 1024)
     _dist = _toct(distcodelens);
 }
 
-void CodeTree::import(Nau &x)
-{
-    for (int i = x.max(); i >= 1; i--)
-    {
-
-    }
-}
-
 void CircularDict::append(int b)
 {
     _data[_index] = (uint8_t)b;
-    //_data.at(_index) = (uint8_t)b;
     _index = _mask != 0 ? (_index + 1) & _mask : (_index + 1) % _data.size();
 }
 
@@ -183,7 +169,6 @@ int Inflate::_decSym(Node *n)
 {
     Node *next = _bi->readBool() ? n->right : n->left;
     for (n = next; next->type == 1; n = next) next = _bi->readBool() ? n->right : n->left;
-    //cout << "_decSym: " << next->symbol << "\n";
     return next->symbol;
 }
 
@@ -195,10 +180,8 @@ int Inflate::_decRll(int sym)
     return 258;
 }
 
-
 Node Inflate::_toct(Nau &x)
 {
-    //cout << x.toString() << "\n";
     vector<Node *> nodes;
 
     for (int i = x.max(); i >= 1; i--)
@@ -209,36 +192,23 @@ Node Inflate::_toct(Nau &x)
         {
             if (x.get(j) == i)
             {
-#if 1
                 _nodeDump.push_back(Node(j));
                 newNodes.push_back(&_nodeDump.back());
-#else
-                newNodes.push_back(new Node(j));
-#endif
             }
         }
 
         for (uint32_t j = 0; j < nodes.size(); j+= 2)
         {
-#if 1
             _nodeDump.push_back(Node(nodes.at(j), nodes.at(j + 1)));
             newNodes.push_back(&_nodeDump.back());
-#else
-            newNodes.push_back(new Node(nodes[j], nodes[j + 1]));
-#endif
         }
 
-#if 0
-        nodes = newNodes;
-#else
         nodes.clear();
 
         for (vector<Node *>::const_iterator it = newNodes.cbegin(); it != newNodes.cend(); it++)
             nodes.push_back(*it);
-#endif
     }
 
-    CodeTree t(Node(nodes.at(0), nodes.at(1)));
     return Node(nodes.at(0), nodes.at(1));
 }
 

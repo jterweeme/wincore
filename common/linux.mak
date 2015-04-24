@@ -1,4 +1,4 @@
-USE_MYSTL = yes
+USE_MYSTL = no
 
 ifneq ($(USE_MYSTL),yes)
 NO_MYSTL = -DNO_MYSTL
@@ -18,6 +18,7 @@ INFLATE_H = inflate.h fector.h
 GUNZIP_H = gunzip.h $(INFLATE_H)
 OD_H = od.h $(COMMON_H)
 HASHER_H = hasher.h $(COMMON_H)
+FECTOR_H = fector.h $(COMMON_H)
 MYSTDIO_O = mystdio.o util2.o linux64.o
 
 ifeq ($(USE_MYSTL),yes)
@@ -75,7 +76,7 @@ md5sum: md5sum.o hasher.o $(MYSTL_O)
 nl: nl.o $(MYSTL_O)
 od: od.o odmain.o $(MYSTL_O)
 rm: rm.o $(MYSTL_O)
-tar: tarm.o tar.o bitinput.o bunzip2.o gunzip2.o fector.o $(MYSTL_O)
+tar: tarm.o tar.o bitinput.o bunzip2.o gunzip.o inflate.o fector.o $(MYSTL_O)
 tcpcom03: tcpcom03.o $(MYSTL_O)
 tcpcom04: tcpcom04.o $(MYSTL_O)
 tcpcom05: tcpcom05.o $(MYSTL_O)
@@ -108,18 +109,18 @@ bitinput.o: bitinput.cpp $(BITINPUT_H)
 bunzip2.o: bunzip2.cpp $(BUNZIP2_H)
 bzcat.o: bzcat.cpp $(BUNZIP2_H)
 bzinfo.o: bzinfo.cpp fector.h $(BITINPUT_H)
-bzip2.o: bzip2.cpp
+bzip2.o: bzip2.cpp $(COMMON_H)
 bzmd5.o: bzmd5.cpp $(BUFTEST_H)
 cat.o: cat.cpp $(COMMON_H)
-cp.o: cp.cpp
-tcpcom01.o: tcpcom01.cpp
-tcpcom02.o: tcpcom02.cpp
-crc32.o: crc32.cpp
+cp.o: cp.cpp $(COMMON_H)
+tcpcom01.o: tcpcom01.cpp $(COMMON_H)
+tcpcom02.o: tcpcom02.cpp $(COMMON_H)
+crc32.o: crc32.cpp $(COMMON_H)
 date.o: date.cpp $(COMMON_H)
 dd.o: dd.cpp $(COMMON_H)
 diff.o: diff.cpp $(COMMON_H)
 dos2unix.o: dos2unix.cpp
-fector.o: fector.cpp
+fector.o: fector.cpp $(FECTOR_H)
 filesys.o: filesys.cpp filesys.h
 grep.o: grep.cpp
 gunzip.o: gunzip.cpp $(GUNZIP_H)
@@ -186,11 +187,10 @@ testgunzip2:
 	$(VALGRIND) ./md5sum -c znew.md5
 	rm -f znew.txt
 
-# moet een andere file worden, want dinges.tar zit niet in git!
 testcp:
-	rm -f dinges2.tar
-	$(VALGRIND) ./cp dinges.tar dinges2.tar
-	$(VALGRIND) ./cat dinges2.tar | ./md5sum -x cffd664a74cbbd3d9f6877668c42fa03
+	rm -f whouse2.jpg
+	$(VALGRIND) ./cp whouse.jpg whouse2.jpg
+	$(VALGRIND) ./cat whouse2.jpg | ./md5sum -x a264902120c099dfb0c6539b977de2f5
 
 testbzcat:
 	$(VALGRIND) ./bzcat battery.bz2 | ./md5sum -x efc57edfaf907b5707878f544b39d6d5
@@ -213,10 +213,11 @@ testbase64:
 teststl1go:
 	$(VALGRIND) ./teststl1
 
-testtar:
+testtar: testbunzip2
 	$(VALGRIND) ./tar -tvf dinges.tar | ./diff -s dinges.out -
 	$(VALGRIND) ./tar -tvjf dinges.tar.bz2 | ./diff -s dinges.out -
 	$(VALGRIND) ./tar -tvjf cflow-1.4.tar.bz2 | ./diff -s cflow.out -
+	$(VALGRIND) ./tar -tvjf cpio-2.11.tar.bz2 | ./diff -s cpio.out -
 
 testmd5sum:
 	$(VALGRIND) ./md5sum zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -

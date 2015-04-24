@@ -6,21 +6,36 @@ class UnzipFile
 
 class Options
 {
+    bool _help = true;
     string _fn;
 public:
     void parse(int argc, char **argv);
+    bool help() const { return _help; }
 };
 
 class App
 {
+    void help(ostream &os);
 public:
     int run(int argc, char **argv);
 };
+
+void App::help(ostream &os)
+{
+    os << "unzip ...\n";
+}
 
 int App::run(int argc, char **argv)
 {
     Options o;
     o.parse(argc, argv);
+
+    if (o.help())
+    {
+        help(cout);
+        return 0;
+    }
+
     return 0;
 }
 

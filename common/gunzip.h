@@ -5,12 +5,23 @@
 class GzipStream
 {
     BitInput2 *_bi;
+    Inflate _d;
     string _readString();
+    bool _headerIsRead = false;
 public:
-    GzipStream(BitInput2 *bi) : _bi(bi) { }
+    GzipStream(BitInput2 *bi) : _bi(bi), _d(bi) { }
     void readHeader();
-    int read();
+    bool read(ostream &os);
     void extractTo(ostream &os);
+};
+
+class GzipStreamBuf : public streambuf
+{
+    GzipStream _gs;
+public:
+    GzipStreamBuf(BitInput2 *bi) : _gs(bi) { }
+    streampos seekoff(ios::streamoff off, ios::seekdir way, ios::openmode m) { return 0; }
+    int underflow() { return 0; }
 };
 
 #endif

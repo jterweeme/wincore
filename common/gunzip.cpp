@@ -22,13 +22,22 @@ void GzipStream::readHeader()
 
     if (flags & 0x10)
         _readString();
+
+    _headerIsRead = true;
+}
+
+bool GzipStream::read(ostream &os)
+{
+    if (!_headerIsRead)
+        readHeader();
+
+    return _d.read(os);
 }
 
 void GzipStream::extractTo(ostream &os)
 {
     readHeader();
-    Inflate d(_bi);
-    d.extractTo(os);
+    _d.extractTo(os);
 }
 
 string GzipStream::_readString()

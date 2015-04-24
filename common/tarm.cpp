@@ -108,7 +108,7 @@ int AppTar::run(int argc, char **argv)
         break;
     case 2:
         bif2.open(fp);
-        bt = new GzipStreambuf(&bif2);
+        bt = new GzipStreamBuf(&bif2);
         break;
     default:
         bt = new buftest(fp);

@@ -10,7 +10,7 @@ public:
     int read();
 };
 
-class GzipStreambuf : public streambuf
+class GzipStreambuf2 : public streambuf
 {
     GzipStream2 _gs;
     const uint32_t _put_back = 8;
@@ -18,7 +18,7 @@ class GzipStreambuf : public streambuf
     uint32_t _pos = 0;
     uint32_t _lastRead = 0;
 public:
-    GzipStreambuf(BitInputBase *bi) : _gs(bi) { }
+    GzipStreambuf2(BitInputBase *bi) : _gs(bi) { }
     streampos seekoff(ios::streamoff off, ios::seekdir way, ios::openmode m) { return 0; }
     int underflow();
 };

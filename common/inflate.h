@@ -37,15 +37,6 @@ struct Node
     Node(int s) : symbol(s), type(2) { }
 };
 
-class CodeTree
-{   
-    Node _root;
-    vector<Node> _nodes;
-public:
-    void import(Nau &x);
-    CodeTree(Node root) : _root(root) { }
-};
-
 class Pair2
 {
 public:
@@ -66,7 +57,6 @@ public:
     void copy(int dist, int len, ostream &os);
 };
 
-
 class Inflate
 {
     BitInput2 *_bi;
@@ -82,7 +72,8 @@ class Inflate
     Node _toct(Nau &x);
 public:
     Inflate(BitInput2 *bi);
-    void extractTo(ostream &os);
+    bool read(ostream &os);
+    void extractTo(ostream &os) { while (read(os) == 0); }
 };
 
 

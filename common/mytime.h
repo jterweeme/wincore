@@ -30,7 +30,8 @@ class Time2 : public Util2
 {
     static tm _tm;
 public:
-    bool isDST() const { return _tm.tm_yday > 50 && _tm.tm_yday < 298; }
+    //bool isDST() const { return _tm.tm_yday > 50 && _tm.tm_yday < 298; }
+    bool isDST() const { return _tm.tm_yday > 100 && _tm.tm_yday < 298; }
     void set(int y, int yd, int mon, int d, int h, int min, int s);
     void reset() { set(70, 0, 0, 1, 0, 0, 0); }
     size_t strftime(char *p, size_t max, const char *fmt, const tm *tp) const;
