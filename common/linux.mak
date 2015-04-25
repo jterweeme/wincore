@@ -218,6 +218,7 @@ testtar: testbunzip2
 	$(VALGRIND) ./tar -tvjf dinges.tar.bz2 | ./diff -s dinges.out -
 	$(VALGRIND) ./tar -tvjf cflow-1.4.tar.bz2 | ./diff -s cflow.out -
 	$(VALGRIND) ./tar -tvjf cpio-2.11.tar.bz2 | ./diff -s cpio.out -
+	$(VALGRIND) ./tar -tvzf a2ps-4.14.tar.gz | ./diff -s a2ps.out -
 	$(VALGRIND) ./tar -tvzf acm-5.1.tar.gz | ./diff -s acm.out -
 
 testmd5sum:
@@ -226,7 +227,9 @@ testmd5sum:
 
 testbunzip2:
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
+	$(VALGRIND) ./cat battery.iso | ./md5sum -x efc57edfaf907b5707878f544b39d6d5
 	$(VALGRIND) ./bunzip2 dinges.tar.bz2 dinges.tar
+	$(VALGRIND) ./cat dinges.tar | ./md5sum -x cffd664a74cbbd3d9f6877668c42fa03
 
 testnl:
 	$(VALGRIND) ./cat tr.cpp | ./nl | ./diff nl.out -
