@@ -88,7 +88,7 @@ tcpcom10: tcpcom10.o $(MYSTL_O)
 tcpref01: tcpref01.o util2.o $(MYSTL_O)
 tee: tee.o $(MYSTL_O)
 test1: test1.o hasher.o $(MYSTL_O)
-test2: test2.o $(MYSTL_O)
+test2: test2.o $(GUNZIP_O)
 test3: test3.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
 testbinp: testbinp.o bitinput.o $(MYSTL_O)
 teststl1: teststl1.o $(MYSTL_O)
@@ -218,6 +218,7 @@ testtar: testbunzip2
 	$(VALGRIND) ./tar -tvjf dinges.tar.bz2 | ./diff -s dinges.out -
 	$(VALGRIND) ./tar -tvjf cflow-1.4.tar.bz2 | ./diff -s cflow.out -
 	$(VALGRIND) ./tar -tvjf cpio-2.11.tar.bz2 | ./diff -s cpio.out -
+	$(VALGRIND) ./tar -tvzf acm-5.1.tar.gz | ./diff -s acm.out -
 
 testmd5sum:
 	$(VALGRIND) ./md5sum zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -

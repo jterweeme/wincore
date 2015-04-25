@@ -8,6 +8,9 @@ bool TarStream::listFile(bool verbose)
     if (h.uname().length() + h.gname().length() == 9)
         _width = max((uint8_t)7, _width);
 
+    if (h.uname().length() + h.gname().length() == 11)
+        _width = max((uint8_t)6, _width);
+
     _width = max(h.numDigits(), _width);
     if (verbose) h.fullInfo(cout, _width); else cout << h.name() << "\n";
     _is->ignore((512 - _is->tellg() % 512) % 512);

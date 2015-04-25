@@ -1,26 +1,15 @@
 #include "inflate.h"
 
-bool Inflate::read(ostream &os)
+bool Inflate::readBuf()
 {
     bool isFinal = _bi->readBool();
     int type = _bi->readBits(2);
-#if 0
-    _ss.str("");
-    _sslength = 0;
-#else
     _buf.clear();
-#endif
     
     switch (type)
     {
     case 0:
-    {
         _decRaw(_buf);
-#if 0       
-        for (int i = 0; i < _sslength; i++)
-            os.put(_ss.get());
-#endif
-    }
         break;
     case 1:
         _decHuff(_lit, _dist, _buf);
@@ -35,16 +24,31 @@ bool Inflate::read(ostream &os)
         throw "Assertion Error";
     }
 
-#if 1
-    for (vector<uint8_t>::iterator it = _buf.begin(); it != _buf.end(); it++)
-        os.put(*it);
-#else
-    for (int i = 0; i < _sslength; i++)
-        os.put(_ss.get());
-#endif
-
+    _it = _buf.begin();
+    _itinit = true;
     _nodeDump.clear();
     return isFinal;
+}
+
+bool Inflate::read(ostream &os)
+{
+    bool isFinal = readBuf();
+    
+    for (vector<uint8_t>::iterator it = _buf.begin(); it != _buf.end(); it++)
+        os.put(*it);
+
+    return isFinal;
+}
+
+int Inflate::read()
+{
+    if (!_itinit)
+        _isFinal = readBuf();
+
+    if (_it >= _buf.end() && !_isFinal)
+        _isFinal = readBuf();
+
+    return _it >= _buf.end() ? -1 : *_it++;
 }
 
 int Inflate::_decDist(int sym)
@@ -133,12 +137,7 @@ void CircularDict::copy(int dist, int len, vector<uint8_t> &os)
 {
     for (int readIndex = (_index - dist + _data.size()) & _mask; len > 0 && _mask != 0; len--)
     {
-#if 0
-        os.put(_data[readIndex]);
-        ssl++;
-#else
         os.push_back(_data[readIndex]);
-#endif
         _data[_index] = _data[readIndex];
         readIndex = (readIndex + 1) & _mask;
         _index = (_index + 1) & _mask;
@@ -146,12 +145,7 @@ void CircularDict::copy(int dist, int len, vector<uint8_t> &os)
 
     for (int j = (_index - dist + _data.size()) % _data.size(); len > 0 && _mask == 0; len--)
     {
-#if 0
-        os.put(_data[j]);
-        ssl++;
-#else
         os.push_back(_data[j]);
-#endif
         _data[_index] = _data[j];
         j = (j + 1) % _data.size();
         _index = (_index + 1) % _data.size();
@@ -173,12 +167,7 @@ int Inflate::_decRaw(vector<uint8_t> &os)
     for (int i = 0; i < len; i++)
     {
         int temp = _bi->readByte();
-#if 0
-        os.put(temp);
-        _sslength++;
-#else
         os.push_back(temp);
-#endif
         _dict.append(temp);
     }
 
@@ -191,12 +180,7 @@ void Inflate::_decHuff(Node lit, Node dist, vector<uint8_t> &os)
     {
         if (sym < 256)
         {
-#if 0
-            os.put(sym);
-            _sslength++;
-#else
             os.push_back(sym);
-#endif
             _dict.append(sym);
         }
         else

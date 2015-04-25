@@ -70,15 +70,15 @@ class Inflate
     int _decDist(int sym);
     Pair2 _makePair();
     Node _toct(Nau &x);
-#if 0
-    stringstream _ss;
-    int _sslength = 0;
-#else
     vector<uint8_t> _buf;
-#endif
+    bool _itinit = false;
+    vector<uint8_t>::iterator _it;
+    bool _isFinal = false;
 public:
     Inflate(BitInput2 *bi);
+    bool readBuf();
     bool read(ostream &os);
+    int read();
     void extractTo(ostream &os) { while (read(os) == 0); }
 };
 
