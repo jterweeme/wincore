@@ -116,7 +116,7 @@ Pair2 Inflate::_makePair()
 
 Inflate::Inflate(BitInput2 *bi) : _bi(bi), _dict(32 * 1024)
 {
-    Vint llcodelens(288);
+    vector<int> llcodelens(288);
     fill_n(llcodelens.begin(), 144, 8);
     fill_n(llcodelens.begin() + 144, 112, 9);
     fill_n(llcodelens.begin() + 256, 24, 7);

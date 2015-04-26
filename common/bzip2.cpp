@@ -14,47 +14,144 @@ struct bz_stream
     unsigned int total_out_hi32;
     void *state;
     void *(*bzalloc)(void *,int,int);
-    void (*bzfree)(void *,void *);
+    void (*bzfree)(void *, void *);
     void *opaque;
 };
 
+uint32_t BZ2_crc32Table[256] = {
+   0x00000000L, 0x04c11db7L, 0x09823b6eL, 0x0d4326d9L,
+   0x130476dcL, 0x17c56b6bL, 0x1a864db2L, 0x1e475005L,
+   0x2608edb8L, 0x22c9f00fL, 0x2f8ad6d6L, 0x2b4bcb61L,
+   0x350c9b64L, 0x31cd86d3L, 0x3c8ea00aL, 0x384fbdbdL,
+   0x4c11db70L, 0x48d0c6c7L, 0x4593e01eL, 0x4152fda9L,
+   0x5f15adacL, 0x5bd4b01bL, 0x569796c2L, 0x52568b75L,
+   0x6a1936c8L, 0x6ed82b7fL, 0x639b0da6L, 0x675a1011L,
+   0x791d4014L, 0x7ddc5da3L, 0x709f7b7aL, 0x745e66cdL,
+   0x9823b6e0L, 0x9ce2ab57L, 0x91a18d8eL, 0x95609039L,
+   0x8b27c03cL, 0x8fe6dd8bL, 0x82a5fb52L, 0x8664e6e5L,
+   0xbe2b5b58L, 0xbaea46efL, 0xb7a96036L, 0xb3687d81L,
+   0xad2f2d84L, 0xa9ee3033L, 0xa4ad16eaL, 0xa06c0b5dL,
+   0xd4326d90L, 0xd0f37027L, 0xddb056feL, 0xd9714b49L,
+   0xc7361b4cL, 0xc3f706fbL, 0xceb42022L, 0xca753d95L,
+   0xf23a8028L, 0xf6fb9d9fL, 0xfbb8bb46L, 0xff79a6f1L,
+   0xe13ef6f4L, 0xe5ffeb43L, 0xe8bccd9aL, 0xec7dd02dL,
+   0x34867077L, 0x30476dc0L, 0x3d044b19L, 0x39c556aeL,
+   0x278206abL, 0x23431b1cL, 0x2e003dc5L, 0x2ac12072L,
+   0x128e9dcfL, 0x164f8078L, 0x1b0ca6a1L, 0x1fcdbb16L,
+   0x018aeb13L, 0x054bf6a4L, 0x0808d07dL, 0x0cc9cdcaL,
+   0x7897ab07L, 0x7c56b6b0L, 0x71159069L, 0x75d48ddeL,
+   0x6b93dddbL, 0x6f52c06cL, 0x6211e6b5L, 0x66d0fb02L,
+   0x5e9f46bfL, 0x5a5e5b08L, 0x571d7dd1L, 0x53dc6066L,
+   0x4d9b3063L, 0x495a2dd4L, 0x44190b0dL, 0x40d816baL,
+   0xaca5c697L, 0xa864db20L, 0xa527fdf9L, 0xa1e6e04eL,
+   0xbfa1b04bL, 0xbb60adfcL, 0xb6238b25L, 0xb2e29692L,
+   0x8aad2b2fL, 0x8e6c3698L, 0x832f1041L, 0x87ee0df6L,
+   0x99a95df3L, 0x9d684044L, 0x902b669dL, 0x94ea7b2aL,
+   0xe0b41de7L, 0xe4750050L, 0xe9362689L, 0xedf73b3eL,
+   0xf3b06b3bL, 0xf771768cL, 0xfa325055L, 0xfef34de2L,
+   0xc6bcf05fL, 0xc27dede8L, 0xcf3ecb31L, 0xcbffd686L,
+   0xd5b88683L, 0xd1799b34L, 0xdc3abdedL, 0xd8fba05aL,
+   0x690ce0eeL, 0x6dcdfd59L, 0x608edb80L, 0x644fc637L,
+   0x7a089632L, 0x7ec98b85L, 0x738aad5cL, 0x774bb0ebL,
+   0x4f040d56L, 0x4bc510e1L, 0x46863638L, 0x42472b8fL,
+   0x5c007b8aL, 0x58c1663dL, 0x558240e4L, 0x51435d53L,
+   0x251d3b9eL, 0x21dc2629L, 0x2c9f00f0L, 0x285e1d47L,
+   0x36194d42L, 0x32d850f5L, 0x3f9b762cL, 0x3b5a6b9bL,
+   0x0315d626L, 0x07d4cb91L, 0x0a97ed48L, 0x0e56f0ffL,
+   0x1011a0faL, 0x14d0bd4dL, 0x19939b94L, 0x1d528623L,
+   0xf12f560eL, 0xf5ee4bb9L, 0xf8ad6d60L, 0xfc6c70d7L,
+   0xe22b20d2L, 0xe6ea3d65L, 0xeba91bbcL, 0xef68060bL,
+   0xd727bbb6L, 0xd3e6a601L, 0xdea580d8L, 0xda649d6fL,
+   0xc423cd6aL, 0xc0e2d0ddL, 0xcda1f604L, 0xc960ebb3L,
+   0xbd3e8d7eL, 0xb9ff90c9L, 0xb4bcb610L, 0xb07daba7L,
+   0xae3afba2L, 0xaafbe615L, 0xa7b8c0ccL, 0xa379dd7bL,
+   0x9b3660c6L, 0x9ff77d71L, 0x92b45ba8L, 0x9675461fL,
+   0x8832161aL, 0x8cf30badL, 0x81b02d74L, 0x857130c3L,
+   0x5d8a9099L, 0x594b8d2eL, 0x5408abf7L, 0x50c9b640L,
+   0x4e8ee645L, 0x4a4ffbf2L, 0x470cdd2bL, 0x43cdc09cL,
+   0x7b827d21L, 0x7f436096L, 0x7200464fL, 0x76c15bf8L,
+   0x68860bfdL, 0x6c47164aL, 0x61043093L, 0x65c52d24L,
+   0x119b4be9L, 0x155a565eL, 0x18197087L, 0x1cd86d30L,
+   0x029f3d35L, 0x065e2082L, 0x0b1d065bL, 0x0fdc1becL,
+   0x3793a651L, 0x3352bbe6L, 0x3e119d3fL, 0x3ad08088L,
+   0x2497d08dL, 0x2056cd3aL, 0x2d15ebe3L, 0x29d4f654L,
+   0xc5a92679L, 0xc1683bceL, 0xcc2b1d17L, 0xc8ea00a0L,
+   0xd6ad50a5L, 0xd26c4d12L, 0xdf2f6bcbL, 0xdbee767cL,
+   0xe3a1cbc1L, 0xe760d676L, 0xea23f0afL, 0xeee2ed18L,
+   0xf0a5bd1dL, 0xf464a0aaL, 0xf9278673L, 0xfde69bc4L,
+   0x89b8fd09L, 0x8d79e0beL, 0x803ac667L, 0x84fbdbd0L,
+   0x9abc8bd5L, 0x9e7d9662L, 0x933eb0bbL, 0x97ffad0cL,
+   0xafb010b1L, 0xab710d06L, 0xa6322bdfL, 0xa2f33668L,
+   0xbcb4666dL, 0xb8757bdaL, 0xb5365d03L, 0xb1f740b4L
+};
+
+int32_t BZ2_rNums[512] = { 
+   619, 720, 127, 481, 931, 816, 813, 233, 566, 247, 
+   985, 724, 205, 454, 863, 491, 741, 242, 949, 214, 
+   733, 859, 335, 708, 621, 574, 73, 654, 730, 472, 
+   419, 436, 278, 496, 867, 210, 399, 680, 480, 51, 
+   878, 465, 811, 169, 869, 675, 611, 697, 867, 561, 
+   862, 687, 507, 283, 482, 129, 807, 591, 733, 623, 
+   150, 238, 59, 379, 684, 877, 625, 169, 643, 105, 
+   170, 607, 520, 932, 727, 476, 693, 425, 174, 647, 
+   73, 122, 335, 530, 442, 853, 695, 249, 445, 515, 
+   909, 545, 703, 919, 874, 474, 882, 500, 594, 612, 
+   641, 801, 220, 162, 819, 984, 589, 513, 495, 799, 
+   161, 604, 958, 533, 221, 400, 386, 867, 600, 782, 
+   382, 596, 414, 171, 516, 375, 682, 485, 911, 276, 
+   98, 553, 163, 354, 666, 933, 424, 341, 533, 870, 
+   227, 730, 475, 186, 263, 647, 537, 686, 600, 224, 
+   469, 68, 770, 919, 190, 373, 294, 822, 808, 206, 
+   184, 943, 795, 384, 383, 461, 404, 758, 839, 887, 
+   715, 67, 618, 276, 204, 918, 873, 777, 604, 560, 
+   951, 160, 578, 722, 79, 804, 96, 409, 713, 940, 
+   652, 934, 970, 447, 318, 353, 859, 672, 112, 785, 
+   645, 863, 803, 350, 139, 93, 354, 99, 820, 908, 
+   609, 772, 154, 274, 580, 184, 79, 626, 630, 742, 
+   653, 282, 762, 623, 680, 81, 927, 626, 789, 125, 
+   411, 521, 938, 300, 821, 78, 343, 175, 128, 250, 
+   170, 774, 972, 275, 999, 639, 495, 78, 352, 126, 
+   857, 956, 358, 619, 580, 124, 737, 594, 701, 612, 
+   669, 112, 134, 694, 363, 992, 809, 743, 168, 974, 
+   944, 375, 748, 52, 600, 747, 642, 182, 862, 81, 
+   344, 805, 988, 739, 511, 655, 814, 334, 249, 515, 
+   897, 955, 664, 981, 649, 113, 974, 459, 893, 228, 
+   433, 837, 553, 268, 926, 240, 102, 654, 459, 51, 
+   686, 754, 806, 760, 493, 403, 415, 394, 687, 700, 
+   946, 670, 656, 610, 738, 392, 760, 799, 887, 653, 
+   978, 321, 576, 617, 626, 502, 894, 679, 243, 440, 
+   680, 879, 194, 572, 640, 724, 926, 56, 204, 700, 
+   707, 151, 457, 449, 797, 195, 791, 558, 945, 679, 
+   297, 59, 87, 824, 713, 663, 412, 693, 342, 606, 
+   134, 108, 571, 364, 631, 212, 174, 643, 304, 329, 
+   343, 97, 430, 751, 497, 314, 983, 374, 822, 928, 
+   140, 206, 73, 263, 980, 736, 876, 478, 430, 305, 
+   170, 514, 364, 692, 829, 82, 855, 953, 676, 246, 
+   369, 970, 294, 750, 807, 827, 150, 790, 288, 923, 
+   804, 378, 215, 828, 592, 281, 565, 555, 710, 82, 
+   896, 831, 547, 261, 524, 462, 293, 465, 502, 56, 
+   661, 821, 976, 991, 658, 869, 905, 758, 745, 193, 
+   768, 550, 608, 933, 378, 286, 215, 979, 792, 961, 
+   61, 688, 793, 644, 986, 403, 106, 366, 905, 644, 
+   372, 567, 466, 434, 645, 210, 389, 550, 919, 135, 
+   780, 773, 635, 389, 707, 100, 626, 958, 165, 504, 
+   920, 176, 193, 713, 857, 265, 203, 50, 668, 108, 
+   645, 990, 626, 197, 510, 357, 358, 850, 858, 364, 
+   936, 638
+};
+
+static const uint16_t MTFA_SIZE = 4096;
+static const uint16_t MTFL_SIZE = 16;
 static const uint16_t BZ_MAX_UNUSED = 5000;
 typedef void BZFILE;
-static const uint8_t BZ_RUN = 0;
-static const uint8_t BZ_FLUSH = 1;
-static const uint8_t BZ_FINISH = 2;
-static const uint8_t BZ_OK = 0;
-static const uint8_t BZ_RUN_OK = 1;
-static const uint8_t BZ_FLUSH_OK = 2;
-static const uint8_t BZ_FINISH_OK = 3;
-static const uint8_t BZ_STREAM_END = 4;
-static const int8_t BZ_SEQUENCE_ERROR =   -1;
-static const int8_t BZ_PARAM_ERROR    =   -2;
-static const int8_t BZ_MEM_ERROR      =   -3;
-static const int8_t BZ_DATA_ERROR     =   -4;
-static const int8_t BZ_DATA_ERROR_MAGIC = -5;
-static const int8_t BZ_IO_ERROR         = -6;
-static const int8_t BZ_UNEXPECTED_EOF   = -7;
-static const int8_t BZ_OUTBUFF_FULL     = -8;
-static const int8_t BZ_CONFIG_ERROR     = -9;
-int VPrintf0(const char *zf) { return ::fprintf(stderr, zf); }
-static const uint8_t BZ_HDR_B = 0x42;
-static const uint8_t BZ_HDR_Z = 0x5a;
-static const uint8_t BZ_HDR_h = 0x68;
-static const uint8_t BZ_HDR_0 = 0x30;
 static const uint16_t BZ_MAX_ALPHA_SIZE = 258;
 static const uint8_t BZ_MAX_CODE_LEN = 23;
-static const uint8_t BZ_RUNA = 0;
-static const uint8_t BZ_RUNB = 1;
 static const uint8_t BZ_N_GROUPS = 6;
-extern int32_t BZ2_rNums[512];
-extern unsigned BZ2_crc32Table[256];
 static const uint16_t BZ_MAX_SELECTORS = 18002;
-
-void BZ_UPDATE_CRC(uint32_t &crcVar, uint8_t &cha)
-{
-    crcVar = (crcVar << 8) ^ BZ2_crc32Table[(crcVar >> 24) ^ ((uint8_t)cha)];
-}
+static const uint8_t BZ_N_SUFFIX_PAIRS = 4;
+const char* zSuffix[BZ_N_SUFFIX_PAIRS] = { ".bz2", ".bz", ".tbz2", ".tbz" };
+const char* unzSuffix[BZ_N_SUFFIX_PAIRS] = { "", "", ".tar", ".tar" };
+static struct stat fileMetaInfo;
 
 struct EState
 {
@@ -70,149 +167,106 @@ struct EState
     uint8_t *block;
     uint16_t *mtfv;
     uint8_t *zbits;
-    int32_t    workFactor;
-    uint32_t   state_in_ch;
-    int32_t    state_in_len;
+    int32_t workFactor;
+    uint32_t state_in_ch;
+    int32_t state_in_len;
     int32_t rNToGo;                  
     int32_t rTPos;
-    int32_t    nblock;
-    int32_t    nblockMAX;
-    int32_t    numZ;
-    int32_t    state_out_pos;
-    int32_t    nInUse;
-    uint8_t     inUse[256];
-    uint8_t    unseqToSeq[256];
-    uint32_t   bsBuff;
-    int32_t    bsLive;
-    uint32_t   blockCRC;
-    uint32_t   combinedCRC;
-    int32_t    verbosity;
-    int32_t    blockNo;
-    int32_t    blockSize100k;
-    int32_t    nMTF;
-    int32_t    mtfFreq    [BZ_MAX_ALPHA_SIZE];
-    uint8_t    selector   [BZ_MAX_SELECTORS];
-    uint8_t    selectorMtf[BZ_MAX_SELECTORS];
-    uint8_t  len     [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-    int32_t    code    [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-    int32_t    rfreq   [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-    uint32_t   len_pack[BZ_MAX_ALPHA_SIZE][4];
+    int32_t nblock;
+    int32_t nblockMAX;
+    int32_t numZ;
+    int32_t state_out_pos;
+    int32_t nInUse;
+    uint8_t inUse[256];
+    uint8_t unseqToSeq[256];
+    uint32_t bsBuff;
+    int32_t bsLive;
+    uint32_t blockCRC;
+    uint32_t combinedCRC;
+    int32_t verbosity;
+    int32_t blockNo;
+    int32_t blockSize100k;
+    int32_t nMTF;
+    int32_t mtfFreq[BZ_MAX_ALPHA_SIZE];
+    uint8_t selector[BZ_MAX_SELECTORS];
+    uint8_t selectorMtf[BZ_MAX_SELECTORS];
+    uint8_t len[BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    int32_t code[BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    int32_t rfreq[BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    uint32_t len_pack[BZ_MAX_ALPHA_SIZE][4];
 };
 
-static const uint8_t BZ_M_IDLE = 1;
-static const uint8_t BZ_M_RUNNING = 2;
-static const uint8_t BZ_M_FLUSHING = 3;
-static const uint8_t BZ_M_FINISHING = 4;
-static const uint8_t BZ_S_OUTPUT = 1;
-static const uint8_t BZ_S_INPUT = 2;
-static const uint8_t BZ_N_OVERSHOOT = 34;
-static const uint8_t BZ_X_IDLE = 1;
-static const uint8_t BZ_X_OUTPUT = 2;
-static const uint8_t BZ_X_MAGIC_1 = 10;
-static const uint8_t BZ_X_MAGIC_2 = 11;
-static const uint8_t BZ_X_MAGIC_3 = 12;
-static const uint8_t BZ_X_MAGIC_4 = 13;
-static const uint8_t BZ_X_BLKHDR_1  =  14;
-static const uint8_t BZ_X_BLKHDR_2  =  15;
-static const uint8_t BZ_X_BLKHDR_3  =  16;
-static const uint8_t BZ_X_BLKHDR_4  =  17;
-static const uint8_t BZ_X_BLKHDR_5  =  18;
-static const uint8_t BZ_X_BLKHDR_6  =  19;
-static const uint8_t BZ_X_BCRC_1    =  20;
-static const uint8_t BZ_X_BCRC_2    =  21;
-static const uint8_t BZ_X_BCRC_3    =  22;
-static const uint8_t BZ_X_BCRC_4    =  23;
-static const uint8_t BZ_X_RANDBIT  = 24;
-static const uint8_t BZ_X_ORIGPTR_1  = 25;
-static const uint8_t BZ_X_ORIGPTR_2  = 26;
-static const uint8_t BZ_X_ORIGPTR_3  = 27;
-static const uint8_t BZ_X_MAPPING_1  = 28;
-static const uint8_t BZ_X_MAPPING_2  = 29;
-static const uint8_t BZ_X_SELECTOR_1 = 30;
-static const uint8_t BZ_X_SELECTOR_2 = 31;
-static const uint8_t BZ_X_SELECTOR_3 = 32;
-static const uint8_t BZ_X_CODING_1   = 33;
-static const uint8_t BZ_X_CODING_2   = 34;
-static const uint8_t BZ_X_CODING_3   = 35;
-static const uint8_t BZ_X_MTF_1 = 36;
-static const uint8_t BZ_X_MTF_2 = 37;
-static const uint8_t BZ_X_MTF_3 = 38;
-static const uint8_t BZ_X_MTF_4 = 39;
-static const uint8_t BZ_X_MTF_5 = 40;
-static const uint8_t BZ_X_MTF_6 = 41;
-static const uint8_t BZ_X_CCRC_1     = 47;
-static const uint8_t BZ_X_CCRC_2     = 48;
-static const uint8_t BZ_X_CCRC_3     = 49;
-static const uint8_t BZ_X_CCRC_4     = 50;
-static const uint16_t MTFA_SIZE = 4096;
-static const uint16_t MTFL_SIZE = 16;
+struct UInt64
+{
+    uint8_t b[8];
+};
 
 struct DState
 {
-      bz_stream* strm;
-      int32_t    state;
-      uint8_t    state_out_ch;
-      int32_t    state_out_len;
-      uint8_t     blockRandomised;
-      int32_t rNToGo;
-      int32_t rTPos;
-      uint32_t   bsBuff;
-      int32_t    bsLive;
-      int32_t    blockSize100k;
-      uint8_t     smallDecompress;
-      int32_t    currBlockNo;
-      int32_t    verbosity;
-      int32_t    origPtr;
-      uint32_t   tPos;
-      int32_t    k0;
-      int32_t    unzftab[256];
-      int32_t    nblock_used;
-      int32_t    cftab[257];
-      int32_t    cftabCopy[257];
-      uint32_t   *tt;
-      uint16_t   *ll16;
-      uint8_t    *ll4;
-      uint32_t   storedBlockCRC;
-      uint32_t   storedCombinedCRC;
-      uint32_t   calculatedBlockCRC;
-      uint32_t   calculatedCombinedCRC;
-      int32_t    nInUse;
-      uint8_t     inUse[256];
-      uint8_t     inUse16[16];
-      uint8_t    seqToUnseq[256];
-      uint8_t    mtfa   [MTFA_SIZE];
-      int32_t    mtfbase[256 / MTFL_SIZE];
-      uint8_t    selector   [BZ_MAX_SELECTORS];
-      uint8_t    selectorMtf[BZ_MAX_SELECTORS];
-      uint8_t    len  [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-      int32_t    limit  [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-      int32_t    base   [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-      int32_t    perm   [BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
-      int32_t    minLens[BZ_N_GROUPS];
-      int32_t    save_i;
-      int32_t    save_j;
-      int32_t    save_t;
-      int32_t    save_alphaSize;
-      int32_t    save_nGroups;
-      int32_t    save_nSelectors;
-      int32_t    save_EOB;
-      int32_t    save_groupNo;
-      int32_t    save_groupPos;
-      int32_t    save_nextSym;
-      int32_t    save_nblockMAX;
-      int32_t    save_nblock;
-      int32_t    save_es;
-      int32_t    save_N;
-      int32_t    save_curr;
-      int32_t    save_zt;
-      int32_t    save_zn; 
-      int32_t    save_zvec;
-      int32_t    save_zj;
-      int32_t    save_gSel;
-      int32_t    save_gMinlen;
-      int32_t*   save_gLimit;
-      int32_t*   save_gBase;
-      int32_t*   save_gPerm;
+    bz_stream* strm;
+    int32_t state;
+    uint8_t state_out_ch;
+    int32_t state_out_len;
+    uint8_t blockRandomised;
+    int32_t rNToGo;
+    int32_t rTPos;
+    uint32_t bsBuff;
+    int32_t bsLive;
+    int32_t blockSize100k;
+    uint8_t smallDecompress;
+    int32_t currBlockNo;
+    int32_t verbosity;
+    int32_t origPtr;
+    uint32_t tPos;
+    int32_t k0;
+    int32_t unzftab[256];
+    int32_t nblock_used;
+    int32_t cftab[257];
+    int32_t cftabCopy[257];
+    uint32_t *tt;
+    uint16_t *ll16;
+    uint8_t *ll4;
+    uint32_t storedBlockCRC;
+    uint32_t storedCombinedCRC;
+    uint32_t calculatedBlockCRC;
+    uint32_t calculatedCombinedCRC;
+    int32_t nInUse;
+    uint8_t inUse[256];
+    uint8_t inUse16[16];
+    uint8_t seqToUnseq[256];
+    uint8_t mtfa[MTFA_SIZE];
+    int32_t mtfbase[256 / MTFL_SIZE];
+    uint8_t selector[BZ_MAX_SELECTORS];
+    uint8_t selectorMtf[BZ_MAX_SELECTORS];
+    uint8_t len[BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    int32_t limit[BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    int32_t base[BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    int32_t perm[BZ_N_GROUPS][BZ_MAX_ALPHA_SIZE];
+    int32_t minLens[BZ_N_GROUPS];
+    int32_t save_i;
+    int32_t save_j;
+    int32_t save_t;
+    int32_t save_alphaSize;
+    int32_t save_nGroups;
+    int32_t save_nSelectors;
+    int32_t save_EOB;
+    int32_t save_groupNo;
+    int32_t save_groupPos;
+    int32_t save_nextSym;
+    int32_t save_nblockMAX;
+    int32_t save_nblock;
+    int32_t save_es;
+    int32_t save_N;
+    int32_t save_curr;
+    int32_t save_zt;
+    int32_t save_zn; 
+    int32_t save_zvec;
+    int32_t save_zj;
+    int32_t save_gSel;
+    int32_t save_gMinlen;
+    int32_t *save_gLimit;
+    int32_t *save_gBase;
+    int32_t *save_gPerm;
 };
 
 struct Cell
@@ -234,16 +288,106 @@ struct bzFile
 
 class AppBzip2
 {
-    static const uint8_t BZ_X_ENDHDR_2   = 42;
-    static const uint8_t BZ_X_ENDHDR_3   = 43;
-    static const uint8_t BZ_X_ENDHDR_4   = 44;
-    static const uint8_t BZ_X_ENDHDR_5   = 45;
-    static const uint8_t BZ_X_ENDHDR_6   = 46;
+    static const uint8_t BZ_RUNA = 0;
+    static const uint8_t BZ_RUNB = 1;
+    int32_t verbosity;
+    uint8_t keepInputFiles, smallMode, deleteOutputOnInterrupt;
+    uint8_t forceOverwrite, testFailsExist, unzFailsExist, noisy;
+    int32_t numFileNames, numFilesProcessed, blockSize100k;
+    int32_t exitValue;
+    int32_t opMode;
+    int32_t srcMode;
+    static const uint16_t FILE_NAME_LEN = 1034;
+    int32_t longestFileName;
+    char inName [FILE_NAME_LEN];
+    char outName[FILE_NAME_LEN];
+    char tmpName[FILE_NAME_LEN];
+    char *progName;
+    char progNameReally[FILE_NAME_LEN];
+    FILE *outputHandleJustInCase;
+    int32_t workFactor;
+    static const uint8_t BZ_HDR_B = 0x42;
+    static const uint8_t BZ_HDR_Z = 0x5a;
+    static const uint8_t BZ_HDR_h = 0x68;
+    static const uint8_t BZ_HDR_0 = 0x30;
+    static const uint8_t BZ_RUN = 0;
+    static const uint8_t BZ_FLUSH = 1;
+    static const uint8_t BZ_FINISH = 2;
+    static const uint8_t BZ_OK = 0;
+    static const uint8_t BZ_RUN_OK = 1;
+    static const uint8_t BZ_FLUSH_OK = 2;
+    static const uint8_t BZ_FINISH_OK = 3;
+    static const uint8_t BZ_STREAM_END = 4;
+    static const int8_t BZ_SEQUENCE_ERROR = -1;
+    static const int8_t BZ_PARAM_ERROR = -2;
+    static const int8_t BZ_MEM_ERROR = -3;
+    static const int8_t BZ_DATA_ERROR = -4;
+    static const int8_t BZ_DATA_ERROR_MAGIC = -5;
+    static const int8_t BZ_IO_ERROR = -6;
+    static const int8_t BZ_UNEXPECTED_EOF = -7;
+    static const int8_t BZ_OUTBUFF_FULL = -8;
+    static const int8_t BZ_CONFIG_ERROR = -9;
+    static const uint8_t SM_I2O = 1;
+    static const uint8_t SM_F2O = 2;
+    static const uint8_t SM_F2F = 3;
+    static const uint8_t OM_Z = 1;
+    static const uint8_t OM_UNZ = 2;
+    static const uint8_t OM_TEST = 3;
+    static const uint8_t BZ_X_MTF_1 = 36;
+    static const uint8_t BZ_X_MTF_2 = 37;
+    static const uint8_t BZ_X_MTF_3 = 38;
+    static const uint8_t BZ_X_MTF_4 = 39;
+    static const uint8_t BZ_X_MTF_5 = 40;
+    static const uint8_t BZ_X_MTF_6 = 41;
+    static const uint8_t BZ_X_CCRC_1 = 47;
+    static const uint8_t BZ_X_CCRC_2 = 48;
+    static const uint8_t BZ_X_CCRC_3 = 49;
+    static const uint8_t BZ_X_CCRC_4 = 50;
+    static const uint8_t BZ_X_ORIGPTR_1 = 25;
+    static const uint8_t BZ_X_ORIGPTR_2 = 26;
+    static const uint8_t BZ_X_ORIGPTR_3 = 27;
+    static const uint8_t BZ_X_MAPPING_1 = 28;
+    static const uint8_t BZ_X_MAPPING_2 = 29;
+    static const uint8_t BZ_X_SELECTOR_1 = 30;
+    static const uint8_t BZ_X_SELECTOR_2 = 31;
+    static const uint8_t BZ_X_SELECTOR_3 = 32;
+    static const uint8_t BZ_X_CODING_1 = 33;
+    static const uint8_t BZ_X_CODING_2 = 34;
+    static const uint8_t BZ_X_CODING_3 = 35;
+    static const uint8_t BZ_M_IDLE = 1;
+    static const uint8_t BZ_M_RUNNING = 2;
+    static const uint8_t BZ_M_FLUSHING = 3;
+    static const uint8_t BZ_M_FINISHING = 4;
+    static const uint8_t BZ_S_OUTPUT = 1;
+    static const uint8_t BZ_S_INPUT = 2;
+    static const uint8_t BZ_N_OVERSHOOT = 34;
+    static const uint8_t BZ_X_IDLE = 1;
+    static const uint8_t BZ_X_OUTPUT = 2;
+    static const uint8_t BZ_X_MAGIC_1 = 10;
+    static const uint8_t BZ_X_MAGIC_2 = 11;
+    static const uint8_t BZ_X_MAGIC_3 = 12;
+    static const uint8_t BZ_X_MAGIC_4 = 13;
+    static const uint8_t BZ_X_BLKHDR_1 = 14;
+    static const uint8_t BZ_X_BLKHDR_2 = 15;
+    static const uint8_t BZ_X_BLKHDR_3 = 16;
+    static const uint8_t BZ_X_BLKHDR_4 = 17;
+    static const uint8_t BZ_X_BLKHDR_5 = 18;
+    static const uint8_t BZ_X_BLKHDR_6 = 19;
+    static const uint8_t BZ_X_BCRC_1 = 20;
+    static const uint8_t BZ_X_BCRC_2 = 21;
+    static const uint8_t BZ_X_BCRC_3 = 22;
+    static const uint8_t BZ_X_BCRC_4 = 23;
+    static const uint8_t BZ_X_RANDBIT = 24;
+    static const uint8_t BZ_X_ENDHDR_2 = 42;
+    static const uint8_t BZ_X_ENDHDR_3 = 43;
+    static const uint8_t BZ_X_ENDHDR_4 = 44;
+    static const uint8_t BZ_X_ENDHDR_5 = 45;
+    static const uint8_t BZ_X_ENDHDR_6 = 46;
     static const uint8_t MAIN_QSORT_SMALL_THRESH = 20;
     static const uint8_t MAIN_QSORT_DEPTH_THRESH = 14;
     static const uint8_t MAIN_QSORT_STACK_SIZE = 100;
     static const uint8_t FALLBACK_QSORT_SMALL_THRESH = 10;
-    static const uint8_t FALLBACK_QSORT_STACK_SIZE =  100;
+    static const uint8_t FALLBACK_QSORT_STACK_SIZE = 100;
     static const uint32_t SETMASK = 1 << 21;
     static const uint32_t CLEARMASK = ~(1<<21);
     static const uint8_t BZ_GREATER_ICOST = 15;
@@ -284,26 +428,33 @@ class AppBzip2
     }
 
     BZFILE *BZ2_bzReadOpen(int *bzerr, FILE *f, int verbosity, int sm, void *unused, int nUnused);
-    static void default_bzfree(void* opaque, void* addr) { if (addr != NULL) free(addr); }
-    //static void default_bzfree(void* opaque, void* addr) { if (addr != NULL) delete addr; }
+    //static void default_bzfree(void* opaque, void* addr) { if (addr != NULL) free(addr); }
+    static void default_bzfree(void* opaque, void* addr) { if (addr != NULL) delete[] addr; }
     BZFILE *BZ2_bzdopen(int fd, const char *mode);
     BZFILE *bzopen_or_bzdopen(const char *path, int fd, const char *mode, int open_mode);
     Cell *snocString(Cell *root, char *name);
+    int VPrintf0(const char *zf) { return ::fprintf(stderr, zf); }
     void saveInputFileMetaInfo(char *srcName);
     void ERROR_IF_NOT_ZERO(int i);
     void ioError();
     void crcError();
+    void uInt64_toAscii(char* outbuf, UInt64* n);
+    uint8_t hasSuffix(const char* s, const char* suffix);
+    uint8_t uInt64_isZero(UInt64* n);
+    uint8_t notAStandardFile(char* name);
     void panic(const char *s);
     int BZ2_bzflush(BZFILE *b);
     void BZ2_bzReadGetUnused(int *bzerror, BZFILE* b, void **unused, int *nUnused);
     void unRLE_obuf_to_output_FAST(DState* s);
     uint8_t copy_output_until_stop(EState* s);
+    int32_t uInt64_qrm10(UInt64* n);
     void prepare_new_block(EState *s);
     void BZ_INITIALISE_CRC(uint32_t &crcVar);
     //void applySavedMetaInfoToOutputFile(char *dstName);
     uint8_t mapSuffix(char* name, const char* oldSuffix, const char* newSuffix);
     int BZ2_bzCompressEnd(bz_stream *strm);
     uint8_t myfeof(FILE* f);
+    void cleanUpAndFail(int32_t ec);
     uint8_t isempty_RL(EState* s);
     void init_RL(EState* s);
     void flush_RL(EState* s);
@@ -354,25 +505,38 @@ class AppBzip2
     int BZ2_bzread(BZFILE* b, void* buf, int len);
     uint8_t uncompressStream(FILE *zStream, FILE *stream);
     uint8_t testStream(FILE *zStream);
+    void outOfMemory();
+    void showFileNames();
+    void configError();
     void fswap(uint32_t &zz1, uint32_t &zz2);
-
-    void BZ2_hbAssignCodes(int32_t *code, uint8_t *length, int32_t minLen, int32_t maxLen,
-                       int32_t alphaSize);
-
-    void BZ2_hbMakeCodeLengths(uint8_t *len, int32_t *freq,
-        int32_t alphaSize, int32_t maxLen);
+    Cell *mkCell();
+    const char *BZ2_bzerror(BZFILE *b, int *errnum);
+    void uInt64_from_UInt32s(UInt64* n, uint32_t lo32, uint32_t hi32);
+    double uInt64_to_double(UInt64 *n);
+    void setExit(int32_t v);
+    void cadvise();
+    void BZ_UPDATE_CRC(uint32_t &crcVar, uint8_t &cha);
+    void BZ2_hbMakeCodeLengths(uint8_t *len, int32_t *freq, int32_t alphaSize, int32_t maxLen);
+    int32_t countHardLinks(char *name);
+    FILE *fopen_output_safely(char* name, const char* mode);
+    uint8_t fileExists(char *name);
+    void pad(char *s);
+    void BZ2_hbAssignCodes(int32_t *, uint8_t *, int32_t, int32_t, int32_t);
+    void fallbackSort(uint32_t*, uint32_t*, uint32_t *, int32_t, int32_t);
 
     int BZ2_bzBuffToBuffDecompress(char *dest, unsigned int* destLen,
                       char *source, unsigned int sourceLen, int small, int verbosity);
 
     void BZ2_bzWriteClose64(int *bzerror, BZFILE *b, int abandon, unsigned int *nbytes_in_lo32,
       unsigned int *nbytes_in_hi32, unsigned int *nbytes_out_lo32, unsigned int *nbytes_out_hi32);
-
-    void fallbackSort(uint32_t* fmap, uint32_t* eclass, 
-        uint32_t *bhtab, int32_t nblock, int32_t verb);
 public:
     int run(int argc, char **argv);
 };
+
+void AppBzip2::BZ_UPDATE_CRC(uint32_t &crcVar, uint8_t &cha)
+{
+    crcVar = (crcVar << 8) ^ BZ2_crc32Table[(crcVar >> 24) ^ ((uint8_t)cha)];
+}
 
 void AppBzip2::fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, int32_t hi)
 {
@@ -405,13 +569,12 @@ void AppBzip2::fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, 
 
 const char *AppBzip2::BZ2_bzlibVersion()
 {
-   return "1.0.2, 30-Dec-2001";
-
+    return "1.0.2, 30-Dec-2001";
 }
 
 void AppBzip2::BZ2_bz__AssertH__fail(int errcode )
 {
-   fprintf(stderr, 
+    fprintf(stderr, 
       "\n\nbzip2/libbzip2: internal error number %d.\n"
       "This is a bug in bzip2/libbzip2, %s.\n"
       "Please report it to me at: jseward@acm.org.  If this happened\n"
@@ -421,11 +584,11 @@ void AppBzip2::BZ2_bz__AssertH__fail(int errcode )
       "timely and accurate bug reports eventually lead to higher\n"
       "quality software.  Thanks.  Julian Seward, 30 December 2001.\n\n",
       errcode,
-      BZ2_bzlibVersion()
-   );
+      BZ2_bzlibVersion());
 
-   if (errcode == 1007) {
-   fprintf(stderr,
+    if (errcode == 1007)
+    {
+        fprintf(stderr,
       "\n*** A special note about internal error number 1007 ***\n"
       "\n"
       "Experience suggests that a common cause of i.e. 1007\n"
@@ -449,10 +612,10 @@ void AppBzip2::BZ2_bz__AssertH__fail(int errcode )
       "  let me know, and, ideally, save a copy of the file causing the\n"
       "  problem -- without which I will be unable to investigate it.\n"
       "\n"
-   );
-   }
+    );
+    }
 
-   //exit(3);
+    //exit(3);
     throw "3";
 }
 
@@ -478,7 +641,6 @@ void AppBzip2::fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, in
     int32_t stackHi[FALLBACK_QSORT_STACK_SIZE];
     r = 0;
     sp = 0;
-
     stackLo[sp] = loSt;
     stackHi[sp] = hiSt;
     sp++;
@@ -533,7 +695,6 @@ void AppBzip2::fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, in
          fswap(fmap[unLo], fmap[unHi]); unLo++; unHi--;
       }
 
-
       if (gtHi < ltLo) continue;
 
         n = ((ltLo-lo) < (unLo-ltLo)) ? (ltLo-lo) : (unLo-ltLo);
@@ -579,8 +740,8 @@ void AppBzip2::fallbackQSort3(uint32_t* fmap, uint32_t* eclass, int32_t loSt, in
     }
 }
 
-void AppBzip2::fallbackSort(uint32_t* fmap, uint32_t* eclass, 
-                    uint32_t *bhtab, int32_t nblock, int32_t verb)
+void AppBzip2::fallbackSort(uint32_t* fmap, uint32_t* eclass, uint32_t *bhtab, int32_t nblock,
+        int32_t verb)
 {
     int32_t ftab[257];
     int32_t ftabCopy[256];
@@ -588,10 +749,7 @@ void AppBzip2::fallbackSort(uint32_t* fmap, uint32_t* eclass,
     int32_t nNotDone;
     int32_t nBhtab;
     uint8_t* eclass8 = (uint8_t*)eclass;
-
-    if (verb >= 4)
-        fprintf(stderr, "        bucket sorting ...\n" );
-
+    if (verb >= 4) fprintf(stderr, "        bucket sorting ...\n" );
     for (i = 0; i < 257;    i++) ftab[i] = 0;
     for (i = 0; i < nblock; i++) ftab[eclass8[i]]++;
     for (i = 0; i < 256;    i++) ftabCopy[i] = ftab[i];
@@ -604,8 +762,6 @@ void AppBzip2::fallbackSort(uint32_t* fmap, uint32_t* eclass,
         ftab[j] = k;
         fmap[k] = i;
     }
-
-
 
     nBhtab = 2 + (nblock / 32);
 
@@ -713,7 +869,7 @@ void AppBzip2::fallbackSort(uint32_t* fmap, uint32_t* eclass,
     AssertH ( j < 256, 1005 );
 }
 
-uint8_t AppBzip2::mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* quadrant,
+uint8_t AppBzip2::mainGtU(uint32_t i1, uint32_t i2, uint8_t* block, uint16_t* quadrant,
                uint32_t nblock, int32_t* budget)
 {
     int32_t k;
@@ -725,37 +881,37 @@ uint8_t AppBzip2::mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* q
     c1 = block[i1]; c2 = block[i2];
     if (c1 != c2) return (c1 > c2);
     i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   c1 = block[i1]; c2 = block[i2];
-   if (c1 != c2) return (c1 > c2);
-   i1++; i2++;
-   k = nblock + 8;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    c1 = block[i1]; c2 = block[i2];
+    if (c1 != c2) return (c1 > c2);
+    i1++; i2++;
+    k = nblock + 8;
 
     do
     {
@@ -811,29 +967,26 @@ uint8_t AppBzip2::mainGtU(uint32_t i1, uint32_t i2, uint8_t* block,  uint16_t* q
    return 0;
 }
 
-static int32_t incs[14] = { 1, 4, 13, 40, 121, 364, 1093, 3280,
-                   9841, 29524, 88573, 265720,
+static int32_t incs[14] = { 1, 4, 13, 40, 121, 364, 1093, 3280, 9841, 29524, 88573, 265720,
                    797161, 2391484 };
 
 void AppBzip2::mainSimpleSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant, int32_t nblock,
                       int32_t lo, int32_t hi, int32_t d, int32_t *budget)
 {
-   int32_t i, j, h, bigN, hp;
-   uint32_t v;
+    int32_t i, j, h, bigN, hp;
+    uint32_t v;
+    bigN = hi - lo + 1;
+    if (bigN < 2) return;
+    hp = 0;
+    while (incs[hp] < bigN) hp++;
+    hp--;
 
-   bigN = hi - lo + 1;
-   if (bigN < 2) return;
-
-   hp = 0;
-   while (incs[hp] < bigN) hp++;
-   hp--;
-
-   for (; hp >= 0; hp--) {
-      h = incs[hp];
-
-      i = lo + h;
-      while (1) {
-
+    for (; hp >= 0; hp--)
+    {
+        h = incs[hp];
+        i = lo + h;
+        while (1)
+        {
          if (i > hi) break;
          v = ptr[i];
          j = i;
@@ -907,8 +1060,6 @@ void AppBzip2::mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
     int32_t nextHi[3];
     int32_t nextD [3];
     int32_t sp = 0;
-
-
     stackLo[sp] = loSt;
     stackHi[sp] = hiSt;
     stackD[sp] = dSt;
@@ -932,9 +1083,6 @@ void AppBzip2::mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
 
         unLo = ltLo = lo;
         unHi = gtHi = hi;
-
-
-
 
         while (1)
         {
@@ -1003,8 +1151,8 @@ void AppBzip2::mainQSort3(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
 
         n = lo + unLo - ltLo - 1;
         m = hi - (gtHi - unHi) + 1;
-
-        nextLo[0] = lo;  nextHi[0] = n;   nextD[0] = d;
+        nextLo[0] = lo;
+        nextHi[0] = n;   nextD[0] = d;
         nextLo[1] = m;   nextHi[1] = hi;  nextD[1] = d;
         nextLo[2] = n+1; nextHi[2] = m-1; nextD[2] = d+1;
 
@@ -1059,71 +1207,76 @@ void AppBzip2::mainSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
     int32_t numQSorted;
     uint16_t s;
     if (verb >= 4) VPrintf0 ( "        main sort initialise ...\n" );
-
     for (i = 65536; i >= 0; i--) ftab[i] = 0;
-
     j = block[0] << 8;
     i = nblock-1;
-    for (; i >= 3; i -= 4) {
-      quadrant[i] = 0;
-      j = (j >> 8) | ( ((uint16_t)block[i]) << 8);
-      ftab[j]++;
-      quadrant[i-1] = 0;
-      j = (j >> 8) | ( ((uint16_t)block[i-1]) << 8);
-      ftab[j]++;
-      quadrant[i-2] = 0;
-      j = (j >> 8) | ( ((uint16_t)block[i-2]) << 8);
-      ftab[j]++;
-      quadrant[i-3] = 0;
-      j = (j >> 8) | ( ((uint16_t)block[i-3]) << 8);
-      ftab[j]++;
-   }
-   for (; i >= 0; i--) {
-      quadrant[i] = 0;
-      j = (j >> 8) | ( ((uint16_t)block[i]) << 8);
-      ftab[j]++;
-   }
 
-   for (i = 0; i < BZ_N_OVERSHOOT; i++) {
-      block   [nblock+i] = block[i];
-      quadrant[nblock+i] = 0;
-   }
+    for (; i >= 3; i -= 4)
+    {
+        quadrant[i] = 0;
+        j = (j >> 8) | ( ((uint16_t)block[i]) << 8);
+        ftab[j]++;
+        quadrant[i-1] = 0;
+        j = (j >> 8) | ( ((uint16_t)block[i-1]) << 8);
+        ftab[j]++;
+        quadrant[i-2] = 0;
+        j = (j >> 8) | ( ((uint16_t)block[i-2]) << 8);
+        ftab[j]++;
+        quadrant[i-3] = 0;
+        j = (j >> 8) | ( ((uint16_t)block[i-3]) << 8);
+        ftab[j]++;
+    }
 
-   if (verb >= 4) VPrintf0 ( "        bucket sorting ...\n" );
+    for (; i >= 0; i--)
+    {
+        quadrant[i] = 0;
+        j = (j >> 8) | ( ((uint16_t)block[i]) << 8);
+        ftab[j]++;
+    }
 
-   for (i = 1; i <= 65536; i++) ftab[i] += ftab[i-1];
+    for (i = 0; i < BZ_N_OVERSHOOT; i++)
+    {
+        block   [nblock+i] = block[i];
+        quadrant[nblock+i] = 0;
+    }
 
-   s = block[0] << 8;
-   i = nblock-1;
-   for (; i >= 3; i -= 4) {
-      s = (s >> 8) | (block[i] << 8);
-      j = ftab[s] -1;
-      ftab[s] = j;
-      ptr[j] = i;
-      s = (s >> 8) | (block[i-1] << 8);
-      j = ftab[s] -1;
-      ftab[s] = j;
-      ptr[j] = i-1;
-      s = (s >> 8) | (block[i-2] << 8);
-      j = ftab[s] -1;
-      ftab[s] = j;
-      ptr[j] = i-2;
-      s = (s >> 8) | (block[i-3] << 8);
-      j = ftab[s] -1;
-      ftab[s] = j;
-      ptr[j] = i-3;
-   }
-   for (; i >= 0; i--) {
-      s = (s >> 8) | (block[i] << 8);
-      j = ftab[s] -1;
-      ftab[s] = j;
-      ptr[j] = i;
-   }
+    if (verb >= 4) VPrintf0 ( "        bucket sorting ...\n" );
+    for (i = 1; i <= 65536; i++) ftab[i] += ftab[i-1];
+    s = block[0] << 8;
+    i = nblock-1;
+
+    for (; i >= 3; i -= 4)
+    {
+        s = (s >> 8) | (block[i] << 8);
+        j = ftab[s] -1;
+        ftab[s] = j;
+        ptr[j] = i;
+        s = (s >> 8) | (block[i-1] << 8);
+        j = ftab[s] -1;
+        ftab[s] = j;
+        ptr[j] = i-1;
+        s = (s >> 8) | (block[i-2] << 8);
+        j = ftab[s] -1;
+        ftab[s] = j;
+        ptr[j] = i-2;
+        s = (s >> 8) | (block[i-3] << 8);
+        j = ftab[s] -1;
+        ftab[s] = j;
+        ptr[j] = i-3;
+    }
+
+    for (; i >= 0; i--)
+    {
+        s = (s >> 8) | (block[i] << 8);
+        j = ftab[s] -1;
+        ftab[s] = j;
+        ptr[j] = i;
+    }
 
     for (i = 0; i <= 255; i++)
     {
-      bigDone     [i] = 0;
-      runningOrder[i] = i;
+        bigDone     [i] = 0;
+        runningOrder[i] = i;
     }
 
    {
@@ -1447,133 +1600,12 @@ void AppBzip2::BZ2_hbCreateDecodeTables(int32_t *limit, int32_t *base, int32_t *
       base[i] = ((limit[i-1] + 1) << 1) - base[i];
 }
 
-uint32_t BZ2_crc32Table[256] = {
 
-   0x00000000L, 0x04c11db7L, 0x09823b6eL, 0x0d4326d9L,
-   0x130476dcL, 0x17c56b6bL, 0x1a864db2L, 0x1e475005L,
-   0x2608edb8L, 0x22c9f00fL, 0x2f8ad6d6L, 0x2b4bcb61L,
-   0x350c9b64L, 0x31cd86d3L, 0x3c8ea00aL, 0x384fbdbdL,
-   0x4c11db70L, 0x48d0c6c7L, 0x4593e01eL, 0x4152fda9L,
-   0x5f15adacL, 0x5bd4b01bL, 0x569796c2L, 0x52568b75L,
-   0x6a1936c8L, 0x6ed82b7fL, 0x639b0da6L, 0x675a1011L,
-   0x791d4014L, 0x7ddc5da3L, 0x709f7b7aL, 0x745e66cdL,
-   0x9823b6e0L, 0x9ce2ab57L, 0x91a18d8eL, 0x95609039L,
-   0x8b27c03cL, 0x8fe6dd8bL, 0x82a5fb52L, 0x8664e6e5L,
-   0xbe2b5b58L, 0xbaea46efL, 0xb7a96036L, 0xb3687d81L,
-   0xad2f2d84L, 0xa9ee3033L, 0xa4ad16eaL, 0xa06c0b5dL,
-   0xd4326d90L, 0xd0f37027L, 0xddb056feL, 0xd9714b49L,
-   0xc7361b4cL, 0xc3f706fbL, 0xceb42022L, 0xca753d95L,
-   0xf23a8028L, 0xf6fb9d9fL, 0xfbb8bb46L, 0xff79a6f1L,
-   0xe13ef6f4L, 0xe5ffeb43L, 0xe8bccd9aL, 0xec7dd02dL,
-   0x34867077L, 0x30476dc0L, 0x3d044b19L, 0x39c556aeL,
-   0x278206abL, 0x23431b1cL, 0x2e003dc5L, 0x2ac12072L,
-   0x128e9dcfL, 0x164f8078L, 0x1b0ca6a1L, 0x1fcdbb16L,
-   0x018aeb13L, 0x054bf6a4L, 0x0808d07dL, 0x0cc9cdcaL,
-   0x7897ab07L, 0x7c56b6b0L, 0x71159069L, 0x75d48ddeL,
-   0x6b93dddbL, 0x6f52c06cL, 0x6211e6b5L, 0x66d0fb02L,
-   0x5e9f46bfL, 0x5a5e5b08L, 0x571d7dd1L, 0x53dc6066L,
-   0x4d9b3063L, 0x495a2dd4L, 0x44190b0dL, 0x40d816baL,
-   0xaca5c697L, 0xa864db20L, 0xa527fdf9L, 0xa1e6e04eL,
-   0xbfa1b04bL, 0xbb60adfcL, 0xb6238b25L, 0xb2e29692L,
-   0x8aad2b2fL, 0x8e6c3698L, 0x832f1041L, 0x87ee0df6L,
-   0x99a95df3L, 0x9d684044L, 0x902b669dL, 0x94ea7b2aL,
-   0xe0b41de7L, 0xe4750050L, 0xe9362689L, 0xedf73b3eL,
-   0xf3b06b3bL, 0xf771768cL, 0xfa325055L, 0xfef34de2L,
-   0xc6bcf05fL, 0xc27dede8L, 0xcf3ecb31L, 0xcbffd686L,
-   0xd5b88683L, 0xd1799b34L, 0xdc3abdedL, 0xd8fba05aL,
-   0x690ce0eeL, 0x6dcdfd59L, 0x608edb80L, 0x644fc637L,
-   0x7a089632L, 0x7ec98b85L, 0x738aad5cL, 0x774bb0ebL,
-   0x4f040d56L, 0x4bc510e1L, 0x46863638L, 0x42472b8fL,
-   0x5c007b8aL, 0x58c1663dL, 0x558240e4L, 0x51435d53L,
-   0x251d3b9eL, 0x21dc2629L, 0x2c9f00f0L, 0x285e1d47L,
-   0x36194d42L, 0x32d850f5L, 0x3f9b762cL, 0x3b5a6b9bL,
-   0x0315d626L, 0x07d4cb91L, 0x0a97ed48L, 0x0e56f0ffL,
-   0x1011a0faL, 0x14d0bd4dL, 0x19939b94L, 0x1d528623L,
-   0xf12f560eL, 0xf5ee4bb9L, 0xf8ad6d60L, 0xfc6c70d7L,
-   0xe22b20d2L, 0xe6ea3d65L, 0xeba91bbcL, 0xef68060bL,
-   0xd727bbb6L, 0xd3e6a601L, 0xdea580d8L, 0xda649d6fL,
-   0xc423cd6aL, 0xc0e2d0ddL, 0xcda1f604L, 0xc960ebb3L,
-   0xbd3e8d7eL, 0xb9ff90c9L, 0xb4bcb610L, 0xb07daba7L,
-   0xae3afba2L, 0xaafbe615L, 0xa7b8c0ccL, 0xa379dd7bL,
-   0x9b3660c6L, 0x9ff77d71L, 0x92b45ba8L, 0x9675461fL,
-   0x8832161aL, 0x8cf30badL, 0x81b02d74L, 0x857130c3L,
-   0x5d8a9099L, 0x594b8d2eL, 0x5408abf7L, 0x50c9b640L,
-   0x4e8ee645L, 0x4a4ffbf2L, 0x470cdd2bL, 0x43cdc09cL,
-   0x7b827d21L, 0x7f436096L, 0x7200464fL, 0x76c15bf8L,
-   0x68860bfdL, 0x6c47164aL, 0x61043093L, 0x65c52d24L,
-   0x119b4be9L, 0x155a565eL, 0x18197087L, 0x1cd86d30L,
-   0x029f3d35L, 0x065e2082L, 0x0b1d065bL, 0x0fdc1becL,
-   0x3793a651L, 0x3352bbe6L, 0x3e119d3fL, 0x3ad08088L,
-   0x2497d08dL, 0x2056cd3aL, 0x2d15ebe3L, 0x29d4f654L,
-   0xc5a92679L, 0xc1683bceL, 0xcc2b1d17L, 0xc8ea00a0L,
-   0xd6ad50a5L, 0xd26c4d12L, 0xdf2f6bcbL, 0xdbee767cL,
-   0xe3a1cbc1L, 0xe760d676L, 0xea23f0afL, 0xeee2ed18L,
-   0xf0a5bd1dL, 0xf464a0aaL, 0xf9278673L, 0xfde69bc4L,
-   0x89b8fd09L, 0x8d79e0beL, 0x803ac667L, 0x84fbdbd0L,
-   0x9abc8bd5L, 0x9e7d9662L, 0x933eb0bbL, 0x97ffad0cL,
-   0xafb010b1L, 0xab710d06L, 0xa6322bdfL, 0xa2f33668L,
-   0xbcb4666dL, 0xb8757bdaL, 0xb5365d03L, 0xb1f740b4L
-};
-
-int32_t BZ2_rNums[512] = { 
-   619, 720, 127, 481, 931, 816, 813, 233, 566, 247, 
-   985, 724, 205, 454, 863, 491, 741, 242, 949, 214, 
-   733, 859, 335, 708, 621, 574, 73, 654, 730, 472, 
-   419, 436, 278, 496, 867, 210, 399, 680, 480, 51, 
-   878, 465, 811, 169, 869, 675, 611, 697, 867, 561, 
-   862, 687, 507, 283, 482, 129, 807, 591, 733, 623, 
-   150, 238, 59, 379, 684, 877, 625, 169, 643, 105, 
-   170, 607, 520, 932, 727, 476, 693, 425, 174, 647, 
-   73, 122, 335, 530, 442, 853, 695, 249, 445, 515, 
-   909, 545, 703, 919, 874, 474, 882, 500, 594, 612, 
-   641, 801, 220, 162, 819, 984, 589, 513, 495, 799, 
-   161, 604, 958, 533, 221, 400, 386, 867, 600, 782, 
-   382, 596, 414, 171, 516, 375, 682, 485, 911, 276, 
-   98, 553, 163, 354, 666, 933, 424, 341, 533, 870, 
-   227, 730, 475, 186, 263, 647, 537, 686, 600, 224, 
-   469, 68, 770, 919, 190, 373, 294, 822, 808, 206, 
-   184, 943, 795, 384, 383, 461, 404, 758, 839, 887, 
-   715, 67, 618, 276, 204, 918, 873, 777, 604, 560, 
-   951, 160, 578, 722, 79, 804, 96, 409, 713, 940, 
-   652, 934, 970, 447, 318, 353, 859, 672, 112, 785, 
-   645, 863, 803, 350, 139, 93, 354, 99, 820, 908, 
-   609, 772, 154, 274, 580, 184, 79, 626, 630, 742, 
-   653, 282, 762, 623, 680, 81, 927, 626, 789, 125, 
-   411, 521, 938, 300, 821, 78, 343, 175, 128, 250, 
-   170, 774, 972, 275, 999, 639, 495, 78, 352, 126, 
-   857, 956, 358, 619, 580, 124, 737, 594, 701, 612, 
-   669, 112, 134, 694, 363, 992, 809, 743, 168, 974, 
-   944, 375, 748, 52, 600, 747, 642, 182, 862, 81, 
-   344, 805, 988, 739, 511, 655, 814, 334, 249, 515, 
-   897, 955, 664, 981, 649, 113, 974, 459, 893, 228, 
-   433, 837, 553, 268, 926, 240, 102, 654, 459, 51, 
-   686, 754, 806, 760, 493, 403, 415, 394, 687, 700, 
-   946, 670, 656, 610, 738, 392, 760, 799, 887, 653, 
-   978, 321, 576, 617, 626, 502, 894, 679, 243, 440, 
-   680, 879, 194, 572, 640, 724, 926, 56, 204, 700, 
-   707, 151, 457, 449, 797, 195, 791, 558, 945, 679, 
-   297, 59, 87, 824, 713, 663, 412, 693, 342, 606, 
-   134, 108, 571, 364, 631, 212, 174, 643, 304, 329, 
-   343, 97, 430, 751, 497, 314, 983, 374, 822, 928, 
-   140, 206, 73, 263, 980, 736, 876, 478, 430, 305, 
-   170, 514, 364, 692, 829, 82, 855, 953, 676, 246, 
-   369, 970, 294, 750, 807, 827, 150, 790, 288, 923, 
-   804, 378, 215, 828, 592, 281, 565, 555, 710, 82, 
-   896, 831, 547, 261, 524, 462, 293, 465, 502, 56, 
-   661, 821, 976, 991, 658, 869, 905, 758, 745, 193, 
-   768, 550, 608, 933, 378, 286, 215, 979, 792, 961, 
-   61, 688, 793, 644, 986, 403, 106, 366, 905, 644, 
-   372, 567, 466, 434, 645, 210, 389, 550, 919, 135, 
-   780, 773, 635, 389, 707, 100, 626, 958, 165, 504, 
-   920, 176, 193, 713, 857, 265, 203, 50, 668, 108, 
-   645, 990, 626, 197, 510, 357, 358, 850, 858, 364, 
-   936, 638
-};
 
 void AppBzip2::BZ2_bsInitWrite(EState *s)
 {
-   s->bsLive = 0;
-   s->bsBuff = 0;
+    s->bsLive = 0;
+    s->bsBuff = 0;
 }
 
 void AppBzip2::bsFinishWrite(EState *s)
@@ -1597,16 +1629,16 @@ void AppBzip2::bsW(EState *s, int32_t n, uint32_t v)
         s->bsLive -= 8;
     }
 
-   s->bsBuff |= (v << (32 - s->bsLive - n));
-   s->bsLive += n;
+    s->bsBuff |= (v << (32 - s->bsLive - n));
+    s->bsLive += n;
 }
 
 void AppBzip2::bsPutUInt32(EState* s, uint32_t u)
 {
-   bsW ( s, 8, (u >> 24) & 0xffL );
-   bsW ( s, 8, (u >> 16) & 0xffL );
-   bsW ( s, 8, (u >>  8) & 0xffL );
-   bsW ( s, 8,  u        & 0xffL );
+    bsW(s, 8, (u >> 24) & 0xffL );
+    bsW(s, 8, (u >> 16) & 0xffL );
+    bsW(s, 8, (u >>  8) & 0xffL );
+    bsW(s, 8,  u        & 0xffL );
 }
 
 void AppBzip2::bsPutUChar(EState* s, uint8_t c)
@@ -1616,13 +1648,17 @@ void AppBzip2::bsPutUChar(EState* s, uint8_t c)
 
 void AppBzip2::makeMaps_e(EState* s)
 {
-   int32_t i;
-   s->nInUse = 0;
-   for (i = 0; i < 256; i++)
-      if (s->inUse[i]) {
-         s->unseqToSeq[i] = s->nInUse;
-         s->nInUse++;
-      }
+    int32_t i;
+    s->nInUse = 0;
+
+    for (i = 0; i < 256; i++)
+    {
+        if (s->inUse[i])
+        {
+            s->unseqToSeq[i] = s->nInUse;
+            s->nInUse++;
+        }
+    }
 }
 
 void AppBzip2::generateMTFValues(EState *s)
@@ -1716,15 +1752,18 @@ void AppBzip2::sendMTFValues(EState* s)
     int32_t nSelectors, alphaSize, minLen, maxLen, selCtr;
     int32_t nGroups, nBytes;
     uint16_t cost[BZ_N_GROUPS];
-    int32_t  fave[BZ_N_GROUPS];
+    int32_t fave[BZ_N_GROUPS];
     uint16_t *mtfv = s->mtfv;
 
     if (s->verbosity >= 3)
+    {
         fprintf(stderr, "      %d in block, %d after MTF & 1-2 coding, "
                 "%d+2 syms in use\n", 
                 s->nblock, s->nMTF, s->nInUse );
+    }
 
     alphaSize = s->nInUse+2;
+
     for (t = 0; t < BZ_N_GROUPS; t++)
         for (v = 0; v < alphaSize; v++)
             s->len[t][v] = BZ_GREATER_ICOST;
@@ -1988,30 +2027,34 @@ void AppBzip2::sendMTFValues(EState* s)
 
 void AppBzip2::BZ2_compressBlock(EState* s, uint8_t is_last_block)
 {
-   if (s->nblock > 0) {
+    if (s->nblock > 0)
+    {
 
         s->blockCRC = ~(s->blockCRC);
-      s->combinedCRC = (s->combinedCRC << 1) | (s->combinedCRC >> 31);
-      s->combinedCRC ^= s->blockCRC;
-      if (s->blockNo > 1) s->numZ = 0;
+        s->combinedCRC = (s->combinedCRC << 1) | (s->combinedCRC >> 31);
+        s->combinedCRC ^= s->blockCRC;
+        if (s->blockNo > 1) s->numZ = 0;
 
-      if (s->verbosity >= 2)
-         fprintf(stderr, "    block %d: crc = 0x%8x, "
+        if (s->verbosity >= 2)
+        {
+            fprintf(stderr, "    block %d: crc = 0x%8x, "
                    "combined CRC = 0x%8x, size = %d\n",
                    s->blockNo, s->blockCRC, s->combinedCRC, s->nblock );
+        }
 
-      BZ2_blockSort(s);
-   }
+        BZ2_blockSort(s);
+    }
 
-   s->zbits = (uint8_t*) (&((uint8_t*)s->arr2)[s->nblock]);
+    s->zbits = (uint8_t*) (&((uint8_t*)s->arr2)[s->nblock]);
 
-   if (s->blockNo == 1) {
-      BZ2_bsInitWrite ( s );
-      bsPutUChar ( s, BZ_HDR_B );
-      bsPutUChar ( s, BZ_HDR_Z );
-      bsPutUChar ( s, BZ_HDR_h );
-      bsPutUChar ( s, (uint8_t)(BZ_HDR_0 + s->blockSize100k) );
-   }
+    if (s->blockNo == 1)
+    {
+        BZ2_bsInitWrite ( s );
+        bsPutUChar(s, BZ_HDR_B);
+        bsPutUChar(s, BZ_HDR_Z);
+        bsPutUChar(s, BZ_HDR_h);
+        bsPutUChar(s, (uint8_t)(BZ_HDR_0 + s->blockSize100k));
+    }
 
    if (s->nblock > 0) {
 
@@ -2039,9 +2082,10 @@ void AppBzip2::BZ2_compressBlock(EState* s, uint8_t is_last_block)
 
 void AppBzip2::makeMaps_d(DState *s)
 {
-   int32_t i;
-   s->nInUse = 0;
-   for (i = 0; i < 256; i++)
+    int32_t i;
+    s->nInUse = 0;
+
+    for (i = 0; i < 256; i++)
       if (s->inUse[i]) {
          s->seqToUnseq[s->nInUse] = i;
          s->nInUse++;
@@ -2074,30 +2118,30 @@ int32_t AppBzip2::BZ2_decompress(DState *s)
     int32_t retVal;
     int32_t minLen, maxLen;
     bz_stream* strm = s->strm;
-    int32_t  i;
-    int32_t  j;
-    int32_t  t;
-    int32_t  alphaSize;
-    int32_t  nGroups;
-    int32_t  nSelectors;
-    int32_t  EOB;
-    int32_t  groupNo;
-    int32_t  groupPos;
-    int32_t  nextSym;
-    int32_t  nblockMAX;
-    int32_t  nblock;
-    int32_t  es;
-    int32_t  N;
-    int32_t  curr;
-    int32_t  zt;
-    int32_t  zn; 
-    int32_t  zvec;
-    int32_t  zj;
-    int32_t  gSel;
-    int32_t  gMinlen;
-    int32_t* gLimit;
-    int32_t* gBase;
-    int32_t* gPerm;
+    int32_t i;
+    int32_t j;
+    int32_t t;
+    int32_t alphaSize;
+    int32_t nGroups;
+    int32_t nSelectors;
+    int32_t EOB;
+    int32_t groupNo;
+    int32_t groupPos;
+    int32_t nextSym;
+    int32_t nblockMAX;
+    int32_t nblock;
+    int32_t es;
+    int32_t N;
+    int32_t curr;
+    int32_t zt;
+    int32_t zn; 
+    int32_t zvec;
+    int32_t zj;
+    int32_t gSel;
+    int32_t gMinlen;
+    int32_t *gLimit;
+    int32_t *gBase;
+    int32_t *gPerm;
 
     if (s->state == BZ_X_MAGIC_1)
     {
@@ -2151,20 +2195,16 @@ int32_t AppBzip2::BZ2_decompress(DState *s)
     gLimit      = s->save_gLimit;
     gBase       = s->save_gBase;
     gPerm       = s->save_gPerm;
-
     retVal = BZ_OK;
-
-
-
-
-
 
     switch (s->state)
     {
-   case BZ_X_MAGIC_1: s->state = BZ_X_MAGIC_1; 
-   while (1) { 
-      if (s->bsLive >= 8) { 
-         uint32_t v; 
+    case BZ_X_MAGIC_1: s->state = BZ_X_MAGIC_1; 
+        while (1)
+        {
+            if (s->bsLive >= 8)
+            {
+                uint32_t v; 
          v = (s->bsBuff >> (s->bsLive-8)) & ((1 << 8)-1); 
          s->bsLive -= 8; 
          uc = v; 
@@ -3371,7 +3411,7 @@ int32_t AppBzip2::BZ2_decompress(DState *s)
       default: AssertH ( 0, 4001 );
    }
 
-   AssertH ( 0, 4002 );
+   AssertH(0, 4002);
 
    save_state_and_return:
 
@@ -3429,15 +3469,16 @@ void AppBzip2::init_RL(EState* s)
 
 uint8_t AppBzip2::isempty_RL(EState* s)
 {
-   if (s->state_in_ch < 256 && s->state_in_len > 0)
-      return 0; else
-      return 1;
+    if (s->state_in_ch < 256 && s->state_in_len > 0)
+        return 0;
+    else
+        return 1;
 }
 
 int AppBzip2::BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosity, int workFactor)
 {
-    int32_t   n;
-    EState* s;
+    int32_t n;
+    EState *s;
     if (!bz_config_ok()) return BZ_CONFIG_ERROR;
 
     if (strm == NULL || blockSize100k < 1 || blockSize100k > 9 ||
@@ -3460,36 +3501,35 @@ int AppBzip2::BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosi
     s->arr2 = (unsigned *)(strm->bzalloc)(strm->opaque,((n+BZ_N_OVERSHOOT)*sizeof(uint32_t)), 1);
     s->ftab = (unsigned *)(strm->bzalloc)(strm->opaque,(65537 * sizeof(uint32_t)), 1);
 
-   if (s->arr1 == NULL || s->arr2 == NULL || s->ftab == NULL) {
-      if (s->arr1 != NULL) (strm->bzfree)(strm->opaque,(s->arr1));
-      if (s->arr2 != NULL) (strm->bzfree)(strm->opaque,(s->arr2));
-      if (s->ftab != NULL) (strm->bzfree)(strm->opaque,(s->ftab));
-      if (s       != NULL) (strm->bzfree)(strm->opaque,(s));
-      return BZ_MEM_ERROR;
-   }
+    if (s->arr1 == NULL || s->arr2 == NULL || s->ftab == NULL)
+    {
+        if (s->arr1 != NULL) (strm->bzfree)(strm->opaque,(s->arr1));
+        if (s->arr2 != NULL) (strm->bzfree)(strm->opaque,(s->arr2));
+        if (s->ftab != NULL) (strm->bzfree)(strm->opaque,(s->ftab));
+        if (s       != NULL) (strm->bzfree)(strm->opaque,(s));
+        return BZ_MEM_ERROR;
+    }
 
-   s->blockNo           = 0;
-   s->state             = BZ_S_INPUT;
-   s->mode              = BZ_M_RUNNING;
-   s->combinedCRC       = 0;
-   s->blockSize100k     = blockSize100k;
-   s->nblockMAX         = 100000 * blockSize100k - 19;
-   s->verbosity         = verbosity;
-   s->workFactor        = workFactor;
-
-   s->block             = (uint8_t*)s->arr2;
-   s->mtfv              = (uint16_t*)s->arr1;
-   s->zbits             = NULL;
-   s->ptr               = (uint32_t*)s->arr1;
-
-   strm->state          = s;
-   strm->total_in_lo32  = 0;
-   strm->total_in_hi32  = 0;
-   strm->total_out_lo32 = 0;
-   strm->total_out_hi32 = 0;
-   init_RL ( s );
-   prepare_new_block ( s );
-   return BZ_OK;
+    s->blockNo = 0;
+    s->state = BZ_S_INPUT;
+    s->mode = BZ_M_RUNNING;
+    s->combinedCRC       = 0;
+    s->blockSize100k     = blockSize100k;
+    s->nblockMAX         = 100000 * blockSize100k - 19;
+    s->verbosity         = verbosity;
+    s->workFactor        = workFactor;
+    s->block             = (uint8_t*)s->arr2;
+    s->mtfv              = (uint16_t*)s->arr1;
+    s->zbits             = NULL;
+    s->ptr               = (uint32_t*)s->arr1;
+    strm->state          = s;
+    strm->total_in_lo32  = 0;
+    strm->total_in_hi32  = 0;
+    strm->total_out_lo32 = 0;
+    strm->total_out_hi32 = 0;
+    init_RL(s);
+    prepare_new_block(s);
+    return BZ_OK;
 }
 
 void AppBzip2::add_pair_to_block(EState* s)
@@ -3528,32 +3568,33 @@ void AppBzip2::add_pair_to_block(EState* s)
 
 void AppBzip2::flush_RL(EState* s)
 {
-   if (s->state_in_ch < 256) add_pair_to_block(s);
-   init_RL(s);
+    if (s->state_in_ch < 256) add_pair_to_block(s);
+    init_RL(s);
 }
 
 uint8_t AppBzip2::copy_input_until_stop(EState* s)
 {
-   uint8_t progress_in = 0;
+    uint8_t progress_in = 0;
 
-   if (s->mode == BZ_M_RUNNING) {
+    if (s->mode == BZ_M_RUNNING)
+    {
+        while (1)
+        {
+            if (s->nblock >= s->nblockMAX) break;
+            if (s->strm->avail_in == 0) break;
+            progress_in = 1;
+            uint32_t zchh = (uint32_t)((uint32_t)(*((uint8_t*)(s->strm->next_in))));
 
-      while (1) {
-         if (s->nblock >= s->nblockMAX) break;
-         if (s->strm->avail_in == 0) break;
-         progress_in = 1;
-
-   uint32_t zchh = (uint32_t)(  (uint32_t)(*((uint8_t*)(s->strm->next_in)))    );                 
-   if (zchh != s->state_in_ch &&                 
-       s->state_in_len == 1) {                   
-      uint8_t ch = (uint8_t)(s->state_in_ch);        
-      BZ_UPDATE_CRC( s->blockCRC, ch );         
-      s->inUse[s->state_in_ch] = 1;         
-      s->block[s->nblock] = (uint8_t)ch;         
-      s->nblock++;                             
-      s->state_in_ch = zchh;                  
-   }                                         
-   else                                     
+            if (zchh != s->state_in_ch && s->state_in_len == 1)
+            {
+                uint8_t ch = (uint8_t)(s->state_in_ch);
+                BZ_UPDATE_CRC(s->blockCRC, ch);
+                s->inUse[s->state_in_ch] = 1;
+                s->block[s->nblock] = (uint8_t)ch;
+                s->nblock++;
+                s->state_in_ch = zchh;
+            }
+            else
    if (zchh != s->state_in_ch ||               
       s->state_in_len == 255) {                
       if (s->state_in_ch < 256)                
@@ -3591,15 +3632,15 @@ uint8_t AppBzip2::copy_input_until_stop(EState* s)
       s->state_in_ch = zchh;                  
    }                                         
    else                                     
-   if (zchh != s->state_in_ch ||               
+    if (zchh != s->state_in_ch ||               
       s->state_in_len == 255) {                
       if (s->state_in_ch < 256)                
          add_pair_to_block (s);             
       s->state_in_ch = zchh;                   
       s->state_in_len = 1;                     
-   } else {                                    
+    } else {                                    
       s->state_in_len++;                       
-   }                          
+    }                          
 
          s->strm->next_in++;
          s->strm->avail_in--;
@@ -3607,41 +3648,40 @@ uint8_t AppBzip2::copy_input_until_stop(EState* s)
          if (s->strm->total_in_lo32 == 0) s->strm->total_in_hi32++;
          s->avail_in_expect--;
       }
-   }
-   return progress_in;
+    }
+    return progress_in;
 }
 
 uint8_t AppBzip2::copy_output_until_stop(EState* s)
 {
     uint8_t progress_out = 0;
 
-    while (1) {
+    while (1)
+    {
+        if (s->strm->avail_out == 0) break;
+        if (s->state_out_pos >= s->numZ) break;
+        progress_out = 1;
+        *(s->strm->next_out) = s->zbits[s->state_out_pos];
+        s->state_out_pos++;
+        s->strm->avail_out--;
+        s->strm->next_out++;
+        s->strm->total_out_lo32++;
+        if (s->strm->total_out_lo32 == 0) s->strm->total_out_hi32++;
+    }
 
-      if (s->strm->avail_out == 0) break;
-
-      if (s->state_out_pos >= s->numZ) break;
-
-      progress_out = 1;
-      *(s->strm->next_out) = s->zbits[s->state_out_pos];
-      s->state_out_pos++;
-      s->strm->avail_out--;
-      s->strm->next_out++;
-      s->strm->total_out_lo32++;
-      if (s->strm->total_out_lo32 == 0) s->strm->total_out_hi32++;
-   }
-
-   return progress_out;
+    return progress_out;
 }
 
-uint8_t AppBzip2::handle_compress ( bz_stream* strm )
+uint8_t AppBzip2::handle_compress(bz_stream* strm)
 {
-   uint8_t progress_in  = 0;
-   uint8_t progress_out = 0;
-   EState* s = (EState *)strm->state;
+    uint8_t progress_in  = 0;
+    uint8_t progress_out = 0;
+    EState* s = (EState *)strm->state;
    
-   while (1) {
-
-      if (s->state == BZ_S_OUTPUT) {
+    while (1)
+    {
+        if (s->state == BZ_S_OUTPUT)
+        {
          progress_out |= copy_output_until_stop ( s );
          if (s->state_out_pos < s->numZ) break;
          if (s->mode == BZ_M_FINISHING && 
@@ -3737,22 +3777,17 @@ int AppBzip2::BZ2_bzCompress(bz_stream *strm, int action)
 
 int AppBzip2::BZ2_bzCompressEnd(bz_stream *strm)
 {
-   EState* s;
-   if (strm == NULL) return BZ_PARAM_ERROR;
-   s = (EState *)strm->state;
-   if (s == NULL) return BZ_PARAM_ERROR;
-   if (s->strm != strm) return BZ_PARAM_ERROR;
-
-
-
-   if (s->arr1 != NULL) (strm->bzfree)(strm->opaque,(s->arr1));
-   if (s->arr2 != NULL) (strm->bzfree)(strm->opaque,(s->arr2));
-   if (s->ftab != NULL) (strm->bzfree)(strm->opaque,(s->ftab));
-   (strm->bzfree)(strm->opaque,(strm->state));
-
-   strm->state = NULL;   
-
-   return BZ_OK;
+    EState *s;
+    if (strm == NULL) return BZ_PARAM_ERROR;
+    s = (EState *)strm->state;
+    if (s == NULL) return BZ_PARAM_ERROR;
+    if (s->strm != strm) return BZ_PARAM_ERROR;
+    if (s->arr1 != NULL) (strm->bzfree)(strm->opaque,(s->arr1));
+    if (s->arr2 != NULL) (strm->bzfree)(strm->opaque,(s->arr2));
+    if (s->ftab != NULL) (strm->bzfree)(strm->opaque,(s->ftab));
+    (strm->bzfree)(strm->opaque,(strm->state));
+    strm->state = NULL;   
+    return BZ_OK;
 }
 
 int AppBzip2::BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
@@ -3764,9 +3799,7 @@ int AppBzip2::BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
     if (verbosity < 0 || verbosity > 4) return BZ_PARAM_ERROR;
     if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
     if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
-
     s = (DState *)(strm->bzalloc)(strm->opaque,(sizeof(DState)), 1);
-
     if (s == NULL) return BZ_MEM_ERROR;
     s->strm                  = strm;
     strm->state              = s;
@@ -3779,9 +3812,9 @@ int AppBzip2::BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
     strm->total_out_lo32     = 0;
     strm->total_out_hi32     = 0;
     s->smallDecompress       = (uint8_t)small;
-    s->ll4                   = NULL;
-    s->ll16                  = NULL;
-    s->tt                    = NULL;
+    s->ll4 = NULL;
+    s->ll16 = NULL;
+    s->tt = NULL;
     s->currBlockNo           = 0;
     s->verbosity             = verbosity;
     return BZ_OK;
@@ -3881,7 +3914,8 @@ void AppBzip2::unRLE_obuf_to_output_FAST(DState* s)
         s->nblock_used++;
       }
 
-   } else {
+   } else
+    {
       uint32_t        c_calculatedBlockCRC = s->calculatedBlockCRC;
       uint8_t         c_state_out_ch       = s->state_out_ch;
       int32_t         c_state_out_len      = s->state_out_len;
@@ -3990,7 +4024,6 @@ return_notr:
         s->strm->avail_out    = cs_avail_out;
     }
 }
-
 
 void AppBzip2::unRLE_obuf_to_output_SMALL(DState* s)
 {
@@ -4136,15 +4169,16 @@ void AppBzip2::unRLE_obuf_to_output_SMALL(DState* s)
    }
 }
 
-int AppBzip2::BZ2_bzDecompress ( bz_stream *strm )
+int AppBzip2::BZ2_bzDecompress(bz_stream *strm)
 {
-   DState* s;
-   if (strm == NULL) return BZ_PARAM_ERROR;
-   s = (DState *)strm->state;
-   if (s == NULL) return BZ_PARAM_ERROR;
-   if (s->strm != strm) return BZ_PARAM_ERROR;
+    DState *s;
+    if (strm == NULL) return BZ_PARAM_ERROR;
+    s = (DState *)strm->state;
+    if (s == NULL) return BZ_PARAM_ERROR;
+    if (s->strm != strm) return BZ_PARAM_ERROR;
 
-   while (1) {
+    while (1)
+    {
       if (s->state == BZ_X_IDLE) return BZ_SEQUENCE_ERROR;
       if (s->state == BZ_X_OUTPUT) {
          if (s->smallDecompress)
@@ -4181,37 +4215,33 @@ int AppBzip2::BZ2_bzDecompress ( bz_stream *strm )
          }
          if (s->state != BZ_X_OUTPUT) return r;
       }
-   }
+    }
 
-   AssertH ( 0, 6001 );
-
-   return 0;
+    AssertH(0, 6001);
+    return 0;
 }
 
 int AppBzip2::BZ2_bzDecompressEnd(bz_stream *strm)
 {
-   DState* s;
-   if (strm == NULL) return BZ_PARAM_ERROR;
-   s = (DState *)strm->state;
-   if (s == NULL) return BZ_PARAM_ERROR;
-   if (s->strm != strm) return BZ_PARAM_ERROR;
-
-   if (s->tt   != NULL) (strm->bzfree)(strm->opaque,(s->tt));
-   if (s->ll16 != NULL) (strm->bzfree)(strm->opaque,(s->ll16));
-   if (s->ll4  != NULL) (strm->bzfree)(strm->opaque,(s->ll4));
-
+    DState* s;
+    if (strm == NULL) return BZ_PARAM_ERROR;
+    s = (DState *)strm->state;
+    if (s == NULL) return BZ_PARAM_ERROR;
+    if (s->strm != strm) return BZ_PARAM_ERROR;
+    if (s->tt   != NULL) (strm->bzfree)(strm->opaque,(s->tt));
+    if (s->ll16 != NULL) (strm->bzfree)(strm->opaque,(s->ll16));
+    if (s->ll4  != NULL) (strm->bzfree)(strm->opaque,(s->ll4));
     (strm->bzfree)(strm->opaque,(strm->state));
-   strm->state = NULL;
-
-   return BZ_OK;
+    strm->state = NULL;
+    return BZ_OK;
 }
 
-uint8_t AppBzip2::myfeof(FILE* f)
+uint8_t AppBzip2::myfeof(FILE *f)
 {
-   int32_t c = fgetc ( f );
-   if (c == EOF) return 1;
-   ungetc ( c, f );
-   return 0;
+    int32_t c = fgetc(f);
+    if (c == EOF) return 1;
+    ungetc(c, f);
+    return 0;
 }
 
 BZFILE *AppBzip2::BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
@@ -4354,8 +4384,8 @@ void AppBzip2::BZ2_bzWrite(int *bzerror, BZFILE* b, void *buf, int len)
 }
 
 void AppBzip2::BZ2_bzWriteClose64(int *bzerror,
-     BZFILE *b, int abandon, unsigned int *nbytes_in_lo32,
-     unsigned int *nbytes_in_hi32, unsigned int *nbytes_out_lo32, unsigned int *nbytes_out_hi32)
+    BZFILE *b, int abandon, unsigned int *nbytes_in_lo32,
+    unsigned int *nbytes_in_hi32, unsigned int *nbytes_out_lo32, unsigned int *nbytes_out_hi32)
 {
     int32_t n, n2, ret;
     bzFile* bzf = (bzFile*)b;
@@ -4436,10 +4466,9 @@ void AppBzip2::BZ2_bzWriteClose64(int *bzerror,
    if (nbytes_out_hi32 != NULL)
       *nbytes_out_hi32 = bzf->strm.total_out_hi32;
 
-   if (bzerror != NULL) *bzerror = BZ_OK;
-   if (bzf != NULL) bzf->lastErr = BZ_OK;
-
-   BZ2_bzCompressEnd ( &(bzf->strm) );
+    if (bzerror != NULL) *bzerror = BZ_OK;
+    if (bzf != NULL) bzf->lastErr = BZ_OK;
+    BZ2_bzCompressEnd ( &(bzf->strm) );
     delete bzf;
    //free ( bzf );
 }
@@ -4639,9 +4668,9 @@ int AppBzip2::BZ2_bzRead(int *bzerror, BZFILE* b, void *buf, int len)
             if (bzf != NULL) bzf->lastErr = BZ_OK;
             return len;
         };
-   }
+    }
 
-   return 0;
+    return 0;
 }
 
 void AppBzip2::BZ2_bzReadGetUnused(int *bzerror, BZFILE* b, void **unused, int *nUnused)
@@ -4762,17 +4791,17 @@ int AppBzip2::BZ2_bzBuffToBuffDecompress(char *dest, unsigned int* destLen,
 
 BZFILE *AppBzip2::bzopen_or_bzdopen(const char *path, int fd, const char *mode, int open_mode)
 {
-   int    bzerr;
-   char   unused[BZ_MAX_UNUSED];
-   int    blockSize100k = 9;
-   int    writing       = 0;
-   char   mode2[10]     = "";
-   FILE   *fp           = NULL;
-   BZFILE *bzfp         = NULL;
-   int    verbosity     = 0;
-   int    workFactor    = 30;
-   int    smallMode     = 0;
-   int    nUnused       = 0; 
+    int    bzerr;
+    char   unused[BZ_MAX_UNUSED];
+    int    blockSize100k = 9;
+    int    writing       = 0;
+    char   mode2[10]     = "";
+    FILE   *fp           = NULL;
+    BZFILE *bzfp         = NULL;
+    int    verbosity     = 0;
+    int    workFactor    = 30;
+    int    smallMode     = 0;
+    int    nUnused       = 0; 
 
    if (mode == NULL) return NULL;
    while (*mode) {
@@ -4844,38 +4873,49 @@ int AppBzip2::BZ2_bzread(BZFILE* b, void* buf, int len)
 
 int AppBzip2::BZ2_bzwrite(BZFILE* b, void* buf, int len)
 {
-   int bzerr;
+    int bzerr;
 
-   BZ2_bzWrite(&bzerr,b,buf,len);
-   if(bzerr == BZ_OK){
-      return len;
-   }else{
-      return -1;
-   }
+    BZ2_bzWrite(&bzerr,b,buf,len);
+
+    if(bzerr == BZ_OK)
+    {
+        return len;
+    }
+    else
+    {
+        return -1;
+    }
 }
 
 int AppBzip2::BZ2_bzflush(BZFILE *b)
 {
-   return 0;
+    return 0;
 }
 
 void AppBzip2::BZ2_bzclose(BZFILE* b)
 {
-   int bzerr;
-   FILE *fp = ((bzFile *)b)->handle;
-   
-   if (b==NULL) {return;}
-   if(((bzFile*)b)->writing){
-      BZ2_bzWriteClose(&bzerr,b,0,NULL,NULL);
-      if(bzerr != BZ_OK){
-         BZ2_bzWriteClose(NULL,b,1,NULL,NULL);
-      }
-   }else{
-      BZ2_bzReadClose(&bzerr,b);
-   }
-   if(fp!=stdin && fp!=stdout){
-      fclose(fp);
-   }
+    int bzerr;
+    FILE *fp = ((bzFile *)b)->handle;
+    if (b==NULL) {return;}
+
+    if(((bzFile*)b)->writing)
+    {
+        BZ2_bzWriteClose(&bzerr,b,0,NULL,NULL);
+
+        if(bzerr != BZ_OK)
+        {
+            BZ2_bzWriteClose(NULL,b,1,NULL,NULL);
+        }
+    }
+    else
+    {
+        BZ2_bzReadClose(&bzerr,b);
+    }
+
+    if(fp!=stdin && fp!=stdout)
+    {
+        fclose(fp);
+    }
 }
 
 static const char *bzerrorstrings[] = {
@@ -4897,98 +4937,69 @@ static const char *bzerrorstrings[] = {
       ,"???"   
 };
 
-
-const char * BZ2_bzerror(BZFILE *b, int *errnum)
+const char *AppBzip2::BZ2_bzerror(BZFILE *b, int *errnum)
 {
-   int err = ((bzFile *)b)->lastErr;
-
-   if(err>0) err = 0;
-   *errnum = err;
-   return bzerrorstrings[err*-1];
+    int err = ((bzFile *)b)->lastErr;
+    if(err>0) err = 0;
+    *errnum = err;
+    return bzerrorstrings[err*-1];
 }
 
-int32_t verbosity;
-uint8_t keepInputFiles, smallMode, deleteOutputOnInterrupt;
-uint8_t forceOverwrite, testFailsExist, unzFailsExist, noisy;
-int32_t numFileNames, numFilesProcessed, blockSize100k;
-int32_t exitValue;
-static const uint8_t SM_I2O = 1;
-static const uint8_t SM_F2O = 2;
-static const uint8_t SM_F2F = 3;
-static const uint8_t OM_Z = 1;
-static const uint8_t OM_UNZ = 2;
-static const uint8_t OM_TEST = 3;
-int32_t opMode;
-int32_t srcMode;
-static const uint16_t FILE_NAME_LEN = 1034;
-int32_t longestFileName;
-char inName [FILE_NAME_LEN];
-char outName[FILE_NAME_LEN];
-char tmpName[FILE_NAME_LEN];
-char *progName;
-char progNameReally[FILE_NAME_LEN];
-FILE *outputHandleJustInCase;
-int32_t workFactor;
-static void    outOfMemory           ( void )    __attribute__ ((noreturn));
-static void    configError           ( void )    __attribute__ ((noreturn));
-static void    cleanUpAndFail        ( int32_t )   __attribute__ ((noreturn));
-
-typedef
-   struct { uint8_t b[8]; } 
-   UInt64;
-
-
-static
-void uInt64_from_UInt32s ( UInt64* n, uint32_t lo32, uint32_t hi32 )
+void AppBzip2::uInt64_from_UInt32s(UInt64* n, uint32_t lo32, uint32_t hi32)
 {
-   n->b[7] = (uint8_t)((hi32 >> 24) & 0xFF);
-   n->b[6] = (uint8_t)((hi32 >> 16) & 0xFF);
-   n->b[5] = (uint8_t)((hi32 >> 8)  & 0xFF);
-   n->b[4] = (uint8_t) (hi32        & 0xFF);
-   n->b[3] = (uint8_t)((lo32 >> 24) & 0xFF);
-   n->b[2] = (uint8_t)((lo32 >> 16) & 0xFF);
-   n->b[1] = (uint8_t)((lo32 >> 8)  & 0xFF);
-   n->b[0] = (uint8_t) (lo32        & 0xFF);
+    n->b[7] = (uint8_t)((hi32 >> 24) & 0xFF);
+    n->b[6] = (uint8_t)((hi32 >> 16) & 0xFF);
+    n->b[5] = (uint8_t)((hi32 >> 8)  & 0xFF);
+    n->b[4] = (uint8_t) (hi32        & 0xFF);
+    n->b[3] = (uint8_t)((lo32 >> 24) & 0xFF);
+    n->b[2] = (uint8_t)((lo32 >> 16) & 0xFF);
+    n->b[1] = (uint8_t)((lo32 >> 8)  & 0xFF);
+    n->b[0] = (uint8_t) (lo32        & 0xFF);
 }
 
-
-static double uInt64_to_double(UInt64* n)
+double AppBzip2::uInt64_to_double(UInt64 *n)
 {
-   int32_t  i;
-   double base = 1.0;
-   double sum  = 0.0;
-   for (i = 0; i < 8; i++) {
-      sum  += base * (double)(n->b[i]);
-      base *= 256.0;
-   }
-   return sum;
+    int32_t  i;
+    double base = 1.0;
+    double sum  = 0.0;
+
+    for (i = 0; i < 8; i++)
+    {
+        sum  += base * (double)(n->b[i]);
+        base *= 256.0;
+    }
+
+    return sum;
 }
 
-
-
-static
-uint8_t uInt64_isZero ( UInt64* n )
+uint8_t AppBzip2::uInt64_isZero(UInt64* n)
 {
-   int32_t i;
-   for (i = 0; i < 8; i++)
-      if (n->b[i] != 0) return 0;
-   return 1;
+    int32_t i;
+
+    for (i = 0; i < 8; i++)
+        if (n->b[i] != 0)
+            return 0;
+
+    return 1;
 }
 
-static int32_t uInt64_qrm10 ( UInt64* n )
+int32_t AppBzip2::uInt64_qrm10(UInt64* n)
 {
-   uint32_t rem, tmp;
-   int32_t  i;
-   rem = 0;
-   for (i = 7; i >= 0; i--) {
-      tmp = rem * 256 + n->b[i];
-      n->b[i] = tmp / 10;
-      rem = tmp % 10;
-   }
-   return rem;
+    uint32_t rem, tmp;
+    int32_t  i;
+    rem = 0;
+
+    for (i = 7; i >= 0; i--)
+    {
+        tmp = rem * 256 + n->b[i];
+        n->b[i] = tmp / 10;
+        rem = tmp % 10;
+    }
+
+    return rem;
 }
 
-static void uInt64_toAscii(char* outbuf, UInt64* n)
+void AppBzip2::uInt64_toAscii(char* outbuf, UInt64* n)
 {
    int32_t  i, q;
    uint8_t  buf[32];
@@ -5006,50 +5017,46 @@ static void uInt64_toAscii(char* outbuf, UInt64* n)
 
 void AppBzip2::compressStream(FILE *stream, FILE *zStream)
 {
-   BZFILE* bzf = NULL;
-   uint8_t   ibuf[5000];
-   int32_t   nIbuf;
-   uint32_t  nbytes_in_lo32, nbytes_in_hi32;
-   uint32_t  nbytes_out_lo32, nbytes_out_hi32;
-   int32_t   bzerr, bzerr_dummy, ret;
+    BZFILE* bzf = NULL;
+    uint8_t ibuf[5000];
+    int32_t nIbuf;
+    uint32_t nbytes_in_lo32, nbytes_in_hi32;
+    uint32_t nbytes_out_lo32, nbytes_out_hi32;
+    int32_t bzerr, bzerr_dummy, ret;
+    if (ferror(stream)) goto errhandler_io;
+    if (ferror(zStream)) goto errhandler_io;
+    bzf = BZ2_bzWriteOpen(&bzerr, zStream, blockSize100k, verbosity, workFactor);
+    if (bzerr != BZ_OK) goto errhandler;
+    if (verbosity >= 2) fprintf ( stderr, "\n" );
 
+    while (1)
+    {
+        if (myfeof(stream)) break;
+        nIbuf = fread ( ibuf, sizeof(uint8_t), 5000, stream );
+        if (ferror(stream)) goto errhandler_io;
+        if (nIbuf > 0) BZ2_bzWrite ( &bzerr, bzf, (void*)ibuf, nIbuf );
+        if (bzerr != BZ_OK) goto errhandler;
+    }
 
-   if (ferror(stream)) goto errhandler_io;
-   if (ferror(zStream)) goto errhandler_io;
+    BZ2_bzWriteClose64(&bzerr, bzf, 0, &nbytes_in_lo32, &nbytes_in_hi32,
+                        &nbytes_out_lo32, &nbytes_out_hi32);
 
-   bzf = BZ2_bzWriteOpen ( &bzerr, zStream, 
-                           blockSize100k, verbosity, workFactor );   
-   if (bzerr != BZ_OK) goto errhandler;
+    if (bzerr != BZ_OK) goto errhandler;
+    if (ferror(zStream)) goto errhandler_io;
+    ret = fflush ( zStream );
+    if (ret == EOF) goto errhandler_io;
 
-   if (verbosity >= 2) fprintf ( stderr, "\n" );
+    if (zStream != stdout)
+    {
+        ret = fclose(zStream);
+        outputHandleJustInCase = NULL;
+        if (ret == EOF) goto errhandler_io;
+    }
 
-   while (1) {
-
-      if (myfeof(stream)) break;
-      nIbuf = fread ( ibuf, sizeof(uint8_t), 5000, stream );
-      if (ferror(stream)) goto errhandler_io;
-      if (nIbuf > 0) BZ2_bzWrite ( &bzerr, bzf, (void*)ibuf, nIbuf );
-      if (bzerr != BZ_OK) goto errhandler;
-
-   }
-
-   BZ2_bzWriteClose64 ( &bzerr, bzf, 0, 
-                        &nbytes_in_lo32, &nbytes_in_hi32,
-                        &nbytes_out_lo32, &nbytes_out_hi32 );
-   if (bzerr != BZ_OK) goto errhandler;
-
-   if (ferror(zStream)) goto errhandler_io;
-   ret = fflush ( zStream );
-   if (ret == EOF) goto errhandler_io;
-   if (zStream != stdout) {
-      ret = fclose ( zStream );
-      outputHandleJustInCase = NULL;
-      if (ret == EOF) goto errhandler_io;
-   }
-   outputHandleJustInCase = NULL;
-   if (ferror(stream)) goto errhandler_io;
-   ret = fclose ( stream );
-   if (ret == EOF) goto errhandler_io;
+    outputHandleJustInCase = NULL;
+    if (ferror(stream)) goto errhandler_io;
+    ret = fclose ( stream );
+    if (ret == EOF) goto errhandler_io;
 
    if (verbosity >= 1) {
       if (nbytes_in_lo32 == 0 && nbytes_in_hi32 == 0) {
@@ -5095,26 +5102,23 @@ void AppBzip2::compressStream(FILE *stream, FILE *zStream)
          panic ( "compress:unexpected error" );
    }
 
-   panic ( "compress:end" );
+    panic("compress:end");
 }
 
 uint8_t AppBzip2::uncompressStream(FILE *zStream, FILE *stream)
 {
-   BZFILE* bzf = NULL;
-   int32_t bzerr, bzerr_dummy, ret, nread, streamNo, i;
-   uint8_t obuf[5000];
-   uint8_t unused[BZ_MAX_UNUSED];
-   int32_t nUnused;
-   uint8_t *unusedTmp;
+    BZFILE* bzf = NULL;
+    int32_t bzerr, bzerr_dummy, ret, nread, streamNo, i;
+    uint8_t obuf[5000];
+    uint8_t unused[BZ_MAX_UNUSED];
+    int32_t nUnused;
+    uint8_t *unusedTmp;
+    nUnused = 0;
+    streamNo = 0;
+    if (ferror(stream)) goto errhandler_io;
+    if (ferror(zStream)) goto errhandler_io;
 
-   nUnused = 0;
-   streamNo = 0;
-
-
-   if (ferror(stream)) goto errhandler_io;
-   if (ferror(zStream)) goto errhandler_io;
-
-   while (1) {
+    while (1) {
 
       bzf = BZ2_bzReadOpen ( 
                &bzerr, zStream, verbosity, 
@@ -5209,33 +5213,30 @@ uint8_t AppBzip2::uncompressStream(FILE *zStream, FILE *stream)
 
 uint8_t AppBzip2::testStream(FILE *zStream)
 {
-   BZFILE *bzf = NULL;
-   int32_t bzerr, bzerr_dummy, ret, streamNo, i;
-   uint8_t obuf[5000];
-   uint8_t unused[BZ_MAX_UNUSED];
-   int32_t nUnused;
-   uint8_t *unusedTmp;
-   nUnused = 0;
-   streamNo = 0;
+    BZFILE *bzf = NULL;
+    int32_t bzerr, bzerr_dummy, ret, streamNo, i;
+    uint8_t obuf[5000];
+    uint8_t unused[BZ_MAX_UNUSED];
+    int32_t nUnused;
+    uint8_t *unusedTmp;
+    nUnused = 0;
+    streamNo = 0;
+    if (ferror(zStream)) goto errhandler_io;
 
-   if (ferror(zStream)) goto errhandler_io;
+    while (1)
+    {
+        bzf = BZ2_bzReadOpen(&bzerr, zStream, verbosity, (int)smallMode, unused, nUnused);
+        if (bzf == NULL || bzerr != BZ_OK) goto errhandler;
+        streamNo++;
 
-   while (1) {
+        while (bzerr == BZ_OK)
+        {
+            BZ2_bzRead ( &bzerr, bzf, obuf, 5000 );
+            if (bzerr == BZ_DATA_ERROR_MAGIC) goto errhandler;
+        }
 
-      bzf = BZ2_bzReadOpen ( 
-               &bzerr, zStream, verbosity, 
-               (int)smallMode, unused, nUnused
-            );
-      if (bzf == NULL || bzerr != BZ_OK) goto errhandler;
-      streamNo++;
-
-      while (bzerr == BZ_OK) {
-         BZ2_bzRead ( &bzerr, bzf, obuf, 5000 );
-         if (bzerr == BZ_DATA_ERROR_MAGIC) goto errhandler;
-      }
-      if (bzerr != BZ_STREAM_END) goto errhandler;
-
-      BZ2_bzReadGetUnused ( &bzerr, bzf, (void**)(&unusedTmp), &nUnused );
+        if (bzerr != BZ_STREAM_END) goto errhandler;
+        BZ2_bzReadGetUnused(&bzerr, bzf, (void**)(&unusedTmp), &nUnused);
       if (bzerr != BZ_OK) panic ( "test:bzReadGetUnused" );
 
       for (i = 0; i < nUnused; i++) unused[i] = unusedTmp[i];
@@ -5293,14 +5294,12 @@ uint8_t AppBzip2::testStream(FILE *zStream)
    return 1;
 }
 
-static
-void setExit(int32_t v)
+void AppBzip2::setExit(int32_t v)
 {
-   if (v > exitValue) exitValue = v;
+    if (v > exitValue) exitValue = v;
 }
 
-static 
-void cadvise ( void )
+void AppBzip2::cadvise()
 {
    if (noisy)
    fprintf (
@@ -5312,13 +5311,13 @@ void cadvise ( void )
     );
 }
 
-static void showFileNames()
+void AppBzip2::showFileNames()
 {
     if (noisy)
         fprintf(stderr, "\tInput file = %s, output file = %s\n", inName, outName);
 }
 
-static void cleanUpAndFail(int32_t ec)
+void AppBzip2::cleanUpAndFail(int32_t ec)
 {
     int retVal;
     struct stat statBuf;
@@ -5392,27 +5391,29 @@ void AppBzip2::crcError()
 
 void AppBzip2::compressedStreamEOF()
 {
-  if (noisy) {
-    fprintf ( stderr,
-	      "\n%s: Compressed file ends unexpectedly;\n\t"
-	      "perhaps it is corrupted?  *Possible* reason follows.\n",
-	      progName );
-    perror ( progName );
-    showFileNames();
-    cadvise();
-  }
-  cleanUpAndFail( 2 );
+    if (noisy)
+    {
+        fprintf(stderr,
+	        "\n%s: Compressed file ends unexpectedly;\n\t"
+	        "perhaps it is corrupted?  *Possible* reason follows.\n",
+	        progName);
+
+        perror(progName);
+        showFileNames();
+        cadvise();
+    }
+    cleanUpAndFail( 2 );
 }
 
 void AppBzip2::ioError()
 {
-   fprintf ( stderr,
+    fprintf(stderr,
              "\n%s: I/O or other error, bailing out.  "
              "Possible reason follows.\n",
-             progName );
-   perror ( progName );
-   showFileNames();
-   cleanUpAndFail( 1 );
+             progName);
+    perror(progName);
+    showFileNames();
+    cleanUpAndFail(1);
 }
 
 #if 0
@@ -5482,18 +5483,14 @@ void mySIGSEGVorSIGBUScatcher(int n)
 }
 #endif
 
-static 
-void outOfMemory ( void )
+void AppBzip2::outOfMemory()
 {
-   fprintf ( stderr,
-             "\n%s: couldn't allocate enough memory\n",
-             progName );
-   showFileNames();
-   cleanUpAndFail(1);
+    fprintf(stderr, "\n%s: couldn't allocate enough memory\n", progName );
+    showFileNames();
+    cleanUpAndFail(1);
 }
 
-static 
-void configError ( void )
+void AppBzip2::configError()
 {
    fprintf ( stderr,
              "bzip2: I'm not configured correctly for this platform!\n"
@@ -5507,7 +5504,7 @@ void configError ( void )
 }
 
 
-static void pad(char *s)
+void AppBzip2::pad(char *s)
 {
    int32_t i;
    if ( (int32_t)strlen(s) >= longestFileName ) return;
@@ -5534,8 +5531,7 @@ void AppBzip2::copyFileName(char* to, const char* from )
   to[FILE_NAME_LEN-10]='\0';
 }
 
-static 
-uint8_t fileExists(char* name )
+uint8_t AppBzip2::fileExists(char* name)
 {
    FILE *tmp   = fopen ( name, "rb" );
    uint8_t exists = (tmp != NULL);
@@ -5543,7 +5539,7 @@ uint8_t fileExists(char* name )
    return exists;
 }
 
-FILE* fopen_output_safely(char* name, const char* mode )
+FILE *AppBzip2::fopen_output_safely(char* name, const char* mode)
 {
 #if 0
    FILE*     fp;
@@ -5558,28 +5554,26 @@ FILE* fopen_output_safely(char* name, const char* mode )
 #endif
 }
 
-static uint8_t notAStandardFile (char* name )
+uint8_t AppBzip2::notAStandardFile(char* name)
 {
     int i;
     struct stat statBuf;
-
     i = lstat ( name, &statBuf );
     if (i != 0) return 1;
     if (S_ISREG(statBuf.st_mode)) return 0;
     return 1;
 }
 
-static int32_t countHardLinks(char *name)
+int32_t AppBzip2::countHardLinks(char *name)
 {  
-    int    i;
+    int i;
     struct stat statBuf;
-
-   i = lstat ( name, &statBuf );
-   if (i != 0) return 0;
-   return (statBuf.st_nlink - 1);
+    i = lstat ( name, &statBuf );
+    if (i != 0) return 0;
+    return (statBuf.st_nlink - 1);
 }
 
-static struct stat fileMetaInfo;
+
 
 void AppBzip2::ERROR_IF_NOT_ZERO(int i)
 {
@@ -5611,14 +5605,10 @@ void AppBzip2::applySavedMetaInfoToOutputFile(char *dstName)
 
 uint8_t AppBzip2::containsDubiousChars(char *name)
 {
-   return 0;
+    return 0;
 }
 
-static const uint8_t BZ_N_SUFFIX_PAIRS = 4;
-const char* zSuffix[BZ_N_SUFFIX_PAIRS] = { ".bz2", ".bz", ".tbz2", ".tbz" };
-const char* unzSuffix[BZ_N_SUFFIX_PAIRS] = { "", "", ".tar", ".tar" };
-
-static uint8_t hasSuffix(const char* s, const char* suffix )
+uint8_t AppBzip2::hasSuffix(const char* s, const char* suffix)
 {
     int32_t ns = strlen(s);
     int32_t nx = strlen(suffix);
@@ -5812,27 +5802,28 @@ void AppBzip2::compress(char *name)
 
 void AppBzip2::uncompress(char *name)
 {
-   FILE  *inStr;
-   FILE  *outStr;
-   int32_t n, i;
-   uint8_t  magicNumberOK;
-   uint8_t  cantGuess;
-   struct stat statBuf;
+    FILE *inStr;
+    FILE *outStr;
+    int32_t n, i;
+    uint8_t magicNumberOK;
+    uint8_t cantGuess;
+    struct stat statBuf;
+    deleteOutputOnInterrupt = 0;
 
-   deleteOutputOnInterrupt = 0;
+    if (name == NULL && srcMode != SM_I2O)
+        panic("uncompress: bad modes\n");
 
-   if (name == NULL && srcMode != SM_I2O)
-      panic ( "uncompress: bad modes\n" );
+    cantGuess = 0;
 
-   cantGuess = 0;
-   switch (srcMode) {
-      case SM_I2O: 
-         copyFileName ( inName, "(stdin)" );
-         copyFileName ( outName, "(stdout)" ); 
-         break;
-      case SM_F2F: 
-         copyFileName ( inName, name );
-         copyFileName ( outName, name );
+    switch (srcMode)
+    {
+        case SM_I2O: 
+            copyFileName(inName, "(stdin)");
+            copyFileName(outName, "(stdout)");
+            break;
+        case SM_F2F: 
+            copyFileName(inName, name);
+            copyFileName(outName, name);
          for (i = 0; i < BZ_N_SUFFIX_PAIRS; i++)
             if (mapSuffix(outName,zSuffix[i],unzSuffix[i]))
                goto zzz; 
@@ -5900,13 +5891,14 @@ void AppBzip2::uncompress(char *name)
       return;
    }
 
-   if ( srcMode == SM_F2F ) {
-      saveInputFileMetaInfo ( inName );
-   }
+    if (srcMode == SM_F2F)
+    {
+        saveInputFileMetaInfo(inName);
+    }
 
-   switch ( srcMode ) {
-
-      case SM_I2O:
+    switch (srcMode)
+    {
+    case SM_I2O:
          inStr = stdin;
          outStr = stdout;
 #if 0
@@ -6004,49 +5996,54 @@ void AppBzip2::uncompress(char *name)
 
 void AppBzip2::testf(char *name)
 {
-   FILE *inStr;
-   uint8_t allOK;
-   struct stat statBuf;
+    FILE *inStr;
+    uint8_t allOK;
+    struct stat statBuf;
+    deleteOutputOnInterrupt = 0;
 
-   deleteOutputOnInterrupt = 0;
+    if (name == NULL && srcMode != SM_I2O)
+        panic("testf: bad modes\n");
 
-   if (name == NULL && srcMode != SM_I2O)
-      panic ( "testf: bad modes\n" );
+    copyFileName(outName, "(none)");
 
-   copyFileName ( outName, "(none)" );
-   switch (srcMode) {
-      case SM_I2O: copyFileName ( inName, "(stdin)" ); break;
-      case SM_F2F: copyFileName ( inName, name ); break;
-      case SM_F2O: copyFileName ( inName, name ); break;
-   }
+    switch (srcMode)
+    {
+    case SM_I2O: copyFileName ( inName, "(stdin)" ); break;
+    case SM_F2F: copyFileName ( inName, name ); break;
+    case SM_F2O: copyFileName ( inName, name ); break;
+    }
 
-   if ( srcMode != SM_I2O && containsDubiousChars ( inName ) ) {
-      if (noisy)
-      fprintf ( stderr, "%s: There are no files matching `%s'.\n",
-                progName, inName );
-      setExit(1);
-      return;
-   }
-   if ( srcMode != SM_I2O && !fileExists ( inName ) ) {
-      fprintf ( stderr, "%s: Can't open input %s.\n",
-                progName, inName);
-      setExit(1);
-      return;
-   }
-   if ( srcMode != SM_I2O ) {
-      stat(inName, &statBuf);
-      if ( S_ISDIR(statBuf.st_mode) ) {
-         fprintf( stderr,
-                  "%s: Input file %s is a directory.\n",
-                  progName,inName);
-         setExit(1);
-         return;
-      }
-   }
+    if (srcMode != SM_I2O && containsDubiousChars(inName))
+    {
+        if (noisy)
+            fprintf(stderr, "%s: There are no files matching `%s'.\n", progName, inName);
 
-   switch ( srcMode ) {
+        setExit(1);
+        return;
+    }
 
-      case SM_I2O:
+    if (srcMode != SM_I2O && !fileExists(inName))
+    {
+        fprintf(stderr, "%s: Can't open input %s.\n", progName, inName);
+        setExit(1);
+        return;
+    }
+
+    if ( srcMode != SM_I2O )
+    {
+        stat(inName, &statBuf);
+
+        if ( S_ISDIR(statBuf.st_mode) )
+        {
+            fprintf(stderr, "%s: Input file %s is a directory.\n", progName,inName);
+            setExit(1);
+            return;
+        }
+    }
+
+    switch (srcMode)
+    {
+    case SM_I2O:
 #if 0
          if ( isatty ( fileno ( stdin ) ) ) {
             fprintf ( stderr,
@@ -6082,22 +6079,16 @@ void AppBzip2::testf(char *name)
       fflush ( stderr );
    }
 
-   outputHandleJustInCase = NULL;
-   allOK = testStream ( inStr );
-
-   if (allOK && verbosity >= 1) fprintf ( stderr, "ok\n" );
-   if (!allOK) testFailsExist = 1;
+    outputHandleJustInCase = NULL;
+    allOK = testStream(inStr);
+    if (allOK && verbosity >= 1) fprintf(stderr, "ok\n");
+    if (!allOK) testFailsExist = 1;
 }
-
-
-
-
 
 void AppBzip2::redundant(char* flag)
 {
-    fprintf(stderr, "%s: %s is redundant in versions 0.9.5 and above\n", progName, flag );
+    fprintf(stderr, "%s: %s is redundant in versions 0.9.5 and above\n", progName, flag);
 }
-
 
 #if 0
 static void *myMalloc(int32_t n)
@@ -6111,7 +6102,7 @@ static void *myMalloc(int32_t n)
 }
 #endif
 
-static Cell *mkCell()
+Cell *AppBzip2::mkCell()
 {
     Cell *c;
     c = new Cell;
@@ -6205,7 +6196,7 @@ void AppBzip2::usage(char *fullProgName)
 
 void AppBzip2::license()
 {
-   fprintf ( stderr,
+    fprintf(stderr,
 
     "bzip2, a block-sorting file compressor.  "
     "Version %s.\n"
@@ -6221,81 +6212,80 @@ void AppBzip2::license()
     "   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
     "   LICENSE file for more details.\n"
     "   \n",
-    BZ2_bzlibVersion()
-   );
+    BZ2_bzlibVersion());
 }
 
 int AppBzip2::run(int argc, char **argv)
 {
-   int32_t  i, j;
-   char   *tmp;
-   Cell   *argList;
-   Cell   *aa;
-   uint8_t   decode;
+    int32_t i, j;
+    char *tmp;
+    Cell *argList;
+    Cell *aa;
+    uint8_t decode;
 
-   if (sizeof(int32_t) != 4 || sizeof(uint32_t) != 4  ||
+    if (sizeof(int32_t) != 4 || sizeof(uint32_t) != 4  ||
        sizeof(int16_t) != 2 || sizeof(uint16_t) != 2  ||
        sizeof(char)  != 1 || sizeof(uint8_t)  != 1)
-      configError();
+    {
+        configError();
+    }
 
-   outputHandleJustInCase  = NULL;
-   smallMode               = 0;
-   keepInputFiles          = 0;
-   forceOverwrite          = 0;
-   noisy                   = 1;
-   verbosity               = 0;
-   blockSize100k           = 9;
-   testFailsExist          = 0;
-   unzFailsExist           = 0;
-   numFileNames            = 0;
-   numFilesProcessed       = 0;
-   workFactor              = 30;
-   deleteOutputOnInterrupt = 0;
-   exitValue               = 0;
-   i = j = 0;
+    outputHandleJustInCase = NULL;
+    smallMode      = 0;
+    keepInputFiles = 0;
+    forceOverwrite = 0;
+    noisy          = 1;
+    verbosity      = 0;
+    blockSize100k  = 9;
+    testFailsExist = 0;
+    unzFailsExist  = 0;
+    numFileNames   = 0;
+    numFilesProcessed       = 0;
+    workFactor              = 30;
+    deleteOutputOnInterrupt = 0;
+    exitValue               = 0;
+    i = j = 0;
 #if 0
-   signal (SIGSEGV, mySIGSEGVorSIGBUScatcher);
-   signal (SIGBUS,  mySIGSEGVorSIGBUScatcher);
+    signal (SIGSEGV, mySIGSEGVorSIGBUScatcher);
+    signal (SIGBUS,  mySIGSEGVorSIGBUScatcher);
 #endif
-   copyFileName ( inName,  "(none)" );
-   copyFileName ( outName, "(none)" );
+    copyFileName ( inName,  "(none)" );
+    copyFileName ( outName, "(none)" );
+    copyFileName ( progNameReally, argv[0] );
+    progName = &progNameReally[0];
 
-   copyFileName ( progNameReally, argv[0] );
-   progName = &progNameReally[0];
-   for (tmp = &progNameReally[0]; *tmp != '\0'; tmp++)
-      if (*tmp == '/') progName = tmp + 1;
+    for (tmp = &progNameReally[0]; *tmp != '\0'; tmp++)
+        if (*tmp == '/') progName = tmp + 1;
 
+    argList = NULL;
+    addFlagsFromEnvVar(&argList,  "BZIP2");
+    addFlagsFromEnvVar(&argList,  "BZIP");
 
-   argList = NULL;
-   addFlagsFromEnvVar ( &argList,  "BZIP2" );
-   addFlagsFromEnvVar ( &argList,  "BZIP" );
-
-   for (i = 1; i <= argc-1; i++)
+    for (i = 1; i <= argc-1; i++)
         argList = snocString(argList, argv[i]);
 
     longestFileName = 7;
-    numFileNames    = 0;
-    decode          = 1;
+    numFileNames = 0;
+    decode = 1;
 
     for (aa = argList; aa != NULL; aa = aa->link)
     {
-
         if (strcmp(aa->name, "--") == 0)
         { decode = 0; continue; }
 
         if (aa->name[0] == '-' && decode) continue;
-      numFileNames++;
-      if (longestFileName < (int32_t)strlen(aa->name) )
-         longestFileName = (int32_t)strlen(aa->name);
+        numFileNames++;
+
+        if (longestFileName < (int32_t)strlen(aa->name) )
+            longestFileName = (int32_t)strlen(aa->name);
     }
 
-   if (numFileNames == 0)
-      srcMode = SM_I2O; else srcMode = SM_F2F;
+    if (numFileNames == 0)
+        srcMode = SM_I2O; else srcMode = SM_F2F;
 
+    opMode = OM_Z;
 
-   opMode = OM_Z;
-
-   if ( (strstr ( progName, "unzip" ) != 0) ||
+    if ((strstr ( progName, "unzip" ) != 0) ||
         (strstr ( progName, "UNZIP" ) != 0) )
       opMode = OM_UNZ;
 

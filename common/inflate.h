@@ -3,16 +3,13 @@
 #include "fector.h"
 #include "bitinput.h"
 
-typedef vector<int> Vint;
-typedef vector<uint8_t> Vugt;
-
 class Nau
 {
     int _length;
     int *_a;
 public:
     Nau(int n) : _length(n), _a(new int[n]) { }
-    Nau(Vint a) : Nau(a.size()) { for (int i = 0; i < _length; i++) _a[i] = a[i]; }
+    Nau(vector<int> a) : Nau(a.size()) { for (int i = 0; i < _length; i++) _a[i] = a[i]; }
     Nau(int n, int val) : Nau(n) { for (int i = 0; i < n; i++) _a[i] = val; }
     ~Nau() { delete[] _a; }
     void set(int i, int val) { _a[i] = val; }

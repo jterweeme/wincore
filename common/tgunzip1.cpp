@@ -2,7 +2,7 @@
 
 int main()
 {
-    Vint llcodelens(288);
+    vector<int> llcodelens(288);
     fill_n(llcodelens.begin(), 144, 8);
     fill_n(llcodelens.begin() + 144, 112, 9);
     fill_n(llcodelens.begin() + 256, 24, 7);
