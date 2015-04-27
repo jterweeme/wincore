@@ -6,7 +6,7 @@ endif
 
 CXXFLAGS = -Wall -Wno-parentheses -O0 -g --std=c++11 $(NO_MYSTL)
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
-VALGRIND = #valgrind $(VALFLAGS)
+VALGRIND = valgrind $(VALFLAGS)
 UTIL2_H = util2.h mytypes.h
 MYSTL_H = mystl.h mystl.tcc
 COMMON_H = common.h $(MYSTL_H)

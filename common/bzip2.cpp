@@ -2,21 +2,7 @@
 #include "filesys.h"
 #include <sys/stat.h>
 
-struct bz_stream
-{
-    char *next_in;
-    unsigned int avail_in;
-    unsigned int total_in_lo32;
-    unsigned int total_in_hi32;
-    char *next_out;
-    unsigned int avail_out;
-    unsigned int total_out_lo32;
-    unsigned int total_out_hi32;
-    void *state;
-    void *(*bzalloc)(void *,int,int);
-    void (*bzfree)(void *, void *);
-    void *opaque;
-};
+
 
 uint32_t BZ2_crc32Table[256] = {
    0x00000000L, 0x04c11db7L, 0x09823b6eL, 0x0d4326d9L,
@@ -153,7 +139,25 @@ const char* zSuffix[BZ_N_SUFFIX_PAIRS] = { ".bz2", ".bz", ".tbz2", ".tbz" };
 const char* unzSuffix[BZ_N_SUFFIX_PAIRS] = { "", "", ".tar", ".tar" };
 static struct stat fileMetaInfo;
 
-struct EState
+struct XState
+{
+};
+
+struct bz_stream
+{
+    char *next_in;
+    unsigned int avail_in;
+    unsigned int total_in_lo32;
+    unsigned int total_in_hi32;
+    char *next_out;
+    unsigned int avail_out;
+    unsigned int total_out_lo32;
+    unsigned int total_out_hi32;
+    XState *state;
+    void *opaque;
+};
+
+struct EState : public XState
 {
     bz_stream *strm;
     int32_t mode;
@@ -201,7 +205,7 @@ struct UInt64
     uint8_t b[8];
 };
 
-struct DState
+struct DState : public XState
 {
     bz_stream* strm;
     int32_t state;
@@ -405,7 +409,7 @@ class AppBzip2
     void mainSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant, 
                 uint32_t *ftab, int32_t nblock, int32_t verb, int32_t *budget);
 
-    BZFILE* BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
+    BZFILE *BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
         int verbosity, int workFactor);
 
     void BZ2_bzWriteClose(int *bzerror, BZFILE *b, int abandon, unsigned int *nbytes_in,
@@ -420,16 +424,9 @@ class AppBzip2
     void BZ2_hbCreateDecodeTables(int32_t *limit, int32_t *base, int32_t *perm,
             uint8_t *length, int32_t minLen, int32_t maxLen, int32_t alphaSize);
 
-    static void *default_bzalloc(void* opaque, int32_t items, int32_t size)
-    {
-        char *ret = new char[items * size];
-        return (void *)ret;
-        //return malloc(items * size);
-    }
-
     BZFILE *BZ2_bzReadOpen(int *bzerr, FILE *f, int verbosity, int sm, void *unused, int nUnused);
     //static void default_bzfree(void* opaque, void* addr) { if (addr != NULL) free(addr); }
-    static void default_bzfree(void* opaque, void* addr) { if (addr != NULL) delete[] addr; }
+    //static void default_bzfree(void* opaque, void* addr) { if (addr != NULL) delete[] addr; }
     BZFILE *BZ2_bzdopen(int fd, const char *mode);
     BZFILE *bzopen_or_bzdopen(const char *path, int fd, const char *mode, int open_mode);
     Cell *snocString(Cell *root, char *name);
@@ -542,17 +539,20 @@ void AppBzip2::fallbackSimpleSort(uint32_t *fmap, uint32_t *eclass, int32_t lo, 
 {
     int32_t i, j, tmp;
     uint32_t ec_tmp;
-
     if (lo == hi) return;
 
-    if (hi - lo > 3) {
-      for ( i = hi-4; i >= lo; i-- ) {
-         tmp = fmap[i];
-         ec_tmp = eclass[tmp];
-         for ( j = i+4; j <= hi && ec_tmp > eclass[fmap[j]]; j += 4 )
-            fmap[j-4] = fmap[j];
-         fmap[j-4] = tmp;
-      }
+    if (hi - lo > 3)
+    {
+        for ( i = hi-4; i >= lo; i-- )
+        {
+            tmp = fmap[i];
+            ec_tmp = eclass[tmp];
+
+            for (j = i+4; j <= hi && ec_tmp > eclass[fmap[j]]; j += 4)
+                fmap[j-4] = fmap[j];
+
+            fmap[j-4] = tmp;
+        }
     }
 
     for (i = hi-1; i >= lo; i--)
@@ -1898,13 +1898,10 @@ void AppBzip2::sendMTFValues(EState* s)
 
       for (t = 0; t < nGroups; t++)
          BZ2_hbMakeCodeLengths(&(s->len[t][0]), &(s->rfreq[t][0]), alphaSize, 20);
-   }
+    }
 
-
-   AssertH( nGroups < 8, 3002 );
-   AssertH( nSelectors < 32768 &&
-            nSelectors <= (2 + (900000 / 50)),
-            3003 );
+    AssertH(nGroups < 8, 3002);
+    AssertH(nSelectors < 32768 && nSelectors <= (2 + (900000 / 50)), 3003);
 
    {
       uint8_t pos[BZ_N_GROUPS], ll_i, tmp2, tmp;
@@ -2285,17 +2282,9 @@ int32_t AppBzip2::BZ2_decompress(DState *s)
 
         if (s->smallDecompress)
         {
-#if 0
-            s->ll16=(uint16_t *)(strm->bzalloc)(strm->opaque,
-                (s->blockSize100k*100000*sizeof(uint16_t)),1);
-#endif
 
             s->ll16 = new uint16_t[s->blockSize100k*100000];
             s->ll4 = new uint8_t[(1 + s->blockSize100k*100000) >> 1];
-#if 0
-            s->ll4=(uint8_t*)(strm->bzalloc)(strm->opaque,
-                (((1+s->blockSize100k*100000)>>1)*sizeof(uint8_t)),1);
-#endif
 
             if (s->ll16 == NULL || s->ll4 == NULL)
             {
@@ -2305,9 +2294,7 @@ int32_t AppBzip2::BZ2_decompress(DState *s)
         }
         else
         {
-            s->tt=(uint32_t*)(strm->bzalloc)
-                (strm->opaque,(s->blockSize100k*100000*sizeof(int32_t)),1);
-
+            s->tt = new uint32_t[s->blockSize100k*100000*sizeof(int32_t)];
             if (s->tt == NULL) { retVal = BZ_MEM_ERROR; goto save_state_and_return; };
         }
 
@@ -3444,21 +3431,21 @@ int32_t AppBzip2::BZ2_decompress(DState *s)
 
 int AppBzip2::bz_config_ok()
 {
-   if (sizeof(int)   != 4) return 0;
-   if (sizeof(short) != 2) return 0;
-   if (sizeof(char)  != 1) return 0;
-   return 1;
+    if (sizeof(int)   != 4) return 0;
+    if (sizeof(short) != 2) return 0;
+    if (sizeof(char)  != 1) return 0;
+    return 1;
 }
 
 void AppBzip2::prepare_new_block(EState *s)
 {
-   int32_t i;
-   s->nblock = 0;
-   s->numZ = 0;
-   s->state_out_pos = 0;
-   BZ_INITIALISE_CRC ( s->blockCRC );
-   for (i = 0; i < 256; i++) s->inUse[i] = 0;
-   s->blockNo++;
+    int32_t i;
+    s->nblock = 0;
+    s->numZ = 0;
+    s->state_out_pos = 0;
+    BZ_INITIALISE_CRC ( s->blockCRC );
+    for (i = 0; i < 256; i++) s->inUse[i] = 0;
+    s->blockNo++;
 }
 
 void AppBzip2::init_RL(EState* s)
@@ -3488,43 +3475,49 @@ int AppBzip2::BZ2_bzCompressInit(bz_stream *strm, int blockSize100k, int verbosi
     }
 
     if (workFactor == 0) workFactor = 30;
-    if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
-    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
-    s = (EState *)(strm->bzalloc)(strm->opaque,(sizeof(EState)),1);
+    //if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
+    s = new EState[sizeof(EState)];
     if (s == NULL) return BZ_MEM_ERROR;
     s->strm = strm;
     s->arr1 = NULL;
     s->arr2 = NULL;
     s->ftab = NULL;
     n = 100000 * blockSize100k;
-    s->arr1 = (unsigned *)(strm->bzalloc)(strm->opaque,(n * sizeof(uint32_t)), 1);
-    s->arr2 = (unsigned *)(strm->bzalloc)(strm->opaque,((n+BZ_N_OVERSHOOT)*sizeof(uint32_t)), 1);
-    s->ftab = (unsigned *)(strm->bzalloc)(strm->opaque,(65537 * sizeof(uint32_t)), 1);
+    s->arr1 = new unsigned[n * sizeof(uint32_t)];
+    s->arr2 = new unsigned[n + BZ_N_OVERSHOOT * sizeof(uint32_t)];
+    s->ftab = new unsigned[65537 * sizeof(uint32_t)];
 
     if (s->arr1 == NULL || s->arr2 == NULL || s->ftab == NULL)
     {
+#if 0
         if (s->arr1 != NULL) (strm->bzfree)(strm->opaque,(s->arr1));
         if (s->arr2 != NULL) (strm->bzfree)(strm->opaque,(s->arr2));
         if (s->ftab != NULL) (strm->bzfree)(strm->opaque,(s->ftab));
         if (s       != NULL) (strm->bzfree)(strm->opaque,(s));
+#else
+        if (s->arr1 != NULL) delete[] s->arr1;
+        if (s->arr2 != NULL) delete[] s->arr2;
+        if (s->ftab != NULL) delete[] s->ftab;
+        if (s       != NULL) delete[] s;
+#endif
         return BZ_MEM_ERROR;
     }
 
     s->blockNo = 0;
     s->state = BZ_S_INPUT;
     s->mode = BZ_M_RUNNING;
-    s->combinedCRC       = 0;
-    s->blockSize100k     = blockSize100k;
-    s->nblockMAX         = 100000 * blockSize100k - 19;
-    s->verbosity         = verbosity;
-    s->workFactor        = workFactor;
-    s->block             = (uint8_t*)s->arr2;
-    s->mtfv              = (uint16_t*)s->arr1;
-    s->zbits             = NULL;
-    s->ptr               = (uint32_t*)s->arr1;
-    strm->state          = s;
-    strm->total_in_lo32  = 0;
-    strm->total_in_hi32  = 0;
+    s->combinedCRC = 0;
+    s->blockSize100k = blockSize100k;
+    s->nblockMAX = 100000 * blockSize100k - 19;
+    s->verbosity = verbosity;
+    s->workFactor = workFactor;
+    s->block = (uint8_t*)s->arr2;
+    s->mtfv = (uint16_t*)s->arr1;
+    s->zbits = NULL;
+    s->ptr = (uint32_t*)s->arr1;
+    strm->state = s;
+    strm->total_in_lo32 = 0;
+    strm->total_in_hi32 = 0;
     strm->total_out_lo32 = 0;
     strm->total_out_hi32 = 0;
     init_RL(s);
@@ -3782,24 +3775,30 @@ int AppBzip2::BZ2_bzCompressEnd(bz_stream *strm)
     s = (EState *)strm->state;
     if (s == NULL) return BZ_PARAM_ERROR;
     if (s->strm != strm) return BZ_PARAM_ERROR;
+#if 0
     if (s->arr1 != NULL) (strm->bzfree)(strm->opaque,(s->arr1));
     if (s->arr2 != NULL) (strm->bzfree)(strm->opaque,(s->arr2));
     if (s->ftab != NULL) (strm->bzfree)(strm->opaque,(s->ftab));
     (strm->bzfree)(strm->opaque,(strm->state));
+#else
+    if (s->arr1 != NULL) delete[] s->arr1;
+    if (s->arr2 != NULL) delete[] s->arr2;
+    if (s->ftab != NULL) delete[] s->ftab;
+    delete[] strm->state;
+#endif
     strm->state = NULL;   
     return BZ_OK;
 }
 
 int AppBzip2::BZ2_bzDecompressInit(bz_stream* strm, int verbosity, int small)
 {
-    DState* s;
+    DState *s;
     if (!bz_config_ok()) return BZ_CONFIG_ERROR;
     if (strm == NULL) return BZ_PARAM_ERROR;
     if (small != 0 && small != 1) return BZ_PARAM_ERROR;
     if (verbosity < 0 || verbosity > 4) return BZ_PARAM_ERROR;
-    if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
-    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
-    s = (DState *)(strm->bzalloc)(strm->opaque,(sizeof(DState)), 1);
+    //if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
+    s = new DState[sizeof(DState)];
     if (s == NULL) return BZ_MEM_ERROR;
     s->strm                  = strm;
     strm->state              = s;
@@ -4228,10 +4227,17 @@ int AppBzip2::BZ2_bzDecompressEnd(bz_stream *strm)
     s = (DState *)strm->state;
     if (s == NULL) return BZ_PARAM_ERROR;
     if (s->strm != strm) return BZ_PARAM_ERROR;
+#if 0
     if (s->tt   != NULL) (strm->bzfree)(strm->opaque,(s->tt));
     if (s->ll16 != NULL) (strm->bzfree)(strm->opaque,(s->ll16));
     if (s->ll4  != NULL) (strm->bzfree)(strm->opaque,(s->ll4));
-    (strm->bzfree)(strm->opaque,(strm->state));
+#else
+    if (s->tt   != NULL) delete[] s->tt;
+    if (s->ll16 != NULL) delete[] s->ll16;
+    if (s->ll4  != NULL) delete[] s->ll4;
+#endif
+    //(strm->bzfree)(strm->opaque,(strm->state));
+    delete[] strm->state;
     strm->state = NULL;
     return BZ_OK;
 }
@@ -4288,8 +4294,7 @@ BZFILE *AppBzip2::BZ2_bzWriteOpen(int *bzerror, FILE *f, int blockSize100k,
     bzf->bufN          = 0;
     bzf->handle        = f;
     bzf->writing       = 1;
-    bzf->strm.bzalloc  = NULL;
-    bzf->strm.bzfree   = NULL;
+    //bzf->strm.bzfree   = NULL;
     bzf->strm.opaque   = NULL;
     if (workFactor == 0) workFactor = 30;
     ret = BZ2_bzCompressInit(&(bzf->strm), blockSize100k, verbosity, workFactor);
@@ -4524,8 +4529,7 @@ BZFILE *AppBzip2::BZ2_bzReadOpen(int *bzerror, FILE *f, int verbosity, int small
     bzf->handle        = f;
     bzf->bufN          = 0;
     bzf->writing       = 0;
-    bzf->strm.bzalloc  = NULL;
-    bzf->strm.bzfree   = NULL;
+    //bzf->strm.bzfree   = NULL;
     bzf->strm.opaque   = NULL;
    
     while (nUnused > 0)
@@ -4717,29 +4721,24 @@ int AppBzip2::BZ2_bzBuffToBuffCompress(char *dest, unsigned int *destLen, char *
       return BZ_PARAM_ERROR;
 
    if (workFactor == 0) workFactor = 30;
-   strm.bzalloc = NULL;
-   strm.bzfree = NULL;
+   //strm.bzfree = NULL;
    strm.opaque = NULL;
    ret = BZ2_bzCompressInit(&strm, blockSize100k, verbosity, workFactor);
    if (ret != BZ_OK) return ret;
-
    strm.next_in = source;
    strm.next_out = dest;
    strm.avail_in = sourceLen;
    strm.avail_out = *destLen;
-
    ret = BZ2_bzCompress ( &strm, BZ_FINISH );
    if (ret == BZ_FINISH_OK) goto output_overflow;
    if (ret != BZ_STREAM_END) goto errhandler;
    *destLen -= strm.avail_out;   
    BZ2_bzCompressEnd ( &strm );
    return BZ_OK;
-
-   output_overflow:
+output_overflow:
    BZ2_bzCompressEnd ( &strm );
    return BZ_OUTBUFF_FULL;
-
-   errhandler:
+errhandler:
    BZ2_bzCompressEnd ( &strm );
    return ret;
 }
@@ -4756,8 +4755,7 @@ int AppBzip2::BZ2_bzBuffToBuffDecompress(char *dest, unsigned int* destLen,
        verbosity < 0 || verbosity > 4) 
           return BZ_PARAM_ERROR;
 
-   strm.bzalloc = NULL;
-   strm.bzfree = NULL;
+   //strm.bzfree = NULL;
    strm.opaque = NULL;
    ret = BZ2_bzDecompressInit ( &strm, verbosity, small );
    if (ret != BZ_OK) return ret;
@@ -5357,15 +5355,16 @@ void AppBzip2::cleanUpAndFail(int32_t ec)
       }
    }
 
-   if (noisy && numFileNames > 0 && numFilesProcessed < numFileNames) {
-      fprintf ( stderr, 
+    if (noisy && numFileNames > 0 && numFilesProcessed < numFileNames)
+    {
+        fprintf ( stderr, 
                 "%s: WARNING: some files have not been processed:\n"
                 "%s:    %d specified on command line, %d not processed yet.\n\n",
                 progName, progName,
                 numFileNames, numFileNames - numFilesProcessed );
-   }
-   setExit(ec);
-   //exit(exitValue);
+    }
+    setExit(ec);
+    //exit(exitValue);
     throw "exitValue";
 }
 
@@ -5533,10 +5532,10 @@ void AppBzip2::copyFileName(char* to, const char* from )
 
 uint8_t AppBzip2::fileExists(char* name)
 {
-   FILE *tmp   = fopen ( name, "rb" );
-   uint8_t exists = (tmp != NULL);
-   if (tmp != NULL) fclose ( tmp );
-   return exists;
+    FILE *tmp = fopen ( name, "rb" );
+    uint8_t exists = (tmp != NULL);
+    if (tmp != NULL) fclose ( tmp );
+    return exists;
 }
 
 FILE *AppBzip2::fopen_output_safely(char* name, const char* mode)
@@ -5627,12 +5626,11 @@ uint8_t AppBzip2::mapSuffix(char* name, const char* oldSuffix, const char* newSu
 
 void AppBzip2::compress(char *name)
 {
-   FILE  *inStr;
-   FILE  *outStr;
-   int32_t n, i;
-   struct stat statBuf;
-
-   deleteOutputOnInterrupt = 0;
+    FILE *inStr;
+    FILE *outStr;
+    int32_t n, i;
+    struct stat statBuf;
+    deleteOutputOnInterrupt = 0;
 
    if (name == NULL && srcMode != SM_I2O)
       panic ( "compress: bad modes\n" );
@@ -6461,7 +6459,7 @@ int AppBzip2::run(int argc, char **argv)
 
         if (aa->name != NULL)
             //free(aa->name);
-            delete aa->name;
+            delete[] aa->name;
 
         delete aa;
       //free(aa);
