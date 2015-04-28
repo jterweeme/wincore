@@ -21,9 +21,9 @@
 
 static const uint8_t MAX_SUFFIX = 30;
 typedef void *voidp;
-typedef unsigned char  uch;
+typedef unsigned char uch;
 typedef unsigned short ush;
-typedef unsigned long  ulg;
+typedef unsigned long ulg;
 static const uint8_t OK = 0;
 static const uint8_t ERROR = 1;
 static const uint8_t STORED = 0;
@@ -46,8 +46,8 @@ extern int rsync;
 extern off_t bytes_in;
 extern off_t bytes_out;
 extern off_t header_bytes;
-extern int  ifd;       
-extern int  ofd;        
+extern int ifd;       
+extern int ofd;        
 extern char ifname[];   
 extern char ofname[];   
 extern char *progname;  
@@ -414,9 +414,11 @@ static void rsync_roll(unsigned start, unsigned num)
     }
 }
 
-#define INSERT_STRING(s, match_head) \
-    ((ins_h = (((ins_h)<<H_SHIFT) ^ (window[(s) + MIN_MATCH - 1])) & HASH_MASK), \
-    prev[(s) & WMASK] = match_head = (prev+WSIZE)[ins_h], (prev+WSIZE)[ins_h] = (s))
+void INSERT_STRING2(unsigned &s, IPos &match_head)
+{
+    ((ins_h = (((ins_h)<<H_SHIFT) ^ (window[(s) + MIN_MATCH - 1])) & HASH_MASK),
+    prev[(s) & WMASK] = match_head = (prev+WSIZE)[ins_h], (prev+WSIZE)[ins_h] = (s));
+}
 
 static off_t deflate_fast()
 {
@@ -426,7 +428,7 @@ static off_t deflate_fast()
 
     prev_length = MIN_MATCH-1;
     while (lookahead != 0) {
-        INSERT_STRING(strstart, hash_head);
+        INSERT_STRING2(strstart, hash_head);
 
         if (hash_head != NIL && strstart - hash_head <= MAX_DIST &&
 	    strstart <= window_size - MIN_LOOKAHEAD) {
@@ -445,7 +447,7 @@ static off_t deflate_fast()
                 match_length--;
                 do {
                     strstart++;
-                    INSERT_STRING(strstart, hash_head);
+                    INSERT_STRING2(strstart, hash_head);
             
                 } while (--match_length != 0);
 	        strstart++; 
@@ -482,10 +484,6 @@ static off_t deflate_fast()
 
 }
 
-#define FLUSH_BLOCK(eof) \
-   flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : \
-                (char*)NULL, (long)strstart - block_start, flush-1, (eof))
-
 off_t deflate()
 {
     IPos hash_head;      
@@ -499,63 +497,92 @@ off_t deflate()
 
     while (lookahead != 0)
     {
-        INSERT_STRING(strstart, hash_head);
+        INSERT_STRING2(strstart, hash_head);
         prev_length = match_length, prev_match = match_start;
         match_length = MIN_MATCH-1;
 
         if (hash_head != NIL && prev_length < max_lazy_match &&
             strstart - hash_head <= MAX_DIST &&
-	    strstart <= window_size - MIN_LOOKAHEAD) {
-            match_length = longest_match (hash_head);
-            if (match_length > lookahead) match_length = lookahead;
+	        strstart <= window_size - MIN_LOOKAHEAD)
+        {
+            match_length = longest_match(hash_head);
 
-            if (match_length == MIN_MATCH && strstart-match_start > 4096){
+            if (match_length > lookahead)
+                match_length = lookahead;
+
+            if (match_length == MIN_MATCH && strstart-match_start > 4096)
                 match_length--;
-            }
         }
-        if (prev_length >= MIN_MATCH && match_length <= prev_length) {
 
-
+        if (prev_length >= MIN_MATCH && match_length <= prev_length)
+        {
             flush = ct_tally(strstart-1-prev_match, prev_length - MIN_MATCH);
-
             lookahead -= prev_length-1;
             prev_length -= 2;
 
-
             do { if (rsync) rsync_roll((strstart), (prev_length + 1)); } while (0);
 
-
-            do {
+            do
+            {
                 strstart++;
-                INSERT_STRING(strstart, hash_head);
-            } while (--prev_length != 0);
+                INSERT_STRING2(strstart, hash_head);
+            }
+            while (--prev_length != 0);
+
             match_available = 0;
             match_length = MIN_MATCH-1;
             strstart++;
 
-	    if (rsync && strstart > rsync_chunk_end) {
-		rsync_chunk_end = 0xFFFFFFFFUL;
-		flush = 2;
-	    }
-            if (flush) FLUSH_BLOCK(0), block_start = strstart;
-        } else if (match_available) {
-	    flush = ct_tally (0, window[strstart-1]);
-	    if (rsync && strstart > rsync_chunk_end) {
-		rsync_chunk_end = 0xFFFFFFFFUL;
-		flush = 2;
-	    }
-            if (flush) FLUSH_BLOCK(0), block_start = strstart;
+	        if (rsync && strstart > rsync_chunk_end)
+            {
+		        rsync_chunk_end = 0xFFFFFFFFUL;
+		        flush = 2;
+	        }
+
+            if (flush)
+            {
+                flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : 
+                        (char*)NULL, (long)strstart - block_start, flush-1, (0));
+
+                block_start = strstart;
+            }
+        }
+        else if (match_available)
+        {
+            flush = ct_tally (0, window[strstart-1]);
+
+            if (rsync && strstart > rsync_chunk_end)
+            {
+                rsync_chunk_end = 0xFFFFFFFFUL;
+                flush = 2;
+            }
+
+            if (flush)
+            {
+                flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : 
+                        (char*)NULL, (long)strstart - block_start, flush-1, (0));
+
+                block_start = strstart;
+            }
 
             do { if (rsync) rsync_roll((strstart), (1 + 1)); } while (0);
 
             strstart++;
             lookahead--;
-        } else {
-	    if (rsync && strstart > rsync_chunk_end) {
-		rsync_chunk_end = 0xFFFFFFFFUL;
-		flush = 2;
-		FLUSH_BLOCK(0), block_start = strstart;
-	    }
+        }
+        else
+        {
+            if (rsync && strstart > rsync_chunk_end)
+            {
+                rsync_chunk_end = 0xFFFFFFFFUL;
+                flush = 2;
+
+                flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : 
+                        (char*)NULL, (long)strstart - block_start, flush-1, (0));
+
+                block_start = strstart;
+            }
+
             match_available = 1;
             
             do { if (rsync) rsync_roll((strstart), (1 + 1)); } while (0);
@@ -565,9 +592,11 @@ off_t deflate()
 
         while (lookahead < MIN_LOOKAHEAD && !eofile) fill_window();
     }
-    if (match_available) ct_tally (0, window[strstart-1]);
 
-    return FLUSH_BLOCK(1);
+    if (match_available) ct_tally(0, window[strstart-1]);
+
+    return flush_block(block_start >= 0L ? (char*)&window[(unsigned)block_start] : 
+                (char*)NULL, (long)strstart - block_start, flush-1, (1));
 }
 
 
@@ -1556,7 +1585,6 @@ static void treat_stdin()
     }
 }
 
-#define WARN(msg) {if (!quiet) fprintf msg ; if (exit_code == OK) exit_code = 2;}
 
 static void treat_file(char *iname)
 {
@@ -1576,19 +1604,12 @@ static void treat_file(char *iname)
 	    treat_dir(iname);
 	    reset_times (iname, &st);
 	} else
-	WARN((stderr,"%s: %s is a directory -- ignored\n", progname, ifname));
 	return;
     }
     if (!S_ISREG(istat.st_mode)) {
-	WARN((stderr,
-	      "%s: %s is not a directory or a regular file - ignored\n",
-	      progname, ifname));
 	return;
     }
     if (istat.st_nlink > 1 && !to_stdout && !force) {
-	WARN((stderr, "%s: %s has %lu other link%c -- unchanged\n",
-	      progname, ifname, (unsigned long) istat.st_nlink - 1,
-	      istat.st_nlink > 2 ? 's' : ' '));
 	return;
     }
 
@@ -1709,8 +1730,6 @@ static int create_outfile()
 	if (!name_too_long(ofname, &ostat)) return OK;
 
 	if (decompress) {
-	    WARN((stderr, "%s: %s: warning, name truncated\n",
-		  progname, ofname));
 	    return OK;
 	}
 	close(ofd);
@@ -1823,8 +1842,6 @@ static int make_ofname()
             if (!recursive && (list || test)) return OK;
 
 	    if (verbose || (!recursive && !quiet)) {
-		WARN((stderr,"%s: %s: unknown suffix -- ignored\n",
-		      progname, ifname));
 	    }
 	    return 2;
 	}
@@ -1851,12 +1868,14 @@ static int make_ofname()
     return OK;
 
  name_too_long:
-    WARN ((stderr, "%s: %s: file name too long\n", progname, ifname));
     return 2;
 }
 
-#define get_byte() (inptr < insize ? inbuf[inptr++] : fill_inbuf(0))
-#define try_byte() (inptr < insize ? inbuf[inptr++] : fill_inbuf(1))
+uch get_byte()
+{
+    return inptr < insize ? inbuf[inptr++] : fill_inbuf(0);
+}
+
 
 static int get_method(int in)
 {
@@ -1865,175 +1884,209 @@ static int get_method(int in)
     int imagic1;   
     ulg stamp;     
 
-    if (force && to_stdout) {
-	magic[0] = (char)try_byte();
-	imagic1 = try_byte ();
-	magic[1] = (char) imagic1;
-    } else {
-	magic[0] = (char)get_byte();
-	magic[1] = (char)get_byte();
-	imagic1 = 0;
+    if (force && to_stdout)
+    {
+        magic[0] = (char)(inptr < insize ? inbuf[inptr++] : fill_inbuf(1));
+        imagic1 = (inptr < insize ? inbuf[inptr++] : fill_inbuf(1));
+        magic[1] = (char)imagic1;
     }
+    else
+    {
+        magic[0] = (char)get_byte();
+        magic[1] = (char)get_byte();
+        imagic1 = 0;
+    }
+
     method = -1;
     part_nb++;  
     header_bytes = 0;
     last_member = 0;
 
-    if (memcmp(magic, GZIP_MAGIC, 2) == 0
-        || memcmp(magic, OLD_GZIP_MAGIC, 2) == 0) {
+    if (memcmp(magic, GZIP_MAGIC, 2) == 0 || memcmp(magic, OLD_GZIP_MAGIC, 2) == 0)
+    {
+	    method = (int)get_byte();
 
-	method = (int)get_byte();
-	if (method != DEFLATED) {
-	    fprintf(stderr,
-		    "%s: %s: unknown method %d -- not supported\n",
-		    progname, ifname, method);
-	    exit_code = ERROR;
-	    return -1;
-	}
-	work = unzip;
-	flags  = (uch)get_byte();
+        if (method != DEFLATED)
+        {
+            fprintf(stderr, "%s: %s: unknown method %d -- not supported\n",
+                progname, ifname, method);
 
-	if ((flags & 0x20) != 0) {
-	    fprintf(stderr,
-		    "%s: %s is encrypted -- not supported\n",
-		    progname, ifname);
-	    exit_code = ERROR;
-	    return -1;
-	}
-	if ((flags & CONTINUATION) != 0) {
-	    fprintf(stderr,
-		    "%s: %s is a a multi-part gzip file -- not supported\n",
-		    progname, ifname);
-	    exit_code = ERROR;
-	    if (force <= 1) return -1;
-	}
-	if ((flags & RESERVED) != 0) {
-	    fprintf(stderr,
-		    "%s: %s has flags 0x%x -- not supported\n",
-		    progname, ifname, flags);
-	    exit_code = ERROR;
-	    if (force <= 1) return -1;
-	}
-	stamp  = (ulg)get_byte();
-	stamp |= ((ulg)get_byte()) << 8;
-	stamp |= ((ulg)get_byte()) << 16;
-	stamp |= ((ulg)get_byte()) << 24;
-	if (stamp != 0 && !no_time) time_stamp = stamp;
+            exit_code = ERROR;
+            return -1;
+        }
 
-	(void)get_byte();
-	(void)get_byte();
+        work = unzip;
+        flags = (uch)get_byte();
 
-	if ((flags & CONTINUATION) != 0) {
-	    unsigned part = (unsigned)get_byte();
-	    part |= ((unsigned)get_byte())<<8;
-	    if (verbose) {
-		fprintf(stderr,"%s: %s: part number %u\n",
-			progname, ifname, part);
-	    }
-	}
-	if ((flags & 4) != 0) {
-	    unsigned len = (unsigned)get_byte();
-	    len |= ((unsigned)get_byte())<<8;
-	    if (verbose) {
-		fprintf(stderr,"%s: %s: extra field of %u bytes ignored\n",
-			progname, ifname, len);
-	    }
-	    while (len--) (void)get_byte();
-	}
+        if ((flags & 0x20) != 0)
+        {
+            fprintf(stderr,
+                "%s: %s is encrypted -- not supported\n",
+                progname, ifname);
 
-	if ((flags & ORIG_NAME) != 0) {
-	    if (no_name || (to_stdout && !list) || part_nb > 1) {
-		char c; 
-		do {c=get_byte();} while (c != 0);
-	    } else {
+            exit_code = ERROR;
+            return -1;
+        }
+
+        if ((flags & CONTINUATION) != 0)
+        {
+            fprintf(stderr,
+                "%s: %s is a a multi-part gzip file -- not supported\n",
+                progname, ifname);
+
+            exit_code = ERROR;
+
+            if (force <= 1) return -1;
+        }
+
+        if ((flags & RESERVED) != 0)
+        {
+            fprintf(stderr,
+                "%s: %s has flags 0x%x -- not supported\n",
+                progname, ifname, flags);
+
+            exit_code = ERROR;
+
+            if (force <= 1) return -1;
+        }
+
+        stamp  = (ulg)get_byte();
+        stamp |= ((ulg)get_byte()) << 8;
+        stamp |= ((ulg)get_byte()) << 16;
+        stamp |= ((ulg)get_byte()) << 24;
+        if (stamp != 0 && !no_time) time_stamp = stamp;
+
+        (void)get_byte();
+        (void)get_byte();
+
+        if ((flags & CONTINUATION) != 0)
+        {
+            unsigned part = (unsigned)get_byte();
+            part |= ((unsigned)get_byte())<<8;
+
+            if (verbose)
+            {
+                fprintf(stderr,"%s: %s: part number %u\n", progname, ifname, part);
+            }
+        }
+
+        if ((flags & 4) != 0)
+        {
+            unsigned len = (unsigned)get_byte();
+            len |= ((unsigned)get_byte())<<8;
+
+            if (verbose)
+            {
+                fprintf(stderr,"%s: %s: extra field of %u bytes ignored\n",
+			        progname, ifname, len);
+            }
+
+            while (len--) (void)get_byte();
+        }
+
+        if ((flags & ORIG_NAME) != 0)
+        {
+            if (no_name || (to_stdout && !list) || part_nb > 1)
+            {
+                char c; 
+                do {c=get_byte();} while (c != 0);
+            } else {
                 char *p = base_name (ofname);
                 char *base = p;
-		char *base2;
-		for (;;) {
-		    *p = (char)get_byte();
-		    if (*p++ == '\0') break;
-		    if (p >= ofname+sizeof(ofname)) {
-			error((char *)"corrupted input -- file name too large");
-		    }
-		}
-		base2 = base_name (base);
-		strcpy(base, base2);
-                if (!list) {
-		   if (base) list=0;
+                char *base2;
+
+                for (;;) {
+                    *p = (char)get_byte();
+                    if (*p++ == '\0') break;
+                    if (p >= ofname+sizeof(ofname)) {
+                        error((char *)"corrupted input -- file name too large");
+                    }
                 }
-	    }
-	} 
+                base2 = base_name (base);
+                strcpy(base, base2);
+                if (!list) {
+                    if (base) list=0;
+                }
+            }
+        } 
 
-	if ((flags & 0x10) != 0) {
-	    while (get_byte() != 0);
-	}
-	if (part_nb == 1) {
-	    header_bytes = inptr + 2*sizeof(long);
-	}
+        if ((flags & 0x10) != 0) {
+            while (get_byte() != 0);
+        }
 
-    } else if (memcmp(magic, PKZIP_MAGIC, 2) == 0 && inptr == 2
-	    && memcmp((char*)inbuf, PKZIP_MAGIC, 4) == 0) {
+        if (part_nb == 1) {
+            header_bytes = inptr + 2*sizeof(long);
+        }
+
+    }
+    else if (memcmp(magic, PKZIP_MAGIC, 2) == 0 && inptr == 2
+            && memcmp((char*)inbuf, PKZIP_MAGIC, 4) == 0)
+    {
         inptr = 0;
-	work = unzip;
-	if (check_zipfile(in) != OK) return -1;
-	last_member = 1;
-
+        work = unzip;
+        if (check_zipfile(in) != OK) return -1;
+        last_member = 1;
     } else if (memcmp(magic, PACK_MAGIC, 2) == 0) {
-	work = unpack;
-	method = 2;
+    work = unpack;
+    method = 2;
 
     } else if (memcmp(magic, LZW_MAGIC, 2) == 0) {
-	work = unlzw;
-	method = 1;
-	last_member = 1;
+    work = unlzw;
+    method = 1;
+    last_member = 1;
 
     } else if (memcmp(magic, LZH_MAGIC, 2) == 0) {
-	work = unlzh;
-	method = 3;
-	last_member = 1;
+    work = unlzh;
+    method = 3;
+    last_member = 1;
 
     } else if (force && to_stdout && !list) {
-	method = STORED;
-	work = copy;
+    method = STORED;
+    work = copy;
         inptr = 0;
-	last_member = 1;
+    last_member = 1;
     }
     if (method >= 0) return method;
 
     if (part_nb == 1) {
-	fprintf(stderr, "\n%s: %s: not in gzip format\n", progname, ifname);
-	exit_code = ERROR;
-	return -1;
-    } else {
-	if (magic[0] == 0)
-	  {
-	    int inbyte;
-	    for (inbyte = imagic1;  inbyte == 0;  inbyte = try_byte ())
-	      continue;
-	    if (inbyte == EOF)
-	      {
-		if (verbose)
-		  WARN ((stderr, "\n%s: %s: decompression OK, trailing zero bytes ignored\n",
-			 progname, ifname));
-		return -3;
-	      }
-	  }
+    fprintf(stderr, "\n%s: %s: not in gzip format\n", progname, ifname);
+    exit_code = ERROR;
+    return -1;
+    }
+    else
+    {
+        if (magic[0] == 0)
+        {
+            int inbyte;
 
-	WARN((stderr, "\n%s: %s: decompression OK, trailing garbage ignored\n",
-	      progname, ifname));
-	return -2;
+            for (inbyte = imagic1;
+                inbyte == 0;
+                inbyte = (inptr < insize ? inbuf[inptr++] : fill_inbuf(1)))
+            {
+                continue;
+            }
+
+            if (inbyte == EOF)
+            {
+    	        if (verbose)
+    	        return -3;
+            }
+        }
+
+        return -2;
     }
 }
 
-#define SH(p) ((ush)(uch)((p)[0]) | ((ush)(uch)((p)[1]) << 8))
-#define LG(p) ((ulg)(SH(p)) | ((ulg)(SH((p)+2)) << 16))
-#define OFF_T_MIN (~ (off_t) 0 << (sizeof (off_t) * CHAR_BIT - 1))
-#define OFF_T_MAX (~ (off_t) 0 - OFF_T_MIN)
+ush SH(uch *p)
+{
+    return ((ush)(uch)((p)[0]) | ((ush)(uch)((p)[1]) << 8));
+}
 
 static void do_list(int ifd, int method)
 {
     ulg crc;
     static int first_time = 1;
+
     static char* methods[9] = {
         (char *)"store",
         (char *)"compr",
@@ -2041,55 +2094,77 @@ static void do_list(int ifd, int method)
         (char *)"lzh  ",
         (char *)"", (char *)"", (char *)"", (char *)"",
         (char *)"defla"};
+
     char *date;
     int positive_off_t_width = 1;
     off_t o;
 
-    for (o = OFF_T_MAX;  9 < o;  o /= 10) {
-	positive_off_t_width++;
+    for (o = (~ (off_t) 0 - (~ (off_t) 0 << (sizeof (off_t) * CHAR_BIT - 1)));  9 < o;  o /= 10)
+    {
+	    positive_off_t_width++;
     }
 
-    if (first_time && method >= 0) {
-	first_time = 0;
-	if (verbose)  {
-	    printf("method  crc     date  time  ");
-	}
-	if (!quiet) {
-	    printf("%*.*s %*.*s  ratio uncompressed_name\n",
-		   positive_off_t_width, positive_off_t_width, "compressed",
-		   positive_off_t_width, positive_off_t_width, "uncompressed");
-	}
-    } else if (method < 0) {
-	if (total_in <= 0 || total_out <= 0) return;
-	if (verbose) {
-	    printf("                            ");
-	}
-	if (verbose || !quiet) {
-	    fprint_off(stdout, total_in, positive_off_t_width);
-	    printf(" ");
-	    fprint_off(stdout, total_out, positive_off_t_width);
-	    printf(" ");
-	}
-	display_ratio(total_out-(total_in-header_bytes), total_out, stdout);
-	printf(" (totals)\n");
-	return;
+    if (first_time && method >= 0)
+    {
+        first_time = 0;
+
+        if (verbose)
+        {
+            printf("method  crc     date  time  ");
+        }
+
+        if (!quiet)
+        {
+            printf("%*.*s %*.*s  ratio uncompressed_name\n",
+                positive_off_t_width, positive_off_t_width, "compressed",
+                positive_off_t_width, positive_off_t_width, "uncompressed");
+	    }
     }
+    else if (method < 0)
+    {
+        if (total_in <= 0 || total_out <= 0) return;
+
+        if (verbose)
+        {
+            printf("                            ");
+        }
+
+        if (verbose || !quiet)
+        {
+            fprint_off(stdout, total_in, positive_off_t_width);
+            printf(" ");
+            fprint_off(stdout, total_out, positive_off_t_width);
+            printf(" ");
+        }
+
+        display_ratio(total_out-(total_in-header_bytes), total_out, stdout);
+        printf(" (totals)\n");
+        return;
+    }
+
     crc = (ulg)~0;
     bytes_out = -1L;
     bytes_in = ifile_size;
 
-    if (method == DEFLATED && !last_member) {
+    if (method == DEFLATED && !last_member)
+    {
         bytes_in = lseek(ifd, (off_t)(-8), SEEK_END);
-        if (bytes_in != -1L) {
+
+        if (bytes_in != -1L)
+        {
             uch buf[8];
             bytes_in += 8L;
-            if (read(ifd, (char*)buf, sizeof(buf)) != sizeof(buf)) {
+
+            if (read(ifd, (char*)buf, sizeof(buf)) != sizeof(buf))
+            {
                 read_error();
             }
-            crc       = LG(buf);
-	    bytes_out = LG(buf+4);
-	}
+
+            crc = ((ulg)(SH(buf)) | ((ulg)(SH((buf)+2)) << 16));
+            bytes_out = ((ulg)(SH(buf + 4)) | ((ulg)(SH((buf + 4)+2)) << 16));
+        }
     }
+
     date = ctime((time_t*)&time_stamp) + 4;
     date[12] = '\0';
     if (verbose) {
@@ -2243,7 +2318,7 @@ static void reset_times (char *name, struct stat *statb)
     timep.modtime = statb->st_mtime;
     if (utime(name, &timep) && !S_ISDIR(statb->st_mode)) {
 	int e = errno;
-	WARN((stderr, "%s: ", progname));
+
 	if (!quiet) {
 	    errno = e;
 	    perror(ofname);
@@ -2262,7 +2337,7 @@ static void copy_stat(struct stat *ifstat)
     reset_times(ofname, ifstat);
     if (fchmod(ofd, ifstat->st_mode & 07777)) {
 	int e = errno;
-	WARN((stderr, "%s: ", progname));
+
 	if (!quiet) {
 	    errno = e;
 	    perror(ofname);
@@ -2272,7 +2347,7 @@ static void copy_stat(struct stat *ifstat)
     remove_ofname = 0;
     if (xunlink (ifname)) {
 	int e = errno;
-	WARN((stderr, "%s: ", progname));
+
 	if (!quiet) {
 	    errno = e;
 	    perror(ifname);
@@ -2361,8 +2436,7 @@ struct huft {
 int huft_build (unsigned *, unsigned, unsigned, ush *, ush *, struct huft **, int *);
 int huft_free (struct huft *);
 
-#define wp outcnt
-#define flush_output(w) (outcnt=(w),flush_window())
+
 
 static unsigned border[] = {
         16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
@@ -2392,15 +2466,12 @@ ush mask_bits[] = {
     0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
 };
 
-#define GETBYTE() (inptr < insize ? inbuf[inptr++] : (outcnt = w, fill_inbuf(0)))
-#define NEXTBYTE()  (uch)GETBYTE()
-#define NEEDBITS(n) {while(k<(n)){b|=((ulg)NEXTBYTE())<<k;k+=8;}}
-#define DUMPBITS(n) {b>>=(n);k-=(n);}
-
 int lbits = 9;
 int dbits = 6;
 static const uint8_t BMAX = 16;
 unsigned hufts;
+
+
 
 
 int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft **t, int *m)
@@ -2425,7 +2496,6 @@ int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft 
   int y;                     
   unsigned z;                
 
-  //memzero(c, sizeof(c));
     memset(c, 0, sizeof(c));
   p = b;  i = n;
   do {
@@ -2568,7 +2638,6 @@ int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft 
 int huft_free(struct huft *t)
 {
   register struct huft *p, *q;
-
   p = t;
   while (p != (struct huft *)NULL)
   {
@@ -2580,133 +2649,177 @@ int huft_free(struct huft *t)
 }
 
 
+
+
+
 int inflate_codes(struct huft *tl, struct huft *td, int bl, int bd)
 {
-  register unsigned e;  
-  unsigned n, d;        
-  unsigned w;           
-  struct huft *t;       
-  unsigned ml, md;      
-  register ulg b;       
-  register unsigned k;  
+    register unsigned e;
+    unsigned n, d;
+    unsigned w;
+    struct huft *t;
+    unsigned ml, md;
+    register ulg b;
+    register unsigned k;
+    b = bb;
+    k = bk;
+    w = outcnt;
+    ml = mask_bits[bl];
+    md = mask_bits[bd];
 
-  b = bb;                 
-  k = bk;
-  w = outcnt;                 
-  ml = mask_bits[bl];     
-  md = mask_bits[bd];
-  for (;;)                
-  {
-    NEEDBITS((unsigned)bl)
-    if ((e = (t = tl + ((unsigned)b & ml))->e) > 16)
-      do {
-        if (e == 99)
-          return 1;
-        DUMPBITS(t->b)
-        e -= 16;
-        NEEDBITS(e)
-      } while ((e = (t = t->v.t + ((unsigned)b & mask_bits[e]))->e) > 16);
-    DUMPBITS(t->b)
-    if (e == 16)  
+    for (;;)                
     {
-      window[w++] = (uch)t->v.n;
-      if (w == WSIZE)
-      {
-        flush_output(w);
-        w = 0;
-      }
-    }
-    else 
-    {
-      if (e == 15)
-        break;
+        {while(k<((unsigned)bl)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
 
-      NEEDBITS(e)
-      n = t->v.n + ((unsigned)b & mask_bits[e]);
-      DUMPBITS(e);
-      NEEDBITS((unsigned)bd)
-      if ((e = (t = td + ((unsigned)b & md))->e) > 16)
-        do {
-          if (e == 99)
-            return 1;
-          DUMPBITS(t->b)
-          e -= 16;
-          NEEDBITS(e)
-        } while ((e = (t = t->v.t + ((unsigned)b & mask_bits[e]))->e) > 16);
-      DUMPBITS(t->b)
-      NEEDBITS(e)
-      d = w - t->v.n - ((unsigned)b & mask_bits[e]);
-      DUMPBITS(e)
-
-      do {
-        n -= (e = (e = WSIZE - ((d &= WSIZE-1) > w ? d : w)) > n ? n : e);
-        if (w - d >= e) 
+        if ((e = (t = tl + ((unsigned)b & ml))->e) > 16)
         {
-          memcpy(window + w, window + d, e);
-          w += e;
-          d += e;
+            do
+            {
+                if (e == 99)
+                    return 1;
+
+                {b>>=(t->b);k-=(t->b);}
+                e -= 16;
+
+                {while(k<(e)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                    (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+            }
+            while ((e = (t = t->v.t + ((unsigned)b & mask_bits[e]))->e) > 16);
         }
-        else  
-          do {
-            window[w++] = window[d++];
-          } while (--e);
-        if (w == WSIZE)
+
+        {b>>=(t->b);k-=(t->b);}
+
+        if (e == 16)
         {
-          flush_output(w);
-          w = 0;
+            window[w++] = (uch)t->v.n;
+
+            if (w == WSIZE)
+            {
+                (outcnt=(w),flush_window());
+                w = 0;
+            }
         }
-      } while (n);
+        else 
+        {
+            if (e == 15)
+                break;
+
+            {while(k<(e)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                    (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+
+            n = t->v.n + ((unsigned)b & mask_bits[e]);
+            {b>>=(e);k-=(e);}
+
+            {while(k<((unsigned)bd)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+
+            if ((e = (t = td + ((unsigned)b & md))->e) > 16)
+            {
+                do
+                {
+                    if (e == 99)
+                        return 1;
+
+                    {b>>=(t->b);k-=(t->b);}
+                    e -= 16;
+
+                    {while(k<(e)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+                }
+                while ((e = (t = t->v.t + ((unsigned)b & mask_bits[e]))->e) > 16);
+            }
+
+            {b>>=(t->b);k-=(t->b);}
+
+            {while(k<(e)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+
+            d = w - t->v.n - ((unsigned)b & mask_bits[e]);
+            {b>>=(e);k-=(e);}
+
+            do
+            {
+                n -= (e = (e = WSIZE - ((d &= WSIZE-1) > w ? d : w)) > n ? n : e);
+                if (w - d >= e) 
+                {
+                    memcpy(window + w, window + d, e);
+                    w += e;
+                    d += e;
+                }
+                else
+                {
+                    do
+                    {
+                        window[w++] = window[d++];
+                    }
+                    while (--e);
+                }
+
+                if (w == WSIZE)
+                {
+                    (outcnt=(w),flush_window());
+                    w = 0;
+                }
+            }
+            while (n);
+        }
     }
-  }
 
-
-  outcnt = w;                   
-  bb = b;                   
-  bk = k;
-  return 0;
+    outcnt = w;                   
+    bb = b;                   
+    bk = k;
+    return 0;
 }
 
 
 
 int inflate_stored()
 {
-  unsigned n;           
-  unsigned w;           
-  register ulg b;       
-  register unsigned k;  
+    unsigned n;
+    unsigned w;
+    register ulg b;
+    register unsigned k;
+    b = bb;
+    k = bk;
+    w = outcnt;
+    n = k & 7;
+    {b>>=(n);k-=(n);}
 
-  b = bb;      
-  k = bk;
-  w = outcnt;      
+    {while(k<(16)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
 
-  n = k & 7;
-  DUMPBITS(n);
+    n = ((unsigned)b & 0xffff);
+    {b>>=(16);k-=(16);}
 
-  NEEDBITS(16)
-  n = ((unsigned)b & 0xffff);
-  DUMPBITS(16)
-  NEEDBITS(16)
-  if (n != (unsigned)((~b) & 0xffff))
-    return 1; 
-  DUMPBITS(16)
+    {while(k<(16)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
 
-  while (n--)
-  {
-    NEEDBITS(8)
-    window[w++] = (uch)b;
-    if (w == WSIZE)
+    if (n != (unsigned)((~b) & 0xffff))
+        return 1;
+
+    {b>>=(16);k-=(16);}
+
+    while (n--)
     {
-      flush_output(w);
-      w = 0;
+        {while(k<(8)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+
+        window[w++] = (uch)b;
+
+        if (w == WSIZE)
+        {
+            (outcnt=(w),flush_window());
+            w = 0;
+        }
+
+        {b>>=(8);k-=(8);}
     }
-    DUMPBITS(8)
-  }
 
-
-  wp = w;        
-  bb = b;        
-  bk = k;
-  return 0;
+    outcnt = w;        
+    bb = b;        
+    bk = k;
+    return 0;
 }
 
 
@@ -2753,169 +2866,206 @@ int inflate_fixed()
 
 int inflate_dynamic()
 {
-  int i;               
-  unsigned j;
-  unsigned l;          
-  unsigned m;          
-  unsigned n;          
-  unsigned w;          
-  struct huft *tl;     
-  struct huft *td;     
-  int bl;              
-  int bd;              
-  unsigned nb;         
-  unsigned nl;         
-  unsigned nd;         
-  unsigned ll[286+30];  
-  register ulg b;       
-  register unsigned k;  
+    int i;
+    unsigned j;
+    unsigned l;
+    unsigned m;
+    unsigned n;
+    unsigned w;
+    struct huft *tl;
+    struct huft *td;
+    int bl;
+    int bd;
+    unsigned nb;
+    unsigned nl;
+    unsigned nd;
+    unsigned ll[286+30];
+    register ulg b;
+    register unsigned k;
+    b = bb;
+    k = bk;
+    w = outcnt;
 
-  b = bb;
-  k = bk;
-  w = wp;
+    {while(k<(5)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
 
+    nl = 257 + ((unsigned)b & 0x1f);   
+    {b>>=(5);k-=(5);}
 
-  NEEDBITS(5)
-  nl = 257 + ((unsigned)b & 0x1f);   
-  DUMPBITS(5)
-  NEEDBITS(5)
-  nd = 1 + ((unsigned)b & 0x1f);     
-  DUMPBITS(5)
-  NEEDBITS(4)
-  nb = 4 + ((unsigned)b & 0xf);      
-  DUMPBITS(4)
-  if (nl > 286 || nd > 30)
-    return 1;
+    {while(k<(5)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
 
+    nd = 1 + ((unsigned)b & 0x1f);     
+    {b>>=(5);k-=(5);}
 
-  for (j = 0; j < nb; j++)
-  {
-    NEEDBITS(3)
-    ll[border[j]] = (unsigned)b & 7;
-    DUMPBITS(3)
-  }
-  for (; j < 19; j++)
-    ll[border[j]] = 0;
+    {while(k<(4)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
 
-  bl = 7;
-  if ((i = huft_build(ll, 19, 19, NULL, NULL, &tl, &bl)) != 0)
-  {
-    if (i == 1)
-      huft_free(tl);
-    return i;    
-  }
+    nb = 4 + ((unsigned)b & 0xf);      
+    {b>>=(4);k-=(4);}
 
-  if (tl == NULL)
-	return 2;
-
-  n = nl + nd;
-  m = mask_bits[bl];
-  i = l = 0;
-  while ((unsigned)i < n)
-  {
-    NEEDBITS((unsigned)bl)
-    j = (td = tl + ((unsigned)b & m))->b;
-    DUMPBITS(j)
-    j = td->v.n;
-    if (j < 16)         
-      ll[i++] = l = j;  
-    else if (j == 16)   
-    {
-      NEEDBITS(2)
-      j = 3 + ((unsigned)b & 3);
-      DUMPBITS(2)
-      if ((unsigned)i + j > n)
+    if (nl > 286 || nd > 30)
         return 1;
-      while (j--)
-        ll[i++] = l;
-    }
-    else if (j == 17) 
+
+
+    for (j = 0; j < nb; j++)
     {
-      NEEDBITS(3)
-      j = 3 + ((unsigned)b & 7);
-      DUMPBITS(3)
-      if ((unsigned)i + j > n)
-        return 1;
-      while (j--)
-        ll[i++] = 0;
-      l = 0;
+        {while(k<(3)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+            (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+
+        ll[border[j]] = (unsigned)b & 7;
+        {b>>=(3);k-=(3);}
     }
-    else   
+
+    for (; j < 19; j++)
+        ll[border[j]] = 0;
+
+    bl = 7;
+
+    if ((i = huft_build(ll, 19, 19, NULL, NULL, &tl, &bl)) != 0)
     {
-      NEEDBITS(7)
-      j = 11 + ((unsigned)b & 0x7f);
-      DUMPBITS(7)
-      if ((unsigned)i + j > n)
-        return 1;
-      while (j--)
-        ll[i++] = 0;
-      l = 0;
-    }
-  }
+        if (i == 1)
+            huft_free(tl);
 
-  huft_free(tl);
-
-  bb = b;
-  bk = k;
-
-  bl = lbits;
-  if ((i = huft_build(ll, nl, 257, cplens, cplext, &tl, &bl)) != 0)
-  {
-    if (i == 1) {
-      fprintf(stderr, " incomplete literal tree\n");
-      huft_free(tl);
+        return i;    
     }
-    return i;
-  }
-  bd = dbits;
-  if ((i = huft_build(ll + nl, nd, 0, cpdist, cpdext, &td, &bd)) != 0)
-  {
-    if (i == 1) {
-      fprintf(stderr, " incomplete distance tree\n");
-      huft_free(td);
+
+    if (tl == NULL)
+	    return 2;
+
+    n = nl + nd;
+    m = mask_bits[bl];
+    i = l = 0;
+
+    while ((unsigned)i < n)
+    {
+        {while(k<((unsigned)bl)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+
+        j = (td = tl + ((unsigned)b & m))->b;
+        {b>>=(j);k-=(j);}
+        j = td->v.n;
+
+        if (j < 16)         
+            ll[i++] = l = j;
+        else if (j == 16)
+        {
+            {while(k<(2)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+
+            j = 3 + ((unsigned)b & 3);
+            {b>>=(2);k-=(2);}
+
+            if ((unsigned)i + j > n)
+                return 1;
+
+            while (j--)
+                ll[i++] = l;
+        }
+        else if (j == 17) 
+        {
+            {while(k<(3)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+
+            j = 3 + ((unsigned)b & 7);
+            {b>>=(3);k-=(3);}
+
+            if ((unsigned)i + j > n)
+                return 1;
+
+            while (j--)
+                ll[i++] = 0;
+
+            l = 0;
+        }
+        else   
+        {
+            {while(k<(7)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
+
+            j = 11 + ((unsigned)b & 0x7f);
+            {b>>=(7);k-=(7);}
+
+            if ((unsigned)i + j > n)
+                return 1;
+
+            while (j--)
+                ll[i++] = 0;
+
+            l = 0;
+        }
     }
+
     huft_free(tl);
-    return i;
-  }
+    bb = b;
+    bk = k;
+    bl = lbits;
 
-  if (inflate_codes(tl, td, bl, bd))
-    return 1;
+    if ((i = huft_build(ll, nl, 257, cplens, cplext, &tl, &bl)) != 0)
+    {
+        if (i == 1)
+        {
+            fprintf(stderr, " incomplete literal tree\n");
+            huft_free(tl);
+        }
 
-  huft_free(tl);
-  huft_free(td);
-  return 0;
+        return i;
+    }
+
+    bd = dbits;
+
+    if ((i = huft_build(ll + nl, nd, 0, cpdist, cpdext, &td, &bd)) != 0)
+    {
+        if (i == 1)
+        {
+            fprintf(stderr, " incomplete distance tree\n");
+            huft_free(td);
+        }
+
+        huft_free(tl);
+        return i;
+    }
+
+    if (inflate_codes(tl, td, bl, bd))
+        return 1;
+
+    huft_free(tl);
+    huft_free(td);
+    return 0;
 }
 
 int inflate_block(int *e)
 {
-  unsigned t;          
-  unsigned w;          
-  register ulg b;      
-  register unsigned k; 
+    unsigned t;
+    unsigned w;
+    register ulg b;
+    register unsigned k;
+    b = bb;
+    k = bk;
+    w = outcnt;
 
-  b = bb;
-  k = bk;
-  w = wp;
+    {while(k<(1)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
 
-  NEEDBITS(1)
-  *e = (int)b & 1;
-  DUMPBITS(1)
+    *e = (int)b & 1;
+    {b>>=(1);k-=(1);}
 
-  NEEDBITS(2)
-  t = (unsigned)b & 3;
-  DUMPBITS(2)
+    {while(k<(2)){b|=((ulg)(uch)(inptr < insize ? inbuf[inptr++] : 
+                (outcnt = w, fill_inbuf(0))))<<k;k+=8;}}
 
-  bb = b;
-  bk = k;
+    t = (unsigned)b & 3;
+    {b>>=(2);k-=(2);}
+    bb = b;
+    bk = k;
 
-  if (t == 2)
-    return inflate_dynamic();
-  if (t == 0)
-    return inflate_stored();
-  if (t == 1)
-    return inflate_fixed();
+    if (t == 2)
+        return inflate_dynamic();
+    if (t == 0)
+        return inflate_stored();
+    if (t == 1)
+        return inflate_fixed();
 
-  return 2;
+    return 2;
 }
 
 
@@ -2926,7 +3076,7 @@ int inflate()
   int r;     
   unsigned h;
 
-  wp = 0;
+  outcnt = 0;
   bk = 0;
   bb = 0;
 
@@ -2944,7 +3094,7 @@ int inflate()
     inptr--;
   }
 
-  flush_output(wp);
+(outcnt=(outcnt),flush_window());
   return 0;
 }
 
@@ -2981,7 +3131,8 @@ static int extra_blbits[19]
 static const uint8_t STORED_BLOCK = 0;
 static const uint32_t LIT_BUFSIZE = 0x8000;
 
-typedef struct ct_data {
+struct ct_data
+{
     union {
         ush  freq;
         ush  code;
@@ -2990,12 +3141,7 @@ typedef struct ct_data {
         ush  dad; 
         ush  len; 
     } dl;
-} ct_data;
-
-#define Freq fc.freq
-#define Code fc.code
-#define Dad  dl.dad
-#define Len  dl.len
+};
 
 static const uint16_t HEAP_SIZE = 573;
 static ct_data dyn_ltree[HEAP_SIZE];   
@@ -3016,7 +3162,7 @@ typedef struct tree_desc {
     int     max_code;           
 } tree_desc;
 
-#define head (prev+WSIZE)
+
 
 static tree_desc l_desc = {dyn_ltree, static_ltree, extra_lbits, LITERALS+1, L_CODES, MAX_BITS, 0};
 static tree_desc d_desc = {dyn_dtree, static_dtree, extra_dbits, 0, D_CODES, MAX_BITS, 0};
@@ -3057,8 +3203,7 @@ static void send_all_trees (int lcodes, int dcodes, int blcodes);
 static void compress_block (ct_data *ltree, ct_data *dtree);
 static void set_file_type  (void);
 
-#define send_code(c, tree) send_bits(tree[c].Code, tree[c].Len)
-#define d_code(dist) ((dist) < 256 ? dist_code[dist] : dist_code[256+((dist)>>7)])
+
 
 void ct_init(ush *attr, int *methodp)
 {
@@ -3072,7 +3217,7 @@ void ct_init(ush *attr, int *methodp)
     file_method = methodp;
     compressed_len = input_len = 0L;
         
-    if (static_dtree[0].Len != 0) return;
+    if (static_dtree[0].dl.len != 0) return;
     length = 0;
     for (code = 0; code < LENGTH_CODES-1; code++) {
         base_length[code] = length;
@@ -3099,15 +3244,16 @@ void ct_init(ush *attr, int *methodp)
 
     for (bits = 0; bits <= MAX_BITS; bits++) bl_count[bits] = 0;
     n = 0;
-    while (n <= 143) static_ltree[n++].Len = 8, bl_count[8]++;
-    while (n <= 255) static_ltree[n++].Len = 9, bl_count[9]++;
-    while (n <= 279) static_ltree[n++].Len = 7, bl_count[7]++;
-    while (n <= 287) static_ltree[n++].Len = 8, bl_count[8]++;
+    while (n <= 143) static_ltree[n++].dl.len = 8, bl_count[8]++;
+    while (n <= 255) static_ltree[n++].dl.len = 9, bl_count[9]++;
+    while (n <= 279) static_ltree[n++].dl.len = 7, bl_count[7]++;
+    while (n <= 287) static_ltree[n++].dl.len = 8, bl_count[8]++;
     gen_codes((ct_data *)static_ltree, L_CODES+1);
 
-    for (n = 0; n < D_CODES; n++) {
-        static_dtree[n].Len = 5;
-        static_dtree[n].Code = bi_reverse(n, 5);
+    for (n = 0; n < D_CODES; n++)
+    {
+        static_dtree[n].dl.len = 5;
+        static_dtree[n].fc.code = bi_reverse(n, 5);
     }
 
     init_block();
@@ -3115,34 +3261,34 @@ void ct_init(ush *attr, int *methodp)
 static void init_block()
 {
     int n;
-    for (n = 0; n < L_CODES;  n++) dyn_ltree[n].Freq = 0;
-    for (n = 0; n < D_CODES;  n++) dyn_dtree[n].Freq = 0;
-    for (n = 0; n < BL_CODES; n++) bl_tree[n].Freq = 0;
-
-    dyn_ltree[END_BLOCK].Freq = 1;
+    for (n = 0; n < L_CODES;  n++) dyn_ltree[n].fc.freq = 0;
+    for (n = 0; n < D_CODES;  n++) dyn_dtree[n].fc.freq = 0;
+    for (n = 0; n < BL_CODES; n++) bl_tree[n].fc.freq = 0;
+    dyn_ltree[END_BLOCK].fc.freq = 1;
     opt_len = static_len = 0L;
     last_lit = last_dist = last_flags = 0;
     flags = 0; flag_bit = 1;
 }
 
-
-
-#define smaller(tree, n, m) \
-   (tree[n].Freq < tree[m].Freq || \
-   (tree[n].Freq == tree[m].Freq && depth[n] <= depth[m]))
-
+template <typename A, typename B, typename C> bool smaller2(A tree, B n, C m)
+{
+    return tree[n].fc.freq < tree[m].fc.freq ||
+        (tree[n].fc.freq == tree[m].fc.freq && depth[n] <= depth[m]);
+}
 
 static void pqdownheap(ct_data *tree, int k)
 {
     int v = heap[k];
     int j = k << 1;
-    while (j <= heap_len) {
-        if (j < heap_len && smaller(tree, heap[j+1], heap[j])) j++;
 
-        if (smaller(tree, v, heap[j])) break;
+    while (j <= heap_len)
+    {
+        if (j < heap_len && smaller2(tree, heap[j+1], heap[j])) j++;
+        if (smaller2(tree, v, heap[j])) break;
         heap[k] = heap[j];  k = j;
         j <<= 1;
     }
+
     heap[k] = v;
 }
 
@@ -3164,21 +3310,21 @@ static void gen_bitlen(tree_desc *desc)
     for (bits = 0; bits <= MAX_BITS; bits++) bl_count[bits] = 0;
 
 
-    tree[heap[heap_max]].Len = 0;
+    tree[heap[heap_max]].dl.len = 0;
 
     for (h = heap_max+1; h < HEAP_SIZE; h++) {
         n = heap[h];
-        bits = tree[tree[n].Dad].Len + 1;
+        bits = tree[tree[n].dl.dad].dl.len + 1;
         if (bits > max_length) bits = max_length, overflow++;
-        tree[n].Len = (ush)bits;
+        tree[n].dl.len = (ush)bits;
         if (n > max_code) continue;
 
         bl_count[bits]++;
         xbits = 0;
         if (n >= base) xbits = extra[n-base];
-        f = tree[n].Freq;
+        f = tree[n].fc.freq;
         opt_len += (ulg)f * (bits + xbits);
-        if (stree) static_len += (ulg)f * (stree[n].Len + xbits);
+        if (stree) static_len += (ulg)f * (stree[n].dl.len + xbits);
     }
     if (overflow == 0) return;
 
@@ -3198,9 +3344,9 @@ static void gen_bitlen(tree_desc *desc)
         while (n != 0) {
             m = heap[--h];
             if (m > max_code) continue;
-            if (tree[m].Len != (unsigned) bits) {
-                opt_len += ((long)bits-(long)tree[m].Len)*(long)tree[m].Freq;
-                tree[m].Len = (ush)bits;
+            if (tree[m].dl.len != (unsigned) bits) {
+                opt_len += ((long)bits-(long)tree[m].dl.len)*(long)tree[m].fc.freq;
+                tree[m].dl.len = (ush)bits;
             }
             n--;
         }
@@ -3219,14 +3365,17 @@ static void gen_codes (ct_data *tree, int max_code)
     }
 
     for (n = 0;  n <= max_code; n++) {
-        int len = tree[n].Len;
+        int len = tree[n].dl.len;
         if (len == 0) continue;
-        tree[n].Code = bi_reverse(next_code[len]++, len);
+        tree[n].fc.code = bi_reverse(next_code[len]++, len);
 
     }
 }
 
-#define MAX(a,b) (a >= b ? a : b)
+uch MAX2(uch a, uch b)
+{
+    return a >= b ? a : b;
+}
 
 static void build_tree_1(tree_desc *desc)
 {
@@ -3236,25 +3385,22 @@ static void build_tree_1(tree_desc *desc)
     int n, m;          
     int max_code = -1; 
     int node = elems;  
-
-
     heap_len = 0, heap_max = HEAP_SIZE;
 
     for (n = 0; n < elems; n++) {
-        if (tree[n].Freq != 0) {
+        if (tree[n].fc.freq != 0) {
             heap[++heap_len] = max_code = n;
             depth[n] = 0;
         } else {
-            tree[n].Len = 0;
+            tree[n].dl.len = 0;
         }
     }
 
-
     while (heap_len < 2) {
         int new2 = heap[++heap_len] = (max_code < 2 ? ++max_code : 0);
-        tree[new2].Freq = 1;
+        tree[new2].fc.freq = 1;
         depth[new2] = 0;
-        opt_len--; if (stree) static_len -= stree[new2].Len;
+        opt_len--; if (stree) static_len -= stree[new2].dl.len;
     }
     desc->max_code = max_code;
 
@@ -3265,13 +3411,11 @@ static void build_tree_1(tree_desc *desc)
         heap[1] = heap[heap_len--];
         pqdownheap(tree, 1);
         m = heap[1];  
-
         heap[--heap_max] = n;
         heap[--heap_max] = m;
-
-        tree[node].Freq = tree[n].Freq + tree[m].Freq;
-        depth[node] = (uch) (MAX(depth[n], depth[m]) + 1);
-        tree[n].Dad = tree[m].Dad = (ush)node;
+        tree[node].fc.freq = tree[n].fc.freq + tree[m].fc.freq;
+        depth[node] = (uch) (MAX2(depth[n], depth[m]) + 1);
+        tree[n].dl.dad = tree[m].dl.dad = (ush)node;
         heap[1] = node++;
         pqdownheap(tree, 1);
 
@@ -3289,27 +3433,27 @@ static void scan_tree (ct_data *tree, int max_code)
     int n;                     
     int prevlen = -1;          
     int curlen;                
-    int nextlen = tree[0].Len; 
+    int nextlen = tree[0].dl.len; 
     int count = 0;             
     int max_count = 7;         
     int min_count = 4;         
 
     if (nextlen == 0) max_count = 138, min_count = 3;
-    tree[max_code+1].Len = (ush)0xffff;
+    tree[max_code+1].dl.len = (ush)0xffff;
 
     for (n = 0; n <= max_code; n++) {
-        curlen = nextlen; nextlen = tree[n+1].Len;
+        curlen = nextlen; nextlen = tree[n+1].dl.len;
         if (++count < max_count && curlen == nextlen) {
             continue;
         } else if (count < min_count) {
-            bl_tree[curlen].Freq += count;
+            bl_tree[curlen].fc.freq += count;
         } else if (curlen != 0) {
-            if (curlen != prevlen) bl_tree[curlen].Freq++;
-            bl_tree[16].Freq++;
+            if (curlen != prevlen) bl_tree[curlen].fc.freq++;
+            bl_tree[16].fc.freq++;
         } else if (count <= 10) {
-            bl_tree[17].Freq++;
+            bl_tree[17].fc.freq++;
         } else {
-            bl_tree[18].Freq++;
+            bl_tree[18].fc.freq++;
         }
         count = 0; prevlen = curlen;
         if (nextlen == 0) {
@@ -3321,36 +3465,56 @@ static void scan_tree (ct_data *tree, int max_code)
         }
     }
 }
+
+
 
 static void send_tree (ct_data *tree, int max_code)
 {
-    int n;                     
-    int prevlen = -1;          
-    int curlen;                
-    int nextlen = tree[0].Len; 
-    int count = 0;             
-    int max_count = 7;         
-    int min_count = 4;         
+    int n;
+    int prevlen = -1;
+    int curlen;
+    int nextlen = tree[0].dl.len;
+    int count = 0;
+    int max_count = 7;
+    int min_count = 4;
     if (nextlen == 0) max_count = 138, min_count = 3;
 
-    for (n = 0; n <= max_code; n++) {
-        curlen = nextlen; nextlen = tree[n+1].Len;
-        if (++count < max_count && curlen == nextlen) {
+    for (n = 0; n <= max_code; n++)
+    {
+        curlen = nextlen; nextlen = tree[n+1].dl.len;
+
+        if (++count < max_count && curlen == nextlen)
+        {
             continue;
-        } else if (count < min_count) {
-            do { send_code(curlen, bl_tree); } while (--count != 0);
-
-        } else if (curlen != 0) {
-            if (curlen != prevlen) {
-                send_code(curlen, bl_tree); count--;
+        }
+        else if (count < min_count)
+        {
+            do
+            {
+                send_bits(bl_tree[curlen].fc.code, bl_tree[curlen].dl.len);
             }
-            send_code(16, bl_tree); send_bits(count-3, 2);
+            while (--count != 0);
+        }
+        else if (curlen != 0)
+        {
+            if (curlen != prevlen)
+            {
+                send_bits(bl_tree[curlen].fc.code, bl_tree[curlen].dl.len);
+                count--;
+            }
 
-        } else if (count <= 10) {
-            send_code(17, bl_tree); send_bits(count-3, 3);
-
-        } else {
-            send_code(18, bl_tree); send_bits(count-11, 7);
+            send_bits(bl_tree[16].fc.code, bl_tree[16].dl.len);
+            send_bits(count-3, 2);
+        }
+        else if (count <= 10)
+        {
+            send_bits(bl_tree[17].fc.code, bl_tree[17].dl.len);
+            send_bits(count-3, 3);
+        }
+        else
+        {
+            send_bits(bl_tree[18].fc.code, bl_tree[18].dl.len);
+            send_bits(count-11, 7);
         }
         count = 0; prevlen = curlen;
         if (nextlen == 0) {
@@ -3362,6 +3526,8 @@ static void send_tree (ct_data *tree, int max_code)
         }
     }
 }
+
+
 
 static int build_bl_tree()
 {
@@ -3371,7 +3537,7 @@ static int build_bl_tree()
     build_tree_1((tree_desc *)(&bl_desc));
     
     for (max_blindex = BL_CODES-1; max_blindex >= 3; max_blindex--) {
-        if (bl_tree[bl_order[max_blindex]].Len != 0) break;
+        if (bl_tree[bl_order[max_blindex]].dl.len != 0) break;
     }
     opt_len += 3*(max_blindex+1) + 5+5+4;
 
@@ -3387,7 +3553,7 @@ static void send_all_trees(int lcodes, int dcodes, int blcodes)
     send_bits(dcodes-1,   5);
     send_bits(blcodes-4,  4);
     for (rank = 0; rank < blcodes; rank++) {
-        send_bits(bl_tree[bl_order[rank]].Len, 3);
+        send_bits(bl_tree[bl_order[rank]].dl.len, 3);
     }
 
     send_tree((ct_data *)dyn_ltree, lcodes-1);
@@ -3452,16 +3618,20 @@ off_t flush_block(char *buf, ulg stored_len, int pad, int eof)
     return compressed_len >> 3;
 }
 
+int d_code(int dist)
+{
+    return ((dist) < 256 ? dist_code[dist] : dist_code[256+((dist)>>7)]);
+}
 
-int ct_tally (int dist, int lc)
+int ct_tally(int dist, int lc)
 {
     inbuf[last_lit++] = (uch)lc;
     if (dist == 0) {
-        dyn_ltree[lc].Freq++;
+        dyn_ltree[lc].fc.freq++;
     } else {
         dist--;
-        dyn_ltree[length_code[lc]+LITERALS+1].Freq++;
-        dyn_dtree[d_code(dist)].Freq++;
+        dyn_ltree[length_code[lc]+LITERALS+1].fc.freq++;
+        dyn_dtree[d_code(dist)].fc.freq++;
 
         d_buf[last_dist++] = (ush)dist;
         flags |= flag_bit;
@@ -3477,7 +3647,7 @@ int ct_tally (int dist, int lc)
         ulg in_length = (ulg)strstart-block_start;
         int dcode;
         for (dcode = 0; dcode < D_CODES; dcode++) {
-            out_length += (ulg)dyn_dtree[dcode].Freq*(5L+extra_dbits[dcode]);
+            out_length += (ulg)dyn_dtree[dcode].fc.freq*(5L+extra_dbits[dcode]);
         }
         out_length >>= 3;
         
@@ -3486,26 +3656,30 @@ int ct_tally (int dist, int lc)
     return (last_lit == LIT_BUFSIZE-1 || last_dist == DIST_BUFSIZE);
 }
 
-
 static void compress_block(ct_data *ltree, ct_data *dtree)
 {
-    unsigned dist;    
-    int lc;           
-    unsigned lx = 0;  
-    unsigned dx = 0;  
-    unsigned fx = 0;  
-    uch flag = 0;     
-    unsigned code;    
-    int extra;        
+    unsigned dist;
+    int lc;
+    unsigned lx = 0;
+    unsigned dx = 0;
+    unsigned fx = 0;
+    uch flag = 0;
+    unsigned code;
+    int extra;
 
-    if (last_lit != 0) do {
+    if (last_lit != 0) do
+    {
         if ((lx & 7) == 0) flag = flag_buf[fx++];
         lc = inbuf[lx++];
-        if ((flag & 1) == 0) {
-            send_code(lc, ltree);
-        } else {
+
+        if ((flag & 1) == 0)
+        {
+            send_bits(ltree[lc].fc.code, ltree[lc].dl.len);
+        }
+        else
+        {
             code = length_code[lc];
-            send_code(code+LITERALS+1, ltree);
+            send_bits(ltree[code + LITERALS + 1].fc.code, ltree[code + LITERALS + 1].dl.len);
             extra = extra_lbits[code];
             if (extra != 0) {
                 lc -= base_length[code];
@@ -3514,7 +3688,7 @@ static void compress_block(ct_data *ltree, ct_data *dtree)
             dist = d_buf[dx++];
             code = d_code(dist);
 
-            send_code(code, dtree);
+            send_bits(dtree[code].fc.code, dtree[code].dl.len);
             extra = extra_dbits[code];
             if (extra != 0) {
                 dist -= base_dist[code];
@@ -3524,7 +3698,7 @@ static void compress_block(ct_data *ltree, ct_data *dtree)
         flag >>= 1;
     } while (lx < last_lit);
 
-    send_code(END_BLOCK, ltree);
+    send_bits(ltree[END_BLOCK].fc.code, ltree[END_BLOCK].dl.len);
 }
 
 static void set_file_type()
@@ -3532,9 +3706,9 @@ static void set_file_type()
     int n = 0;
     unsigned ascii_freq = 0;
     unsigned bin_freq = 0;
-    while (n < 7)        bin_freq += dyn_ltree[n++].Freq;
-    while (n < 128)    ascii_freq += dyn_ltree[n++].Freq;
-    while (n < LITERALS) bin_freq += dyn_ltree[n++].Freq;
+    while (n < 7)        bin_freq += dyn_ltree[n++].fc.freq;
+    while (n < 128)    ascii_freq += dyn_ltree[n++].fc.freq;
+    while (n < LITERALS) bin_freq += dyn_ltree[n++].fc.freq;
     *file_type = bin_freq > (ascii_freq >> 2) ? BINARY : ASCII;
     if (*file_type == BINARY && 0) {
         warning ((char *)"-l used on binary file");
@@ -3553,7 +3727,7 @@ static unsigned getbits  (int n);
 static void init_getbits (void);
 
 static const uint32_t DICSIZ = 1 << 13;
-#define BITBUFSIZ (CHAR_BIT * 2 * sizeof(char))
+
 static const int32_t NC = UCHAR_MAX + 255;
 static const uint8_t NP = 14;
 static const uint8_t NT = 19;
@@ -3565,6 +3739,7 @@ static ush pt_table[256];
 static ush       io_bitbuf;
 static unsigned  subbitbuf;
 static int       bitcount;
+uint32_t BITBUFSIZ = CHAR_BIT * 2 * sizeof(char);
 
 static void fillbuf(int n)
 {
@@ -3572,7 +3747,7 @@ static void fillbuf(int n)
     while (n > bitcount)
     {
         io_bitbuf |= subbitbuf << (n -= bitcount);
-        subbitbuf = (unsigned)try_byte();
+        subbitbuf = (unsigned)(inptr < insize ? inbuf[inptr++] : fill_inbuf(1));
 
         if ((int)subbitbuf == EOF) subbitbuf = 0;
             bitcount = CHAR_BIT;
@@ -3594,25 +3769,29 @@ static void init_getbits()
     fillbuf(BITBUFSIZ);
 }
 
+
+
 static void make_table(int nchar, uch bitlen[], int tablebits, ush table[])
 {
     ush count[17], weight[17], start[18], *p;
     unsigned i, k, len, ch, jutbits, avail, nextcode, mask;
-
     for (i = 1; i <= 16; i++) count[i] = 0;
     for (i = 0; i < (unsigned)nchar; i++) count[bitlen[i]]++;
-
     start[1] = 0;
     for (i = 1; i <= 16; i++)
 	start[i + 1] = start[i] + (count[i] << (16 - i));
+
     if ((start[17] & 0xffff) != 0)
-	error((char *)"Bad table\n");
+	    error((char *)"Bad table\n");
 
     jutbits = 16 - tablebits;
-    for (i = 1; i <= (unsigned)tablebits; i++) {
-	start[i] >>= jutbits;
-	weight[i] = (unsigned) 1 << (tablebits - i);
+
+    for (i = 1; i <= (unsigned)tablebits; i++)
+    {
+        start[i] >>= jutbits;
+        weight[i] = (unsigned) 1 << (tablebits - i);
     }
+
     while (i <= 16) {
 	weight[i] = (unsigned) 1 << (16 - i);
 	i++;
@@ -3637,10 +3816,10 @@ static void make_table(int nchar, uch bitlen[], int tablebits, ush table[])
 	    i = len - tablebits;
 	    while (i != 0) {
 		if (*p == 0) {
-		    head[avail] = prev[avail] = 0;
+		    (prev + WSIZE)[avail] = prev[avail] = 0;
 		    *p = avail++;
 		}
-		if (k & mask) p = &head[*p];
+		if (k & mask) p = &(prev + WSIZE)[*p];
 		else          p = &prev[*p];
 		k <<= 1;  i--;
 	    }
@@ -3649,6 +3828,8 @@ static void make_table(int nchar, uch bitlen[], int tablebits, ush table[])
 	start[len] = nextcode;
     }
 }
+
+
 
 static void read_pt_len(int nn, int nbit, int i_special)
 {
@@ -3680,40 +3861,68 @@ static void read_pt_len(int nn, int nbit, int i_special)
     }
 }
 
+
+
 static void read_c_len()
 {
     int i, c, n;
     unsigned mask;
-
     n = getbits(9);
-    if (n == 0) {
-	c = getbits(9);
-	for (i = 0; i < NC; i++) outbuf[i] = 0;
-	for (i = 0; i < 4096; i++) d_buf[i] = c;
-    } else {
-	i = 0;
-	while (i < n) {
-	    c = pt_table[io_bitbuf >> (BITBUFSIZ - 8)];
-	    if (c >= NT) {
-		mask = (unsigned) 1 << (BITBUFSIZ - 1 - 8);
-		do {
-		    if (io_bitbuf & mask) c = head[c];
-		    else               c = prev[c];
-		    mask >>= 1;
-		} while (c >= NT);
-	    }
-	    fillbuf((int) pt_len[c]);
-	    if (c <= 2) {
-		if      (c == 0) c = 1;
-		else if (c == 1) c = getbits(4) + 3;
-		else             c = getbits(9) + 20;
-		while (--c >= 0) outbuf[i++] = 0;
-	    } else outbuf[i++] = c - 2;
-	}
-	while (i < NC) outbuf[i++] = 0;
-	make_table(NC, outbuf, 12, d_buf);
+
+    if (n == 0)
+    {
+        c = getbits(9);
+        for (i = 0; i < NC; i++) outbuf[i] = 0;
+        for (i = 0; i < 4096; i++) d_buf[i] = c;
+    }
+    else
+    {
+        i = 0;
+
+        while (i < n)
+        {
+            c = pt_table[io_bitbuf >> (BITBUFSIZ - 8)];
+
+            if (c >= NT)
+            {
+                mask = (unsigned) 1 << (BITBUFSIZ - 1 - 8);
+
+                do
+                {
+                    c = io_bitbuf & mask ? (prev + WSIZE)[c] : prev[c];
+                    mask >>= 1;
+                }
+                while (c >= NT);
+            }
+
+            fillbuf((int) pt_len[c]);
+
+            if (c <= 2)
+            {
+                if (c == 0)
+                    c = 1;
+                else if (c == 1)
+                    c = getbits(4) + 3;
+                else
+                    c = getbits(9) + 20;
+
+                while (--c >= 0)
+                    outbuf[i++] = 0;
+            }
+            else
+            {
+                outbuf[i++] = c - 2;
+            }
+        }
+
+        while (i < NC)
+            outbuf[i++] = 0;
+
+        make_table(NC, outbuf, 12, d_buf);
     }
 }
+
+
 
 static unsigned decode_c()
 {
@@ -3733,7 +3942,7 @@ static unsigned decode_c()
     if (j >= NC) {
 	mask = (unsigned) 1 << (BITBUFSIZ - 1 - 12);
 	do {
-	    if (io_bitbuf & mask) j = head[j];
+	    if (io_bitbuf & mask) j = (prev + WSIZE)[j];
 	    else               j = prev[j];
 	    mask >>= 1;
 	} while (j >= NC);
@@ -3750,7 +3959,7 @@ static unsigned decode_p()
     if (j >= NP) {
 	mask = (unsigned) 1 << (BITBUFSIZ - 1 - 8);
 	do {
-	    if (io_bitbuf & mask) j = head[j];
+	    if (io_bitbuf & mask) j = (prev + WSIZE)[j];
 	    else               j = prev[j];
 	    mask >>= 1;
 	} while (j >= NP);
@@ -3829,17 +4038,8 @@ typedef unsigned long 	count_int;
 typedef unsigned short	count_short;
 typedef unsigned long 	cmp_code_int;
 
-#define MAXCODE(n)	(1L << (n))
-    
-#define	REG1	
-#define	REG2	
-#define	REG3	
-#define	REG4	
-#undef	REG1
-#define	REG1	register
-#undef	REG2
-#define	REG2	register
 
+    
 union	bytes {
     long  word;
     struct {
@@ -3847,20 +4047,7 @@ union	bytes {
     } bytes;
 };
 
-#define input(b,o,c,n,m){ \
-     REG1 char_type *p = &(b)[(o)>>3]; \
-     (c) = ((((long)(p[0]))|((long)(p[1])<<8)| \
-     ((long)(p[2])<<16))>>((o)&0x7))&(m); \
-     (o) += (n); \
-   }
-
-#define tab_prefixof(i) prev[i]
-#define clear_tab_prefixof()	memset(prev, 0, 256);
-#define de_stack        ((char_type *)(&d_buf[DIST_BUFSIZE-1]))
-#define tab_suffixof(i) window[i]
-
 int block_mode = BLOCK_MODE;
-
 
 int unlzw(int in, int out) 
 {
@@ -3882,8 +4069,6 @@ int unlzw(int in, int out)
     maxbits = get_byte();
     block_mode = maxbits & BLOCK_MODE;
     if ((maxbits & LZW_RESERVED) != 0) {
-	WARN((stderr, "\n%s: %s: warning, unknown flags 0x%x\n",
-	      progname, ifname, maxbits & LZW_RESERVED));
     }
     maxbits &= 0x1f;
     maxmaxcode = 1<<maxbits;
@@ -3896,7 +4081,7 @@ int unlzw(int in, int out)
 	return ERROR;
     }
     rsize = insize;
-    maxcode = MAXCODE(n_bits = INIT_BITS)-1;
+    maxcode = (1<<(n_bits = INIT_BITS))-1;
     bitmask = (1<<n_bits)-1;
     oldcode = -1;
     finchar = 0;
@@ -3905,13 +4090,13 @@ int unlzw(int in, int out)
 
     free_ent = ((block_mode) ? FIRST : 256);
     
-    clear_tab_prefixof();
+    memset(prev, 0, 256);
     
     for (code = 255 ; code >= 0 ; --code) {
-	tab_suffixof(code) = (char_type)code;
+	window[code] = (char_type)code;
     }
     do {
-	REG1 int i;
+	register int i;
 	int  e;
 	int  o;
 	
@@ -3942,12 +4127,18 @@ int unlzw(int in, int out)
 		if (n_bits == maxbits) {
 		    maxcode = maxmaxcode;
 		} else {
-		    maxcode = MAXCODE(n_bits)-1;
+		    maxcode = (1<<n_bits)-1;
 		}
 		bitmask = (1<<n_bits)-1;
 		goto resetbuf;
 	    }
-	    input(inbuf,posbits,code,n_bits,bitmask);
+
+    { 
+     register char_type *p = &(inbuf)[(posbits)>>3];
+     (code) = ((((long)(p[0]))|((long)(p[1])<<8)| 
+     ((long)(p[2])<<16))>>((o)&0x7))&(bitmask); 
+     (posbits) += (n_bits); 
+   }
 
 	    if (oldcode == -1) {
 		if (code >= 256) error((char *)"corrupt input.");
@@ -3955,16 +4146,17 @@ int unlzw(int in, int out)
 		continue;
 	    }
 	    if (code == 256 && block_mode) {
-		clear_tab_prefixof();
+    memset(prev, 0, 256);
+
 		free_ent = FIRST - 1;
 		posbits = ((posbits-1) +
 			   ((n_bits<<3)-(posbits-1+(n_bits<<3))%(n_bits<<3)));
-		maxcode = MAXCODE(n_bits = INIT_BITS)-1;
+		maxcode = (1<<(n_bits = INIT_BITS))-1;
 		bitmask = (1<<n_bits)-1;
 		goto resetbuf;
 	    }
 	    incode = code;
-	    stackp = de_stack;
+	    stackp = ((char_type *)(&d_buf[DIST_BUFSIZE-1]));
 	    
 	    if (code >= free_ent) {
 		if (code > free_ent) {
@@ -3980,15 +4172,15 @@ int unlzw(int in, int out)
 	    }
 
 	    while ((cmp_code_int)code >= (cmp_code_int)256) {
-		*--stackp = tab_suffixof(code);
-		code = tab_prefixof(code);
+		*--stackp = window[code];
+		code = prev[code];
 	    }
-	    *--stackp =	(char_type)(finchar = tab_suffixof(code));
+	    *--stackp =	(char_type)(finchar = window[code]);
 	    
 	    {
-		REG1 int	i;
+		register int i;
 	    
-		if (outpos+(i = (de_stack-stackp)) >= OUTBUFSIZ) {
+		if (outpos+(i = (((char_type *)(&d_buf[DIST_BUFSIZE-1])) - stackp)) >= OUTBUFSIZ) {
 		    do {
 			if (i > OUTBUFSIZ-outpos) i = OUTBUFSIZ-outpos;
 
@@ -4004,7 +4196,7 @@ int unlzw(int in, int out)
 			    outpos = 0;
 			}
 			stackp+= i;
-		    } while ((i = (de_stack-stackp)) > 0);
+		    } while ((i = (((char_type *)(&d_buf[DIST_BUFSIZE-1])) - stackp)) > 0);
 		} else {
 		    memcpy(outbuf+outpos, stackp, i);
 		    outpos += i;
@@ -4013,8 +4205,8 @@ int unlzw(int in, int out)
 
 	    if ((code = free_ent) < maxmaxcode) {
 
-		tab_prefixof(code) = (unsigned short)oldcode;
-		tab_suffixof(code) = (char_type)finchar;
+		prev[code] = (unsigned short)oldcode;
+		window[code] = (char_type)finchar;
 		free_ent = code+1;
 	    } 
 	    oldcode = incode;
@@ -4103,13 +4295,13 @@ static void build_tree()
     while (prefixp > outbuf) *--prefixp = 0;
 }
 
-#define look_bits(code,bits,mask) \
-{ \
-  while (valid < (bits)) bitbuf = (bitbuf<<8) | (ulg)get_byte(), valid += 8; \
-  code = (bitbuf >> (valid-(bits))) & (mask); \
-}
+void put_ubyte(char c)
+{
+    window[outcnt++] = (uch)(c);
 
-#define put_ubyte(c) {window[outcnt++]=(uch)(c); if (outcnt==WSIZE) flush_window();}
+    if (outcnt == WSIZE)
+        flush_window();
+}
 
 int unpack(int in, int out)
 {
@@ -4124,22 +4316,33 @@ int unpack(int in, int out)
     valid = 0;
     bitbuf = 0;
     peek_mask = (1<<peek_bits)-1;
-
     eob = leaves[max_len]-1;
 
-    for (;;) {
-	look_bits(peek, peek_bits, peek_mask);
-	len = outbuf[peek];
-	if (len > 0) {
-	    peek >>= peek_bits - len;
-	} else {
-	    ulg mask = peek_mask;
-	    len = peek_bits;
-	    do {
-                len++, mask = (mask<<1)+1;
-		look_bits(peek, len, mask);
-	    } while (peek < (unsigned)parents[len]);
-	}
+    for (;;)
+    {
+  while (valid < (peek_bits)) bitbuf = (bitbuf<<8) | (ulg)get_byte(), valid += 8;
+  peek = (bitbuf >> (valid-(peek_bits))) & (peek_mask);
+
+        len = outbuf[peek];
+
+        if (len > 0)
+        {
+        peek >>= peek_bits - len;
+        }
+        else
+        {
+        ulg mask = peek_mask;
+        len = peek_bits;
+        do
+        {
+            len++, mask = (mask<<1)+1;
+
+while (valid < (len)) bitbuf = (bitbuf<<8) | (ulg)get_byte(), valid += 8;
+  peek = (bitbuf >> (valid-(len))) & (mask);
+
+        } while (peek < (unsigned)parents[len]);
+    }
+
 	if (peek == eob && len == max_len) break;
 	put_ubyte(literal[peek+lit_base[len]]);
     valid -= len;
@@ -4164,6 +4367,8 @@ char *key;
 int pkzip = 0;      
 int ext_header = 0; 
 
+
+
 int check_zipfile(int in)
 {
     uch *h = inbuf + inptr;
@@ -4171,19 +4376,21 @@ int check_zipfile(int in)
     ifd = in;
     inptr += 30 + SH(h + 26) + SH(h + 28);
 
-    if (inptr > insize || LG(h) != LOCSIG) {
+    if (inptr > insize || ((ulg)(SH(h)) | ((ulg)(SH((h)+2)) << 16))  != LOCSIG) {
 	fprintf(stderr, "\n%s: %s: not a valid zip file\n",
 		progname, ifname);
 	exit_code = ERROR;
 	return ERROR;
     }
     method = h[8];
-    if (method != STORED && method != DEFLATED) {
-	fprintf(stderr,
-		"\n%s: %s: first entry not deflated or stored -- use unzip\n",
-		progname, ifname);
-	exit_code = ERROR;
-	return ERROR;
+    if (method != STORED && method != DEFLATED)
+    {
+        fprintf(stderr,
+    	    "\n%s: %s: first entry not deflated or stored -- use unzip\n",
+    	    progname, ifname);
+
+        exit_code = ERROR;
+	    return ERROR;
     }
 
     if ((decrypt = h[LOCFLG] & 1) != 0) {
@@ -4199,6 +4406,11 @@ int check_zipfile(int in)
     return OK;
 }
 
+ulg LG(uch *p)
+{
+    return ((ulg)(SH(p)) | ((ulg)(SH((p)+2)) << 16));
+}
+
 int unzip(int in, int out)
 {
     ulg orig_crc = 0;  
@@ -4206,15 +4418,14 @@ int unzip(int in, int out)
     int n;
     uch buf[EXTHDR];   
     int err = OK;
-
     ifd = in;
     ofd = out;
+    updcrc(NULL, 0);
 
-    updcrc(NULL, 0);  
-
-    if (pkzip && !ext_header) { 
-	orig_crc = LG(inbuf + 14);
-	orig_len = LG(inbuf + LOCLEN);
+    if (pkzip && !ext_header)
+    { 
+	    orig_crc = LG(inbuf + 14);
+	    orig_len = LG(inbuf + LOCLEN);
     }
 
     if (method == DEFLATED)  {
@@ -4276,9 +4487,6 @@ int unzip(int in, int out)
 
     if (pkzip && inptr + 4 < insize && LG(inbuf+inptr) == LOCSIG) {
 	if (to_stdout) {
-	    WARN((stderr,
-		  "%s: %s has more than one entry--rest ignored\n",
-		  progname, ifname));
 	} else {
 	    fprintf(stderr,
 		    "%s: %s has more than one entry -- unchanged\n",
@@ -4394,15 +4602,12 @@ void write_buf(int fd, voidp buf, unsigned cnt)
     }
 }
 
-//#define tolow(c)  (isupper (c) ? tolower (c) : (c))
-
 char *strlwr(char *s)
 {
     char *t;
 
     for (t = s; *t; t++)
         *t = isupper((uint8_t)*t) ? tolower((uint8_t)*t) : (uint8_t)*t;
-        //*t = tolow ((uint8_t)*t);
 
     return s;
 }
@@ -4442,7 +4647,6 @@ void error(char *m)
 
 void warning (char *m)
 {
-    WARN ((stderr, "%s: %s: warning: %s\n", progname, ifname, m));
 }
 
 void read_error()
