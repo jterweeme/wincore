@@ -1,58 +1,60 @@
+#if 1
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
-#include <malloc.h>
-#include <memory.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/dir.h>
-#include <sys/file.h>
 #include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
 #include <stdint.h>
+#else
+#include "common.h"
+#endif
 
+int ascii = 0;
+int to_stdout = 0;
+int decompress = 0;
+int force = 0;
+int no_name = -1;
+int no_time = -1;
+int recursive = 0;
+int list = 0;
+int verbose = 0;
+int quiet = 0;
+int do_lzw = 0;
+int test = 0;
+int foreground;
+char *progname;
+static int first_nonopt;
+static int last_nonopt;
+static const uint8_t CHAR_BIT = 8;
+static const uint8_t UCHAR_MAX = 255;
 static const uint8_t MAX_SUFFIX = 30;
 typedef void *voidp;
 typedef unsigned char uch;
 typedef unsigned short ush;
 typedef unsigned long ulg;
+static const uint32_t LOCSIG = 0x04034b50;
+static const uint8_t LOCFLG = 6;
+static const uint8_t LOCSIZ = 18;
+static const uint8_t LOCLEN = 22;
+static const uint8_t EXTHDR = 16;
 static const uint8_t OK = 0;
 static const uint8_t ERROR = 1;
 static const uint8_t STORED = 0;
 static const uint8_t DEFLATED = 8;
-extern int method;
 static const uint32_t INBUFSIZ = 0x8000;
 static const uint8_t INBUF_EXTRA = 64;
 static const int32_t OUTBUFSIZ = 16384;
 static const uint16_t OUTBUF_EXTRA = 2048;
 static const uint32_t DIST_BUFSIZE = 0x8000;
-extern uch inbuf[];
-extern uch outbuf[];
-extern ush d_buf[];
-extern uch window[];
-extern ush prev[];
-extern unsigned insize; 
-extern unsigned inptr;  
-extern unsigned outcnt;
-extern int rsync; 
-extern off_t bytes_in;
-extern off_t bytes_out;
-extern off_t header_bytes;
-extern int ifd;       
-extern int ofd;        
-extern char ifname[];   
-extern char ofname[];   
-extern char *progname;  
-extern time_t time_stamp;
-extern off_t ifile_size;
+unsigned outcnt;
+int rsync = 0;
+off_t header_bytes;
 typedef int file_t;
 const char PACK_MAGIC[] = "\037\036";
 const char GZIP_MAGIC[] = "\037\213";
@@ -69,46 +71,159 @@ static const uint16_t MIN_MATCH = 3;
 static const uint16_t MAX_MATCH = 258;
 static const uint16_t MIN_LOOKAHEAD = 262;
 static const uint32_t MAX_DIST = WSIZE - 262;
-extern int decrypt;       
-extern int exit_code;     
-extern int verbose;       
-extern int quiet;         
-extern int level;         
-extern int test;          
-extern int to_stdout;     
-extern int save_orig_name;
-extern int zip(int in, int out);
-extern int file_read(char *buf,  unsigned size);
-extern int unzip(int in, int out);
-extern int check_zipfile(int in);
-extern int unpack(int in, int out);
-extern int unlzh(int in, int out);
+static const uint8_t BITS = 16;
+static const uint8_t INIT_BITS = 9;
+const char LZW_MAGIC[] = "\037\235";
+static const uint8_t BLOCK_MODE = 0x80;
+static const uint8_t LZW_RESERVED = 0x60;
+static const uint16_t FIRST = 257;
+int lzw(int in, int out);
+int unlzw(int in, int out);
+static const uint32_t HASH_SIZE = (uint32_t)(1<<15);
+static const uint32_t HASH_MASK = HASH_SIZE - 1;
+static const uint32_t WMASK = WSIZE - 1;
+static const uint8_t NIL = 0;
+char *optarg;
+int optind = 1;
+int __getopt_initialized;
+static char *nextchar;
+int opterr = 1;
+int optopt = '?';
+typedef ush Pos;
+typedef unsigned IPos;
+ulg window_size = (ulg)2*WSIZE;
+long block_start;
+static unsigned ins_h;
+static const uint8_t H_SHIFT = 17/3;
+unsigned int prev_length;
+unsigned strstart;
+unsigned match_start;
+static int eofile;
+static unsigned lookahead;
+unsigned max_chain_length;
+static unsigned int max_lazy_match;
+static int compr_level;
+unsigned good_match;
+static ulg rsync_sum;
+static ulg rsync_chunk_end;
+static void fill_window(void);
+static off_t deflate_fast(void);
+typedef void (*sig_type) (int);
+static const uint8_t O_BINARY = 0;
+static const uint32_t RW_USER = S_IRUSR | S_IWUSR;
+static const uint16_t MAX_PATH_LEN = 1024;
+uch inbuf[INBUFSIZ + INBUF_EXTRA];
+uch outbuf[OUTBUFSIZ + OUTBUF_EXTRA];
+ush d_buf[DIST_BUFSIZE];
+uch window[2L*WSIZE];
+ush prev[1L<<BITS];
+static char *posixly_correct;
+char *getenv();
+int longest_match(IPos cur_match);
+int zip(int in, int out);
+int file_read(char *buf,  unsigned size);
+int unzip(int in, int out);
+int check_zipfile(int in);
+int unpack(int in, int out);
+int unlzh(int in, int out);
 void abort_gzip_signal(void);
-int  ct_tally(int dist, int lc);
+int ct_tally(int dist, int lc);
 off_t flush_block(char *buf, ulg stored_len, int pad, int eof);
-extern int copy(int in, int out);
-extern ulg  updcrc(uch *s, unsigned n);
-extern void clear_bufs(void);
-extern int  fill_inbuf(int eof_ok);
-extern void flush_outbuf(void);
-extern void flush_window(void);
-extern void write_buf     (int fd, voidp buf, unsigned cnt);
-extern char *strlwr       (char *s);
-extern char *base_name    (char *fname);
-extern int xunlink        (char *fname);
-extern void error         (char *m);
-extern void warning       (char *m);
-extern void read_error    (void);
-extern void write_error   (void);
-extern void display_ratio (off_t num, off_t den, FILE *file);
-extern void fprint_off    (FILE *, off_t, int);
-extern voidp xmalloc      (unsigned int size);
-extern int yesno (void);
+int copy(int in, int out);
+ulg  updcrc(uch *s, unsigned n);
+void clear_bufs(void);
+int  fill_inbuf(int eof_ok);
+void flush_outbuf(void);
+void flush_window(void);
+void write_buf(int fd, voidp buf, unsigned cnt);
+char *strlwr(char *s);
+char *base_name(char *fname);
+int xunlink(char *fname);
+void error(char *m);
+void warning(char *m);
+void read_error(void);
+void write_error(void);
+void display_ratio(off_t num, off_t den, FILE *file);
+void fprint_off(FILE *, off_t, int);
+voidp xmalloc(unsigned int size);
+int yesno (void);
 static file_t zfile; 
 static unsigned short bi_buf;
 static const uint32_t Buf_size = 8 * 2 * sizeof(char);
 static int bi_valid;
 int (*read_buf) (char *buf, unsigned size);
+int maxbits = BITS;   
+int method = DEFLATED;
+int level = 6;        
+int exit_code = OK;   
+int save_orig_name;   
+int last_member;      
+int part_nb;          
+time_t time_stamp;   
+off_t ifile_size;    
+char *env;           
+char **args = NULL;  
+char *z_suffix;      
+size_t z_len;        
+off_t bytes_in;    
+off_t bytes_out;   
+off_t total_in;		
+off_t total_out;
+char ifname[MAX_PATH_LEN];
+char ofname[MAX_PATH_LEN];
+int  remove_ofname = 0;
+struct stat istat;
+int ifd;
+int ofd;
+unsigned insize;
+unsigned inptr;
+static void treat_stdin  (void);
+static void treat_file   (char *iname);
+static int create_outfile (void);
+static int  get_istat    (char *iname, struct stat *sbuf);
+static int  make_ofname  (void);
+static int name_too_long (char *name, struct stat *statb);
+static void shorten_name  (char *name);
+static int  get_method   (int in);
+static void do_list      (int ifd, int method);
+static int  check_ofname (void);
+static void copy_stat    (struct stat *ifstat);
+static void do_exit      (int exitcode);
+int (*work) (int infile, int outfile) = zip;
+static void treat_dir    (char *dir);
+static void reset_times  (char *name, struct stat *statb);
+ulg bb;
+unsigned bk;
+static ulg crc;
+int lbits = 9;
+int dbits = 6;
+static const uint8_t BMAX = 16;
+unsigned hufts;
+int nice_match;
+int huft_build (unsigned *, unsigned, unsigned, ush *, ush *, struct huft **, int *);
+int huft_free (struct huft *);
+int decrypt;
+char *key;
+int pkzip = 0;
+int ext_header = 0;
+static const uint8_t MAX_BITS = 15;
+static const uint8_t LENGTH_CODES = 29;
+static const uint16_t LITERALS = 256;
+static const uint16_t END_BLOCK = 256;
+static const uint16_t L_CODES = 286;
+static const uint8_t D_CODES = 30;
+static const uint8_t BL_CODES = 19;
+static const uint8_t STORED_BLOCK = 0;
+static const uint32_t LIT_BUFSIZE = 0x8000;
+
+class App
+{
+    void usage();
+    void help();
+    char *add_envopt(int *argcp, char ***argvp, char *env);
+public:
+    int run(int argc, char **argv);
+};
 
 void bi_init (file_t zipfile)
 {
@@ -156,7 +271,6 @@ void send_bits(int value, int length)
     }
 }
 
-
 unsigned bi_reverse(unsigned code, int len)
 {
     register unsigned res = 0;
@@ -166,7 +280,6 @@ unsigned bi_reverse(unsigned code, int len)
     } while (--len > 0);
     return res >> 1;
 }
-
 
 void bi_windup()
 {
@@ -179,8 +292,6 @@ void bi_windup()
     bi_valid = 0;
 
 }
-
-
 
 void copy_block(char *buf, unsigned len, int header)
 {
@@ -196,40 +307,6 @@ void copy_block(char *buf, unsigned len, int header)
     }
 }
 
-static const uint8_t BITS = 16;
-static const uint8_t INIT_BITS = 9;
-const char LZW_MAGIC[] = "\037\235";
-static const uint8_t BLOCK_MODE = 0x80;
-static const uint8_t LZW_RESERVED = 0x60;
-static const uint16_t FIRST = 257;
-extern int maxbits;
-extern int block_mode;
-extern int lzw(int in, int out);
-extern int unlzw(int in, int out);
-static const uint32_t HASH_SIZE = (uint32_t)(1<<15);
-static const uint32_t HASH_MASK = HASH_SIZE - 1;
-static const uint32_t WMASK = WSIZE - 1;
-static const uint8_t NIL = 0;
-
-
-typedef ush Pos;
-typedef unsigned IPos;
-ulg window_size = (ulg)2*WSIZE;
-long block_start;
-static unsigned ins_h;
-static const uint8_t H_SHIFT = 17/3;
-unsigned int prev_length;
-unsigned strstart;     
-unsigned match_start;  
-static int eofile;
-static unsigned lookahead;    
-unsigned max_chain_length;
-static unsigned int max_lazy_match;
-static int compr_level;
-unsigned good_match;
-static ulg rsync_sum;  
-static ulg rsync_chunk_end; 
-
 typedef struct config {
    ush good_length; 
    ush max_lazy;    
@@ -237,7 +314,7 @@ typedef struct config {
    ush max_chain;
 } config;
 
-int nice_match; 
+
 
 static config configuration_table[10] = {
  {0,    0,  0,    0},  
@@ -251,14 +328,6 @@ static config configuration_table[10] = {
  {8,   32, 128, 256},
  {32, 128, 258, 1024},
  {32, 258, 258, 4096}};
-
-
-
-static void fill_window(void);
-static off_t deflate_fast(void);
-int longest_match(IPos cur_match);
-
-
 
 void lm_init(int pack_level, ush *flags)
 {
@@ -295,7 +364,6 @@ void lm_init(int pack_level, ush *flags)
         ins_h = (((ins_h)<<H_SHIFT) ^ (window[j])) & HASH_MASK;
 
 }
-
 
 int longest_match(IPos cur_match)
 {
@@ -425,9 +493,10 @@ static off_t deflate_fast()
     IPos hash_head;
     int flush;     
     unsigned match_length = 0; 
-
     prev_length = MIN_MATCH-1;
-    while (lookahead != 0) {
+
+    while (lookahead != 0)
+    {
         INSERT_STRING2(strstart, hash_head);
 
         if (hash_head != NIL && strstart - hash_head <= MAX_DIST &&
@@ -599,70 +668,36 @@ off_t deflate()
                 (char*)NULL, (long)strstart - block_start, flush-1, (1));
 }
 
-
-extern "C" {
-
-extern char *optarg;
-extern int optind;
-extern int opterr;
-extern int optopt;
-
-
-
 struct option
 {
-  const char *name;
-  int has_arg;
-  int *flag;
-  int val;
+    const char *name;
+    int has_arg;
+    int *flag;
+    int val;
 };
 
-extern int getopt (int __argc, char *const *__argv, const char *__shortopts);
 
-extern int getopt_long (int __argc, char *const *__argv, const char *__shortopts,
-		        const struct option *__longopts, int *__longind);
-extern int getopt_long_only (int __argc, char *const *__argv,
-			     const char *__shortopts,
-		             const struct option *__longopts, int *__longind);
-
-extern int _getopt_internal (int __argc, char *const *__argv,
-			     const char *__shortopts,
-		             const struct option *__longopts, int *__longind,
-			     int __long_only);
-
-}
-
-
-
-char *optarg;
-int optind = 1;
-int __getopt_initialized;
-static char *nextchar;
-int opterr = 1;
-int optopt = '?';
 
 static enum
 {
   REQUIRE_ORDER, PERMUTE, RETURN_IN_ORDER
 } ordering;
 
-static char *posixly_correct;
-extern char *getenv ();
 
-static char *
-my_index (const char *str, int chr)
+
+static char *my_index(const char *str, int chr)
 {
-  while (*str)
+    while (*str)
     {
-      if (*str == chr)
-	return (char *) str;
-      str++;
+        if (*str == chr)
+	        return (char *) str;
+        str++;
     }
-  return 0;
+
+    return 0;
 }
 
-static int first_nonopt;
-static int last_nonopt;
+
 
 
 
@@ -706,9 +741,6 @@ static void exchange (char **argv)
   last_nonopt = optind;
 }
 
-
-
-static const char *_getopt_initialize (int, char *const *, const char *);
 static const char * _getopt_initialize(int argc, char * const *argv, const char *optstring)
 {
 
@@ -736,8 +768,7 @@ static const char * _getopt_initialize(int argc, char * const *argv, const char 
   return optstring;
 }
 
-int
-_getopt_internal(int argc, char * const *argv, const char *optstring,
+int _getopt_internal(int argc, char * const *argv, const char *optstring,
     const struct option *longopts, int *longind, int long_only)
 {
   int print_errors = opterr;
@@ -1112,8 +1143,7 @@ _getopt_internal(int argc, char * const *argv, const char *optstring,
   }
 }
 
-int
-getopt (int argc, char * const *argv, const char *optstring)
+int getopt(int argc, char * const *argv, const char *optstring)
 {
   return _getopt_internal (argc, argv, optstring,
 			   (const struct option *) 0,
@@ -1122,67 +1152,14 @@ getopt (int argc, char * const *argv, const char *optstring)
 }
 
 static char  *license_msg[] = {
-(char *)"Copyright 2002 Free Software Foundation",
-(char *)"Copyright 1992-1993 Jean-loup Gailly",
-(char *)"This program comes with ABSOLUTELY NO WARRANTY.",
-(char *)"You may redistribute copies of this program",
-(char *)"under the terms of the GNU General Public License.",
-(char *)"For more information about these matters, see the file named COPYING.",
-0};
-typedef void (*sig_type) (int);
-static const uint8_t O_BINARY = 0;
-static const uint32_t RW_USER = S_IRUSR | S_IWUSR;
-static const uint16_t MAX_PATH_LEN = 1024;
+    (char *)"Copyright 2002 Free Software Foundation",
+    (char *)"Copyright 1992-1993 Jean-loup Gailly",
+    (char *)"This program comes with ABSOLUTELY NO WARRANTY.",
+    (char *)"You may redistribute copies of this program",
+    (char *)"under the terms of the GNU General Public License.",
+    (char *)"For more information about these matters, see the file named COPYING.", 0};
 
 
-uch inbuf[INBUFSIZ + INBUF_EXTRA];
-uch outbuf[OUTBUFSIZ + OUTBUF_EXTRA];
-ush d_buf[DIST_BUFSIZE];
-uch window[2L*WSIZE];
-ush prev[1L<<BITS];
-
-int ascii = 0;        
-int to_stdout = 0;    
-int decompress = 0;   
-int force = 0;        
-int no_name = -1;     
-int no_time = -1;     
-int recursive = 0;    
-int list = 0;         
-int verbose = 0;      
-int quiet = 0;        
-int do_lzw = 0;       
-int test = 0;         
-int foreground;       
-char *progname;       
-int maxbits = BITS;   
-int method = DEFLATED;
-int level = 6;        
-int exit_code = OK;   
-int save_orig_name;   
-int last_member;      
-int part_nb;          
-time_t time_stamp;   
-off_t ifile_size;    
-char *env;           
-char **args = NULL;  
-char *z_suffix;      
-size_t z_len;        
-
-off_t bytes_in;    
-off_t bytes_out;   
-off_t total_in;		
-off_t total_out;	
-char ifname[MAX_PATH_LEN];
-char ofname[MAX_PATH_LEN];
-int  remove_ofname = 0;	  
-struct stat istat;        
-int  ifd;                 
-int  ofd;                 
-unsigned insize;          
-unsigned inptr;           
-unsigned outcnt;          
-int rsync = 0;            
 
 struct option longopts[] =
 {
@@ -1213,21 +1190,7 @@ struct option longopts[] =
     { 0, 0, 0, 0 }
 };
 
-static void treat_stdin  (void);
-static void treat_file   (char *iname);
-static int create_outfile (void);
-static int  get_istat    (char *iname, struct stat *sbuf);
-static int  make_ofname  (void);
-static int name_too_long (char *name, struct stat *statb);
-static void shorten_name  (char *name);
-static int  get_method   (int in);
-static void do_list      (int ifd, int method);
-static int  check_ofname (void);
-static void copy_stat    (struct stat *ifstat);
-static void do_exit      (int exitcode);
-int (*work) (int infile, int outfile) = zip;
-static void treat_dir    (char *dir);
-static void reset_times  (char *name, struct stat *statb);
+
 
 bool strequ(const char *s1, const char *s2)
 {
@@ -1264,14 +1227,7 @@ static void progerror (char *string)
     exit_code = ERROR;
 }
 
-class App
-{
-    void usage();
-    void help();
-    char *add_envopt(int *argcp, char ***argvp, char *env);
-public:
-    int run(int argc, char **argv);
-};
+
 
 void App::usage()
 {
@@ -1362,6 +1318,19 @@ char *App::add_envopt(int *argcp, char ***argvp, char *env)
     return env;
 }
 
+
+int getopt_long (int argc, char * const *argv, const char *options,
+        const struct option *long_options, int *opt_index)
+{
+    return _getopt_internal (argc, argv, options, long_options, opt_index, 0);
+}
+
+int getopt_long_only (int argc, char * const *argv, const char *options,
+            const struct option *long_options, int *opt_index)
+{
+    return _getopt_internal (argc, argv, options, long_options, opt_index, 1);
+}
+
 int App::run(int argc, char **argv)
 {
     int file_count;
@@ -1378,6 +1347,7 @@ int App::run(int argc, char **argv)
     env = add_envopt(&argc, &argv, (char *)"GZIP");
     if (env != NULL) args = argv;
 
+#if 0
     foreground = signal(SIGINT, SIG_IGN) != SIG_IGN;
     if (foreground) {
 	(void) signal (SIGINT, (sig_type)abort_gzip_signal);
@@ -1388,6 +1358,7 @@ int App::run(int argc, char **argv)
     if (signal(SIGHUP, SIG_IGN) != SIG_IGN) {
 	(void) signal(SIGHUP,  (sig_type)abort_gzip_signal);
     }
+#endif
 
     if (  strncmp(progname, "un",  2) == 0     
        || strncmp(progname, "gun", 3) == 0) {  
@@ -1469,8 +1440,10 @@ int App::run(int argc, char **argv)
 	}
     }
 
+#if 0
     if (quiet && signal (SIGPIPE, SIG_IGN) != SIG_IGN)
       signal (SIGPIPE, (sig_type) abort_gzip_signal);
+#endif
 
     if (no_time < 0) no_time = decompress;
     if (no_name < 0) no_name = decompress;
@@ -2433,8 +2406,7 @@ struct huft {
   } v;
 };
 
-int huft_build (unsigned *, unsigned, unsigned, ush *, ush *, struct huft **, int *);
-int huft_free (struct huft *);
+
 
 
 
@@ -2457,8 +2429,7 @@ static ush cpdext[] = {
 
 
 
-ulg bb;      
-unsigned bk; 
+
 
 ush mask_bits[] = {
     0x0000,
@@ -2466,10 +2437,7 @@ ush mask_bits[] = {
     0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
 };
 
-int lbits = 9;
-int dbits = 6;
-static const uint8_t BMAX = 16;
-unsigned hufts;
+
 
 
 
@@ -3111,25 +3079,13 @@ int lzw(int in, int out)
     return ERROR;
 }
 
-static const uint8_t MAX_BITS = 15;
-static const uint8_t LENGTH_CODES = 29;
-static const uint16_t LITERALS = 256;
-static const uint16_t END_BLOCK = 256;
-static const uint16_t L_CODES = 286;
-static const uint8_t D_CODES = 30;
-static const uint8_t BL_CODES = 19;
 
-static int extra_lbits[29]
-   = {0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0};
 
-static int extra_dbits[30]
-   = {0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13};
+static int extra_lbits[29] = {0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0};
+static int extra_dbits[30] = {0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13};
+static int extra_blbits[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7};
 
-static int extra_blbits[19]
-   = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7};
 
-static const uint8_t STORED_BLOCK = 0;
-static const uint32_t LIT_BUFSIZE = 0x8000;
 
 struct ct_data
 {
@@ -3189,8 +3145,6 @@ static off_t compressed_len;
 static off_t input_len;
 ush *file_type;        
 int *file_method;      
-extern long block_start;       
-extern unsigned strstart; 
 static void init_block     (void);
 static void pqdownheap     (ct_data *tree, int k);
 static void gen_bitlen     (tree_desc *desc);
@@ -4355,17 +4309,10 @@ while (valid < (len)) bitbuf = (bitbuf<<8) | (ulg)get_byte(), valid += 8;
     return OK;
 }
 
-static const uint32_t LOCSIG = 0x04034b50;
-static const uint8_t LOCFLG = 6;
-static const uint8_t LOCSIZ = 18;
-static const uint8_t LOCLEN = 22;
-static const uint8_t EXTHDR = 16;
 
 
-int decrypt;
-char *key;          
-int pkzip = 0;      
-int ext_header = 0; 
+
+
 
 
 
@@ -4501,7 +4448,60 @@ int unzip(int in, int out)
     return err;
 }
 
-extern ulg crc_32_tab[];
+ulg crc_32_tab[] = {
+  0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
+  0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
+  0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
+  0x90bf1d91L, 0x1db71064L, 0x6ab020f2L, 0xf3b97148L, 0x84be41deL,
+  0x1adad47dL, 0x6ddde4ebL, 0xf4d4b551L, 0x83d385c7L, 0x136c9856L,
+  0x646ba8c0L, 0xfd62f97aL, 0x8a65c9ecL, 0x14015c4fL, 0x63066cd9L,
+  0xfa0f3d63L, 0x8d080df5L, 0x3b6e20c8L, 0x4c69105eL, 0xd56041e4L,
+  0xa2677172L, 0x3c03e4d1L, 0x4b04d447L, 0xd20d85fdL, 0xa50ab56bL,
+  0x35b5a8faL, 0x42b2986cL, 0xdbbbc9d6L, 0xacbcf940L, 0x32d86ce3L,
+  0x45df5c75L, 0xdcd60dcfL, 0xabd13d59L, 0x26d930acL, 0x51de003aL,
+  0xc8d75180L, 0xbfd06116L, 0x21b4f4b5L, 0x56b3c423L, 0xcfba9599L,
+  0xb8bda50fL, 0x2802b89eL, 0x5f058808L, 0xc60cd9b2L, 0xb10be924L,
+  0x2f6f7c87L, 0x58684c11L, 0xc1611dabL, 0xb6662d3dL, 0x76dc4190L,
+  0x01db7106L, 0x98d220bcL, 0xefd5102aL, 0x71b18589L, 0x06b6b51fL,
+  0x9fbfe4a5L, 0xe8b8d433L, 0x7807c9a2L, 0x0f00f934L, 0x9609a88eL,
+  0xe10e9818L, 0x7f6a0dbbL, 0x086d3d2dL, 0x91646c97L, 0xe6635c01L,
+  0x6b6b51f4L, 0x1c6c6162L, 0x856530d8L, 0xf262004eL, 0x6c0695edL,
+  0x1b01a57bL, 0x8208f4c1L, 0xf50fc457L, 0x65b0d9c6L, 0x12b7e950L,
+  0x8bbeb8eaL, 0xfcb9887cL, 0x62dd1ddfL, 0x15da2d49L, 0x8cd37cf3L,
+  0xfbd44c65L, 0x4db26158L, 0x3ab551ceL, 0xa3bc0074L, 0xd4bb30e2L,
+  0x4adfa541L, 0x3dd895d7L, 0xa4d1c46dL, 0xd3d6f4fbL, 0x4369e96aL,
+  0x346ed9fcL, 0xad678846L, 0xda60b8d0L, 0x44042d73L, 0x33031de5L,
+  0xaa0a4c5fL, 0xdd0d7cc9L, 0x5005713cL, 0x270241aaL, 0xbe0b1010L,
+  0xc90c2086L, 0x5768b525L, 0x206f85b3L, 0xb966d409L, 0xce61e49fL,
+  0x5edef90eL, 0x29d9c998L, 0xb0d09822L, 0xc7d7a8b4L, 0x59b33d17L,
+  0x2eb40d81L, 0xb7bd5c3bL, 0xc0ba6cadL, 0xedb88320L, 0x9abfb3b6L,
+  0x03b6e20cL, 0x74b1d29aL, 0xead54739L, 0x9dd277afL, 0x04db2615L,
+  0x73dc1683L, 0xe3630b12L, 0x94643b84L, 0x0d6d6a3eL, 0x7a6a5aa8L,
+  0xe40ecf0bL, 0x9309ff9dL, 0x0a00ae27L, 0x7d079eb1L, 0xf00f9344L,
+  0x8708a3d2L, 0x1e01f268L, 0x6906c2feL, 0xf762575dL, 0x806567cbL,
+  0x196c3671L, 0x6e6b06e7L, 0xfed41b76L, 0x89d32be0L, 0x10da7a5aL,
+  0x67dd4accL, 0xf9b9df6fL, 0x8ebeeff9L, 0x17b7be43L, 0x60b08ed5L,
+  0xd6d6a3e8L, 0xa1d1937eL, 0x38d8c2c4L, 0x4fdff252L, 0xd1bb67f1L,
+  0xa6bc5767L, 0x3fb506ddL, 0x48b2364bL, 0xd80d2bdaL, 0xaf0a1b4cL,
+  0x36034af6L, 0x41047a60L, 0xdf60efc3L, 0xa867df55L, 0x316e8eefL,
+  0x4669be79L, 0xcb61b38cL, 0xbc66831aL, 0x256fd2a0L, 0x5268e236L,
+  0xcc0c7795L, 0xbb0b4703L, 0x220216b9L, 0x5505262fL, 0xc5ba3bbeL,
+  0xb2bd0b28L, 0x2bb45a92L, 0x5cb36a04L, 0xc2d7ffa7L, 0xb5d0cf31L,
+  0x2cd99e8bL, 0x5bdeae1dL, 0x9b64c2b0L, 0xec63f226L, 0x756aa39cL,
+  0x026d930aL, 0x9c0906a9L, 0xeb0e363fL, 0x72076785L, 0x05005713L,
+  0x95bf4a82L, 0xe2b87a14L, 0x7bb12baeL, 0x0cb61b38L, 0x92d28e9bL,
+  0xe5d5be0dL, 0x7cdcefb7L, 0x0bdbdf21L, 0x86d3d2d4L, 0xf1d4e242L,
+  0x68ddb3f8L, 0x1fda836eL, 0x81be16cdL, 0xf6b9265bL, 0x6fb077e1L,
+  0x18b74777L, 0x88085ae6L, 0xff0f6a70L, 0x66063bcaL, 0x11010b5cL,
+  0x8f659effL, 0xf862ae69L, 0x616bffd3L, 0x166ccf45L, 0xa00ae278L,
+  0xd70dd2eeL, 0x4e048354L, 0x3903b3c2L, 0xa7672661L, 0xd06016f7L,
+  0x4969474dL, 0x3e6e77dbL, 0xaed16a4aL, 0xd9d65adcL, 0x40df0b66L,
+  0x37d83bf0L, 0xa9bcae53L, 0xdebb9ec5L, 0x47b2cf7fL, 0x30b5ffe9L,
+  0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L,
+  0xcdd70693L, 0x54de5729L, 0x23d967bfL, 0xb3667a2eL, 0xc4614ab8L,
+  0x5d681b02L, 0x2a6f2b94L, 0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL,
+  0x2d02ef8dL
+};
 
 int copy(int in, int out)
 {
@@ -4709,65 +4709,11 @@ voidp xmalloc (unsigned size)
     return cp;
 }
 
-ulg crc_32_tab[] = {
-  0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
-  0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
-  0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
-  0x90bf1d91L, 0x1db71064L, 0x6ab020f2L, 0xf3b97148L, 0x84be41deL,
-  0x1adad47dL, 0x6ddde4ebL, 0xf4d4b551L, 0x83d385c7L, 0x136c9856L,
-  0x646ba8c0L, 0xfd62f97aL, 0x8a65c9ecL, 0x14015c4fL, 0x63066cd9L,
-  0xfa0f3d63L, 0x8d080df5L, 0x3b6e20c8L, 0x4c69105eL, 0xd56041e4L,
-  0xa2677172L, 0x3c03e4d1L, 0x4b04d447L, 0xd20d85fdL, 0xa50ab56bL,
-  0x35b5a8faL, 0x42b2986cL, 0xdbbbc9d6L, 0xacbcf940L, 0x32d86ce3L,
-  0x45df5c75L, 0xdcd60dcfL, 0xabd13d59L, 0x26d930acL, 0x51de003aL,
-  0xc8d75180L, 0xbfd06116L, 0x21b4f4b5L, 0x56b3c423L, 0xcfba9599L,
-  0xb8bda50fL, 0x2802b89eL, 0x5f058808L, 0xc60cd9b2L, 0xb10be924L,
-  0x2f6f7c87L, 0x58684c11L, 0xc1611dabL, 0xb6662d3dL, 0x76dc4190L,
-  0x01db7106L, 0x98d220bcL, 0xefd5102aL, 0x71b18589L, 0x06b6b51fL,
-  0x9fbfe4a5L, 0xe8b8d433L, 0x7807c9a2L, 0x0f00f934L, 0x9609a88eL,
-  0xe10e9818L, 0x7f6a0dbbL, 0x086d3d2dL, 0x91646c97L, 0xe6635c01L,
-  0x6b6b51f4L, 0x1c6c6162L, 0x856530d8L, 0xf262004eL, 0x6c0695edL,
-  0x1b01a57bL, 0x8208f4c1L, 0xf50fc457L, 0x65b0d9c6L, 0x12b7e950L,
-  0x8bbeb8eaL, 0xfcb9887cL, 0x62dd1ddfL, 0x15da2d49L, 0x8cd37cf3L,
-  0xfbd44c65L, 0x4db26158L, 0x3ab551ceL, 0xa3bc0074L, 0xd4bb30e2L,
-  0x4adfa541L, 0x3dd895d7L, 0xa4d1c46dL, 0xd3d6f4fbL, 0x4369e96aL,
-  0x346ed9fcL, 0xad678846L, 0xda60b8d0L, 0x44042d73L, 0x33031de5L,
-  0xaa0a4c5fL, 0xdd0d7cc9L, 0x5005713cL, 0x270241aaL, 0xbe0b1010L,
-  0xc90c2086L, 0x5768b525L, 0x206f85b3L, 0xb966d409L, 0xce61e49fL,
-  0x5edef90eL, 0x29d9c998L, 0xb0d09822L, 0xc7d7a8b4L, 0x59b33d17L,
-  0x2eb40d81L, 0xb7bd5c3bL, 0xc0ba6cadL, 0xedb88320L, 0x9abfb3b6L,
-  0x03b6e20cL, 0x74b1d29aL, 0xead54739L, 0x9dd277afL, 0x04db2615L,
-  0x73dc1683L, 0xe3630b12L, 0x94643b84L, 0x0d6d6a3eL, 0x7a6a5aa8L,
-  0xe40ecf0bL, 0x9309ff9dL, 0x0a00ae27L, 0x7d079eb1L, 0xf00f9344L,
-  0x8708a3d2L, 0x1e01f268L, 0x6906c2feL, 0xf762575dL, 0x806567cbL,
-  0x196c3671L, 0x6e6b06e7L, 0xfed41b76L, 0x89d32be0L, 0x10da7a5aL,
-  0x67dd4accL, 0xf9b9df6fL, 0x8ebeeff9L, 0x17b7be43L, 0x60b08ed5L,
-  0xd6d6a3e8L, 0xa1d1937eL, 0x38d8c2c4L, 0x4fdff252L, 0xd1bb67f1L,
-  0xa6bc5767L, 0x3fb506ddL, 0x48b2364bL, 0xd80d2bdaL, 0xaf0a1b4cL,
-  0x36034af6L, 0x41047a60L, 0xdf60efc3L, 0xa867df55L, 0x316e8eefL,
-  0x4669be79L, 0xcb61b38cL, 0xbc66831aL, 0x256fd2a0L, 0x5268e236L,
-  0xcc0c7795L, 0xbb0b4703L, 0x220216b9L, 0x5505262fL, 0xc5ba3bbeL,
-  0xb2bd0b28L, 0x2bb45a92L, 0x5cb36a04L, 0xc2d7ffa7L, 0xb5d0cf31L,
-  0x2cd99e8bL, 0x5bdeae1dL, 0x9b64c2b0L, 0xec63f226L, 0x756aa39cL,
-  0x026d930aL, 0x9c0906a9L, 0xeb0e363fL, 0x72076785L, 0x05005713L,
-  0x95bf4a82L, 0xe2b87a14L, 0x7bb12baeL, 0x0cb61b38L, 0x92d28e9bL,
-  0xe5d5be0dL, 0x7cdcefb7L, 0x0bdbdf21L, 0x86d3d2d4L, 0xf1d4e242L,
-  0x68ddb3f8L, 0x1fda836eL, 0x81be16cdL, 0xf6b9265bL, 0x6fb077e1L,
-  0x18b74777L, 0x88085ae6L, 0xff0f6a70L, 0x66063bcaL, 0x11010b5cL,
-  0x8f659effL, 0xf862ae69L, 0x616bffd3L, 0x166ccf45L, 0xa00ae278L,
-  0xd70dd2eeL, 0x4e048354L, 0x3903b3c2L, 0xa7672661L, 0xd06016f7L,
-  0x4969474dL, 0x3e6e77dbL, 0xaed16a4aL, 0xd9d65adcL, 0x40df0b66L,
-  0x37d83bf0L, 0xa9bcae53L, 0xdebb9ec5L, 0x47b2cf7fL, 0x30b5ffe9L,
-  0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L,
-  0xcdd70693L, 0x54de5729L, 0x23d967bfL, 0xb3667a2eL, 0xc4614ab8L,
-  0x5d681b02L, 0x2a6f2b94L, 0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL,
-  0x2d02ef8dL
-};
 
-int rpmatch ();
 
-int
-yesno ()
+int rpmatch();
+
+int yesno()
 {
   char buf[128];
   int len = 0;
@@ -4781,8 +4727,7 @@ yesno ()
   return rpmatch (buf) == 1;
 }
 
-static ulg crc;
-off_t header_bytes;
+
 
 void put_long(int n)
 {
@@ -4795,7 +4740,6 @@ int zip(int in, int out)
     uch  flags = 0;         
     ush  attr = 0;          
     ush  deflate_flags = 0; 
-
     ifd = in;
     ofd = out;
     outcnt = 0;
@@ -4803,10 +4747,7 @@ int zip(int in, int out)
     put_byte(GZIP_MAGIC[0]);
     put_byte(GZIP_MAGIC[1]);
     put_byte(DEFLATED);     
-
-    if (save_orig_name)
-	    flags |= ORIG_NAME;
-
+    if (save_orig_name) flags |= ORIG_NAME;
     put_byte(flags);
     put_long(time_stamp == (time_stamp & 0xffffffff) ? (ulg)time_stamp : (ulg)0);
     crc = updcrc(0, 0);
@@ -4855,16 +4796,6 @@ int rpmatch (const char *response)
 }
 
 
-int getopt_long (int argc, char * const *argv, const char *options,
-        const struct option *long_options, int *opt_index)
-{
-    return _getopt_internal (argc, argv, options, long_options, opt_index, 0);
-}
 
-int getopt_long_only (int argc, char * const *argv, const char *options,
-            const struct option *long_options, int *opt_index)
-{
-    return _getopt_internal (argc, argv, options, long_options, opt_index, 1);
-}
 
 
