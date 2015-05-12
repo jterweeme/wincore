@@ -86,6 +86,12 @@ public:
     void extract(bool verbose) { while (extractFile(verbose)); }
 };
 
+class TarWriter
+{
+public:
+    void writeFile(ostream &os, istream &is, const SHeader &h);
+};
+
 #endif
 
 

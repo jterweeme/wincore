@@ -63,7 +63,7 @@ void istream2::getline(char *dest, size_t size)
             return;
         }
 
-        if (c == '\n')
+        if (c == '\n' || c == '\r')
         {
             dest[pos] = '\0';
             return;

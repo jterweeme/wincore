@@ -45,10 +45,12 @@ int Inflate::read()
     if (!_itinit)
         _isFinal = readBuf();
 
-    if (_it >= _buf.end() && !_isFinal)
+    //if (_it >= _buf.end() && !_isFinal)
+    if (_it == _buf.end() && !_isFinal)
         _isFinal = readBuf();
 
-    return _it >= _buf.end() ? -1 : *_it++;
+    //return _it >= _buf.end() ? -1 : *_it++;
+    return _it == _buf.end() ? -1 : *_it++;
 }
 
 int Inflate::_decDist(int sym)

@@ -34,19 +34,11 @@ uint8_t Options::compression() const
 class AppTar
 {
     uint8_t _width = 5;
+    Options _options;
+    int _createArchive();
 public:
-    void createFile(ostream &os, string fn);
     int run(int argc, char **argv);
 };
-
-void AppTar::createFile(ostream &os, string fn)
-{
-    Header h;
-    ifstream ifs(fn.c_str());
-    SHeader sh = h.raw();
-    os.write((char *)&sh, sizeof(sh));
-    ifs.close();
-}
 
 void Options::parse(int argc, char **argv)
 {
@@ -90,17 +82,43 @@ void Options::parse(int argc, char **argv)
     }
 }
 
+int AppTar::_createArchive()
+{
+    TarWriter t;
+    ofstream ofs(_options.archive().c_str());
+    ifstream ifs("yes.cpp");
+    //ofs << "Onzin\n";
+    SHeader sh = {};
+    strcpy(sh.name, "yes.cpp");
+    strcpy(sh.mode, "0000644");
+    strcpy(sh.uid, "0001750");
+    strcpy(sh.gid, "0001750");
+    strcpy(sh.size, "00000000450");
+    strcpy(sh.mtime, "12345678123");
+    strcpy(sh.chksum, "000000");
+    sh.typeflag = 1;
+    t.writeFile(ofs, ifs, sh);
+    ifs.close();
+    ofs.close();
+    return 0;
+}
+
 int AppTar::run(int argc, char **argv)
 {
-    Options o(argc, argv);
-    FILE *fp = fopen(o.archive().c_str(), "r");
+    _options.parse(argc, argv);
+    FILE *fp;
+
+    if (_options.create())
+        return _createArchive();
+
+    fp = fopen(_options.archive().c_str(), "r");
     BitInputFile bif;
     BitInput2File bif2;
     streambuf *bt;
     istream *is;
     TarStream *ts;
     
-    switch (o.compression())
+    switch (_options.compression())
     {
     case 3:
         bif.open(fp);
@@ -117,11 +135,11 @@ int AppTar::run(int argc, char **argv)
     is = new istream(bt);
     ts = new TarStream(is);
     
-    if (o.table())
-        ts->list(o.verbose());
+    if (_options.table())
+        ts->list(_options.verbose());
 
-    if (o.extract())
-        ts->extract(o.verbose());
+    if (_options.extract())
+        ts->extract(_options.verbose());
 
     delete ts;
     delete is;

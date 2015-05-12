@@ -79,6 +79,12 @@ void Header::mode(ostream &os) const
     os << type() << _mode(_h.mode[4]) << _mode(_h.mode[5]) << _mode(_h.mode[6]);
 }
 
+void TarWriter::writeFile(ostream &os, istream &is, const SHeader &h)
+{
+    os.write((char *)&h, sizeof(h));
+    //os << is;
+}
+
 bool TarStream::extractFile(bool verbose)
 {
     Header h(*_is);

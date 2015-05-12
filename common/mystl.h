@@ -604,7 +604,9 @@ namespace mystl
     size_t strlen(const char *s);
 #endif
 #ifndef _STDLIB_H
+#ifndef __dj_include_stdlib_h_
     uint32_t strtol(const char *a, const char *b, int base);
+#endif
 #endif
     int strcmp(const char* s1, const char *s2);
     int strncmp(const char *s1, const char *s2, size_t n);
@@ -629,8 +631,10 @@ namespace mystl
     void toupper(char *s);
     bool regex_search(const char *s, const regex &rx);
 #ifndef _STDLIB_H
+#ifndef __dj_include_stdlib_h_
     void srand(unsigned seed);
     int rand();
+#endif
 #endif
     template <typename T, typename U> void sort(T f, T l, U c) { Util2 u; u.sort(f, l, c); }
     template <typename T> void sort(T f, T l) { Util2 u; u.sort(f, l); }

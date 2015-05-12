@@ -1,4 +1,4 @@
-USE_MYSTL = no
+USE_MYSTL = yes
 
 ifneq ($(USE_MYSTL),yes)
 NO_MYSTL = -DNO_MYSTL
@@ -6,7 +6,7 @@ endif
 
 CXXFLAGS = -Wall -Wno-parentheses -O0 -g --std=c++11 $(NO_MYSTL)
 VALFLAGS = -q --error-exitcode=1 --leak-check=full
-VALGRIND = valgrind $(VALFLAGS)
+VALGRIND = #valgrind $(VALFLAGS)
 UTIL2_H = util2.h mytypes.h
 MYSTL_H = mystl.h mystl.tcc
 COMMON_H = common.h $(MYSTL_H)
@@ -26,17 +26,18 @@ MYSTL_O = mystl.o mytime.o util2.o #$(MYSTDIO_O)
 TARGETS2 = teststl1 tgmtime1 tstdio1
 endif
 
+BITINPUT_O = bitinput.o $(MYSTL_O)
 GUNZIP_O = gunzip.o bitinput.o inflate.o $(MYSTL_O)
 FILESYS_O = filesys.o $(MYSTL_O)
 
-TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
+TARGETS = base64 bmp2tga bmpinfo bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip gzip \
-    tcpcom01 tcpcom02 \
     jpg2tga kompakt ls md5sum nl od rm tar \
-    tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 \
+    tcpcom01 tcpcom02 \
+    tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 tcpcom11 \
     tcpref01 \
-    tee test1 test2 test3 testbinp $(TARGETS2) \
-    tgunzip1 touch tr unix2dos unzip \
+    tee test1 test2 test3 test4 testbinp $(TARGETS2) \
+    tgainfo tgunzip1 touch tr unix2dos unzip \
     uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
@@ -52,6 +53,8 @@ TARGETS = base64 bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
 
 all: $(TARGETS)
 base64: base64.o $(MYSTL_O)
+bmp2tga: bmp2tga.o $(BITINPUT_O)
+bmpinfo: bmpinfo.o $(BITINPUT_O)
 bunzip2: bunzip2m.o bunzip2.o bitinput.o fector.o $(MYSTL_O)
 bzcat: bzcat.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
 bzinfo: bzinfo.o bitinput.o $(MYSTL_O)
@@ -59,8 +62,6 @@ bzip2: bzip2.o $(MYSTL_O)
 bzmd5: bzmd5.o
 cat: cat.o $(MYSTL_O)
 cp: cp.o $(MYSTL_O)
-tcpcom01: tcpcom01.o $(MYSTL_O)
-tcpcom02: tcpcom02.o $(MYSTL_O)
 crc32: crc32.o $(MYSTL_O)
 date: date.o $(MYSTL_O)
 dd: dd.o $(MYSTL_O)
@@ -77,6 +78,8 @@ nl: nl.o $(MYSTL_O)
 od: od.o odmain.o $(MYSTL_O)
 rm: rm.o $(MYSTL_O)
 tar: tarm.o tar.o bitinput.o bunzip2.o gunzip.o inflate.o fector.o $(MYSTL_O)
+tcpcom01: tcpcom01.o $(MYSTL_O)
+tcpcom02: tcpcom02.o $(MYSTL_O)
 tcpcom03: tcpcom03.o $(MYSTL_O)
 tcpcom04: tcpcom04.o $(MYSTL_O)
 tcpcom05: tcpcom05.o $(MYSTL_O)
@@ -85,13 +88,16 @@ tcpcom07: tcpcom07.o $(MYSTL_O)
 tcpcom08: tcpcom08.o $(MYSTL_O)
 tcpcom09: tcpcom09.o $(MYSTL_O)
 tcpcom10: tcpcom10.o $(MYSTL_O)
+tcpcom11: tcpcom11.o $(MYSTL_O)
 tcpref01: tcpref01.o util2.o $(MYSTL_O)
 tee: tee.o $(MYSTL_O)
 test1: test1.o hasher.o $(MYSTL_O)
 test2: test2.o $(GUNZIP_O)
 test3: test3.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
+test4: test4.o $(MYSTL_O)
 testbinp: testbinp.o bitinput.o $(MYSTL_O)
 teststl1: teststl1.o $(MYSTL_O)
+tgainfo: tgainfo.o $(MYSTL_O)
 tgmtime1: tgmtime1.o $(MYSTL_O)
 tgunzip1: tgunzip1.o $(GUNZIP_O)
 touch: touch.o
@@ -106,6 +112,8 @@ yes: yes.o fector.o $(MYSTL_O)
 zcat: zcat.o $(GUNZIP_O)
 base64.o: base64.cpp $(COMMON_H)
 bitinput.o: bitinput.cpp $(BITINPUT_H)
+bmp2tga.o: bmp2tga.cpp $(BITINPUT_H)
+bmpinfo.o: bmpinfo.cpp
 bunzip2.o: bunzip2.cpp $(BUNZIP2_H)
 bzcat.o: bzcat.cpp $(BUNZIP2_H)
 bzinfo.o: bzinfo.cpp fector.h $(BITINPUT_H)
@@ -113,8 +121,6 @@ bzip2.o: bzip2.cpp $(COMMON_H)
 bzmd5.o: bzmd5.cpp $(BUFTEST_H)
 cat.o: cat.cpp $(COMMON_H)
 cp.o: cp.cpp $(COMMON_H)
-tcpcom01.o: tcpcom01.cpp $(COMMON_H)
-tcpcom02.o: tcpcom02.cpp $(COMMON_H)
 crc32.o: crc32.cpp $(COMMON_H)
 date.o: date.cpp $(COMMON_H)
 dd.o: dd.cpp $(COMMON_H)
@@ -143,6 +149,8 @@ odmain.o: odmain.cpp $(OD_H)
 rm.o: rm.cpp
 tar.o: tar.cpp $(TAR_H)
 tarm.o: tarm.cpp $(TAR_H)
+tcpcom01.o: tcpcom01.cpp $(COMMON_H)
+tcpcom02.o: tcpcom02.cpp $(COMMON_H)
 tcpcom03.o: tcpcom03.cpp $(COMMON_H)
 tcpcom04.o: tcpcom04.cpp $(COMMON_H)
 tcpcom05.o: tcpcom05.cpp $(COMMON_H)
@@ -151,13 +159,16 @@ tcpcom07.o: tcpcom07.cpp $(COMMON_H)
 tcpcom08.o: tcpcom08.cpp $(COMMON_H)
 tcpcom09.o: tcpcom09.cpp $(COMMON_H)
 tcpcom10.o: tcpcom10.cpp $(COMMON_H)
+tcpcom11.o: tcpcom11.cpp $(COMMON_H)
 tcpref01.o: tcpref01.cpp
 tee.o: tee.cpp $(COMMON_H)
 test1.o: test1.cpp
 test2.o: test2.cpp
 test3.o: test3.cpp
+test4.o: test4.cpp
 testbinp.o: testbinp.cpp $(BITINPUT_H)
 teststl1.o: teststl1.cpp $(MYSTL_H)
+tgainfo.o: tgainfo.cpp
 tgmtime1.o: tgmtime1.cpp $(COMMON_H)
 tgunzip1.o: tgunzip1.cpp $(GUNZIP_H)
 touch.o: touch.cpp
@@ -224,6 +235,7 @@ testtar: testbunzip2
 testmd5sum:
 	$(VALGRIND) ./md5sum zero.dat whouse.jpg neucastl.jpg tr.vcxproj | ./diff -s md5s.od -
 	$(VALGRIND) ./md5sum -c data.md5
+	$(VALGRIND) ./md5sum test1.dat zero.dat neucastl.jpg whouse.jpg battery.iso|./diff -s data.md5
 
 testbunzip2:
 	$(VALGRIND) ./bunzip2 battery.bz2 battery.iso
@@ -309,8 +321,8 @@ endif
 test: tests1 tests2 tests3 tests4 tests5 tests6 tests7
 
 clean:
-	rm -Rf *.o jpg2tga *.tga $(TARGETS)
-	rm -Rf battery.iso
+	rm -Rf *.o *.tga bzip2.gz dinges.tar whouse.bz2 whouse2.jpg $(TARGETS)
+	rm -Rf battery.iso gzip.bz2
 
 rebuild: clean all
 
