@@ -149,6 +149,9 @@ test1go: test1
 testod:
 	od zero.dat | ./diff -s zero.od -
 
+testbase64:
+	base64 zero.dat | diff -s zero.b64 -
+
 testnl:
 	cat tr.cpp | nl | diff -s nl.out -
 
@@ -190,7 +193,7 @@ tests2: testcrc32
 tests3: testgrep testmd5sum
 tests4: testcppcom01 testcppcom03 testcppcom04 testcppcom05 testcppcom06 testcppcom07
 tests5: testcppcom10
-tests6: testod test1go
+tests6: testod test1go testbase64
 test: tests1 tests2 tests3 tests4 tests5 tests6
 
 clean:
