@@ -1,4 +1,4 @@
-CXXFLAGS = -O2 -Wall -Wno-parentheses --std=c++11
+CXXFLAGS = -g -Wall -Wno-parentheses --std=c++11
 MYSTL_H = mystl.h mystl.tcc
 COMMON_H = common.h $(MYSTL_H)
 BITINPUT_H = bitinput.h $(COMMON_H)
@@ -11,6 +11,7 @@ TARGETS = base64 bunzip2 bzcat bzinfo cat cp crc32 date dd diff \
     jpg2tga kompakt md5sum nl od rm tar \
     tcpcom01 tcpcom02 \
     tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 tcpcom11 \
+    tcpref01 \
     tee test1 test2 test3 test4 testbinp \
     teststl1 tgmtime1 tgunzip1 touch tr unix2dos uuidgen weekday wingroup yes zcat
 
@@ -27,7 +28,7 @@ base64: base64.o $(MYSTL_O)
 bunzip2: bunzip2m.o bunzip2.o bitinput.o fector.o $(MYSTL_O)
 bzcat: bzcat.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
 bzinfo: bzinfo.o bitinput.o $(MYSTL_O)
-bzip2: bzip2.o
+bzip2: bzip2.o $(MYSTL_O)
 bzmd5: bzmd5.o
 cat: cat.o $(MYSTL_O)
 cp: cp.o $(MYSTL_O)
@@ -58,6 +59,7 @@ tcpcom08: tcpcom08.o $(MYSTL_O)
 tcpcom09: tcpcom09.o $(MYSTL_O)
 tcpcom10: tcpcom10.o $(MYSTL_O)
 tcpcom11: tcpcom11.o $(MYSTL_O)
+tcpref01: tcpref01.o util2.o $(MYSTL_O)
 tee: tee.o $(MYSTL_O)
 test1: test1.o hasher.o $(MYSTL_O)
 test2: test2.o $(GUNZIP_O)
@@ -123,6 +125,7 @@ tcpcom08.o: tcpcom08.cpp $(COMMON_H)
 tcpcom09.o: tcpcom09.cpp $(COMMON_H)
 tcpcom10.o: tcpcom10.cpp $(COMMON_H)
 tcpcom11.o: tcpcom11.cpp $(COMMON_H)
+tcpref01.o: tcpref01.cpp
 tee.o: tee.cpp $(COMMON_H)
 test1.o: test1.cpp
 test2.o: test2.cpp
@@ -146,11 +149,45 @@ zcat.o: zcat.cpp $(GUNZIP_H)
 test1go: test1
 	test1
 
+tgunzip1go:
+	tgunzip1
+
+testgunzip2:
+	rm -f znew.txt
+	gunzip znew.gz znew.txt
+	md5sum -c znew.md5
+	rm -f znew.txt
+
+testcp:
+	rm -f whouse2.jpg
+	cp whouse.jpg whouse2.jpg
+	cat whouse2.jpg | md5sum -x a264902120c099dfb0c6539b977de2f5
+
+testbzcat:
+	bzcat battery.bz2 | md5sum -x efc57edfaf907b5707878f544b39d6d5
+
+testzcat:
+	zcat znew.gz | md5sum -x 742b0b4d1543c6df46e35b77ec6baa53
+
+testkompakt:
+	bzcat battery.bz2 | kompakt -l -s | diff -s kompakt1.out -
+
 testod:
-	od zero.dat | ./diff -s zero.od -
+	od -t x1z zero.dat | ./diff -s zero.od -
+	od -t x1z circles.bmp | md5sum -x 40d8c800dd99de6e80e166c37f683e46
+	od -t x1z minimal.gif | md5sum -x 5c4171a8b5cbf3076be875e3af7ce610
 
 testbase64:
 	base64 zero.dat | diff -s zero.b64 -
+
+tststl1go:
+	teststl1
+
+testtar:
+	tar -tvf dinges.tar | diff -s dinges.out -
+
+testmd5sum:
+	md5sum -c data.md5
 
 testnl:
 	cat tr.cpp | nl | diff -s nl.out -
@@ -158,11 +195,16 @@ testnl:
 testcrc32:
 	crc32 diff.cpp
 
+testjpg2tga:
+
+testgmtime1:
+	tgmtime1
+
+tstbinpgo:
+	testbinp
+
 testgrep:
 	grep include Makefile | diff -s grep2.out -
-
-testmd5sum:
-	md5sum *.txt | diff -s text.md5 -
 
 testcppcom01:
 	tcpcom01 | diff -s tcpcom01.txt
@@ -188,13 +230,26 @@ testcppcom07:
 testcppcom10:
 	tcpcom10 | diff -s tcpcom10.txt
 
+testcppref01:
+	tcpref01 | diff -s tcpref01.txt
+
+test2go:
+	test2
+
+testgzip:
+	rm -vf bzip2.gz
+
+testbzip2:
+	rm -vf gzip.bz2 whouse.bz2
+
 tests1: testnl
-tests2: testcrc32
-tests3: testgrep testmd5sum
+tests2: tstbinpgo
+tests3: testmd5sum
 tests4: testcppcom01 testcppcom03 testcppcom04 testcppcom05 testcppcom06 testcppcom07
-tests5: testcppcom10
-tests6: testod test1go testbase64
-test: tests1 tests2 tests3 tests4 tests5 tests6
+tests5: testcppref01
+tests6: testod test1go testgrep testcrc32 testbase64
+tests7: tststl1go testgmtime1 testcppcom10
+test: tests1 tests2 tests3 tests4 tests5 tests6 tests7
 
 clean:
 	deltree /y *.obj *.o *.exe

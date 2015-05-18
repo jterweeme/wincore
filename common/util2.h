@@ -15,6 +15,9 @@ public:
     int islower(int c) const { return c >= 'a' && c <= 'z'; }
     int isalpha(int c) const { return isupper(c) || islower(c); }
     int isxdigit(int c) { return isdigit(c) || c >=  'a' && c <= 'f' || c >= 'A' && c <= 'F'; }
+    int isalnum(int c) { return isdigit(c) || isalpha(c); }
+    int isgraph(int c) { return isalnum(c); }
+    int isprint(int c) { return c >= 32 && c <= 126; }
     int toupper(int c) { return islower(c) ? c - 32 : c; }
     void toupper(const char *src, char *dest) { while (*src) *dest++ = toupper(*src++); }
     void toupper(char *s) { toupper(s, s); }
@@ -62,6 +65,7 @@ namespace mystl
     int islower(int c);
     int isalpha(int c);
     int isxdigit(int c);
+    int isprint(int c);
 }
 
 #endif

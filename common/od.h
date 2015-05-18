@@ -10,6 +10,12 @@ public:
 
 class OptionsOd
 {
+    bool _cin = false;
+    string _fn;
+public:
+    void parse(int argc, char **argv);
+    bool cin() const { return _cin; }
+    string fn() const { return _fn; }
 };
 
 class AppOd

@@ -1350,9 +1350,8 @@ void AppBzip2::mainSort(uint32_t *ptr, uint8_t *block, uint16_t *quadrant,
          }
       }
 
-      AssertH ( (copyStart[ss]-1 == copyEnd[ss])
-                || 
-      
+      AssertH((copyStart[ss]-1 == copyEnd[ss]) || 
+   
                 (copyStart[ss] == 0 && copyEnd[ss] == nblock-1),
                 1007 );
 
@@ -4827,7 +4826,7 @@ BZFILE *AppBzip2::bzopen_or_bzdopen(const char *path, int fd, const char *mode, 
         fp = fopen(path,mode2);
       }
    } else {
-      fp = fdopen(fd,mode2);
+      //fp = fdopen(fd,mode2);
    }
    if (fp == NULL) return NULL;
 
@@ -4852,10 +4851,12 @@ BZFILE *AppBzip2::BZ2_bzopen(const char *path, const char *mode)
    return bzopen_or_bzdopen(path,-1,mode,0);
 }
 
+#if 0
 BZFILE *AppBzip2::BZ2_bzdopen(int fd, const char *mode)
 {
     return bzopen_or_bzdopen(NULL, fd, mode, 1);
 }
+#endif
 
 int AppBzip2::BZ2_bzread(BZFILE* b, void* buf, int len)
 {
@@ -5553,6 +5554,7 @@ FILE *AppBzip2::fopen_output_safely(char* name, const char* mode)
 #endif
 }
 
+#if 0
 uint8_t AppBzip2::notAStandardFile(char* name)
 {
     int i;
@@ -5571,8 +5573,7 @@ int32_t AppBzip2::countHardLinks(char *name)
     if (i != 0) return 0;
     return (statBuf.st_nlink - 1);
 }
-
-
+#endif
 
 void AppBzip2::ERROR_IF_NOT_ZERO(int i)
 {
@@ -5683,6 +5684,7 @@ void AppBzip2::compress(char *name)
          return;
       }
    }
+#if 0
    if ( srcMode == SM_F2F && !forceOverwrite && notAStandardFile ( inName )) {
       if (noisy)
       fprintf ( stderr, "%s: Input file %s is not a normal file.\n",
@@ -5690,6 +5692,7 @@ void AppBzip2::compress(char *name)
       setExit(1);
       return;
    }
+#endif
    if ( srcMode == SM_F2F && fileExists ( outName ) ) {
       if (forceOverwrite) {
 	 remove(outName);
@@ -5700,13 +5703,15 @@ void AppBzip2::compress(char *name)
 	 return;
       }
    }
-   if ( srcMode == SM_F2F && !forceOverwrite &&
-        (n=countHardLinks ( inName )) > 0) {
+#if 0
+    if (srcMode == SM_F2F && !forceOverwrite && (n=countHardLinks ( inName )) > 0)
+    {
       fprintf ( stderr, "%s: Input file %s has %d other link%s.\n",
                 progName, inName, n, n > 1 ? "s" : "" );
       setExit(1);
       return;
-   }
+    }
+#endif
 
    if ( srcMode == SM_F2F ) {
       saveInputFileMetaInfo ( inName );
@@ -5858,6 +5863,7 @@ void AppBzip2::uncompress(char *name)
          return;
       }
    }
+#if 0
    if ( srcMode == SM_F2F && !forceOverwrite && notAStandardFile ( inName )) {
       if (noisy)
       fprintf ( stderr, "%s: Input file %s is not a normal file.\n",
@@ -5865,6 +5871,7 @@ void AppBzip2::uncompress(char *name)
       setExit(1);
       return;
    }
+#endif
    if (cantGuess) {
       if (noisy)
       fprintf ( stderr, 
@@ -5881,6 +5888,7 @@ void AppBzip2::uncompress(char *name)
         return;
       }
    }
+#if 0
    if ( srcMode == SM_F2F && !forceOverwrite &&
         (n=countHardLinks ( inName ) ) > 0) {
       fprintf ( stderr, "%s: Input file %s has %d other link%s.\n",
@@ -5888,6 +5896,7 @@ void AppBzip2::uncompress(char *name)
       setExit(1);
       return;
    }
+#endif
 
     if (srcMode == SM_F2F)
     {
@@ -6287,6 +6296,7 @@ int AppBzip2::run(int argc, char **argv)
         (strstr ( progName, "UNZIP" ) != 0) )
       opMode = OM_UNZ;
 
+#if 0
    if ( (strstr ( progName, "z2cat" ) != 0) ||
         (strstr ( progName, "Z2CAT" ) != 0) ||
         (strstr ( progName, "zcat" ) != 0)  ||
@@ -6294,6 +6304,7 @@ int AppBzip2::run(int argc, char **argv)
       opMode = OM_UNZ;
       srcMode = (numFileNames == 0) ? SM_I2O : SM_F2O;
    }
+#endif
 
     for (aa = argList; aa != NULL; aa = aa->link)
     {

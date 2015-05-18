@@ -1,4 +1,4 @@
-USE_MYSTL = yes
+USE_MYSTL = no
 
 ifneq ($(USE_MYSTL),yes)
 NO_MYSTL = -DNO_MYSTL
@@ -73,7 +73,7 @@ gzip: gzip.o
 jpg2tga: jpg2tga.o $(MYSTL_O)
 kompakt: kompakt.o main.o filesys.o $(MYSTL_O)
 ls: ls.o $(FILESYS_O)
-md5sum: md5sum.o hasher.o $(MYSTL_O)
+md5sum: md5sum.o hasher.o util2.o $(MYSTL_O)
 nl: nl.o $(MYSTL_O)
 od: od.o odmain.o $(MYSTL_O)
 rm: rm.o $(MYSTL_O)
@@ -91,7 +91,7 @@ tcpcom10: tcpcom10.o $(MYSTL_O)
 tcpcom11: tcpcom11.o $(MYSTL_O)
 tcpref01: tcpref01.o util2.o $(MYSTL_O)
 tee: tee.o $(MYSTL_O)
-test1: test1.o hasher.o $(MYSTL_O)
+test1: test1.o hasher.o util2.o $(MYSTL_O)
 test2: test2.o $(GUNZIP_O)
 test3: test3.o bitinput.o bunzip2.o fector.o $(MYSTL_O)
 test4: test4.o $(MYSTL_O)
@@ -216,7 +216,9 @@ testkompakt:
 	$(VALGRIND) bzcat battery.bz2 | ./kompakt -l -s | ./diff -s kompakt1.out -
 
 testod:
-	$(VALGRIND) ./od zero.dat | ./diff -s zero.od -
+	$(VALGRIND) ./od -t x1z zero.dat | ./diff -s zero.od -
+	$(VALGRIND) ./od -t x1z circles.bmp | ./md5sum -x 40d8c800dd99de6e80e166c37f683e46
+	$(VALGRIND) ./od -t x1z minimal.gif | ./md5sum -x 5c4171a8b5cbf3076be875e3af7ce610
 
 testbase64:
 	$(VALGRIND) ./base64 zero.dat | ./diff -s zero.b64 -

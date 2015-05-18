@@ -37,6 +37,18 @@ public:
     void extractTo(ostream &os) { for (int b = _read(); b != -1; b = _read()); }
 };
 
+class App
+{
+    void test(BitInput *bi)
+    {
+        uint32_t magic = bi->readUInt32();
+        cerr << "Magic: " << hex << magic << "\n";
+    }
+public:
+    int run2(int argc, char **argv);
+    int run(int argc, char **argv);
+};
+
 uint8_t Block::_indexToFront(uint8_t *a, uint32_t index)
 {
     uint8_t value = a[index];
@@ -253,16 +265,7 @@ int Block::read()
     return _last;
 }
 
-class App
-{
-    void test(BitInput *bi)
-    {
-        uint32_t magic = bi->readUInt32();
-        cerr << "Magic: " << hex << magic << "\n";
-    }
-public:
-    int run(int argc, char **argv);
-};
+
 
 int App::run(int argc, char **argv)
 {
@@ -274,10 +277,19 @@ int App::run(int argc, char **argv)
     return 0;
 }
 
+int App::run2(int argc, char **argv)
+{
+    cout << "Hello world\n";
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     App app;
+    //return app.run2(argc, argv);
+    return app.run(argc, argv);
 
+#if 0
     try
     {
         return app.run(argc, argv);
@@ -290,7 +302,6 @@ int main(int argc, char **argv)
     {
         cout << e << "\n";
     }
-#if 0
     catch (bad_alloc)
     {
         cout << "bad alloc\n";
@@ -303,11 +314,11 @@ int main(int argc, char **argv)
     {
         cout << "Onbekend exception " << e.what() << "\n";
     }
-#endif
     catch (...)
     {
         cout << "Unknown exception\n";
     }
+#endif
     return 0;
 }
 

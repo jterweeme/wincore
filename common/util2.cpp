@@ -251,6 +251,7 @@ namespace mystl
     char *strstr(const char *hs, const char *needle) { Util2 u; return u.strstr(hs, needle); }
     int isdigit(int c) { Util2 u; return u.isdigit(c); }
     int isspace(int c) { Util2 u; return u.isspace(c); }
+    int isprint(int c) { Util2 u; return u.isprint(c); }
 }
 
 

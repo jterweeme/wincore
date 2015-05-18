@@ -241,7 +241,7 @@ void TGAWriter::write_pixels(ostream &f, int rgb_dir, int vdir, int x, int y,
     if (vdir < 0) 
         j_end = -1, j = y-1;
     else
-        j_end =  y, j = 0;
+        j_end = y, j = 0;
 
     for (; j != j_end; j += vdir)
     {
@@ -779,10 +779,7 @@ uint8_t JpegDec::readDHTMarker(tistream &is)
 {
     uint8_t bits[16];
     uint16_t left = getBits1(16, is);
-
-    if (left < 2)
-        throw "PJPG_BAD_DHT_MARKER";
-
+    if (left < 2) throw "PJPG_BAD_DHT_MARKER";
     left -= 2;
 
     while (left)
@@ -1125,6 +1122,7 @@ uint8_t JpegDec::locateSOFMarker(tistream &is)
     uint8_t c;
     locateSOIMarker(is);
     processMarkers(&c, is);
+    cerr << (int)c << "\n";
 
     switch (c)
     {
@@ -1958,8 +1956,7 @@ void JpegDec::transformBlockReduce(uint8_t mcuBlock)
 
 uint8_t JpegDec::decodeNextMCU(tistream &is)
 {
-    uint8_t status;
-    uint8_t mcuBlock;   
+    uint8_t status, mcuBlock;
 
     if (gRestartInterval) 
     {

@@ -1,4 +1,5 @@
 #include "hasher.h"
+#include "util2.h"
 
 const uint32_t k[64] = {
 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee ,
@@ -44,6 +45,7 @@ void Hash::read(const char *hash)
     string s3 = string(hash + 24, hash + 32);
     _h3 = be32toh(strtol(s3.c_str(), 0, 16));
 #else
+    Util2 u;
     char s0[255] = {0};
     char s1[255] = {0};
     char s2[255] = {0};
@@ -52,11 +54,10 @@ void Hash::read(const char *hash)
     strncpy(s1, hash + 8, 8);
     strncpy(s2, hash + 16, 8);
     strncpy(s3, hash + 24, 8);
-    _h0 = be32toh(strtol(s0, 0, 16));
-    _h1 = be32toh(strtol(s1, 0, 16));
-    _h2 = be32toh(strtol(s2, 0, 16));
-    _h3 = be32toh(strtol(s3, 0, 16));
-
+    _h0 = be32toh(u.strtol(s0, 0, 16));
+    _h1 = be32toh(u.strtol(s1, 0, 16));
+    _h2 = be32toh(u.strtol(s2, 0, 16));
+    _h3 = be32toh(u.strtol(s3, 0, 16));
 #endif
 }
 

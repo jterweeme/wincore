@@ -7,17 +7,43 @@ and another empty line will be displayed.
 
 #include "od.h"
 
+void OptionsOd::parse(int argc, char **argv)
+{
+    for (int i = 1; i < argc; i++)
+    {
+        if (argv[i][0] == '-')
+        {
+            for (unsigned j = 1; j < strlen(argv[i]); j++)
+            {
+#if 0
+                switch (argv[i][j])
+                {
+                }
+#endif
+            }
+        }
+        else
+        {
+            _fn = string(argv[i]);
+        }
+    }
+
+    if (_fn.size() <= 0)
+        _cin = true;
+}
+
 int AppOd::run(int argc, char **argv)
 {
+    OptionsOd o;
     HexStream hs;
-
-    if (argc < 2)
-    {
+    o.parse(argc, argv);
+    
+    if (o.cin())
         hs.dump(cin);
-    }
-    else
+
+    if (o.fn().size() >= 1)
     {
-        ifstream s(argv[1], ifstream::in | ifstream::binary);
+        ifstream s(o.fn().c_str(), ifstream::in | ifstream::binary);
         hs.dump(s);
     }
 
@@ -26,7 +52,7 @@ int AppOd::run(int argc, char **argv)
 
 void HexStream::dump(istream &input)
 {
-    char arr[16] = { 0 };
+    uint8_t arr[16] = { 0 };
     int pos = 0;
 
     while (input)
@@ -46,10 +72,10 @@ void HexStream::dump(istream &input)
 
         for (int i = 0; i < input.gcount(); i++)
         {
-            if (arr[i] < 0x20 || arr[i] == 0xff)
-                cout << ".";
-            else
+            if (isprint(arr[i]))
                 cout << arr[i];
+            else
+                cout << ".";
         }
 
         cout << "<\n";
