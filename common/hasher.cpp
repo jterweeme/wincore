@@ -80,8 +80,6 @@ void Hasher::stream(istream &file)
         file.read((char *)data, 64);
         Chunk chunk;
 
-        //fprintf(stderr, "%u\n", file.gcount());
-
         if (file.gcount() < 56)
         {
             data[file.gcount()] = 0x80;
