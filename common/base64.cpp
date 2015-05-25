@@ -1,6 +1,6 @@
 #include "common.h"
 
-char set[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+char set2[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 class App
 {
@@ -23,10 +23,10 @@ void App::convert(istream &is, ostream &os)
         uint8_t s2 = (buf[1] >> 4 | buf[0] << 4) & 0x3f;
         uint8_t s3 = ((buf[1] << 2)  | (buf[2] >> 6)) & 0x3f;
         uint8_t remainder = is.gcount() % 3;
-        os.put(set[(buf[0] >> 2) & 0x3f]);
-        os.put(set[s2]);
-        os.put(remainder == 1 ? '=' : set[s3]);
-        os.put(remainder != 0 ? '=' : set[buf[2] & 0x3f]);
+        os.put(set2[(buf[0] >> 2) & 0x3f]);
+        os.put(set2[s2]);
+        os.put(remainder == 1 ? '=' : set2[s3]);
+        os.put(remainder != 0 ? '=' : set2[buf[2] & 0x3f]);
 
         if (i % 19 == 0)
             os << "\n";

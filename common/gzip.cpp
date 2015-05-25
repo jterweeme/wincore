@@ -54,8 +54,10 @@ int foreground;
 char *progname;
 static int first_nonopt;
 static int last_nonopt;
+#ifndef _WIN32
 static const uint8_t CHAR_BIT = 8;
 static const uint8_t UCHAR_MAX = 255;
+#endif
 static const uint8_t MAX_SUFFIX = 30;
 static const uint32_t LOCSIG = 0x04034b50;
 static const uint8_t LOCFLG = 6;
@@ -128,7 +130,9 @@ static int compr_level;
 unsigned good_match;
 static uint64_t rsync_sum;
 static uint64_t rsync_chunk_end;
+#ifndef _WIN32
 static const uint8_t O_BINARY = 0;
+#endif
 static const uint32_t RW_USER = S_IRUSR | S_IWUSR;
 static const uint16_t MAX_PATH_LEN = 1024;
 uint8_t inbuf[INBUFSIZ + INBUF_EXTRA];
