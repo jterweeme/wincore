@@ -1,2 +1,2 @@
-include mingw.mak
+include linux.mak
 

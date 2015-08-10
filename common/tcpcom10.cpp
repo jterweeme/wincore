@@ -14,7 +14,7 @@ int main ()
   str.append("here: ");                   // "here: "
   str.append(10u,'.');                    // ".........."
   str.append(str3.begin()+8,str3.end());  // " and then 5 more"
-  str.append<int>(5,0x2E);                // "....."
+  //str.append<int>(5,0x2E);                // "....."
 
   cout << str << '\n';
   return 0;
