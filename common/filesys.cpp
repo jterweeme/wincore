@@ -10,8 +10,10 @@ void FileSystem::chdirx(const char *path)
 
 void FileSystem::mkdir(const char *name)
 {
+#ifndef __MINGW64__
     if (::mkdir(name, 500) != 0)
         throw "Cannot create directory";
+#endif
 }
 
 void FileSystem::ls(vector<string> *v)

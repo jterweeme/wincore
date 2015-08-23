@@ -32,7 +32,7 @@ FILESYS_O = filesys.o $(MYSTL_O)
 
 TARGETS = base64 bmp2tga bmpinfo bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd diff \
     dos2unix grep gunzip \
-    jpg2tga nl od rm tar \
+    jpg2tga kompakt md5sum nl od rm tar \
     tcpcom01 tcpcom02 \
     tcpcom03 tcpcom04 tcpcom05 tcpcom06 tcpcom07 tcpcom08 tcpcom09 tcpcom10 tcpcom11 \
     tcpref01 \
