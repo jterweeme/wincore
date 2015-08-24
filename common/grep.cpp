@@ -7,6 +7,7 @@ class GrepOptions
     string _file;
 public:
     bool cin() const { return _file.size() < 2; }
+    bool caseInsensitive() const { return _caseInsensitive; }
     int parse(int argc, const char **argv);
     void dump(ostream &os) const;
     string expressie() const { return _expressie; }
@@ -17,7 +18,9 @@ public:
 class AppGrep
 {
     void grep(istream &is, const regex rx);
-    void grep(istream &is, const char *rgx);
+    void grep(istream &is, const char *rgx) { regex rx(rgx); grep(is, rx); }
+    void igrep(istream &is, const char *rgx)
+    { regex rx(rgx, regex_constants::icase); grep(is, rx); }
 public:
     int run(int argc, const char **argv);
 };
@@ -73,30 +76,31 @@ int GrepOptions::parse(int argc, const char **argv)
     return 0;
 }
 
-void AppGrep::grep(istream &is, const char *rgx)
-{
-    regex rx(rgx);
-    grep(is, rx);
-}
-
 int AppGrep::run(int argc, const char **argv)
 {
     GrepOptions o;
+    istream *i;
+    ifstream ifs;
 
     if (o.parse(argc, argv) < 0)
         throw "Usage\n";
 
     if (o.cin())
     {
-        grep(cin, o.expressie().c_str());
+        i = &cin;
     }
     else
     {
-        ifstream ifs(o.file().c_str());
-        grep(ifs, o.expressie().c_str());
-        ifs.close();
+        ifs.open(o.file().c_str());
+        i = &ifs;
     }
 
+    if (o.caseInsensitive())
+        igrep(*i, o.expressie().c_str());
+    else
+        grep(*i, o.expressie().c_str());
+
+    ifs.close();
     return 0;
 }
 

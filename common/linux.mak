@@ -262,6 +262,7 @@ testbinpgo:
 
 testgrep:
 	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
+	$(VALGRIND) ./grep -i INCLUDE Makefile | ./diff -s grep1.out -
 	$(VALGRIND) ./cat Makefile | ./grep include | ./diff -s grep1.out -
 
 testcppcom01:
