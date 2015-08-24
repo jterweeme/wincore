@@ -22,6 +22,7 @@ public:
     bool gzip() const { return _gzip; }
     uint8_t compression() const;
     string archive() const { return _archive; }
+    bool hasArchive() const { return _archive.size() > 2; }
 };
 
 uint8_t Options::compression() const
@@ -106,12 +107,15 @@ int AppTar::_createArchive()
 int AppTar::run(int argc, char **argv)
 {
     _options.parse(argc, argv);
-    FILE *fp;
 
     if (_options.create())
         return _createArchive();
 
-    fp = fopen(_options.archive().c_str(), "r");
+    FILE *fp = fopen(_options.archive().c_str(), "r");
+
+    if (fp == 0)
+        throw "No such file or directory";
+
     BitInputFile bif;
     BitInput2File bif2;
     streambuf *bt;
