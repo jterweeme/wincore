@@ -59,6 +59,10 @@ template <typename T> T nb(T it) { return Nb<T>::_S_base(it); }
 template <typename T> struct Mb : Iter_base<T, imi<T>::value> { };
 template <typename T> T mb(T it) { return Mb<T>::_S_base(it); }
 
+#ifdef __MINGW64__
+#define _NEW
+#endif
+
 #ifndef _NEW
 #define _NEW
 inline void* operator new(size_t, void* p) { return p; }
@@ -565,12 +569,19 @@ template <typename T, size_t N> struct array2
     iterator end() { return elems + N; }
 };
 
+class regex_constants
+{
+public:
+    static const uint32_t icase = 1;
+};
+
 class regex2 : public Util2
 {
     char _r[255];
     const char *_s() const { return _r; }
 public:
     regex2(const char *s) { strcpy(_r, s); }
+    regex2(const char *s, uint32_t flags) { }
     friend class regex_functions;
 };
 

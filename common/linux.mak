@@ -1,4 +1,4 @@
-USE_MYSTL = no
+USE_MYSTL = yes
 
 ifneq ($(USE_MYSTL),yes)
 NO_MYSTL = -DNO_MYSTL

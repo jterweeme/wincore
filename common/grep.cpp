@@ -19,11 +19,16 @@ class AppGrep
 {
     void grep(istream &is, const regex rx);
     void grep(istream &is, const char *rgx) { regex rx(rgx); grep(is, rx); }
-    void igrep(istream &is, const char *rgx)
-    { regex rx(rgx, regex_constants::icase); grep(is, rx); }
+    void igrep(istream &is, const char *rgx);
 public:
     int run(int argc, const char **argv);
 };
+
+void AppGrep::igrep(istream &is, const char *rgx)
+{
+    regex rx(rgx, regex_constants::icase);
+    grep(is, rx);
+}
 
 void AppGrep::grep(istream &is, const regex rx)
 {

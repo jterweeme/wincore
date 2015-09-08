@@ -16,6 +16,11 @@ struct tm
 
 namespace mystl
 {
+
+#ifdef __MINGW64__
+#define __time_t_defined
+#endif
+
 #ifndef __time_t_defined
     typedef uint32_t time_t;
 #endif
