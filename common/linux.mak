@@ -41,13 +41,13 @@ TARGETS = base64 bmp2tga bmpinfo bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd
     uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
-	g++ $(CXXFLAGS) -c -o $@ $<
+	@g++ $(CXXFLAGS) -c -o $@ $<
 
 %.o: %.asm
 	yasm -f elf64 $<
 
 %: %.o
-	g++ -o $@ $^
+	@g++ -o $@ $^
 
 .PHONY: all
 

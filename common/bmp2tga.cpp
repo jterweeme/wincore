@@ -68,7 +68,7 @@ int App::run(int argc, char **argv)
     bh.read(bis);
     bh.dump(cout);
 
-    for (int i = 0; i < 32 * 32; i++)
+    for (int i = 0; i < 32 * 32; i++);
         
 
 

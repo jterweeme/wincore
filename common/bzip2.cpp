@@ -2113,7 +2113,7 @@ int32_t AppBzip2::BZ2_decompress(DState *s)
     uint8_t uc;
     int32_t retVal;
     int32_t minLen, maxLen;
-    bz_stream* strm = s->strm;
+    //bz_stream* strm = s->strm;
     int32_t i;
     int32_t j;
     int32_t t;
@@ -5629,7 +5629,7 @@ void AppBzip2::compress(char *name)
 {
     FILE *inStr;
     FILE *outStr;
-    int32_t n, i;
+    int32_t i;
     struct stat statBuf;
     deleteOutputOnInterrupt = 0;
 
@@ -5807,7 +5807,7 @@ void AppBzip2::uncompress(char *name)
 {
     FILE *inStr;
     FILE *outStr;
-    int32_t n, i;
+    int32_t i;
     uint8_t magicNumberOK;
     uint8_t cantGuess;
     struct stat statBuf;
