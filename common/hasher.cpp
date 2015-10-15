@@ -32,6 +32,17 @@ uint32_t Chunk::to_int32(const uint8_t * const bytes) const
         | ((uint32_t) bytes[3] << 24);
 }
 
+#ifdef __MINGW64__
+uint32_t be32toh(uint32_t v)
+{
+    uint32_t r = 0;
+    r |= (v & 0x000000ff) << 24;
+    r |= (v & 0x0000ff00) << 8;
+    r |= (v & 0x00ff0000) >> 8;
+    r |= (v & 0xff000000) >> 24;
+    return r;
+}
+#endif
 
 void Hash::read(const char *hash)
 {

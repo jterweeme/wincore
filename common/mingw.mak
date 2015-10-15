@@ -41,10 +41,10 @@ TARGETS = base64 bmp2tga bmpinfo bunzip2 bzcat bzinfo bzip2 cat cp crc32 date dd
     uuidgen weekday wingroup yes zcat
 
 %.o: %.cpp
-	g++ $(CXXFLAGS) -c -o $@ $<
+	@g++ $(CXXFLAGS) -c -o $@ $<
 
 %.o: %.asm
-	yasm -f elf64 $<
+	@yasm -f elf64 $<
 
 %: %.o
 	g++ -o $@ $^
@@ -323,7 +323,7 @@ endif
 test: tests1 tests2 tests3 tests4 tests5 tests6 tests7
 
 clean:
-	rm -Rf *.o *.tga bzip2.gz dinges.tar whouse.bz2 whouse2.jpg $(TARGETS)
+	rm -Rf *.o *.tga bzip2.gz dinges.tar whouse.bz2 whouse2.jpg $(TARGETS) *.exe
 	rm -Rf battery.iso gzip.bz2
 
 rebuild: clean all
