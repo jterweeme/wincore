@@ -1,3 +1,9 @@
+#
+# Makefile for linux platform
+#
+
+# select "yes" to use the projects C++ libraries, "no" for the compiler built-in
+# C++ libraries
 USE_MYSTL = yes
 
 ifneq ($(USE_MYSTL),yes)
@@ -261,9 +267,9 @@ testbinpgo:
 	$(VALGRIND) ./testbinp
 
 testgrep:
-	$(VALGRIND) ./grep include Makefile | ./diff -s grep1.out -
-	$(VALGRIND) ./grep -i INCLUDE Makefile | ./diff -s grep1.out -
-	$(VALGRIND) ./cat Makefile | ./grep include | ./diff -s grep1.out -
+	$(VALGRIND) ./grep still tcpcom09.txt | ./diff -s grep1.out -
+#	$(VALGRIND) ./grep -i INCLUDE Makefile | ./diff -s grep1.out -
+#	$(VALGRIND) ./cat Makefile | ./grep include | ./diff -s grep1.out -
 
 testcppcom01:
 	$(VALGRIND) ./tcpcom01 | ./diff -s tcpcom01.txt -
